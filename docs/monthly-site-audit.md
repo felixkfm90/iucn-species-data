@@ -46,19 +46,25 @@ Loslassen gehört dem Zoomdialog; erst ein weiterer Tastendruck schließt die um
 Der Schließenknopf erhält die Galerie; Fenster-Fokusverlust löst eine zurückgebliebene Tastenbindung.
 Reale Galerie und Rückkehransicht zusätzlich zu automatisierten Gegenproben prüfen.
 
-Footer-Referenz: Taxonomie/CSS 1.0.17, Artseitenlayout 1.0.4, Karte 1.0.11, Desktopnavigation 1.0.0,
-Suche 1.0.3, Sortierung 1.0.5 und Zoom 1.0.9. Maßgeblich sind die zwölf Einbindungen in
-[squarespace-footer.html](squarespace-footer.html) und das zugehörige Custom CSS. Pages-Veröffentlichung
-und Übernahme der Cacheversionen in Squarespace sind getrennt zu prüfen. Während des laufenden
-Gesamtaudits stehen Ergebnisse und Grenzen ausschließlich im
+Maßgeblich sind die zwölf Einbindungen in [squarespace-footer.html](squarespace-footer.html)
+und die kanonische Datei [squarespace-custom.css](squarespace-custom.css). Taxonomie und CSS verwenden
+gemeinsam Cacheversion **1.0.18**; die übrigen Modulversionen stehen ausschließlich im Footer.
+Pages-Veröffentlichung und Übernahme der Einbindungen in Squarespace sind getrennt zu prüfen.
+Ergebnisse und Grenzen des laufenden Gesamtaudits stehen ausschließlich im
 [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
 
-`docs/squarespace-custom.css` ist Standard-CSS. Im CMS bleiben die zwei dokumentierten
-LESS-escaped `clip-path`-Werte erhalten. Rasterpositionen als `grid-row-start`/`grid-row-end`
-beziehungsweise `grid-column-start`/`grid-column-end` schreiben: Der CMS-Compiler kann Schrägstriche
-in Kurzformen als Division auswerten. Nach dem Speichern tatsächliche öffentliche CSS-Datei und
-berechnete Darstellung prüfen. Die Kontakt-/Footer-/Ausrüstungsregeln sind auf vorhandene Blöcke
-begrenzt; jede Änderung in allen drei Ansichten nachprüfen.
+Squarespace Custom CSS enthält nur den kanonischen Import:
+
+```css
+@import url("https://felixkfm90.github.io/iucn-species-data/docs/squarespace-custom.css?v=1.0.18");
+```
+
+Die externe Datei bleibt Standard-CSS und wird vom Browser verarbeitet. Keine CSS-Kopie oder
+zusätzliche Altregeln im CMS pflegen; der Import umgeht die Umformung durch den CMS-LESS-Compiler.
+Bei CSS-/Taxonomieänderungen die gemeinsame `?v=`-Version im Import und im Footer erhöhen.
+Nach dem Speichern die tatsächlich geladenen Quellen, Cacheversionen und berechnete Darstellung
+prüfen. Die Kontakt-/Footer-/Ausrüstungsregeln bleiben auf vorhandene Blöcke begrenzt; Änderungen
+in Desktop-, Tablet- und Mobilansicht nachprüfen.
 
 Kontakt und Über uns zeigen bis 1024 px die vorhandenen Fotos vollständig in einem natürlichen
 Raster mit mitwachsender Höhe. Kontakt behält Überschrift, Einleitung, Foto, Formular und

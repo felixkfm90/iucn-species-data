@@ -478,11 +478,9 @@ Galerie-Vollbilder. Details: `docs/audits/2026-07-pre-phase-8-audit.md`.
 Das Squarespace Custom CSS enthaelt seit 2026-06-14 einen Mobile-only-Override fuer Grid-Galerien: Galerien mit mehr
 als einer Spalte werden unter 768 px auf eine Spalte gesetzt; Desktop bleibt unveraendert.
 
-Der verbindliche aktuelle Gesamtstand fuer Squarespace liegt in `docs/squarespace-custom.css`. Ein aelterer
-Custom-CSS-Stand darf dort nicht zusaetzlich stehen bleiben oder an den neuen Stand angehaengt werden, weil sich
-insbesondere die alten Flex- und Taxonomie-Regeln mit dem aktuellen Grid-Layout ueberschneiden. Bei einer
-Uebernahme wird der bisherige Squarespace-CSS-Inhalt deshalb vollstaendig durch diese Referenz ersetzt. Der
-dokumentierte Footer steht getrennt in `docs/squarespace-footer.html`.
+Der verbindliche [CSS-Betriebsvertrag](docs/monthly-site-audit.md) beschreibt die kanonische CSS-Datei,
+ihren Import in Squarespace und die gemeinsame Cachepflege mit dem dokumentierten Footer. Im CMS wird
+nur der dort angegebene Import gepflegt.
 
 Die Artseiten-Info-Box zeigt technische Platzhalter wie `n/a`, `U`, leere Werte und `unknown` als `Unbekannt` an,
 ohne die Rohdaten in `speciesData.json` umzuschreiben.

@@ -1,7 +1,6 @@
 /*
-  Squarespace Custom CSS reference
-  Stand: 2026-10-26, lokal vorbereiteter Auditstand.
-  Responsive Taxonomie und freigegebene Artseitendarstellung; noch nicht gemeinsam veroeffentlicht.
+  Kanonische Squarespace-CSS-Referenz.
+  Standard-CSS fuer die Website; Einbindung und Cachepflege: docs/monthly-site-audit.md.
 */
 
 /* ================================ */
@@ -1615,5 +1614,28 @@ header .header-display-desktop .header-nav-item--folder[data-fn-header-dismissed
     word-break: normal !important;
     overflow-wrap: normal !important;
     hyphens: none !important;
+  }
+}
+
+/* Support title hyphen: desktop/mobile only; original scaled title contexts stay intact. */
+@media (width < 768px), (min-width: 1024px) {
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 .sqs-html-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: baseline;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 .sqs-html-content > .sqsrte-scaled-text-container:first-child {
+    grid-area: 1 / 1;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 .sqs-html-content > .sqsrte-scaled-text-container:last-child {
+    grid-area: 2 / 1;
+  }
+  body#collection-675dadf6ff8f63022d9c9694 #block-488d21a166f51004def2 .sqs-html-content > h3 {
+    grid-area: 2 / 1;
+    align-self: baseline;
+    justify-self: start;
+    width: max-content;
+    margin: 0;
+    translate: max(calc(-100% - 0.15em), calc(-1 * var(--sqs-site-gutter, 4vw))) 0;
   }
 }
