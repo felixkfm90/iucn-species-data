@@ -1,6 +1,6 @@
 # CI-Qualitätsgate vor GitHub Pages
 
-Stand: 2026-10-25
+Stand: 2026-10-27
 
 ## Ziel
 
@@ -15,6 +15,19 @@ Quality checks
 ```
 
 Ein Fehler im Quality-Job verhindert damit sowohl den Artefakt-Upload als auch das Deployment.
+
+## Getrennte Zeitbudgets für Einrichtung und Prüfung
+
+Der Quality-Job besitzt ein Gesamtlimit von **45 Minuten**. Die Installation des Mediendecoders hat
+höchstens **25 Minuten**, das eigentliche `quality:ci`-Gate separat höchstens **15 Minuten**.
+Der zusätzliche Puffer gehört zur Einrichtung; keine Prüfung wird übersprungen oder durch ein früheres
+lokales Ergebnis ersetzt. Build und Deployment benötigen weiterhin den erfolgreichen Quality-Job.
+
+Anlass sind die beiden Veröffentlichungsversuche vom 27. Oktober für `d4ce4db` und `116b133`:
+Die Ubuntu-Paketdownloads liefen bis zum bisherigen gemeinsamen 15-Minuten-Limit weiter; beide Jobs
+wurden vor dem Start des Qualitätsgates abgebrochen. Die begrenzte Anpassung ändert ausschließlich drei
+Zeitlimitangaben. Paketfehler, fehlender Decoder oder ein fehlgeschlagenes Qualitätsgate bleiben Fehler.
+Die tatsächlichen Lauf-/Veröffentlichungsnachweise werden gemäß [Roadmap](roadmap.md) privat gesichert.
 
 ## Quality-Job
 
