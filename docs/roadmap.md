@@ -46,7 +46,26 @@ NAS-Archive und dauerhafte Auditbelege bleiben erhalten. Ein künftiger echter T
 die noch nicht gemessene aktive Fortschritts-/Leistungsbeobachtung ergänzen; dafür keinen reinen
 Testaufbau starten. Weitere Umsetzung und Veröffentlichung benötigen Felix' jeweiligen Auftrag.
 
+## Nächste gemeinsame Arbeiten am 28. Oktober 2026
+
+Felix hat am 27. Oktober diese Reihenfolge für die gemeinsame Fortsetzung am Folgetag festgelegt:
+
+1. **Lightroom-Nachprüfung:** Plug-in **0.4.24.42** regulär laden und gezielt bestätigen, dass der neue
+   `data`-Pfad und das aktuelle Suchpaket nativ korrekt erkannt werden. Schutz des normalen D:-Katalogs
+   und der Originalfotos nach dem bestehenden [Lightroom-Vertrag](lightroom-search-package.md) erhalten.
+2. **Anschließend NAS-Sicherung:** Den aktuellen bereinigten Gesamtstand einschließlich dauerhaftem
+   `data`-Bestand und örtlicher Speicherkonfiguration nach dem bestehenden
+   [Sicherungsvertrag](multi-device-backup-plan.md) vollständig sichern und das Ergebnis prüfen.
+
+Unmittelbar vor der Ausführung den tatsächlichen Programm-, Git-, Daten- und Verbraucherstand frisch
+feststellen. Beide Arbeiten sind vorgemerkt; die native .42-Bestätigung und die neue Sicherung stehen noch aus.
+
 ## Vereinbarte Aufgaben nach dem Audit
+
+Vor jedem der folgenden größeren Vorhaben klären Felix und Codex zunächst gemeinsam Zielverständnis,
+Anwendungsfälle, Umfang und Rahmenbedingungen gemäß der [Arbeitsregel](../AGENTS.md#arbeitsweise-bei-späteren-einzelaufträgen).
+Erst aus dieser bestätigten Grundlage werden Lösung und Umsetzung abgeleitet. Die weitere Reihenfolge
+der Vorhaben wird ebenfalls gemeinsam festgelegt.
 
 - **Alternativtextworkflow:** Konzept und Umsetzung für Bild-/Textprüfung, menschliche Korrektur und
   Freigabe; Bestandsüberarbeitung und anschließende laufende Pflege. Vorhandene Entwürfe sind Vorarbeit.

@@ -34,6 +34,12 @@ Immer nur den konkret beauftragten Punkt bearbeiten. Nutzeränderungen erhalten;
 keine neue Handlungserlaubnis entnehmen. Geprüfte Tatsachen, Nutzerbestätigung, automatisierte Gegenprobe,
 native Beobachtung und offene Grenze getrennt berichten. Reproduzierbare Fehler vor einer Korrektur belegen.
 
+Bei jedem größeren Folgevorhaben zuerst mit Felix das gemeinsame Verständnis klären: Bedeutung des
+Vorhabens, gewünschtes Ergebnis, konkrete Anwendungsfälle, Umfang, Rahmenbedingungen und Abnahmekriterien.
+Die gemeinsame Zusammenfassung im passenden bestehenden Fachvertrag festhalten und bestätigen lassen,
+bevor Lösungsumfang und Umsetzung festgelegt werden. Ein Roadmaptitel oder vorhandener Entwurf ersetzt
+diese Abstimmung nicht; bereits bestätigte Entscheidungen gelten weiter.
+
 Agenten können nach Felix' genereller Freigabe für Arbeiten eingesetzt werden.
 Dateizuständigkeiten vor parallelen Änderungen verteilen. Zentrale Dokumente integriert bearbeiten;
 keine konkurrierenden produktiven Aufbauten oder Großscans. Neue Tests und Messungen in den eigenen
