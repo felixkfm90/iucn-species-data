@@ -10458,3 +10458,86 @@ den normalen D:-Katalog. Alle eigenen laufenden Kopier-, Lese-, Mess-, Beleg- un
 tatsächlich beendet. Historische Fehlerbelege bleiben als solche erhalten. Felix hat normales
 Herunterfahren nach Abschluss ausdrücklich beauftragt; vor dem Auslösen nochmals veröffentlichte
 Endrevision, sauberen Git-Stand und fehlende aktive Lightroom-/Explorer-Schreiber prüfen. Kein Zwangsende.
+
+### 10.56 Beauftragter Dokumentations- und Dateinachlauf – 27. Oktober
+
+Nach dem abgeschlossenen Audit beauftragt Felix ausdrücklich Dokumentationsaufbereitung, Entfernen
+entbehrlicher Dateien, Leeren der Projekt-Tempordner, Sicherungs-/Strukturprüfung sowie abschließenden
+Commit/Push und danach einen neuen lokalen Projektchat für die Folgearbeiten. Dies eröffnet das Audit
+nicht erneut und enthält keine neue Taxonomieaktivierung, FN-Katalogpflege oder NAS-Sicherung.
+
+**Dokumentation und Struktur.** Die Roadmap ist von 111 auf 54 Zeilen verdichtet; der Auditabschluss
+und Folgevorhaben bleiben eindeutig getrennt. Veraltete Phase-10-Offen-Aussage berichtigt, aktuelle
+Plug-in-Version im Strukturvertrag nicht erneut parallel geführt. README/AGENTS und die Fachverträge
+erklären den Einstieg für den neuen Chat ohne zusätzliche Übergabedatei. `Daten` bleibt unverändert:
+relative Speicherkonfiguration, gebundenes Umzugsjournal, Lua-Resolver und NAS-Pfadprüfung verwenden
+bereits diesen gemeinsamen Vertrag. Ein reines Umbenennen in `data` würde diese Bindungen brechen;
+die kosmetische Änderung ist für die beauftragte Bereinigung nicht nötig.
+
+**Sicherungsinventar frisch gelesen.** Drei NAS-Archive: 28. Juni (822.199.096 Bytes), 13. August
+(946.318.733 Bytes) und 7. Oktober (21.785.161.273 Bytes). Die heutige begrenzte ZIP-/Manifestlesung
+bestätigt beim Oktoberarchiv 3.459 Nutzdateien/100.066.048.623 Inhaltsbytes und Manifest v2; sie ist
+keine erneute vollständige Inhaltsprüfung. Der bereits angenommene Restore-/Programmstartnachweis
+bleibt gültig. Die beiden älteren Archive sind historische Projektstände ohne gemeinsamen Datenordner;
+sie werden weder als weitere moderne Vollsicherungen gezählt noch als unbrauchbar gelöscht. Die
+vereinbarte Rotation verlangt brauchbare zeitversetzte Stände, keine redundanten Kopien zum Auffüllen.
+Alle drei NAS-Archive unverändert erhalten; keine neue Sicherung des Abschlussstands behauptet.
+
+Lokal sieben Artenlisten-Sicherungen einschließlich der zwei in 10.55 bewusst erhaltenen zusätzlichen
+historischen Listen; diese werden durch eine bloße Anzahlprüfung nicht wieder entfernt. 18 verwaltete
+Medien-Rücknahmegruppen, keine überzählige Gruppe in der regulären Retentionsvorschau, keine offene
+Artanlage-/Medienentscheidung als neuer Löschgrund. Aktiver Master-/Lightroom-Stand und direkter
+Vorgänger bleiben geschützt; weitere Releases und Aufbau-/Recovery-Eingänge werden nicht allein
+wegen ihrer Anzahl gelöscht. Inventar `63275968…/backup-inventory.json`, SHA
+`8b9c4109a3517baf49e80a804bb1eba92e2ec5cb5147a5cbc4856c5ceece81fd`.
+
+**Tempdateien und Belegerhalt.** Konkret gebundener Bestand: 69.446 reguläre Dateien mit
+7.207.964.504 Bytes unter `temp`, `Testlauf` und regulärem Plug-in-temp. Nach vollständiger
+SHA-256-Lesung und frischer Windows-Prozessprüfung ohne Lightroom-/Explorer-/Testschreiber:
+315 eindeutig redundante Installationsdateien mit **1.827.644.169 Bytes** entfernt (vier alte private
+Electron-Laufzeiten, zwei Downloadcaches, benutzter Node-Installer). Keine Originalbilder, produktiven
+Kataloge, aktiven Datenbanken, Namensentscheidungen oder normalen Bearbeitungs-/NAS-Sicherungen als Ziel.
+
+Die übrigen **69.131 Dateien / 5.380.320.335 Bytes** bleiben mit ursprünglichem relativen Pfad im
+privaten `Daten/audit-evidence/phase-10-5/audit-evidence-2026-10-27.zip` erhalten. Jede enthaltene
+Datei nach dem Schreiben unabhängig aus dem fertigen ZIP zurückgelesen und per SHA-256 mit dem
+gebundenen Original verglichen. ZIP: **2.351.527.472 Bytes**, SHA
+`598d4a9c1bc217e4afd15e4e42ce962a21e574b4723259e98b1e5c333b27486c`.
+Belege und nicht sicher entbehrliche Prüfdateien bleiben dadurch erhalten, ohne Arbeits-Temp zu belegen.
+Drei ausschließlich interne historische Junction-Gegenproben als Linkmetadaten archiviert; nur die
+Verweise entfernt, keine externen Ziele verfolgt. Der private Belegpfad ist Git-/Pages-ignoriert und
+wird von einer künftig ausdrücklich gestarteten Vollsicherung nach bestehendem Datenvertrag erfasst.
+
+Der erste Entfernungslauf hielt nach 9.243 quittierten Dateien an: Der eigene Helfer behandelte
+NTFS-Kennungen über der sicheren JavaScript-Ganzzahlgrenze als normale Zahlen. Zwei verschiedene
+Dateien erschienen dadurch unter derselben Kennung; kein tatsächlich veränderter Vorschauprozess.
+Dateibytes, Metadaten und Hash der gemeldeten Datei unverändert, frische Listener-/Prozessprüfung leer.
+Kein automatischer Blindwiederanlauf: vollständig neue Restbindung mit verlustfreien BigInt-Kennungen,
+unverändertem Archiv und Abgleich aller früheren Entfernungsquittungen. Die verbleibenden 60.203
+Dateien anschließend einzeln nach erneutem SHA-/Identitätsvergleich entfernt; nur danach leere Ordner.
+Ergebnis `8ed51fbd…/cleanup-result.json`, SHA
+`e02e9e65637b5ed6a84d3f63bdcbf230f6fd2560de165831f9c65dd2c4d002c4`.
+Keine reguläre Produktdatei oder Sicherheitseinstellung zur Korrektur des privaten Helfers geändert.
+
+Die Dateien des Nachlaufs werden nach geschlossenem Eigentümer unter ihren Sitzungskennungen in
+`Daten/audit-evidence/phase-10-5/maintenance/` erhalten. Historische Herkunfts-/Fehlerzustände bleiben
+unverändert. Zugriff und Lebenszyklus stehen ausschließlich im Tempvertrag. Die Entfernung der alten
+Dateiinhalte gegenüber dem komprimierten ZIP ergibt 4.856.437.032 Bytes logische Differenz vor den
+kleinen Nachlaufbelegen; dies ist keine gemessene Nettodifferenz des Laufwerks.
+
+**Strukturabschluss ausgeführt.** Sechs geschlossene eigene Nachlauf-Sitzungen ohne Operationen oder
+Helfer byte-/identitätsgeprüft nach `maintenance/<Sitzungs-ID>/` verschoben. `temp/` und reguläres
+Plug-in-temp sind anschließend leer; die ebenfalls leere historische Wurzel `Testlauf/` ist entfernt.
+Speicherkonfiguration, originales Umzugsjournal, gemeinsamer Aktiv-/Vorgängerzeiger und
+Korrekturaktivzeiger stimmen vor/nach diesem Schritt exakt überein. Strukturquittung
+`maintenance/44638d64…/final-structure.json`, SHA
+`8440c6d7c2b44575dde72c886081c47e9649ecee6aae1eb91c490bd750a0d5d9`.
+Neue Programme oder Tests dürfen künftig wieder eigene Temp-Sitzungen anlegen; der Leerstand ist
+eine Abschlussaufnahme und keine neue Regel zum Löschen laufender Dateien.
+
+Abschließende lokale Dokumentverweise (80 Markdown-Dateien), Quellstil, generierter Projektstatus
+und `git diff --check` bestanden. Es ändern sich ausschließlich neun Dokumentationsdateien;
+Produkt-Plug-in bleibt .40, öffentliche JavaScript-/CSS-/Datenquellen unverändert. Keine erneute
+native Auditserie oder produktive Datenpflege für diesen Nachlauf. Commit/Push und tatsächlicher
+Veröffentlichungsstatus werden nach Ausführung als technische Quittung neben der Belegablage
+gesichert; der neue lokale Projektchat wird erst nach dem erfolgreichen Push erstellt.

@@ -1,6 +1,6 @@
 # Aufbewahrung temporärer Explorer-Dateien
 
-Stand: 2026-10-25
+Stand: 2026-10-27
 
 ## Aktueller Speicher- und Tempvertrag
 
@@ -9,6 +9,30 @@ konfigurierbar; eine spätere Einstellungsoberfläche ist noch offen. Der finale
 `D:\Arten-Explorer`. Der tatsächliche Kopier-/Übernahmestand und Rückweg stehen im
 [Speicherumzugsvertrag](storage-migration.md). Datenbanken, Aufträge, eigene Entscheidungen und Prüfbelege
 sind keine entbehrlichen temporären Dateien.
+
+## Private Belegablage nach dem Audit
+
+Felix hat am 27. Oktober nach dem Audit die zusätzliche Dateibereinigung und das Leeren der
+Projekt-Tempordner beauftragt. Dauerhafte sowie nicht sicher entbehrliche historische Prüfdateien
+werden dafür bytegleich archiviert, bevor ihre bisherigen Ablagen entfernt werden. Der konkrete
+Vollzug und die Prüfsummen stehen im [Auditauftrag, Abschnitt 10.56](audit-auftrag-phase-10-5.md#1056-beauftragter-dokumentations--und-dateinachlauf--27-oktober).
+
+Die private Ablage ist `Daten/audit-evidence/phase-10-5/`. Das ZIP enthält die ursprünglichen
+relativen Pfade unter `temp/`, `Testlauf/` und dem regulären Plug-in-temp. Beispiel: Ein historischer
+Verweis `temp/explorer/<ID>/quality-result.json` bezeichnet denselben Eintrag im Belegarchiv.
+Die nachfolgenden Bereinigungsquittungen liegen daneben unter `maintenance/<Sitzungs-ID>/`.
+Technische Dateilisten und Quittungen sind Rohbelege; der Auditauftrag bleibt die einzige Auditdarstellung.
+
+Das Archiv bewahrt die ursprünglichen Dateibytes und ihre Prüfsummen. Alte absolute Pfade und
+Eigentümer-/Fehlerzustände in diesen Belegen bleiben historische Angaben. Archivierte Hilfsskripte
+nicht als laufende Aufträge ausführen. Für eine gezielte Nachlesung nur den benötigten ZIP-Eintrag
+öffnen oder in eine neue eigene Prüfsitzung entpacken. Historische Junction-Gegenproben werden
+ausschließlich als Linkmetadaten erhalten; beim Entpacken entsteht keine aktive Weiterleitung.
+
+Die Ablage liegt innerhalb des bestehenden gemeinsamen Datenordners und bleibt Git-/Pages-ignoriert.
+Eine künftig ausdrücklich erstellte vollständige NAS-Sicherung umfasst sie nach dem bestehenden
+Datenvertrag. Daraus folgt keine bereits ausgeführte neue NAS-Sicherung. `Daten` bleibt der
+konfigurierte Name: Umzugsjournal, Lightroom-Auflösung und NAS-Prüfung verwenden denselben Vertrag.
 
 Neue eigene Test-, Upload-, Vorschau- und Downloadhilfsdateien liegen ausschließlich im programmlokalen
 Tempbereich. Plug-in-Hilfsdateien liegen ausschließlich im eigenen Plug-in-Tempbereich. Eine Sitzung bindet
@@ -78,7 +102,8 @@ frisch zur endgültigen Entfernung freigegeben; sie wurden einzeln geprüft und 
 `verschiebung.json` bleibt als Herkunftsbeleg erhalten, stellt die entfernten Bytes aber nicht wieder her.
 Die vollständige Einzelzielquittung und Abschlussgrenze stehen im
 [führenden Auditauftrag, Abschnitt 5.6](audit-auftrag-phase-10-5.md#56-vor-audit-umsetzung-und-reale-bereinigung--7-oktober).
-Dieser belegte Altordner wird nicht als neue entbehrliche Sitzung adoptiert oder beim Schließen gelöscht.
+Der erhaltene Herkunftsbeleg wird beim Nachlauf vom 27. Oktober mit seinem ursprünglichen Pfad archiviert;
+der alte Ablageordner wird nicht als neue entbehrliche Sitzung adoptiert.
 Reparaturentscheidungen, gemeinsame Paarprüfbelege und andere noch benötigte Dateien sind ausdrücklich ausgeschlossen.
 
 ## Bedienung und Prüfgrenzen

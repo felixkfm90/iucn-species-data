@@ -9,8 +9,10 @@ Das Audit ist am 27. Oktober mit dokumentierten Betriebsgrenzen abgeschlossen; a
 Prüf- und Veröffentlichungsnachweise stehen in Abschnitt 10.55 des führenden Auftrags.
 Auftrag, Arbeitsgrenzen, Entscheidungen, laufende Befunde und Abschluss stehen ausschließlich im
 [Gesamtauditauftrag Phase 10.5](docs/audit-auftrag-phase-10-5.md). Keine zweite Audit-, Manifest- oder
-Übergabedatei anlegen. Dieser Chat bleibt nach dem Audit Hauptarbeitschat; weitere Arbeiten nur auf
-Felix' Auftrag. Vorbereitungsfreigaben sind historische Nachweise, keine neue Betriebs-/Veröffentlichungsfreigabe.
+Übergabedatei anlegen. Auf Felix' Auftrag vom 27. Oktober folgen Dokumentations-/Dateibereinigung,
+Sicherungsinventar und nach Commit/Push ein neuer lokaler Projektchat für Folgearbeiten. Der bisherige
+Audit-Chat bleibt historische Quelle; der neue Chat liest den veröffentlichten Stand und die Roadmap.
+Vorbereitungsfreigaben sind historische Nachweise, keine neue Betriebs-/Veröffentlichungsfreigabe.
 
 ## Projekt und führende Quellen
 

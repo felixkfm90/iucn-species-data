@@ -58,6 +58,8 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 
 - [Desktop-Betrieb](desktop-shell-plan.md), [historischer Desktop-App-Plan](desktop-app-plan.md).
 - [Lokale API-Sicherheit](explorer-api-security.md), [temporäre Dateien](temp-retention.md).
+- Historische private Rohbelege liegen nach dem Bereinigungsnachlauf in der im Tempvertrag erklärten
+  Belegablage; sie sind kein zusätzlicher Auditbericht und kein Bestandteil der Websiteveröffentlichung.
 - [Gemeinsamer Datenpfad und geprüfter Umzug](storage-migration.md), [Test- und Messpfade](test-temp-contract.md).
 - [Datenwechsel und Artassistent-Prüfabschluss vom 4. Oktober](audits/2026-10-04-storage-and-species-wizard.md).
 - [Mehrgeräte-/Update-/NAS-Plan](multi-device-backup-plan.md): offene Phase 11 von heutigen Funktionen trennen.

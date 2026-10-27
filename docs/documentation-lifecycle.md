@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-10-10
+Stand: 2026-10-27
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -42,7 +42,8 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   Produktvergleich, Datenzugriff, Metadatenmodell, MVP-Umfang und ausdrücklich verschobenen Funktionen.
 - `docs/lightroom-search-package.md` ist der verbindliche Phase-10.2-bis-10.4-Vertrag für Suchpaket, Suchhelfer,
   Lua-Plug-in, Lightroom-Stichwörter, Plug-in-Metadaten, Mehrfachzuweisung, Konfliktsperre, Rollback und die
-  praktisch geprüften Bedienabläufe. Phase 10 bleibt bis zum umfassenden Abschlussaudit offen.
+  praktisch geprüften Bedienabläufe. Das Gesamtaudit ist seit 27. Oktober abgeschlossen;
+  Gesamt-Go und Nachweisgrenzen stehen ausschließlich im Auditauftrag, Abschnitt 10.55.
 - Thematische Detaildokumente erklären jeweils genau einen fachlichen oder technischen Ablauf.
 - `docs/taxonomy-master-background-build.md`, `docs/taxonomy-incremental-build.md` und
   `docs/lightroom-incremental-export.md` dokumentieren Worker-/Checkpoint-/Paar- und Änderungsaufbauverträge.
@@ -62,6 +63,10 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   ein erfolgreiches Pages-Deployment sind getrennte Nachweise. Keine Teilabnahme als Phasenabschluss ausgeben.
 - Bei Dokumentationsabgleich nur betroffene Inhalte/Datenstände nachführen, nicht alle unveränderten Verträge
   pauschal neu datieren. Automatisch erzeugte Pflege- und Projektstatusdateien weiterhin über ihre Generatoren pflegen.
+- Nach dem Audit genügen README/AGENTS als Einstieg, die Roadmap für Folgevorhaben und der jeweilige
+  Fachvertrag für Betriebsregeln. Abgeschlossene Prüfschritte nicht erneut in parallelen Statusberichten pflegen.
+  Ein neuer Arbeitschat erhält seinen Kontext aus diesen Quellen und dem veröffentlichten Git-Stand;
+  keine zusätzliche Übergabedatei. Die private Belegablage erklärt der [Tempvertrag](temp-retention.md).
 - Wiederkehrende Projektprüfungen nennen Prüfort, Datum, Branch und gebundene Revision sowie, ob lokale
   unveröffentlichte Änderungen einbezogen wurden. Ein Review des veröffentlichten Repositorys bezeichnet
   den lokalen Audit-/Betriebsstand nicht ohne dessen aktuelle Quellen als ungeprüft oder unbegonnen.

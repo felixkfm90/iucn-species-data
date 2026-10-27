@@ -1,6 +1,6 @@
 # Repo Structure And Local Workflow
 
-Stand: 2026-10-26
+Stand: 2026-10-27
 
 Ziel: festhalten, welche Dateien ins Repository gehoeren, welche lokal bleiben sollen und welche Strukturentscheidungen
 bewusst nicht ohne separaten Patch umgesetzt werden.
@@ -36,7 +36,7 @@ Versionierte Windows-Start- und Wiederherstellungsdateien wie `restore-start.cmd
 | `species-explorer/taxonomy-*.mjs` | Gekapselter Phase-9-Referenz- und Masterkern für lokalen Speicher, SQLite-Schemata, Import, read-only Suche, stabile Master-IDs, versionierte Anbieter-Ausschnitte, Provenienz, Zusammenführungsregeln, Kandidaten, Konflikte, Projektverknüpfungen, atomare Aktivierung und Rollback. `taxonomy-reference-service.mjs` stellt Status, Reiche, Suche und Taxondetails bereit; `taxonomy-master-service.mjs` schaltet bevorzugt auf die aktive Masteransicht und fällt sicher auf die CoL-Referenz zurück. `taxonomy-storage.mjs` serialisiert atomare Zeiger- und Cache-Schreibvorgänge je Zieldatei; `taxonomy-storage.test.mjs` sichert parallele Windows-Schreibvorgänge ab. |
 | `species-explorer/lightroom-search-*.mjs` | Phase-10.2-Kern für das abgeleitete read-only Lightroom-Suchpaket: Schema, Aufbau, aktiver/vorheriger Stand, Prüfsumme, Suche, Suchhelfer und direkte Tests. Er bearbeitet weder Lightroom-Katalog noch XMP. |
 | `species-explorer/public/app-taxonomy-reference.js`, `app-taxonomy-master.js` | Bidirektionale Taxonomievorschläge im Neue-Art-Assistenten, Quellen-/Statusanzeige, CoL-Lücken, Konfliktentscheidungen und Masterwartung mit nicht blockierendem manuellem Fallback. |
-| `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` | Versioniertes deutsches Lightroom-Plug-in 0.4.24.39. Es verwendet den read-only Suchhelfer und schreibt ausschließlich über das Lightroom-SDK reservierte flache FN-Stichwörter sowie stabile Plug-in-Metadaten; Verwaltung, Statistik/Exporte und bestätigte Artänderungen sind getrennte Abläufe. KeywordIdFinalizer bindet die tatsächlich zugewiesenen Stichwortobjekte sowie vollständige erwartete FN-Nachwerte, prüft nach dem SDK-Commit alle geänderten Bereiche und vervollständigt ausschließlich bei Bedarf interne Kennungen. Quellstand, tatsächliche Ladung und native Abnahmegrenzen werden im [Lightroom-Vertrag](lightroom-search-package.md) getrennt belegt. |
+| `lightroom-plugin/FNWildlifeTaxonomy.lrplugin/` | Versioniertes deutsches Lightroom-Plug-in. Aktuelle Version, Quellstand, tatsächliche Ladung und native Abnahmegrenzen führt ausschließlich der [Lightroom-Vertrag](lightroom-search-package.md). SDK-Schreibgrenzen, Statistik/Exporte und bestätigte Artänderungen bleiben getrennte Abläufe. KeywordIdFinalizer prüft nach dem SDK-Commit die erwarteten FN-Nachwerte und vervollständigt ausschließlich bei Bedarf interne Kennungen. |
 | `scripts/taxonomy-prototype*.mjs` | Reproduzierbarer begrenzter Phase-9.3-Import, Fixture-Erzeugung und End-to-End-Test. |
 | `scripts/taxonomy-master-migrate.mjs` | Reale, verifizierte Phase-9.12-Migration in einen Master-Kandidaten mit optionaler Aktivierung, Rollbacktest, JSON-Bericht und Messwerten. |
 | `scripts/taxonomy-master-verify.mjs` | Schreibgeschützte Betriebsprüfung des aktiven realen Masters: Schema, Bestandszähler, Projektverknüpfungen, repräsentative Offline-Suchen und Laufzeiten. |
@@ -165,10 +165,10 @@ Verträge/Einordnung: [Dokumentationsübersicht](README.md), [Taxonomie-Betriebs
 | `errors.log` | veralteter Root-Logpfad; wird nicht mehr erzeugt und kann bei Altbeständen gelöscht werden |
 | `.env`, `.env.*` | lokale Token/Secrets, ignoriert |
 | `update_local.bat`, `update_github_only.bat` | lokaler Windows-Workflow, ignoriert |
-| `Testlauf/` | ignorierte Test-/Mess-/Prüfablage; benötigte Reparaturnachweise erhalten, keine Produktivartefakte oder Veröffentlichung |
+| `Testlauf/` | historische lokale Prüfablage; beim beauftragten Nachlauf in das private Belegarchiv überführt, keine neue Arbeitsablage |
 | `list_licenses.mjs` | altes lokales Hilfsskript; nicht mehr noetig, weil Report und Sound-Review die Lizenzuebersicht abdecken |
 
-Vorhandene `Testlauf/`-Inhalte sind historische Prüfablagen. Neue Prüfungen verwenden die eigenen
+Historische `Testlauf/`-Inhalte liegen jetzt im privaten Belegarchiv gemäß Tempvertrag. Neue Prüfungen verwenden die eigenen
 Programm-temp-Sitzungen nach dem [Testvertrag](test-temp-contract.md). Eigene entbehrliche Testordner können
 nach geprüfter Eigentums- und Prozessgrenze gezielt entfernt werden; gebundene Reparatur-/Prüfbelege und
 fremde Inhalte nicht pauschal löschen. Produktive Artefakte werden in die passende Struktur/Dokumentation übernommen.

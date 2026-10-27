@@ -1,6 +1,6 @@
 # Test-, Mess- und Backupgrenzen
 
-Stand: 4. Oktober 2026. Teil des gemeinsamen [Speicher-/Temp-Vertrags](temp-retention.md),
+Stand: 27. Oktober 2026. Teil des gemeinsamen [Speicher-/Temp-Vertrags](temp-retention.md),
 kein Nachweis einer produktiven Pfadmigration oder eines NAS-Backups.
 
 ## Eigene Testdateien
@@ -29,6 +29,9 @@ kleine Eingabefixtures unter `scripts/fixtures` bleiben unverändert.
 ## Veröffentlichung und Sicherung
 
 - `Daten/`, `temp/`, `storage-path.json` und Plug-in-temp sind lokal und Git-ignoriert.
+- Historische Prüfbelege aus den geleerten Temp-/Testlauf-Ablagen sind nach dem beauftragten Nachlauf
+  privat unter `Daten/audit-evidence/phase-10-5/` archiviert. Zuordnung und Zugriff stehen ausschließlich
+  im [Tempvertrag](temp-retention.md); neue Tests verwenden weiterhin eigene Temp-Sitzungen.
 - Syntax-/Stilprüfung und Veröffentlichungscode-Größenbudget zählen diese Laufzeitbestände nicht als Quellen.
 - Die Pages-Positivliste enthält nur ausdrücklich benötigte öffentliche Laufzeitdateien. Neue öffentliche
   Module werden einzeln aufgenommen und geprüft; Datenbanken, Speicherkonfiguration und Tempdateien
@@ -48,6 +51,10 @@ Sie benötigt zusätzliche Lesezeit bei großen Datenbeständen. Die ZIP-/Restor
 der gesonderten Betriebsprüfung.
 
 ## Gezielte Prüfung
+
+Die folgenden Gegenproben stammen vom 4. Oktober. Die tatsächliche Archivierung und Temp-Leerung
+vom 27. Oktober ist getrennt im Auditauftrag, Abschnitt 10.56, belegt; diese alten Tests wurden dafür
+nicht als neue Funktionsprüfung ausgegeben.
 
 Neue Temp-/Prototyp-/Größen-/NAS-Verträge: 13/13 bestanden. Betroffene synthetische Benchmark-, Reuse-,
 Paket- und Veröffentlichungsvorabtests: 80/80 bestanden. Scanner-/Pages-/Provider-/Fixture-Gegenproben:

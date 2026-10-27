@@ -172,8 +172,9 @@ SDK-Semantik, Livezustand und erfolgreiche Veröffentlichung werden getrennt nac
 
 Eigene neue Test-/Mess-/Laufzeitdateien liegen in den gebundenen Programm-temp-Sitzungen, Plug-in-Helfer
 im Plug-in-temp. [Tempvertrag](docs/temp-retention.md) und [Testvertrag](docs/test-temp-contract.md)
-erklären Eigentum, aktive Prozesse und sichere Abschlussbedingungen. Bestehende `Testlauf`- und
-Reparaturbelege werden nicht allein aufgrund ihres Orts entfernt.
+erklären Eigentum, aktive Prozesse und sichere Abschlussbedingungen. Dauerhafte historische Temp-/
+`Testlauf`-Belege liegen nach dem beauftragten Nachlauf im privaten Archiv unter
+`Daten/audit-evidence/phase-10-5/`; Herkunftspfade und Zugriff erklärt der Tempvertrag.
 
 Der lokale gemeinsame Vorgänger ist ein Rücknahmestand. Die externe NAS-Vollsicherung umfasst zusätzlich
 dauerhafte private Daten und Konfiguration. [Sicherungsvertrag](docs/multi-device-backup-plan.md) und
