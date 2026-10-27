@@ -43,6 +43,7 @@ const SKIPPED_DIRECTORIES = new Set([
   "staging",
   "temp",
   "Daten",
+  "data",
 ]);
 
 function collectTextFiles(repoRoot, relativeDirectory, output) {

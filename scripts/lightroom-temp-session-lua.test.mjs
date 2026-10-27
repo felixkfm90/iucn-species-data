@@ -129,6 +129,7 @@ test("Lua-Speicherprüfung akzeptiert verifizierte Windows-Pfadvarianten nach Pr
       previousRepoRoot="D:\\IUCN_Datenbank", migrationRevision=string.rep("a", 64) }
     local journal = { schemaVersion=1, state="committed",
       plan={ revision=config.migrationRevision, repoRoot="d:/iucn_datenbank/",
+        targetRoot="D:/IUCN_Datenbank/Daten",
         sourceRoot="c:\\Users\\felix\\AppData\\Local\\FN Wildlife Travel\\Arten-Explorer",
         files=Json.array({ { relative="fixture.json" } }) },
       copied=Json.array({ { relative="fixture.json" } }) }
@@ -154,6 +155,78 @@ test("Lua-Speicherprüfung akzeptiert verifizierte Windows-Pfadvarianten nach Pr
     assert(Helper.searchRoot() == "D:/fixture/Daten/lightroom")
     assert(#calls == 0, "read-only storage check must not invoke helpers or a catalog scan")
   `}`);
+});
+
+test("Lua findet data mit alten Daten- und AppData-Pfaden, ohne das Originaljournal umzuschreiben", () => {
+  execute(`${fixture}${String.raw`
+    files["D:/fixture/data"] = "directory"
+    local config = { schemaVersion=1, state="ready", dataRoot="data",
+      legacyDataRoot="C:/old-appdata", previousRepoRoot="D:/old-program", migrationRevision=string.rep("a", 64) }
+    local journal = { schemaVersion=1, state="committed", plan={ revision=config.migrationRevision,
+      repoRoot=config.previousRepoRoot, targetRoot="D:/old-program/Daten", sourceRoot=config.legacyDataRoot,
+      files=Json.array() }, copied=Json.array() }
+    local journalPath = "D:/fixture/data/.storage-migration.json"
+    files[journalPath] = Json.encode(journal)
+    files["D:/fixture/storage-path.json"] = Json.encode(config)
+    local original = files[journalPath]
+    local Helper = require "TaxonomyHelper"
+    for _, root in ipairs({ "D:/fixture/Daten", "D:/old-program/Daten", "C:/old-appdata" }) do
+      preferences.searchRoot = root .. "/lightroom"
+      assert(Helper.searchRoot() == "D:/fixture/data/lightroom")
+    end
+    preferences.searchRoot = "D:/fixture/Daten-other/lightroom"
+    assert(Helper.searchRoot() == preferences.searchRoot)
+    assert(files[journalPath] == original and #calls == 0)
+    preferences.searchRoot = nil
+    for _, oldTarget in ipairs({ "D:/old-program/DATEN", "D:/old-program/daten", "D:/old-program/Daten/" }) do
+      journal.plan.targetRoot = oldTarget
+      files[journalPath] = Json.encode(journal)
+      assert(Helper.searchRoot() == "D:/fixture/data/lightroom")
+    end
+    for _, wrongTarget in ipairs({ "D:/old-program/other", "D:/other/Daten", "D:/old-program/../Daten" }) do
+      journal.plan.targetRoot = wrongTarget
+      files[journalPath] = Json.encode(journal)
+      assert(not pcall(Helper.searchRoot), "unbound target must stay blocked")
+    end
+  `}`);
+});
+
+test("Lua folgt dem gebundenen Umbenennungsbeleg nach weiterem Programmumzug auch ohne AppData-Historie", () => {
+  execute(`${fixture}
+    files["D:/fixture/data"] = "directory"
+    local config = { schemaVersion=1, state="ready", dataRoot="data", directoryRenameRevision=string.rep("a",64) }
+    local record = { schemaVersion=1, state="renamed", repoRoot="C:/previous-program",
+      sourceRoot="C:/previous-program/Daten", targetRoot="C:/previous-program/data", revision=config.directoryRenameRevision,
+      previousConfig=Json.encode({ schemaVersion=1, state="ready", dataRoot="Daten" }) }
+    local recordPath = "D:/fixture/data/.storage-directory-rename.json"
+    files[recordPath] = Json.encode(record)
+    files["D:/fixture/storage-path.json"] = Json.encode(config)
+    preferences.searchRoot = "C:/previous-program/Daten/lightroom"
+    local Helper = require "TaxonomyHelper"
+    assert(Helper.searchRoot() == "D:/fixture/data/lightroom")
+    record.sourceRoot = "C:/foreign/Daten"
+    files[recordPath] = Json.encode(record)
+    assert(not pcall(Helper.searchRoot))
+  `);
+});
+
+test("Lua-Fallback bevorzugt lokale data/Daten-Bestände vor AppData und verweigert Mehrdeutigkeit", () => {
+  execute(`${fixture}
+    preferences.searchRoot = nil
+    local legacy = "C:/Users/felix/AppData/Local/FN Wildlife Travel/Arten-Explorer"
+    files[legacy] = "directory"
+    files["D:/fixture/data"] = "directory"
+    local Helper = require "TaxonomyHelper"
+    assert(Helper.searchRoot() == "D:/fixture/data/lightroom")
+    files["D:/fixture/Daten"] = "directory"
+    assert(not pcall(Helper.searchRoot))
+    files["D:/fixture/data"] = nil
+    assert(Helper.searchRoot() == "D:/fixture/Daten/lightroom")
+    files["D:/fixture/Daten"] = nil
+    assert(Helper.searchRoot() == legacy .. "/lightroom")
+    files[legacy] = nil
+    assert(Helper.searchRoot() == "D:/fixture/data/lightroom")
+  `);
 });
 
 test("Taxonomy helper keeps Windows discovery on C while request/cmd/logs use D plug-in temp and wait for helper", () => {

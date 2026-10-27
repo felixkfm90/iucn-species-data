@@ -31,6 +31,7 @@ const SKIPPED_DIRECTORIES = new Set([
   "staging",
   "temp",
   "Daten",
+  "data",
 ]);
 const SKIPPED_ROOT_FILES = new Set(["errors.log", "storage-path.json", "update_github_only.bat", "update_local.bat"]);
 

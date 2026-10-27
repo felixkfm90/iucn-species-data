@@ -40,12 +40,26 @@ test("derived durable-state hash equals direct file hashing without a second ful
   fs.writeFileSync(path.join(root, "storage-path.json"), JSON.stringify({ schemaVersion: 1, state: "ready", dataRoot: "Daten" }));
   fs.writeFileSync(path.join(root, "Daten", "private.json"), "private fixture");
   fs.writeFileSync(path.join(root, "Daten", ".env.local"), "excluded fixture");
+  fs.mkdirSync(path.join(root, "data"));
+  fs.writeFileSync(path.join(root, "data", "new-private.json"), "new private fixture");
   fs.writeFileSync(path.join(root, "source.mjs"), "public fixture");
   const result = JSON.parse(powershell(`$records=@(Get-BackupSourceRecords -RepoRoot ${quote(root)} -Files @(Get-BackupSourceFiles -RepoRoot ${quote(root)}));
     [pscustomobject]@{ direct = Get-LocalDataStateHash -RepoRoot ${quote(root)};
       derived = Get-LocalDataStateHash -RepoRoot ${quote(root)} -SourceRecords $records } | ConvertTo-Json -Compress`));
   assert.match(result.direct, /^[a-f0-9]{64}$/u);
   assert.equal(result.derived, result.direct);
+});
+
+test("NAS-Datenbindung unterstützt data und historische Daten-Installationen", { skip: process.platform !== "win32" }, (t) => {
+  const root = fs.mkdtempSync(path.join(tmpdir(), "nas-data-directory-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  for (const name of ["data", "Daten"]) {
+    fs.mkdirSync(path.join(root, name));
+    for (const dataRoot of [name, path.join(root, name)]) {
+      fs.writeFileSync(path.join(root, "storage-path.json"), JSON.stringify({ schemaVersion: 1, state: "ready", dataRoot }));
+      powershell(`Assert-LocalDataBackupTarget -RepoRoot ${quote(root)}`);
+    }
+  }
 });
 
 test("NAS policy excludes credential files at every level and uses the verified three-slot policy", () => {

@@ -81,7 +81,7 @@ und GitHub Pages. Das vollständige NAS-Restorebackup enthält sie; Temp bleibt 
 [Speicherwechsel und Konfiguration seit 4. Oktober](storage-migration.md).
 
 ```text
-<Explorer-Ordner>\Daten\taxonomy\
+<Explorer-Ordner>\data\taxonomy\
   releases\                         vollständige CoL-XR-Releases
   master\
     active\taxonomy-master.sqlite

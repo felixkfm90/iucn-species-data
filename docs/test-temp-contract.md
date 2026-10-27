@@ -28,15 +28,17 @@ kleine Eingabefixtures unter `scripts/fixtures` bleiben unverändert.
 
 ## Veröffentlichung und Sicherung
 
-- `Daten/`, `temp/`, `storage-path.json` und Plug-in-temp sind lokal und Git-ignoriert.
+- `data/`, historische `Daten/`-Installationen, `temp/`, `storage-path.json` und Plug-in-temp sind lokal und Git-ignoriert.
 - Historische Prüfbelege aus den geleerten Temp-/Testlauf-Ablagen sind nach dem beauftragten Nachlauf
-  privat unter `Daten/audit-evidence/phase-10-5/` archiviert. Zuordnung und Zugriff stehen ausschließlich
+  privat unter `data/audit-evidence/phase-10-5/` archiviert; der gemeinsame Ordnerwechsel ist ausgeführt.
+  Zuordnung und Zugriff stehen ausschließlich
   im [Tempvertrag](temp-retention.md); neue Tests verwenden weiterhin eigene Temp-Sitzungen.
 - Syntax-/Stilprüfung und Veröffentlichungscode-Größenbudget zählen diese Laufzeitbestände nicht als Quellen.
 - Die Pages-Positivliste enthält nur ausdrücklich benötigte öffentliche Laufzeitdateien. Neue öffentliche
   Module werden einzeln aufgenommen und geprüft; Datenbanken, Speicherkonfiguration und Tempdateien
   dürfen weiterhin nicht in das öffentliche Artefakt gelangen.
-- Das bewusst gestartete vollständige NAS-Backup schließt `Daten/` und `storage-path.json` ein, aber weder
+- Das bewusst gestartete vollständige NAS-Backup schließt den konfigurierten lokalen `data/`- beziehungsweise
+  bisherigen `Daten/`-Ordner und `storage-path.json` ein, aber weder
   Explorer-temp noch Plug-in-temp. Alte `Testlauf`-Ausschlüsse bleiben unverändert.
 - Der Wiederholungsnachweis bindet zusätzlich SHA-256 der dauerhaften Daten und Speicherkonfiguration.
   Ein Datenbankupdate darf trotz unverändertem Git-Stand nicht als bereits gesichert übersprungen werden.

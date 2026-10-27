@@ -1,6 +1,6 @@
 # Phase 11 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
-Stand: 2026-10-10
+Stand: 2026-10-27
 
 ## Ziel
 
@@ -14,6 +14,26 @@ Taxonomiereferenz einschließlich Abschlussaudit ab; Phase 10 behandelt anschlie
 Abschlussaudit. Zu Beginn von Phase 11 wird verbindlich entschieden, wie reproduzierbare Referenzdaten, eigene
 Taxonomieentscheidungen und Lightroom-Projektdaten verteilt beziehungsweise gesichert werden. Details:
 `docs/global-taxonomy-lightroom-plan.md`.
+
+## Ergänzter Folgeauftrag: Installer und Mehrbenutzerunterstützung
+
+Felix ergänzt am 27. Oktober nach dem abgeschlossenen Audit ausdrücklich zwei Folgevorhaben in der
+[Roadmap](roadmap.md). Sie sind vorgemerkt; diese Ergänzung startet noch keine Implementierung.
+
+- **Installer einschließlich aller benötigten Programme:** Einen vollständigen Windows-Installationsablauf
+  entwickeln, der benötigte Programme und Laufzeiten erkennt und passend bereitstellt. Dazu die Abhängigkeiten
+  vollständig erfassen; aktuell insbesondere Node.js 24, Electron, Git und FFmpeg sowie die Einrichtung des
+  Lightroom-Plug-ins berücksichtigen. Bündelung beziehungsweise geführte Installation und unterstützte Versionen
+  im Konzept festlegen. Auf einem frisch eingerichteten Windows-System den Start und die vereinbarten Kernabläufe
+  praktisch prüfen; Aktualisierung, erneute Installation und Deinstallation müssen vorhandene Nutzerdaten schützen.
+- **Mehrbenutzerunterstützung:** Die Nutzung durch mehrere Personen und auf mehreren Rechnern konzipieren und
+  umsetzen. Benutzerbezogene Einstellungen, Berechtigungen, gemeinsame und private Daten sowie die gewünschte
+  gleichzeitige Nutzung festlegen. Das folgende Mehr-PC-/Lock-/Update-Modell als vorhandenen Plan einbeziehen;
+  Benutzerverwaltung und konfliktfreie parallele Bearbeitung sind damit noch nicht als umgesetzt nachgewiesen.
+  Später die vereinbarten Zugriffs-, Konflikt- und Wiederanlauffälle mit mehreren Benutzern praktisch prüfen.
+
+Die konkrete Ausgestaltung und Umsetzung erfolgen im jeweiligen Folgeauftrag. Bestehende Installations-,
+Lightroom-, Datenpfad- und Sicherungsverträge bleiben bis zu einer ausdrücklich beschlossenen Änderung maßgeblich.
 
 ## Grundentscheidung
 
@@ -173,7 +193,8 @@ In das ZIP gehoeren:
 - `.git`
 - `species-assets/`
 - `species-explorer/backups/`
-- gemeinsamer konfigurierter `Daten`-Ordner mit Taxonomie, Master, Lightroom-Paket, eigenen Entscheidungen,
+- gemeinsamer konfigurierter Datenordner (neuer Standard `data`, bisherige `Daten`-Installationen weiterhin unterstützt)
+  mit Taxonomie, Master, Lightroom-Paket, eigenen Entscheidungen,
   Nutzungsständen und benötigten Herkunfts-/Auftragsbelegen sowie `storage-path.json`
 - `local-tools/ffmpeg/`
 - `node_modules/`
@@ -263,7 +284,8 @@ selbst bleibt unverändert. Entpacken/Programmstart ist kein Ersatz für die vol
 7. Backup-Pfad in der App lokal einstellbar machen.
 8. Restore-Test dokumentieren.
 9. Danach Installer/zweiter-PC-Komfort klaeren. Seit 4. Oktober gilt der gemeinsame konfigurierbare Datenpfad
-   standardmäßig als ignorierter Explorer-Unterordner `Daten`; AppData-Daten vollständig umgezogen.
+   als ignorierter Explorer-Unterordner, nach dem ausgeführten Namenswechsel vom 27. Oktober `data`;
+   bisherige `Daten`-Installationen bleiben unterstützt. AppData-Daten vollständig umgezogen.
    [Speicherplatz-/Migrations-/Integritäts-/Rückfallvertrag](storage-migration.md) bleibt auch für weitere
    Pfadwechsel verbindlich. Referenzen sind nicht versioniert oder in Pages, aber ausdrücklich Bestandteil
    des vollständigen NAS-Restorebackups. Ein externer Pfad darf keinen unvollständigen Backup-Erfolg vortäuschen.

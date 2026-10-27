@@ -7,7 +7,8 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { finished } from "node:stream/promises";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
-import { sameStoragePath, STORAGE_CONFIG_FILE } from "./storage-paths.mjs";
+import { sameStoragePath, STORAGE_CONFIG_FILE, DEFAULT_DATA_DIRECTORY, LEGACY_DATA_DIRECTORY, readExplorerStorageConfig,
+  DIRECTORY_RENAME_FILE, storageDirectoryRenameBody } from "./storage-paths.mjs";
 
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const isWithin = (root, value) => { const relative = path.relative(root, value); return relative && !relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative); };
@@ -120,7 +121,7 @@ export async function inventoryStorage(root) {
   return entries.sort((a, b) => a.relative < b.relative ? -1 : a.relative > b.relative ? 1 : 0);
 }
 
-export async function planStorageMigration({ repoRoot, sourceRoot, targetRoot = path.join(repoRoot, "Daten") }) {
+export async function planStorageMigration({ repoRoot, sourceRoot, targetRoot = path.join(repoRoot, DEFAULT_DATA_DIRECTORY) }) {
   for (const value of [repoRoot, sourceRoot, targetRoot]) if (!path.isAbsolute(value)) throw new Error("Speicherwechsel verlangt absolute Pfade.");
   sourceRoot = path.resolve(sourceRoot); targetRoot = path.resolve(targetRoot); repoRoot = path.resolve(repoRoot);
   if (sameStoragePath(sourceRoot, targetRoot) || isWithin(sourceRoot, targetRoot) || isWithin(targetRoot, sourceRoot)
@@ -130,6 +131,73 @@ export async function planStorageMigration({ repoRoot, sourceRoot, targetRoot = 
   const files = await inventoryStorage(sourceRoot);
   const body = { schemaVersion: 1, repoRoot, sourceRoot, targetRoot, files, totalBytes: files.reduce((sum, file) => sum + file.bytes, 0) };
   return { ...body, revision: digest(body) };
+}
+
+// Rename this one bound directory on its existing volume. Database contents
+// and historical migration journals are neither copied nor rewritten.
+export async function renameStorageDataDirectory({ repoRoot, confirmed = false, consumersClosed = false,
+  checkConsumersClosed = migrationConsumersClosed } = {}) {
+  if (!confirmed || !consumersClosed) throw new Error("Ordnerwechsel muss bestätigt sein; Explorer und Lightroom müssen geschlossen sein.");
+  if (typeof repoRoot !== "string" || !path.isAbsolute(repoRoot)) throw new Error("Ordnerwechsel verlangt einen absoluten Programmordner.");
+  repoRoot = path.resolve(repoRoot);
+  return withMigrationLock(repoRoot, async () => {
+    const sourceRoot = path.join(repoRoot, LEGACY_DATA_DIRECTORY), targetRoot = path.join(repoRoot, DEFAULT_DATA_DIRECTORY);
+    await assertNoStorageLinks(sourceRoot); await assertNoStorageLinks(targetRoot);
+    if (await fs.lstat(targetRoot).catch((error) => { if (error.code === "ENOENT") return null; throw error; })) {
+      throw new Error("Der neue data-Ordner existiert bereits; nichts wird ersetzt.");
+    }
+    const configFile = path.join(repoRoot, STORAGE_CONFIG_FILE), previousConfig = await fs.readFile(configFile, "utf8");
+    const config = readExplorerStorageConfig(repoRoot);
+    if (!config || !sameStoragePath(config.dataRoot, sourceRoot)) throw new Error("Nur der bestätigte Daten-Unterordner darf umbenannt werden.");
+    const recordFile = path.join(sourceRoot, DIRECTORY_RENAME_FILE);
+    await assertNoStorageLinks(recordFile);
+    if (await fs.lstat(recordFile).catch((error) => { if (error.code === "ENOENT") return null; throw error; })) {
+      throw new Error("Ein Ordnerwechsel-Nachweis existiert bereits; keine erneute Übernahme.");
+    }
+    const identity = await fs.lstat(sourceRoot, { bigint: true });
+    const before = await inventoryStorage(sourceRoot), inventoryHash = digest(before);
+    if (!await checkConsumersClosed({ repoRoot, sourceRoot })) throw new Error("Explorer, Lightroom oder ein gespeicherter Aufbau laufen noch.");
+    if (await fs.readFile(configFile, "utf8") !== previousConfig || digest(await inventoryStorage(sourceRoot)) !== inventoryHash) {
+      throw new Error("Konfiguration oder Datenbestand wurden unabhängig geändert.");
+    }
+    const previous = JSON.parse(previousConfig), pending = { ...previous, state: "migrating" };
+    const body = storageDirectoryRenameBody({ schemaVersion: 1, state: "renamed", repoRoot, sourceRoot, targetRoot,
+      migrationRevision: previous.migrationRevision || null,
+      migrationJournalSha256: previous.migrationRevision ? await hashFile(path.join(sourceRoot, ".storage-migration.json")) : null,
+      previousConfig, renamedAt: new Date().toISOString() });
+    const record = { ...body, revision: digest(body) };
+    const pendingText = `${JSON.stringify(pending, null, 2)}\n`;
+    let renamed = false;
+    try {
+      await atomicWriteJson(configFile, pending);
+      await assertNoStorageLinks(targetRoot);
+      if (await fs.lstat(targetRoot).catch((error) => { if (error.code === "ENOENT") return null; throw error; })) {
+        throw new Error("Der neue data-Ordner wurde unabhängig angelegt.");
+      }
+      if (!await checkConsumersClosed({ repoRoot, sourceRoot })) throw new Error("Ein Verbraucher wurde vor dem Ordnerwechsel geöffnet.");
+      await fs.rename(sourceRoot, targetRoot);
+      renamed = true;
+      const afterIdentity = await fs.lstat(targetRoot, { bigint: true });
+      if (identity.dev !== afterIdentity.dev || identity.ino !== afterIdentity.ino || digest(await inventoryStorage(targetRoot)) !== inventoryHash
+          || await fs.readFile(configFile, "utf8") !== pendingText
+          || !await checkConsumersClosed({ repoRoot, sourceRoot: targetRoot })) {
+        throw new Error("Nachprüfung nicht bestanden; Speicher bleibt für Verbraucher gesperrt.");
+      }
+      await fs.writeFile(path.join(targetRoot, DIRECTORY_RENAME_FILE), `${JSON.stringify(record, null, 2)}\n`, { flag: "wx" });
+      const next = { ...previous, state: "ready", dataRoot: DEFAULT_DATA_DIRECTORY, directoryRenameRevision: record.revision,
+        updatedAt: new Date().toISOString() };
+      await atomicWriteJson(configFile, next);
+      readExplorerStorageConfig(repoRoot);
+      return { schemaVersion: 1, state: "renamed", sourceRoot, targetRoot, files: before.length,
+        totalBytes: before.reduce((sum, entry) => sum + entry.bytes, 0), inventoryHash,
+        directoryIdentity: { dev: String(identity.dev), ino: String(identity.ino) }, previousConfig, config: next, record };
+    } catch (error) {
+      // Before a successful directory rename the original config can be restored
+      // exactly. Afterwards keep the pending state for explicit recovery.
+      if (!renamed && await fs.readFile(configFile, "utf8") === pendingText) await fs.writeFile(configFile, previousConfig);
+      throw error;
+    }
+  });
 }
 
 async function hashFile(file) {
@@ -247,7 +315,8 @@ async function commitStorageMigrationLocked({ repoRoot, targetRoot, sourceRoot, 
   const expected = journal.plan.files.filter((file) => !removed.has(file.relative));
   const actual = await inventoryStorage(sourceRoot);
   if (digest(actual) !== digest(expected)) throw new Error("Der Quellbestand hat sich geändert; Originale werden nicht entfernt.");
-  const config = { schemaVersion: 1, state: "ready", dataRoot: sameStoragePath(targetRoot, path.join(repoRoot, "Daten")) ? "Daten" : targetRoot,
+  const relativeRoot = [DEFAULT_DATA_DIRECTORY, LEGACY_DATA_DIRECTORY].find((name) => sameStoragePath(targetRoot, path.join(repoRoot, name)));
+  const config = { schemaVersion: 1, state: "ready", dataRoot: relativeRoot || targetRoot,
     legacyDataRoot: sourceRoot, previousRepoRoot: repoRoot, migrationRevision: journal.plan.revision, updatedAt: new Date().toISOString() };
   // A restart during source cleanup must not expose the partially emptied old
   // installation. The pending config fails closed until the migration finishes.

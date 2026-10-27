@@ -1,6 +1,6 @@
 # Audioformat-Prüfung und Bestandsmigration
 
-Stand: 2026-07-18
+Stand: 2026-10-27
 
 ## Ziel
 
@@ -51,12 +51,34 @@ Die Credits blieben inhaltlich unverändert. Für alle zwölf Arten wurden Spekt
 Der Report wurde anschließend neu aufgebaut. Das kontrollierte Pages-Artefakt sank von rund 229,9 MiB auf
 89,86 MiB.
 
-Die ignorierte Rückfallsicherung liegt lokal unter
-`species-explorer/backups/audio-format-migration-20260712T065740Z/`. Sie enthält Originalsounds, betroffene
-Spektrogramme, das vorherige Override-Register und ein Hash-/Dauermanifest. Sie bleibt mindestens bis zum
-erfolgreichen Commit, Pages-Deployment und praktischen Hörtest erhalten.
+Die ignorierte Rückfallsicherung lag damals lokal unter
+`species-explorer/backups/audio-format-migration-20260712T065740Z/`. Sie enthielt Originalsounds, betroffene
+Spektrogramme, das vorherige Override-Register und ein Hash-/Dauermanifest. Die damalige Mindestaufbewahrung
+bis zu erfolgreichem Commit, Pages-Deployment und praktischem Hörtest beschrieb diesen Juli-Stand;
+die spätere gezielt geprüfte lokale Entfernung steht im folgenden Abschnitt.
 
-## Abschlussprüfung
+## Lokale Sicherungskopie entfernt – 27. Oktober
+
+Im ausdrücklich beauftragten Dateinachlauf sind alle **38 Dateien / 176.107.618 Bytes** dieser lokalen
+Sicherung samt anschließend leeren Sicherungsordnern entfernt. Vorher wurden sämtliche Dateien frisch
+per Größe und SHA-256 sowohl direkt aus dem bereits vorhandenen NAS-Archiv
+`W:\Website Datenbank Backup\IUCN_Datenbank_2026-10-07_215313_b13afd861ad7.zip` zurückgelesen als auch mit
+dessen v2-Manifest verglichen: **38/38 identisch**, Archivmetadaten während der Prüfung stabil.
+Das NAS-Archiv blieb unverändert.
+
+Damit bleiben die zwölf ursprünglichen WAV-Aufnahmen, die zwölf historischen Spektrogramme, die zwölf
+konvertierten MP3-Dateien und das damalige Override-Register einschließlich Migrationsmanifest im NAS-Archiv
+erhalten. Die WAV-Aufnahmen sind echte Originalformate trotz der damaligen `.mp3`-Endung; sie wurden nicht
+aus den heutigen verlustbehafteten MP3-Dateien rekonstruiert. Elf konvertierte MP3-Dateien entsprachen bei
+der Prüfung exakt den aktiven Sounds; die später ersetzte Eisvogel-Fassung war außerdem exakt aus dem
+Migrationscommit `50fd7a6` abrufbar. Aktive Sounds, Spektrogramme und heutiges Override-Register blieben unverändert.
+
+Das ursprüngliche Migrationsmanifest mit **7.704 Bytes** bleibt zusätzlich als kleiner dauerhafter Beleg
+erhalten. Die technischen Prüf-/Entfernungsbelege werden unter `data/file-usage-review/2026-10-27/` geführt.
+Dieser begrenzte Rücklesenachweis ist keine neue NAS-Vollsicherung, kein erneuter vollständiger Restore und
+keine neue praktische Hörprüfung. Die entfernten Bytes bezeichnen Dateiinhalte, keinen gemessenen freien Laufwerksplatz.
+
+## Historische Abschlussprüfung der Julimigration
 
 Nach der Migration wurden erfolgreich ausgeführt:
 

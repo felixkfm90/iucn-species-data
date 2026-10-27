@@ -50,7 +50,7 @@ Masteraufbau mit Quelle, Zeitpunkt und Version lokal übernommen werden.
 Automatisch ergänzte Namen liegen im lokalen, ignorierten Referenzbereich:
 
 ```text
-<Explorer-Ordner>\Daten\taxonomy\supplements.json
+<Explorer-Ordner>\data\taxonomy\supplements.json
 ```
 
 Gemeinsamer konfigurierbarer Speicher seit 4. Oktober, alter AppData-Datenordner geleert;

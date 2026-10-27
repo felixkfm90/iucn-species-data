@@ -1,14 +1,23 @@
 # Taxonomie: Aufbewahrung und Speicherplatz
 
-Stand: 2026-10-25
+Stand: 2026-10-27
 
-Status: implementiert, isoliert geprüft und am **13. Oktober** mit einer ausdrücklich bestätigten
+Status: Die Speicherpflege ist im vereinbarten Umfang des seit **27. Oktober abgeschlossenen Gesamtaudits**
+angenommen. Gesamt-Go und bewusste Betriebs-/Nachweisgrenzen stehen ausschließlich im
+[Auditauftrag, Abschnitt 10.55](audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
+Den heutigen Paarstand führt der [Taxonomie-Betriebsstand](taxonomy-current-status.md).
+Die folgenden datierten Nachweise sind keine neue Bereinigungsfreigabe und kein neuer NAS-Sicherungsnachweis.
+
+## Historischer Nachweisstand – 25. Oktober
+
+Die Speicherpflege war implementiert, isoliert geprüft und am **13. Oktober** mit einer ausdrücklich bestätigten
 Bereinigung zweier alter fertiger Aufbauordner am produktiven Bestand ausgeführt. Die reguläre Vorschau
 prüfte aktives Master-/Lightroom-Paar und direkten Vorgänger anhand ihrer SHA-256-Prüfsummen. Die bestätigte
 Bereinigung entfernte **2.154.452.155 Bytes**, ohne Fehler und ohne Änderung der aktiven Zeiger. Der isolierte
 NAS-Restore einschließlich getrenntem Programmstart ist inzwischen im
-[Auditauftrag unter 10.41/10.43](audit-auftrag-phase-10-5.md) abgenommen. Daraus folgt keine Produktivübernahme;
-die übrige Betriebs-/Großbestandsabnahme bleibt offen.
+[Auditauftrag unter 10.41/10.43](audit-auftrag-phase-10-5.md) abgenommen. Daraus folgte keine Produktivübernahme;
+die übrige Betriebs-/Großbestandsabnahme war zu diesem damaligen Stand noch offen. Der spätere gemeinsame
+Abschluss steht in Abschnitt 10.55 desselben Auditauftrags.
 
 Die historische abgeschlossene [Quellenreparatur](taxonomy-partial-source-recovery.md) aktivierte das damalige neue
 Master-/Lightroom-Paar und erhielt das passende Paar vom 28. September als Rückweg. Alte Reparaturjournale,
@@ -126,8 +135,10 @@ Das sind konservative Schätzungen, **keine feste Obergrenze oder Speicherreserv
 parallel Platz verbrauchen; ein einzelner SQLite-Block oder Anbieterdownload kann stärker wachsen. Ein dennoch
 auftretender Schreibfehler darf aktive Stände nicht ersetzen. Ein Auftragscheckpoint bleibt ausdrücklich
 fortsetzbar, sofern seine Eingänge noch stimmen. Die Speicherguards löschen selbst keine alten Dateien und starten
-auch keine automatische Bereinigung. Physisch voller Datenträger und kompletter Neustart gehören zum späteren
-Betriebstest; sie werden hier über gezielte Fehler und Platzmesswerte simuliert.
+auch keine automatische Bereinigung. Die damalige Implementierungsprüfung simulierte diese Fälle über
+gezielte Fehler und Platzmesswerte; sie allein belegte weder einen physisch vollen Datenträger noch einen
+kompletten Neustart. Den später tatsächlich abgenommenen Betriebsumfang und seine Grenzen führt Abschnitt 10.55
+des [Auditauftrags](audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
 
 ## Prüfung und Grenzen
 
@@ -137,7 +148,9 @@ Verknüpfungen, alte Vorbereitung, Dateisperren und Platzmangel vor Spooling/Mas
 prüfen Klickpflicht, Vorschau, Abbruch, Bestätigung und wieder freigegebene Bedienung bei Fehlern. Die Tests sind
 in `test:taxonomy-master`, `test:lightroom` und dem vollständigen Qualitätsgate enthalten.
 
-Prüfabschluss am 20. September: 25 gezielte Speicher-/Workerfälle bestanden, einschließlich Platzmangel während
+### Historischer Prüfabschluss – 20. September
+
+25 gezielte Speicher-/Workerfälle bestanden, einschließlich Platzmangel während
 des Spoolings und nach einem bestätigten 500er-Block mit erfolgreicher Fortsetzung. Die zusätzlichen
 Oberflächen-/Routentests und das vollständige `npm.cmd run --silent quality:ci` sind erfolgreich (Exitcode 0).
 Ein erster Gesamtlauf beanstandete nur den alten Oberflächenvertrag mit fünf statt jetzt sechs Datenbankaktionen;
@@ -145,9 +158,11 @@ dieser ist samt ausdrücklichem Speicherpflege-/Bestätigungsvertrag aktualisier
 Schemata, Projektstatus und die lokalen Produkt-/Assetprüfungen sind erfolgreich. Keine produktive Bereinigung,
 kein neuer Quellen-/Masterlauf. Die Speicherpflege-Änderungen sind noch nicht veröffentlicht.
 
-Weiter offen bleibt die gebündelte Betriebs- und Großbestandsabnahme nach
-[Roadmap](roadmap.md) und [Hintergrundaufbau](taxonomy-master-background-build.md), kein weiterer automatischer
-Lösch- oder Produktionslauf. Die damalige Speicherpflege-Implementierung änderte keine Lua-Dateien und
+Am 20. September blieb die gebündelte Betriebs- und Großbestandsabnahme nach damaliger
+[Roadmap](roadmap.md) und [Hintergrundaufbau](taxonomy-master-background-build.md) noch offen. Diese damalige
+Grenze ist keine heutige offene Gesamtabnahme; den späteren Abschluss und verbleibende Grenzen führt
+[Abschnitt 10.55](audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
+Keine automatische Lösch- oder Produktionsaktion folgt daraus. Die damalige Speicherpflege-Implementierung änderte keine Lua-Dateien und
 beließ das Plug-in bei 0.4.24.14. Der heutige Quell-/Ladestand ist davon getrennt im
 [Lightroom-Vertrag](lightroom-search-package.md) dokumentiert; die aktuellen Belege und offenen Grenzen
 stehen im [Auditauftrag](audit-auftrag-phase-10-5.md).

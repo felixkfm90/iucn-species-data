@@ -1,6 +1,6 @@
 # Manual Species Fields
 
-Stand: 2026-10-10
+Stand: 2026-10-27
 
 Dieses Dokument beschreibt die bewusst manuell gepflegten Felder in `species_list.json`.
 
@@ -82,9 +82,9 @@ eine automatische Rückschreibung verhindern; die zuvor angelegte Original-Siche
 Die von IUCN gelieferten Taxonomiewerte fuer Reich, Stamm, optionalen Unterstamm, Klasse, Ordnung und Familie werden
 vor dem Schreiben in eine lesbare Gross-/Kleinschreibung ueberfuehrt, zum Beispiel `ANIMALIA` zu `Animalia`.
 Ein fehlender Unterstamm bleibt als optionales Feld vollständig aus `speciesData.json` entfernt; weder leere
-Zeichenfolgen noch `n/a` werden dafür veröffentlicht. Das einmalige Skript
-`node scripts/normalize-taxonomy-data.mjs` fuehrt dieselbe Normalisierung fuer bestehende Datensaetze aus und legt
-vorher eine lokale Sicherung unter `species-explorer/backups/` an.
+Zeichenfolgen noch `n/a` werden dafür veröffentlicht. Pipeline und Taxonomieeditor verwenden dafür die gemeinsame
+Normalisierung aus `scripts/taxonomy-overrides.mjs`; sie gilt auch beim Übernehmen eigener Taxonomieangaben.
+Ein gesonderter Normalisierungslauf für den Bestand ist im normalen Pflegeablauf nicht erforderlich.
 
 Falls ein IUCN-Abruf unvollstaendig ist und auf vorhandene Daten zurueckgefallen wird, werden Groesse, Gewicht und
 Lebenserwartung trotzdem aus der aktuellen `species_list.json` aktualisiert.

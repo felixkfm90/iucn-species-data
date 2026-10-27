@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { planStorageMigration, prepareStorageMigration, commitStorageMigration, restoreStorageMigration } from "../species-explorer/storage-migration.mjs";
-import { EXPLORER_REPO_ROOT, legacyExplorerDataRoot } from "../species-explorer/storage-paths.mjs";
+import { planStorageMigration, prepareStorageMigration, commitStorageMigration, restoreStorageMigration, renameStorageDataDirectory } from "../species-explorer/storage-migration.mjs";
+import { EXPLORER_REPO_ROOT, legacyExplorerDataRoot, DEFAULT_DATA_DIRECTORY } from "../species-explorer/storage-paths.mjs";
 
 export async function runStorageMigration(args) {
   const command = args[0] || "plan";
@@ -13,8 +13,10 @@ export async function runStorageMigration(args) {
     return path.resolve(value);
   };
   const repoRoot = absoluteOption("repo-root", EXPLORER_REPO_ROOT);
+  if (command === "rename-data") return renameStorageDataDirectory({ repoRoot, confirmed: args.includes("--confirmed"),
+    consumersClosed: args.includes("--consumers-closed") });
   const sourceRoot = absoluteOption("source-root", legacyExplorerDataRoot());
-  const targetRoot = absoluteOption("target-root", path.join(repoRoot, "Daten"));
+  const targetRoot = absoluteOption("target-root", path.join(repoRoot, DEFAULT_DATA_DIRECTORY));
   if (command === "plan") return planStorageMigration({ repoRoot, sourceRoot, targetRoot });
   if (command === "prepare") {
     const planPath = option("plan", "");

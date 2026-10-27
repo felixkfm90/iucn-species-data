@@ -1,8 +1,8 @@
 # FN-Katalognutzung und automatische Klassifikationsvormerkung
 
-Stand: 2026-10-26
+Stand: 2026-10-27
 
-Implementiert ab Plug-in **0.4.24.15**, aktueller Quellstand **0.4.24.40**. Tatsächlich geladene Version,
+Implementiert ab Plug-in **0.4.24.15**, aktueller Quellstand **0.4.24.42**. Tatsächlich geladene Version,
 spätere Betriebsproben und offene Abnahmegrenzen stehen im [Lightroom-Vertrag](lightroom-search-package.md)
 und im führenden [Auditauftrag](audit-auftrag-phase-10-5.md).
 

@@ -2,7 +2,7 @@
 
 Stand: 2026-10-27
 Roadmap: Phase 10.2 bis 10.4
-Status: lokaler Quellstand Plug-in-Version **0.4.24.40** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
+Status: lokaler Quellstand Plug-in-Version **0.4.24.42** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
 gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
 seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
 vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
@@ -10,6 +10,12 @@ Felix bestätigte Weissstorch/Rebhuhn im Explorer, tatsächliche Lightroom-Zuwei
 Schließen/Wiederöffnen. Das Gesamtaudit ist im vereinbarten Umfang abgeschlossen; verbleibende
 Betriebs-/Bediengrenzen sind im führenden Auditauftrag ausdrücklich zugeordnet.
 Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](taxonomy-partial-source-recovery.md).
+
+.42 unterstützt die ausgeführte Umstellung des gemeinsamen Standardordners von `Daten` auf `data`.
+Der Resolver unterstützt beide Konfigurationsnamen und löst belegte alte Datenpfade auf, ohne historische
+Journale oder Paket-/Auftragsbelege umzuschreiben. Die tatsächliche Umbenennung und ihre Nachweise stehen im
+[Speichervertrag](storage-migration.md). Für .42 ist hier noch keine native Neuladung bestätigt;
+der zuletzt nativ bestätigte reguläre Stand bleibt .40. Die zwischenzeitliche private .41 war eine Auditprobe.
 
 .40 bündelt die katalogweiten Grunddaten der Artänderungsprüfung in 250er-SDK-Leseblöcken.
 Jeder Leselauf und Schreibwächter erfasst weiterhin alle Katalogfotos frisch; vollständige Schnappschüsse
@@ -239,7 +245,7 @@ ergänzt den unteren Entfernen-Button und drei Auswahlexporte mit Defaultnamen. 
 wird nur bewusst neu aufgebaut. Technische Gegenproben und praktische Restabnahme:
 [Bedienregressionen](audits/2026-10-03-acceptance-regressions.md).
 
-Gemeinsamer Speicherumzug und Programmordnerwechsel nach `D:\Arten-Explorer\Daten` abgeschlossen;
+Gemeinsamer Speicherumzug und Programmordnerwechsel waren am 4. Oktober nach `D:\Arten-Explorer\Daten` abgeschlossen;
 Felix bestätigt anschließend Weissstorch/Rebhuhn in den Verbrauchern. 0.4.24.22 korrigiert den danach
 gemeldeten Lua-Vergleich unterschiedlich geschriebener, aber belegter Windows-Pfade. Schrägstriche,
 Groß-/Kleinschreibung und abschließende Trenner werden normalisiert; Herkunft, Revision und vollständiger
@@ -533,10 +539,11 @@ Fingerabdruck, aktuelle Korrekturdatei und aktives Lightroom-Paket bereits exakt
 
 ## Lokaler Speicher
 
-Aktueller Standardpfad nach dem geprüften Datenwechsel vom 4. Oktober:
+Aktueller Standardpfad nach dem ausgeführten Ordnerwechsel vom 27. Oktober; die aktive Konfiguration und der Vollzug
+des Namenswechsels stehen im [Speichervertrag](storage-migration.md):
 
 ```text
-<Explorer-Ordner>\Daten\lightroom\
+<Explorer-Ordner>\data\lightroom\
   active\
     manifest.json
     taxonomy-search.sqlite
@@ -545,7 +552,7 @@ Aktueller Standardpfad nach dem geprüften Datenwechsel vom 4. Oktober:
     taxonomy-search.sqlite
   staging\
 
-<Explorer-Ordner>\Daten\corrections\
+<Explorer-Ordner>\data\corrections\
   active.json
   releases\
     corrections-<Prüfsumme>.json
@@ -668,7 +675,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.24.40`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Quellversion `0.4.24.42`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 

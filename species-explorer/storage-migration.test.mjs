@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { tmpdir } from "../scripts/test-temp.mjs";
-import { planStorageMigration, prepareStorageMigration, commitStorageMigration, restoreStorageMigration } from "./storage-migration.mjs";
+import { planStorageMigration, prepareStorageMigration, commitStorageMigration, restoreStorageMigration, renameStorageDataDirectory } from "./storage-migration.mjs";
 import { explorerStoragePaths, relocatedStoragePath } from "./storage-paths.mjs";
 import { runStorageMigration } from "../scripts/storage-migration.mjs";
 
@@ -42,7 +42,7 @@ test("kopieren, prüfen, geschlossen umziehen ohne Link, unveränderte Belege un
   await assert.rejects(commitStorageMigration({ ...plan, consumersClosed: true, checkConsumersClosed: async () => false }), /laufen noch/);
   const closed = { consumersClosed: true, checkConsumersClosed: async () => true };
   const config = await commitStorageMigration({ ...plan, ...closed });
-  assert.equal(config.dataRoot, "Daten");
+  assert.equal(config.dataRoot, "data");
   assert.deepEqual(await fs.readdir(plan.sourceRoot), []);
   assert.equal((await fs.lstat(plan.sourceRoot)).isSymbolicLink(), false);
   assert.equal(explorerStoragePaths({ repoRoot: plan.repoRoot }).dataRoot, plan.targetRoot);
@@ -108,7 +108,7 @@ test("gemeinsam umbenannter Programmordner findet Daten und historische Pfade oh
   const renamed = path.join(plan.parent, "Arten-Explorer");
   await fs.rename(plan.repoRoot, renamed);
   const paths = explorerStoragePaths({ repoRoot: renamed });
-  assert.equal(paths.taxonomyRoot, path.join(renamed, "Daten", "taxonomy"));
+  assert.equal(paths.taxonomyRoot, path.join(renamed, "data", "taxonomy"));
   assert.equal(relocatedStoragePath(path.join(plan.sourceRoot, "data.sqlite"), { repoRoot: renamed }), path.join(paths.dataRoot, "data.sqlite"));
   assert.equal(relocatedStoragePath(path.join(plan.repoRoot, "species_list.json"), { repoRoot: renamed }), path.join(renamed, "species_list.json"));
   assert.equal(await fs.readFile(path.join(paths.dataRoot, ".storage-migration.json"), "utf8"), proof);
@@ -117,5 +117,83 @@ test("gemeinsam umbenannter Programmordner findet Daten und historische Pfade oh
 test("CLI deutet relative Speicherziele nicht stillschweigend als bestätigte absolute Pfade", async () => {
   for (const name of ["repo-root", "source-root", "target-root"]) {
     await assert.rejects(runStorageMigration(["plan", `--${name}=relative`]), /absoluten/);
+  }
+});
+
+async function oldDirectoryFixture(t) {
+  const fixturePlan = await fixture(t);
+  const plan = await planStorageMigration({ ...fixturePlan, targetRoot: path.join(fixturePlan.repoRoot, "Daten") });
+  await prepareStorageMigration(plan, { confirmed: true, minimumReserveBytes: 0 });
+  const closed = { consumersClosed: true, checkConsumersClosed: async () => true };
+  await commitStorageMigration({ ...plan, ...closed });
+  return { ...plan, ...closed, confirmed: true };
+}
+
+test("Daten zu data benennt denselben Ordner um und erhält Journal, Dateien und historische Zugriffe", async (t) => {
+  const options = await oldDirectoryFixture(t), from = options.targetRoot;
+  const journal = await fs.readFile(path.join(from, ".storage-migration.json"));
+  const before = await fs.stat(path.join(from, "data.sqlite"), { bigint: true });
+  const result = await renameStorageDataDirectory(options);
+  assert.equal(result.state, "renamed");
+  assert.equal(result.config.dataRoot, "data");
+  await assert.rejects(fs.access(from));
+  assert.deepEqual(await fs.readFile(path.join(result.targetRoot, ".storage-migration.json")), journal);
+  assert.equal((await fs.stat(path.join(result.targetRoot, "data.sqlite"), { bigint: true })).ino, before.ino);
+  assert.equal(await fs.readFile(path.join(result.targetRoot, "data.sqlite"), "utf8"), "unchanged database bytes");
+  assert.equal(explorerStoragePaths({ repoRoot: options.repoRoot }).dataRoot, result.targetRoot);
+  assert.equal(relocatedStoragePath(path.join(from, "data.sqlite"), { repoRoot: options.repoRoot }), path.join(result.targetRoot, "data.sqlite"));
+  await assert.rejects(renameStorageDataDirectory(options), /existiert bereits/);
+});
+
+test("Ordnerwechsel verweigert fehlende Bestätigung, aktive Verbraucher und bestehende Ziele", async (t) => {
+  const options = await oldDirectoryFixture(t), configFile = path.join(options.repoRoot, "storage-path.json");
+  const originalConfig = await fs.readFile(configFile, "utf8");
+  await assert.rejects(renameStorageDataDirectory({ ...options, confirmed: false }), /bestätigt/);
+  await assert.rejects(renameStorageDataDirectory({ ...options, checkConsumersClosed: async () => false }), /laufen noch/);
+  let checks = 0;
+  await assert.rejects(renameStorageDataDirectory({ ...options, checkConsumersClosed: async () => ++checks === 1 }), /vor dem Ordnerwechsel/);
+  assert.equal(await fs.readFile(configFile, "utf8"), originalConfig);
+  const target = path.join(options.repoRoot, "data");
+  await fs.mkdir(target); await fs.writeFile(path.join(target, "foreign"), "preserve");
+  await assert.rejects(renameStorageDataDirectory(options), /existiert bereits/);
+  assert.equal(await fs.readFile(path.join(target, "foreign"), "utf8"), "preserve");
+});
+
+test("fehlgeschlagene Nachprüfung lässt neue Daten vollständig und Konfiguration gesperrt", async (t) => {
+  const options = await oldDirectoryFixture(t);
+  let checks = 0;
+  await assert.rejects(renameStorageDataDirectory({ ...options, checkConsumersClosed: async () => ++checks < 3 }), /gesperrt/);
+  assert.throws(() => explorerStoragePaths({ repoRoot: options.repoRoot }), /Ungültige Speicherkonfiguration/);
+  assert.equal(await fs.readFile(path.join(options.repoRoot, "data", "data.sqlite"), "utf8"), "unchanged database bytes");
+});
+
+test("Umbenennungsbeleg erhält Zwischenpfade auch nach erneutem Programmordnerwechsel und sperrt Manipulation", async (t) => {
+  const options = await oldDirectoryFixture(t);
+  await renameStorageDataDirectory(options);
+  const renamedRepo = `${options.repoRoot}-renamed`;
+  await fs.rename(options.repoRoot, renamedRepo);
+  const dataRoot = path.join(renamedRepo, "data");
+  assert.equal(explorerStoragePaths({ repoRoot: renamedRepo }).dataRoot, dataRoot);
+  assert.equal(relocatedStoragePath(path.join(options.targetRoot, "data.sqlite"), { repoRoot: renamedRepo }), path.join(dataRoot, "data.sqlite"));
+  const recordFile = path.join(dataRoot, ".storage-directory-rename.json"), original = await fs.readFile(recordFile, "utf8");
+  const record = JSON.parse(original); record.sourceRoot = path.join(renamedRepo, "foreign");
+  await fs.writeFile(recordFile, JSON.stringify(record));
+  assert.throws(() => explorerStoragePaths({ repoRoot: renamedRepo }), /Ordnerwechsel/);
+  await fs.writeFile(recordFile, original);
+  const journalFile = path.join(dataRoot, ".storage-migration.json");
+  await fs.appendFile(journalFile, "\n");
+  assert.throws(() => explorerStoragePaths({ repoRoot: renamedRepo }), /Originaler Umzugsnachweis/);
+});
+
+test("einfache relative und absolute Daten-Konfigurationen erhalten ebenfalls gebundene alte Pfade", async (t) => {
+  for (const absolute of [false, true]) {
+    const options = await fixture(t), sourceRoot = path.join(options.repoRoot, "Daten");
+    await fs.mkdir(sourceRoot);
+    await fs.writeFile(path.join(sourceRoot, "fixture.json"), "original");
+    await fs.writeFile(path.join(options.repoRoot, "storage-path.json"), JSON.stringify({ schemaVersion: 1, state: "ready",
+      dataRoot: absolute ? sourceRoot : "Daten" }));
+    const result = await renameStorageDataDirectory({ repoRoot: options.repoRoot, confirmed: true, consumersClosed: true,
+      checkConsumersClosed: async () => true });
+    assert.equal(relocatedStoragePath(path.join(sourceRoot, "fixture.json"), { repoRoot: options.repoRoot }), path.join(result.targetRoot, "fixture.json"));
   }
 });

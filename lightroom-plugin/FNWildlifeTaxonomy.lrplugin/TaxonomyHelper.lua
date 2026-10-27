@@ -51,11 +51,12 @@ local function storageConfiguration()
     error("Speicherkonfiguration ungültig. Bitte den Speicherwechsel im Arten-Explorer prüfen.")
   end
   local dataRoot = value.dataRoot
-  if dataRoot == "Daten" then dataRoot = LrPathUtils.child(repositoryRoot, "Daten")
+  if dataRoot == "data" or dataRoot == "Daten" then dataRoot = LrPathUtils.child(repositoryRoot, dataRoot)
   elseif not dataRoot:match("^%a:[/\\]") and not dataRoot:match("^[/\\][/\\]") and not dataRoot:match("^/") then
     error("Der gemeinsame Datenpfad muss absolut sein.")
   end
   if not LrFileUtils.exists(dataRoot) then error("Der bestätigte Datenordner fehlt: " .. dataRoot) end
+  local previousDataRoots = {}
   if value.legacyDataRoot or value.previousRepoRoot or value.migrationRevision then
     local journalFile = io.open(LrPathUtils.child(dataRoot, ".storage-migration.json"), "rb")
     if not journalFile then error("Der Nachweis des Datenumzugs fehlt.") end
@@ -69,25 +70,78 @@ local function storageConfiguration()
       or type(journal.copied) ~= "table" or type(journal.plan.files) ~= "table" or #journal.copied ~= #journal.plan.files then
       error("Der Datenumzug ist unvollständig oder sein Nachweis wurde verändert.")
     end
+    local oldTarget = journal.plan.targetRoot
+    local oldRepo = tostring(journal.plan.repoRoot):gsub("\\", "/"):gsub("/+$", "")
+    local normalizedTarget = tostring(oldTarget):gsub("\\", "/"):gsub("/+$", "")
+    local relative = normalizedTarget:sub(#oldRepo + 2)
+    if not sameStoragePath(normalizedTarget:sub(1, #oldRepo), oldRepo)
+      or normalizedTarget:sub(#oldRepo + 1, #oldRepo + 1) ~= "/"
+      or relative == "" or relative:match("^/") or relative:match(":") then
+      error("Der Datenumzug besitzt kein gebundenes relatives Ziel.")
+    end
+    for part in relative:gmatch("[^/]+") do
+      if part == "." or part == ".." then error("Der Datenumzug besitzt kein gebundenes relatives Ziel.") end
+    end
+    if sameStoragePath(oldTarget, LrPathUtils.child(journal.plan.repoRoot, "Daten"))
+      and sameStoragePath(dataRoot, LrPathUtils.child(repositoryRoot, "data")) then
+      previousDataRoots = { LrPathUtils.child(repositoryRoot, "Daten"), oldTarget }
+    elseif not sameStoragePath(dataRoot, LrPathUtils.child(repositoryRoot, relative)) then
+      error("Der Nachweis des Datenumzugs passt nicht zum Datenziel.")
+    end
   end
-  return { dataRoot = dataRoot, legacyDataRoot = value.legacyDataRoot }, repositoryRoot
+  local renameFile = io.open(LrPathUtils.child(dataRoot, ".storage-directory-rename.json"), "rb")
+  if value.directoryRenameRevision or renameFile then
+    if not renameFile then error("Der Nachweis der Ordnerumbenennung fehlt.") end
+    local renameBody = renameFile:read("*a"); renameFile:close()
+    local renameOk, record = pcall(Json.decode, renameBody)
+    local previousOk, previous = false, nil
+    if renameOk and type(record) == "table" then previousOk, previous = pcall(Json.decode, record.previousConfig or "") end
+    if not renameOk or type(record) ~= "table" or record.schemaVersion ~= 1 or record.state ~= "renamed"
+      or type(value.directoryRenameRevision) ~= "string" or #value.directoryRenameRevision ~= 64
+      or record.revision ~= value.directoryRenameRevision or type(record.repoRoot) ~= "string"
+      or not sameStoragePath(record.sourceRoot, LrPathUtils.child(record.repoRoot, "Daten"))
+      or not sameStoragePath(record.targetRoot, LrPathUtils.child(record.repoRoot, "data"))
+      or not sameStoragePath(dataRoot, LrPathUtils.child(repositoryRoot, "data"))
+      or not previousOk or type(previous) ~= "table" or previous.schemaVersion ~= 1 or previous.state ~= "ready"
+      or previous.directoryRenameRevision or type(previous.dataRoot) ~= "string"
+      or previous.migrationRevision ~= value.migrationRevision or previous.legacyDataRoot ~= value.legacyDataRoot
+      or previous.previousRepoRoot ~= value.previousRepoRoot then
+      error("Der Nachweis der Ordnerumbenennung ist ungültig.")
+    end
+    local previousRoot = previous.dataRoot
+    if previousRoot == "Daten" then previousRoot = LrPathUtils.child(record.repoRoot, "Daten") end
+    if not sameStoragePath(previousRoot, record.sourceRoot) then error("Die Quelle der Ordnerumbenennung ist nicht gebunden.") end
+    previousDataRoots[#previousDataRoots + 1] = record.sourceRoot
+  end
+  return { dataRoot = dataRoot, legacyDataRoot = value.legacyDataRoot, previousDataRoots = previousDataRoots }, repositoryRoot
 end
 
 local function defaultSearchRoot(tempRoot)
   local config, repositoryRoot = storageConfiguration()
   if config then return LrPathUtils.child(config.dataRoot, "lightroom") end
+  local oldRoot = LrPathUtils.child(repositoryRoot, "Daten")
+  local newRoot = LrPathUtils.child(repositoryRoot, "data")
+  if LrFileUtils.exists(oldRoot) then
+    if LrFileUtils.exists(newRoot) then error("Ohne Speicherkonfiguration sind beide Datenziele mehrdeutig.") end
+    return LrPathUtils.child(oldRoot, "lightroom")
+  end
+  if LrFileUtils.exists(newRoot) then return LrPathUtils.child(newRoot, "lightroom") end
   local legacy = legacySearchRoot(tempRoot)
   if legacy ~= "" and LrFileUtils.exists(LrPathUtils.parent(legacy)) then return legacy end
-  return LrPathUtils.child(repositoryRoot, "Daten/lightroom")
+  return LrPathUtils.child(newRoot, "lightroom")
 end
 
 local function normalizedStoragePath(value)
   local text = cleanText(value):gsub("\\", "/"):lower():gsub("/+$", "")
   local config = storageConfiguration()
-  if config and config.legacyDataRoot then
-    local legacy = cleanText(config.legacyDataRoot):gsub("\\", "/"):lower():gsub("/+$", "")
-    if text == legacy or text:sub(1, #legacy + 1) == legacy .. "/" then
-      text = cleanText(config.dataRoot):gsub("\\", "/"):lower():gsub("/+$", "") .. text:sub(#legacy + 1)
+  if config then
+    local roots = { config.legacyDataRoot or "" }
+    for _, root in ipairs(config.previousDataRoots or {}) do roots[#roots + 1] = root end
+    for _, root in ipairs(roots) do
+      local legacy = cleanText(root):gsub("\\", "/"):lower():gsub("/+$", "")
+      if legacy ~= "" and (text == legacy or text:sub(1, #legacy + 1) == legacy .. "/") then
+        return cleanText(config.dataRoot):gsub("\\", "/"):lower():gsub("/+$", "") .. text:sub(#legacy + 1)
+      end
     end
   end
   return text
@@ -200,7 +254,7 @@ function TaxonomyHelper.searchRoot()
   local configured = cleanText(prefs.searchRoot)
   if configured ~= "" then
     local config = storageConfiguration()
-    if config and config.legacyDataRoot and normalizedStoragePath(configured)
+    if config and normalizedStoragePath(configured)
       == normalizedStoragePath(LrPathUtils.child(config.dataRoot, "lightroom")) then
       return LrPathUtils.child(config.dataRoot, "lightroom")
     end

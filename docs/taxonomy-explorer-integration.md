@@ -213,7 +213,7 @@ Detailzeile nennt nur die neueste verfügbare Version. Arten mit Konflikten oder
 `Manuell zu prüfen:` in einer eigenen Zeile, damit die Information auch bei mehreren Arten lesbar bleibt.
 
 Die aktive vollständige Datenbank liegt im ignorierten gemeinsamen Speicher unter
-`<Explorer-Ordner>\Daten\taxonomy\releases\<Release>\taxonomy.sqlite`. Seit 4. Oktober ersetzt der
+`<Explorer-Ordner>\data\taxonomy\releases\<Release>\taxonomy.sqlite` im neuen Standard. Seit 4. Oktober ersetzt der
 [geprüfte Speicherwechsel](storage-migration.md) den AppData-Datenpfad. Sie darf zur
 Analyse mit einem SQLite-Werkzeug nur lesend geöffnet werden. Direkte Änderungen wären beim nächsten Release
 verloren; bestätigte Sonderzuordnungen gehören in `species-reference-mappings.json`, zusätzliche fachliche

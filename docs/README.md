@@ -52,7 +52,9 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 - [Soundeditor und Ablehnungsrücksetzung](sound-editor.md), [Soundbar](soundbar.md).
 - [Artporträts](portrait-generation.md), [Spektrogramme](spectrogram-plan.md).
 - [Audioformat](audio-format-validation.md), [Medienprüfung](media-asset-validation.md).
-- [Assetstruktur](asset-structure-plan.md), [Asset-Verwaltungsplan](asset-management-plan.md): abgeschlossener Phasenverlauf.
+- [Assetstruktur](asset-structure-plan.md), [Asset-Verwaltungsplan](asset-management-plan.md): historische Planungs-/
+  Umsetzungsstände des abgeschlossenen Phasenverlaufs. Heutige Struktur und Medienregeln führen
+  [Strukturvertrag](repo-structure.md) und [Medienprüfung](media-asset-validation.md).
 
 ## Desktop, Sicherheitsgrenzen und Aufbewahrung
 
@@ -60,18 +62,21 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 - [Lokale API-Sicherheit](explorer-api-security.md), [temporäre Dateien](temp-retention.md).
 - Historische private Rohbelege liegen nach dem Bereinigungsnachlauf in der im Tempvertrag erklärten
   Belegablage; sie sind kein zusätzlicher Auditbericht und kein Bestandteil der Websiteveröffentlichung.
-- [Gemeinsamer Datenpfad und geprüfter Umzug](storage-migration.md), [Test- und Messpfade](test-temp-contract.md).
+- [Gemeinsamer Datenpfad, geprüfter Umzug und ausgeführter Namenswechsel zu `data`](storage-migration.md),
+  [Test- und Messpfade](test-temp-contract.md).
 - [Datenwechsel und Artassistent-Prüfabschluss vom 4. Oktober](audits/2026-10-04-storage-and-species-wizard.md).
 - [Mehrgeräte-/Update-/NAS-Plan](multi-device-backup-plan.md): offene Phase 11 von heutigen Funktionen trennen.
 
 ## Squarespace und Website
 
 - [Footer](squarespace-footer.html), [Custom CSS](squarespace-custom.css): versionierte Einbindungsvorlagen;
-  CSS bleibt Standard-CSS. Die nötige LESS-Schreibweise ausschließlich im CMS-Editor beschreibt der
-  [Websitebetrieb](../README.md#website-und-veröffentlichung).
+  CSS bleibt Standard-CSS. Die verbindliche kanonische CSS-Importregel steht ausschließlich im
+  [Website-/Monatsauditvertrag](monthly-site-audit.md).
 - [Vorschau-/Veröffentlichungsvertrag Phase 8](phase-8-preview-release.md).
 - [Monatsaudit-Ablauf](monthly-site-audit.md), [SEO-Arbeitsliste](seo-worklist.md),
-  [Bild-Alternativtexte](image-alt-audit.md), [CSS-Prüfung](css-layout-audit.md).
+  [Bild-Alternativtexte](image-alt-audit.md).
+- [Historische CSS-Prüfung](css-layout-audit.md): datierter Prüf- und Übernahmestand; damalige Einbauanweisungen
+  ersetzen nicht die heutige kanonische Importregel des oben verlinkten Websitevertrags.
 - [Taxonomie-Pyramiden-Übergabe](taxonomy-redesign-handoff.md): historischer Auftrag; keine neue Umsetzungsfreigabe.
 
 ## Historische Bestands- und Auditnachweise

@@ -28,6 +28,6 @@ return {
     major = 0,
     minor = 4,
     revision = 24,
-    build = 40,
+    build = 42,
   },
 }

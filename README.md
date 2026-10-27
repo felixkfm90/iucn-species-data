@@ -11,7 +11,8 @@ Das am 8. Oktober 2026 beauftragte Gesamtaudit ist am **27. Oktober abgeschlosse
 Website und Lightroom sind im vereinbarten Umfang angenommen; die gezielte Abschlussbereinigung ist
 ausgeführt. Gesamt-Go, Prüf-/Veröffentlichungsnachweise und verbleibende Betriebsgrenzen stehen
 ausschließlich im [Auditauftrag Phase 10.5, Abschnitt 10.55](docs/audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
-Aktuelles Lightroom-Plug-in ist **0.4.24.40**. Die Großprobe einschließlich genauer Rücknahme und
+Aktueller lokaler Plug-in-Quellstand ist **0.4.24.42** für die ausgeführte Pfadumstellung auf `data`.
+Zuletzt nativ geladen bestätigt ist .40; dessen Großprobe einschließlich genauer Rücknahme und
 unverändertem Originalkatalog ist bestanden. Weitere Arbeiten richten sich nach Felix' Auftrag;
 die vereinbarten Folgevorhaben stehen in der [Roadmap](docs/roadmap.md).
 
@@ -36,7 +37,9 @@ bei Belegung einen freien lokalen Ersatzport. Installation, Fensterverhalten und
 [Desktopvertrag](docs/desktop-shell-plan.md).
 
 Der aktuelle Programmordner ist `D:\Arten-Explorer`. Der gemeinsame Datenpfad wird aus `storage-path.json`
-gelesen, standardmäßig `Daten` beim Programm. Referenz, Master, Lightroom-Paket, eigene Entscheidungen und
+gelesen; lokal ist seit dem Namenswechsel vom 27. Oktober `D:\Arten-Explorer\data` aktiv. `data` ist auch
+der neue Standard. Bestehende Konfigurationen anderer Installationen mit `Daten` bleiben bis zum
+kontrollierten Wechsel lesbar. Referenz, Master, Lightroom-Paket, eigene Entscheidungen und
 Aufträge gehören zusammen; nur ein einzelnes Suchpaket zu verschieben reicht nicht.
 [Speicherwechsel und Rückweg](docs/storage-migration.md) dokumentieren die gemeinsame Pfadbindung.
 
@@ -174,7 +177,8 @@ Eigene neue Test-/Mess-/Laufzeitdateien liegen in den gebundenen Programm-temp-S
 im Plug-in-temp. [Tempvertrag](docs/temp-retention.md) und [Testvertrag](docs/test-temp-contract.md)
 erklären Eigentum, aktive Prozesse und sichere Abschlussbedingungen. Dauerhafte historische Temp-/
 `Testlauf`-Belege liegen nach dem beauftragten Nachlauf im privaten Archiv unter
-`Daten/audit-evidence/phase-10-5/`; Herkunftspfade und Zugriff erklärt der Tempvertrag.
+`data/audit-evidence/phase-10-5/`;
+Herkunftspfade und Zugriff erklärt der Tempvertrag.
 
 Der lokale gemeinsame Vorgänger ist ein Rücknahmestand. Die externe NAS-Vollsicherung umfasst zusätzlich
 dauerhafte private Daten und Konfiguration. [Sicherungsvertrag](docs/multi-device-backup-plan.md) und
@@ -188,7 +192,8 @@ Konkrete Bereinigung erfordert frisch bestätigte Ziele und Schutzprüfung.
 - `lightroom-plugin/`: Lua-Plug-in mit SDK-Schreibgrenzen und direktem Verhaltenstest.
 - Root-JavaScript, `species-assets/`, öffentliche JSON-Dateien und `graphics/`: gebundene Websiteinhalte.
 - `scripts/`, Schemas, kleine Fixtures, Lockfile und Workflows: kontrollierte Prüf-/Bauwerkzeuge.
-- `Daten/`: dauerhafte lokale fachliche Daten und Nachweise; Git-ignoriert, extern gesichert.
+- `data/`: neuer Standard für dauerhafte lokale fachliche Daten und Nachweise; Git-ignoriert, im vollständigen
+  NAS-Sicherungsumfang enthalten. Bestehende `Daten/`-Installationen bleiben abwärtskompatibel.
 - `temp/`: eigene entbehrliche Arbeitsdateien nach dem Tempvertrag.
 - `docs/`: aktuelle Fachverträge, generierter Projektstatus und unveränderte historische Nachweise.
 

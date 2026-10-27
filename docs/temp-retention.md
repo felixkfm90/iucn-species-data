@@ -4,7 +4,7 @@ Stand: 2026-10-27
 
 ## Aktueller Speicher- und Tempvertrag
 
-Der gemeinsame dauerhafte Datenpfad ist standardmäßig `<Explorer-Ordner>/Daten`, technisch zentral
+Der gemeinsame dauerhafte Datenpfad ist im neuen Standard `<Explorer-Ordner>/data`, technisch zentral
 konfigurierbar; eine spätere Einstellungsoberfläche ist noch offen. Der finale gewünschte Programmname lautet
 `D:\Arten-Explorer`. Der tatsächliche Kopier-/Übernahmestand und Rückweg stehen im
 [Speicherumzugsvertrag](storage-migration.md). Datenbanken, Aufträge, eigene Entscheidungen und Prüfbelege
@@ -17,7 +17,8 @@ Projekt-Tempordner beauftragt. Dauerhafte sowie nicht sicher entbehrliche histor
 werden dafür bytegleich archiviert, bevor ihre bisherigen Ablagen entfernt werden. Der konkrete
 Vollzug und die Prüfsummen stehen im [Auditauftrag, Abschnitt 10.56](audit-auftrag-phase-10-5.md#1056-beauftragter-dokumentations--und-dateinachlauf--27-oktober).
 
-Die private Ablage ist `Daten/audit-evidence/phase-10-5/`. Das ZIP enthält die ursprünglichen
+Die private Ablage ist nach dem ausgeführten Namenswechsel `data/audit-evidence/phase-10-5/`.
+Das ZIP enthält die ursprünglichen
 relativen Pfade unter `temp/`, `Testlauf/` und dem regulären Plug-in-temp. Beispiel: Ein historischer
 Verweis `temp/explorer/<ID>/quality-result.json` bezeichnet denselben Eintrag im Belegarchiv.
 Die nachfolgenden Bereinigungsquittungen liegen daneben unter `maintenance/<Sitzungs-ID>/`.
@@ -31,8 +32,10 @@ ausschließlich als Linkmetadaten erhalten; beim Entpacken entsteht keine aktive
 
 Die Ablage liegt innerhalb des bestehenden gemeinsamen Datenordners und bleibt Git-/Pages-ignoriert.
 Eine künftig ausdrücklich erstellte vollständige NAS-Sicherung umfasst sie nach dem bestehenden
-Datenvertrag. Daraus folgt keine bereits ausgeführte neue NAS-Sicherung. `Daten` bleibt der
-konfigurierte Name: Umzugsjournal, Lightroom-Auflösung und NAS-Prüfung verwenden denselben Vertrag.
+Datenvertrag. Daraus folgt keine bereits ausgeführte neue NAS-Sicherung. Der neue Name `data` wird
+gemeinsam in Explorer, Lightroom und NAS-Prüfung unterstützt; bisherige `Daten`-Pfade werden über die
+gebundene Auflösung weiter gelesen. Originaljournal, Archiv und historische Belegbytes bleiben unverändert.
+Vollzug und Rückweg des Namenswechsels stehen im [Speichervertrag](storage-migration.md).
 
 Neue eigene Test-, Upload-, Vorschau- und Downloadhilfsdateien liegen ausschließlich im programmlokalen
 Tempbereich. Plug-in-Hilfsdateien liegen ausschließlich im eigenen Plug-in-Tempbereich. Eine Sitzung bindet

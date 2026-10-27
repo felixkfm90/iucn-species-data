@@ -85,10 +85,11 @@ function Assert-LocalDataBackupTarget {
   }
   $configuredRoot = if ([IO.Path]::IsPathRooted($settings.dataRoot)) {
     [IO.Path]::GetFullPath($settings.dataRoot)
-  } elseif ($settings.dataRoot -eq "Daten") { Join-Path $RepoRoot "Daten" } else {
+  } elseif ($settings.dataRoot -in @("data", "Daten")) { Join-Path $RepoRoot $settings.dataRoot } else {
     throw "Unzulaessiger relativer Datenpfad in storage-path.json."
   }
-  if (-not $configuredRoot.TrimEnd("\", "/").Equals((Join-Path $RepoRoot "Daten"), [StringComparison]::OrdinalIgnoreCase)) {
+  $allowedRoots = @("data", "Daten") | ForEach-Object { Join-Path $RepoRoot $_ }
+  if (-not @($allowedRoots | Where-Object { $configuredRoot.TrimEnd("\", "/").Equals($_, [StringComparison]::OrdinalIgnoreCase) }).Count) {
     throw "Der Datenpfad liegt ausserhalb des Programmordners. Fuer ein vollstaendiges Backup ist eine gesonderte Datensicherung erforderlich; es wurde kein unvollstaendiges NAS-Backup erstellt."
   }
 }
@@ -99,13 +100,13 @@ function Get-LocalDataStateHash {
   if ($null -ne $SourceRecords) {
     foreach ($record in $SourceRecords) {
       if ($record.path -eq "storage-path.json") { $records.Add("storage-path.json|$($record.sha256)") }
-      elseif ($record.path.StartsWith("Daten/", [StringComparison]::OrdinalIgnoreCase)) {
+      elseif ($record.path.StartsWith("data/", [StringComparison]::OrdinalIgnoreCase) -or
+          $record.path.StartsWith("Daten/", [StringComparison]::OrdinalIgnoreCase)) {
         $records.Add("$($record.path)|$($record.bytes)|$($record.sha256)")
       }
     }
     return Get-Sha256Hex (@($records | Sort-Object) -join "`n")
   }
-  $dataRoot = Join-Path $RepoRoot "Daten"
   $settingsPath = Join-Path $RepoRoot "storage-path.json"
   if (Test-Path -LiteralPath $settingsPath) {
     $settingsEntry = Get-Item -LiteralPath $settingsPath -Force
@@ -129,7 +130,10 @@ function Get-LocalDataStateHash {
       }
     }
   }
-  if (Test-Path -LiteralPath $dataRoot) { Add-DataFiles -Directory $dataRoot }
+  foreach ($dataDirectory in @("data", "Daten")) {
+    $dataRoot = Join-Path $RepoRoot $dataDirectory
+    if (Test-Path -LiteralPath $dataRoot) { Add-DataFiles -Directory $dataRoot }
+  }
   $sorted = @($records | Sort-Object)
   return Get-Sha256Hex ($sorted -join "`n")
 }
@@ -322,7 +326,7 @@ $manifest = [ordered]@{
   workingTreeStatusHash = $statusHash
   localDataStateHash = $localDataStateHash
   sourceRecordsHash = $sourceRecordsHash
-  includesLocalData = (Test-Path -LiteralPath (Join-Path $repoRoot "Daten"))
+  includesLocalData = ((Test-Path -LiteralPath (Join-Path $repoRoot "data")) -or (Test-Path -LiteralPath (Join-Path $repoRoot "Daten")))
   nodeVersion = (node -p "process.version")
   includesNodeModules = (Test-Path -LiteralPath (Join-Path $repoRoot "node_modules"))
   includesFfmpeg = (Test-Path -LiteralPath (Join-Path $repoRoot "local-tools\ffmpeg"))

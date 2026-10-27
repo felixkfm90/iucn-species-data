@@ -1,10 +1,81 @@
 # Gemeinsamer Datenpfad und Speicherumzug
 
-Stand: 2026-10-05
+Stand: 2026-10-27
 
-## Freigabe und tatsächlicher Stand
+## Aktueller Standard und beauftragte Ordnerumbenennung
 
-Felix bestätigt als finalen gemeinsamen Datenordner `D:\Arten-Explorer\Daten`. Taxonomiereferenz, Master,
+Felix beauftragt am 27. Oktober die Vereinheitlichung des Datenordners auf den englischen Namen
+`data` einschließlich aller benötigten Programmanpassungen. Neuer Standard ist
+`<Explorer-Ordner>/data`; der lokale Wechsel ist ausgeführt und nachgeprüft.
+Bestehende `Daten`-Installationen bleiben lesbar, bis ihr eigener Wechsel ausdrücklich erfolgt.
+Ohne Konfiguration werden vorhandene lokale Datenordner vor einem alten AppData-Bestand berücksichtigt;
+sind sowohl `data` als auch `Daten` vorhanden, wird keine mehrdeutige Auswahl getroffen.
+
+Der Wechsel benennt ausschließlich den gebundenen unmittelbaren Unterordner `Daten` zu `data` um.
+Keine Kopie der großen Datenbanken und keine Verzeichnisweiterleitung. Explorer, Lightroom und gespeicherte
+Aufbauprozesse müssen geschlossen sein. Zielkollisionen, Verzeichnislinks, unabhängig geänderte Konfiguration
+oder Bestandsmetadaten stoppen den Wechsel. Eine Zwischenkonfiguration `migrating` sperrt Verbraucher,
+bis Ordneridentität, vollständiges Metadateninventar und Schließnachweis erneut bestätigt sind.
+
+`.storage-directory-rename.json` ist ein kleiner technischer Umbenennungsbeleg. Er bindet damaligen
+Programmordner, alte/neue Datenadresse, vorherige Konfiguration und den SHA-256 des unveränderten ursprünglichen
+Umzugsjournals. `directoryRenameRevision` in `storage-path.json` bindet seine Revision. Der Node-Resolver
+berechnet die Revision und den Originaljournalhash erneut; Lua spiegelt die Struktur-/Herkunftsprüfung wie
+beim bisherigen Umzugsjournal. Der zusätzliche Herkunftspfad bleibt auch nach späterem erneutem Umbenennen
+des Programmordners auflösbar. Es entsteht kein zweiter Auditbericht.
+
+Historische JSONs, Datenbankinhalte und Auditarchive behalten ihre ursprünglichen Bytes und Prüfsummen.
+Der Resolver übersetzt die belegten alten Zugriffswege: AppData, ursprünglicher Programmordner mit `Daten`
+und der bei der Umbenennung tatsächlich verwendete `Daten`-Pfad. Fremde Pfade mit ähnlichem Präfix bleiben
+getrennt. Aktive Paar-/Vorgänger- und Korrekturzeiger werden dabei nicht umgeschrieben.
+
+Der gezielte Befehl ist `node scripts/storage-migration.mjs rename-data --confirmed --consumers-closed`.
+Er darf nur für einen frisch geprüften und ausdrücklich beauftragten Wechsel verwendet werden. Ein Fehler
+nach der Umbenennung lässt die Daten am neuen Ort und den Zugriff gesperrt; kein blinder Wiederanlauf oder
+automatisches Zurückspielen alter Daten. Für die Wiederaufnahme Konfiguration, technischen Beleg, beide
+Pfadzustände und Verbraucher frisch prüfen. Der unten beschriebene AppData-Kopierrückweg gehört zum
+historischen Umzug vom 4. Oktober und ist kein Rücknahmebefehl für diese Ordnerumbenennung.
+
+### Ausführung und Nachprüfung vom 27. Oktober
+
+Der tatsächliche Pfad ist `D:\Arten-Explorer\data`, relative Konfiguration `data`, Zustand `ready`.
+`D:\Arten-Explorer\Daten` existiert nicht mehr; keine Weiterleitung und keine zweite Datenkopie.
+326 bisherige Dateien mit 136.438.546.089 Inhaltsbytes wurden als dasselbe Verzeichnis umbenannt.
+Die unabhängige Vorher-/Nachheraufnahme bestätigt sämtliche 463 bisherigen Datei-/Verzeichnisidentitäten
+und sämtliche Dateigrößen/Änderungszeiten. Nur `.storage-directory-rename.json` kam als Betriebsbeleg hinzu.
+Originaljournal sowie Paar-, Korrektur- und Referenzzeiger sind per SHA-256 unverändert. Das ist kein
+neuer vollständiger 136-GB-Inhaltsprüflauf und keine erneute Datenbankintegritätsprüfung.
+
+Vorher-/Nachher-Versionsvergleich identisch und `current`: Master `master-20261024014609415`,
+Paket `lightroom-cbbd9b7e7d35ac507d35`. Der echte Lua-Resolver liest die tatsächlichen kleinen Konfigurations-,
+Umzugs-, Umbenennungs-, Veröffentlichungs- und Paketbelege und bestätigt dasselbe verfügbare Paket unter `data`.
+Die alten AppData-/IUCN- und bisherigen Arten-Explorer-Datenpfade werden dabei korrekt aufgelöst.
+Keine SQLite-Inhaltsöffnung, Originalkatalogöffnung oder Fotoänderung für diese Betriebsgegenproben.
+Die drei einschlägigen Pfadvariablen sind auf Prozess-, Benutzer- und Maschinenebene ungesetzt.
+
+Nach den letzten Programmänderungen vollständiges lokales `quality:ci` bestanden: 50 Gruppen / 2.280 Tests,
+keine Fehler, Abbrüche oder Skips; Quell-/Dokumentänderungsstand während des Laufs unverändert.
+Enthalten sind Umbenennung, Abbruch-/Kollisions-/Manipulationsschutz, Windows-Pfadvarianten,
+erneuter Programmordnerwechsel, einfache/absolute Alt-Konfigurationen, Lua, Sicherung und Pages-Schutz.
+Log-SHA-256: `0d6e436cae5e5d1ee48a76dcc87bd15b53a10950396328b9917d5cb1444d6f5b`.
+Ein früherer begrenzter Testaufruf konnte benötigte Hilfsprozesse nicht starten; die entsprechend erlaubte
+Ausführung besteht. Das anfängliche Scheitern einer selbst geschriebenen Lua-Gegenprobe lag an deren
+unvollständigem Datei-Schließstub; der korrigierte lesende Lauf ist bestanden.
+
+Dauerhafte technische Belege einschließlich vorheriger Konfiguration, Identitätsinventaren, Zeigerhashes,
+Lua-Ergebnis und vollständigem Gate-Log liegen unter `data/storage-directory-changes/2026-10-27/`.
+Die drei geschlossenen eigenen Prüfsitzungen wurden nach Prozess-/Eigentums- und Hashprüfung dorthin
+verschoben; `evidence-relocation.json` bindet ihre früheren Tempadressen an den aktuellen Belegort.
+Das ursprüngliche Auditarchiv unter `data/audit-evidence/phase-10-5/` bleibt unverändert.
+
+Plug-in-Quellstand ist **0.4.24.42**; .41 war bereits für die private Auditprobe verwendet.
+Keine native .42-Neuladung oder erneute Originalkatalogabnahme beansprucht. Lightroom blieb geschlossen.
+Aus dem Pfadauftrag allein wurden keine NAS-Sicherung oder Veröffentlichung abgeleitet. Der anschließende
+ausdrückliche Commit-/Push-/Pages-Auftrag ist in der [Roadmap](roadmap.md) festgehalten; private Daten bleiben lokal.
+
+## Historische Freigabe und Speicherumzug vom 4. Oktober
+
+Felix bestätigt am 4. Oktober als gemeinsamen Datenordner `D:\Arten-Explorer\Daten`. Taxonomiereferenz, Master,
 Lightroom-Suchpaket, eigene Namen/Entscheidungen, Nutzungsquittungen und Aufträge werden zusammen verschoben.
 Er verlangt den alten AppData-Datenpfad zu leeren, ohne Weiterleitungsverzeichnis und ohne dortige Rückfallkopie.
 Felix hat anschließend den gesamten Programmordner in `D:\Arten-Explorer` umbenannt. Die Codex-Projektbindung
@@ -22,7 +93,7 @@ Abgeschlossener produktiver Datenwechsel:
 | Kopiervergleich | alle 207 SHA-256-Prüfwerte stimmen mit den Originalen überein |
 | Planrevision | `3572354f69620c3556242d10a404ef9552ab0033606e6fd9287be02ad6947be5` |
 | Umzugsjournal | `Daten/.storage-migration.json`, Zustand `committed`, 207 entfernte Originaldateien |
-| Aktiver Pfad | `D:\Arten-Explorer\Daten`, relative Konfiguration `Daten`, Zustand `ready` |
+| Aktiver Pfad nach dem Wechsel vom 4. Oktober | `D:\Arten-Explorer\Daten`, relative Konfiguration `Daten`, Zustand `ready` |
 | AppData-Quellordner | leer, keine Verknüpfung oder dortige Rückfallkopie |
 
 Keine Taxonomieaktivierung oder Änderung von Datenbankinhalten durch den Wechsel. Produktive Übernahme
@@ -37,7 +108,7 @@ unveränderten Daten. Nach neuer Bearbeitung automatische Rücknahme weiterhin g
 
 ## Resolver und Nachweise
 
-Neuer Standard ist `<Explorer-Ordner>/Daten`; `storage-path.json` kann einen absoluten anderen Datenpfad
+Seit 27. Oktober ist der neue Standard `<Explorer-Ordner>/data`; `storage-path.json` kann einen absoluten anderen Datenpfad
 angeben. Die Einstellungsoberfläche dafür ist noch nicht eingeführt. `FN_EXPLORER_DATA_ROOT` bleibt der
 explizite technische Override. Eine vorhandene Altinstallation wird bis zur bestätigten Migration weiterhin
 erkannt, nicht durch einen leeren neuen Ordner ersetzt.
@@ -127,7 +198,7 @@ alten Stand ersetzt werden.
 
 ## Ausschlüsse und Prüfgrenzen
 
-`Daten`, lokale Konfiguration, Prozesslock und Temp sind aus Git/Pages und Quellscans ausgeschlossen.
+`data`, der historische Name `Daten`, lokale Konfiguration, Prozesslock und Temp sind aus Git/Pages und Quellscans ausgeschlossen.
 Das vollständige NAS-Backup berücksichtigt Daten und Konfiguration; Temp bleibt ausgeschlossen. Ein externer
 Datenpfad oder während des Backups geänderter Datenstand darf keinen vollständigen Sicherungserfolg vortäuschen.
 Keine neue produktive NAS-Sicherung zur Umsetzung gestartet.

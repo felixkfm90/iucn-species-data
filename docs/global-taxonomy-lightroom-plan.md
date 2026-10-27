@@ -1,6 +1,18 @@
 # Globale Taxonomiedatenbank (Phase 9) und Lightroom-Integration (Phase 10)
 
-Stand: 2026-10-01
+Stand: 2026-10-27
+
+Das Gesamtaudit Phase 10.5 ist seit **27. Oktober abgeschlossen**. Gesamt-Go im vereinbarten Umfang und
+bewusste Betriebs-/Nachweisgrenzen stehen ausschließlich im
+[Auditauftrag, Abschnitt 10.55](audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
+Den aktuellen Paar- und Betriebsstand führt der [Taxonomie-Betriebsstand](taxonomy-current-status.md),
+die weitere Reihenfolge die [Roadmap](roadmap.md). Die Architekturentscheidungen dieses Plans bleiben erhalten;
+datierte frühere Offen-Aussagen eröffnen keine bereits abgeschlossene Abnahme erneut.
+
+## Historischer Status- und Umsetzungsstand – 1. Oktober 2026
+
+Der folgende Statusblock einschließlich seiner Ergänzungen beschreibt den damaligen Stand. Aussagen wie
+„bleibt offen“, „vor dem Audit“ und „heutiger Stand“ beziehen sich hier auf diese historische Einordnung.
 
 Status: Phase 9 ist seit 2026-08-09 abgeschlossen. Die Lightroom-Machbarkeitsprüfung aus Phase 10.1 wurde am
 2026-08-13 abgeschlossen. Suchpaket, technischer Plug-in-Kern und die priorisierten Bedienerweiterungen aus
@@ -222,8 +234,9 @@ festgelegt. Der verbindliche technische Entwurf steht in `docs/local-taxonomy-da
 
 Wesentliche Entscheidungen:
 
-- ursprünglich AppData; seit 4. Oktober gemeinsamer konfigurierbarer Standardspeicher unter
-  `<Explorer-Ordner>\Daten\taxonomy`, [geprüfter Umzug und Rückweg](storage-migration.md)
+- ursprünglich AppData; seit 4. Oktober gemeinsamer konfigurierbarer Speicher beim Explorer,
+  neuer Standard nach dem ausgeführten Namenswechsel vom 27. Oktober `<Explorer-Ordner>\data\taxonomy`;
+  bisherige `Daten`-Installationen bleiben unterstützt, [Umzug, Namenswechsel und Rückweg](storage-migration.md)
 - versionierte, unveränderliche read-only Release-Datenbanken
 - vollständiger Import und Test in einem getrennten Stagingordner
 - atomare Aktivierung über eine kleine `active.json`

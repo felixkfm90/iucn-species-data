@@ -731,7 +731,7 @@ Bei Download-, Speicher-, Entpack-, Import-, Prüf- oder Aktivierungsfehlern:
 Der Referenzbestand liegt pfadunabhängig unter:
 
 ```text
-<Explorer-Ordner>\Daten\taxonomy
+<Explorer-Ordner>\data\taxonomy
 ```
 
 Seit 4. Oktober gilt der [gemeinsame Speicherwechsel](storage-migration.md): alter AppData-Datenordner leer,

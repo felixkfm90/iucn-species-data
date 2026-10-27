@@ -12,6 +12,7 @@ const skippedDirectories = new Set([
   "Testlauf",
   "temp",
   "Daten",
+  "data",
   "species-assets",
   "asset-backups",
   "backups",

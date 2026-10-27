@@ -227,7 +227,7 @@ async function inspectArchive(backupRoot, name, budget) {
     const files = entries.filter(({ name: entryName }) => !entryName.endsWith("/") && entryName !== "backup-manifest.json");
     result.fileCount = files.length;
     result.contentBytes = safeInteger(files.reduce((sum, entry) => sum + entry.bytes, 0));
-    const hasData = files.some(({ name: entryName }) => entryName.startsWith("Daten/"));
+    const hasData = files.some(({ name: entryName }) => entryName.startsWith("data/") || entryName.startsWith("Daten/"));
     const hasStorageConfig = files.some(({ name: entryName }) => entryName === "storage-path.json");
     result.scopeLabel = hasData && hasStorageConfig ? "Projekt und gemeinsamer Datenordner enthalten"
       : hasData ? "Projekt mit Datenordner; Speicherkonfiguration fehlt" : "Historischer Projektstand ohne gemeinsamen Datenordner";

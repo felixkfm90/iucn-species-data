@@ -132,6 +132,13 @@ test("NAS-Übersicht unterstützt ZIP64 und einen lesbaren Stand ohne Manifest",
   assert.ok(unknown.createdAt); assert.match(unknown.warning, /kein Prüfmanifest/);
 });
 
+test("NAS-Übersicht erkennt den englischen data-Ordner auch ohne erneute Sicherung alter Archive", async (t) => {
+  const root = await fixture(t);
+  await writeFile(path.join(root, "new-data.zip"), makeZip([["data/private.json", "fixture"], ["storage-path.json", "{}"]]));
+  const result = await readNasBackupArchives(root);
+  assert.match(result.archives[0].scopeLabel, /gemeinsamer Datenordner/);
+});
+
 test("Ein unvollständiges Schema-2-Manifest ergibt keinen positiven Prüfnachweis", async (t) => {
   const root = await fixture(t);
   await writeFile(path.join(root, "incomplete.zip"), makeZip(modernFiles({ files: [] })));

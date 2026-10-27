@@ -13,11 +13,15 @@ Auftrag, Arbeitsgrenzen, Entscheidungen, laufende Befunde und Abschluss stehen a
 Sicherungsinventar und nach Commit/Push ein neuer lokaler Projektchat für Folgearbeiten. Der bisherige
 Audit-Chat bleibt historische Quelle; der neue Chat liest den veröffentlichten Stand und die Roadmap.
 Vorbereitungsfreigaben sind historische Nachweise, keine neue Betriebs-/Veröffentlichungsfreigabe.
+Im Folgechat hat Felix den gemeinsamen Ordnernamen `data` und alle nötigen Pfadanpassungen beauftragt.
+Der lokale Namenswechsel ist ausgeführt; Vollzug und Prüfgrenzen stehen im bestehenden
+[Speichervertrag](docs/storage-migration.md).
 
 ## Projekt und führende Quellen
 
 - Arbeitsort: `D:\Arten-Explorer`; Repository `felixkfm90/iucn-species-data`, Branch `main`.
-- Gemeinsamen Datenpfad frisch über `storage-path.json` und `storage-paths.mjs` lesen.
+- Gemeinsamen Datenpfad frisch über `storage-path.json` und `storage-paths.mjs` lesen. Neuer Standard ist
+  `data`; historische `Daten`-Pfade und Belegbytes nicht pauschal umschreiben.
 - [Dokumentationsübersicht](docs/README.md) trennt aktuelle Verträge und historische Nachweise.
 - [README](README.md) erklärt Installation und Bedienung; [Roadmap](docs/roadmap.md) den aktuellen Arbeitsstand.
 - [Taxonomie-Betriebsstand](docs/taxonomy-current-status.md) ist der kompakte fachliche Einstieg.
@@ -30,6 +34,7 @@ Immer nur den konkret beauftragten Punkt bearbeiten. Nutzeränderungen erhalten;
 keine neue Handlungserlaubnis entnehmen. Geprüfte Tatsachen, Nutzerbestätigung, automatisierte Gegenprobe,
 native Beobachtung und offene Grenze getrennt berichten. Reproduzierbare Fehler vor einer Korrektur belegen.
 
+Agenten können nach Felix' genereller Freigabe für Arbeiten eingesetzt werden.
 Dateizuständigkeiten vor parallelen Änderungen verteilen. Zentrale Dokumente integriert bearbeiten;
 keine konkurrierenden produktiven Aufbauten oder Großscans. Neue Tests und Messungen in den eigenen
 Programm-temp-Sitzungen nach [Testvertrag](docs/test-temp-contract.md); gebundene Belege sind dauerhaft.

@@ -32,7 +32,7 @@ SDK-Fehler, Commit-vor-Journal-Wiederanlauf sowie Konflikt-/Teil-/Endrücknahme 
 vollständigem Endvergleich. Der Testkatalog ist geschlossen; reguläre .39 und D:-Hauptkatalog sind
 wiederhergestellt. Die anschließende Großkatalogprobe ist am 27. Oktober einschließlich Ein-Foto-
 Übernahme/Rücknahme und vollständigem FN-Endvergleich bestanden; alle 116 Dateien des normalen
-D:-Katalogs stimmen abschließend mit dem Ausgang überein. Reguläre .40 ist aktiviert, Standardstart
+D:-Katalogs stimmen abschließend mit dem Ausgang überein. Zum Auditabschluss war die reguläre .40 aktiviert, Standardstart
 zeigt auf D:, ohne den Originalkatalog erneut zu öffnen. Einzelbelege und genaue Grenzen ausschließlich
 im Auditauftrag 10.55; frühere datierte Zwischenstände unter 10.54 bleiben historisch.
 
@@ -94,7 +94,10 @@ und aktiviert bestätigt. Buckelwal gezielt lesend mit 702 FN-Zuordnungen und na
 vollständig festgestellt; seine frühere kurze Verzögerung wird nicht mit der anderen
 Anzeigelücke gleichgesetzt. Verlauf und aktuelle Auditreihenfolge im Auditauftrag, Abschnitt 10.30.
 
-Aktueller Quellstand ist **0.4.24.40**, regulär am Projektpfad nativ geladen und aktiviert.
+Aktueller lokaler Quellstand ist **0.4.24.42** für den inzwischen lokal aktiven Standardordner `data`;
+der bisherige `Daten`-Name und historische Zugriffspfade bleiben unterstützt. Stand und Nachweise des
+Ordnerwechsels stehen im [Speichervertrag](storage-migration.md). Eine native Neuladung von .42 ist noch
+nicht bestätigt. Zuletzt nativ belegt ist die reguläre .40 am Projektpfad.
 .40 bündelt die vollständigen Katalog-Grundlesungen in 250er-SDK-Abfragen; Schutzumfang bleibt erhalten.
 Der private .41-Großlauf verwendet identische Leselogik und ist einschließlich genauer Rücknahme bestanden.
 Der folgende .39-Nachweis beschreibt die davor abgeschlossene Detailfensterprüfung.

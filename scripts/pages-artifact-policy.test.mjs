@@ -23,7 +23,7 @@ test("Pages-Ausgabewahl schützt Daten, Quellen und fremde Ziele vor Ersetzen", 
   const data = path.join(root, "Daten");
   await mkdir(data);
   await writeFile(path.join(data, "private.txt"), "preserve");
-  for (const target of [root, data, path.join(root, "species-assets"), path.join(root, ".git"),
+  for (const target of [root, data, path.join(root, "data"), path.join(root, "species-assets"), path.join(root, ".git"),
     path.join(root, "temp"), path.join(root, "..", "_site")]) {
     await assert.rejects(assertPagesOutputDirectory(root, target), /Pages-Ausgabe/);
   }
@@ -93,7 +93,7 @@ test("Pages-Pfadregeln erlauben nur Laufzeitdateien", () => {
   assert.equal(isIgnoredDesignSource("graphics/catagory/Alternativ/Blaupause.psd"), true);
   assert.equal(isAllowedArtifactPath(".nojekyll"), true);
   assert.equal(isAllowedArtifactPath("species-explorer/local-settings.json"), false);
-  for (const filename of ["Daten/taxonomy/active.json", "temp/tests/a.sqlite", "storage-path.json",
+  for (const filename of ["data/taxonomy/active.json", "Daten/taxonomy/active.json", "temp/tests/a.sqlite", "storage-path.json",
     "lightroom-plugin/FNWildlifeTaxonomy.lrplugin/temp/request.json"]) {
     assert.equal(isPublishableSourcePath(filename), false);
     assert.equal(isAllowedArtifactPath(filename), false);

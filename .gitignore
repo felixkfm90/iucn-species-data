@@ -15,6 +15,7 @@ update_github_only.bat
 
 # Local scratch/test runs
 temp/
+data/
 Daten/
 storage-path.json
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/temp/
