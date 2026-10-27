@@ -8,8 +8,8 @@ Freigaben, Datenvergleiche und historischen Laufberichte stehen im
 Reihenfolge der offenen Arbeiten; aktuelle Projekt-/Assetzähler stehen ausschließlich im
 [generierten Projektstatus](project-status.md).
 
-Das Gesamtaudit wurde am 8. Oktober beauftragt und läuft im Hauptarbeitschat. Befunde, lokale Korrekturen,
-Prüfresultate und offene native/live Grenzen stehen ausschließlich im
+Das am 8. Oktober beauftragte Gesamtaudit ist am 27. Oktober abgeschlossen. Befunde, Korrekturen,
+Prüfresultate und verbleibende Betriebs-/Nachweisgrenzen stehen ausschließlich im
 [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
 
 Der von Felix beauftragte Wechsel auf **COL26.10 XR vom 16. Oktober** ist am **24. Oktober um

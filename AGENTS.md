@@ -1,10 +1,12 @@
 # AGENTS.md – Arten-Explorer, Lightroom und Wildlife-Website
 
-Stand: 2026-10-08
+Stand: 2026-10-27
 
 ## Aktueller Auftrag
 
 Felix hat am 8. Oktober das Gesamtaudit in diesem neuen Hauptarbeitschat ausdrücklich gestartet.
+Das Audit ist am 27. Oktober mit dokumentierten Betriebsgrenzen abgeschlossen; aktuelles Gesamt-Go,
+Prüf- und Veröffentlichungsnachweise stehen in Abschnitt 10.55 des führenden Auftrags.
 Auftrag, Arbeitsgrenzen, Entscheidungen, laufende Befunde und Abschluss stehen ausschließlich im
 [Gesamtauditauftrag Phase 10.5](docs/audit-auftrag-phase-10-5.md). Keine zweite Audit-, Manifest- oder
 Übergabedatei anlegen. Dieser Chat bleibt nach dem Audit Hauptarbeitschat; weitere Arbeiten nur auf

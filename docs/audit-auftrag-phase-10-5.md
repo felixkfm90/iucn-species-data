@@ -2,14 +2,14 @@
 
 Stand: 2026-10-27
 
-Status: **Explorer und Website abgeschlossen; Lightroom-Großprobe am 27. Oktober einschließlich Rücknahme und Originalschutz bestanden. Abschließende Bereinigung, Quellenprüfung und Veröffentlichung laufen.** Felix hat den Start des Gesamtaudits am 8. Oktober in diesem
-neuen Hauptarbeitschat ausdrücklich beauftragt. Der laufende Nachweis steht in Abschnitt 10; ein Abschluss
-oder eine pauschale Freigabe zum Löschen, Umziehen oder Veröffentlichen ist damit nicht verbunden.
+Status: **Gesamtaudit am 27. Oktober abgeschlossen: Gesamt-Go im vereinbarten Umfang mit den in 10.55 ausdrücklich dokumentierten Betriebs-/Nachweisgrenzen.** Felix hat den Start des Gesamtaudits am 8. Oktober in diesem
+neuen Hauptarbeitschat ausdrücklich beauftragt. Die damalige Startfreigabe war noch kein Abschluss
+und keine pauschale Freigabe zum Löschen, Umziehen oder Veröffentlichen. Der tatsächliche Abschluss steht in 10.55.
 Dies ist die **einzige führende Datei für Auditauftrag, Vorabregeln, Entscheidungen, offene Auditfragen und
 den späteren Audit-Abschlussbericht**.
-Aktuelle Reihenfolge nach Felix' Auftrag: Explorer lokal abgeschlossen → Website abgeschlossen → Lightroom →
-gemeinsame Abschluss-/Veröffentlichungsprüfung und Bereinigung. Die Explorer-Teilabnahme ist kein
-Gesamt-Go und keine zusätzliche Veröffentlichungs- oder Löschfreigabe.
+Felix' vereinbarte Reihenfolge Explorer → Website → Lightroom → gemeinsame Abschluss-/Veröffentlichungsprüfung
+und gezielte Bereinigung ist abgearbeitet. Aktueller Abschluss und verbleibende Folgeaufträge stehen in 10.55.
+Aus diesem Abschluss folgt keine neue Veröffentlichungs-, Betriebs- oder Löschfreigabe für spätere Arbeiten.
 Die zuvor getrennten Vorabregeln sind vollständig hier eingeordnet; andere Projekteinstiege verlinken nur
 hierher. Bestehende Fachverträge und datierte Prüfberichte bleiben Belegquellen, keine zweite Audit-Anweisung.
 
@@ -10389,3 +10389,72 @@ Ein davor verweigerter Shellaufruf endete bereits vor der ersten Prüfung mit Sy
 Funktionsfehler oder zweiter bestandener Quellenlauf. Nur aktuelle Dokumentationsfortschreibung folgt
 nach diesem Endgate; dafür lokale Verweis-/Stil-/Diffprüfungen gesondert. Keine weitere vollständige
 Wiederholung bestandener nativer Explorer-/Website-/Lightroomrunden ohne Regressionsgrund.
+
+**B/W/A-Abschlussbereinigung bestanden.** Nach den tatsächlichen nativen Endanzeigen, .40-Rückstellung,
+D:-Startkonfiguration, geschlossenen Fenstern und beiden vollständigen Schlussvergleichen sind genau
+die temporären E:-Sitzungswurzeln `f31e20d2-b430-4607-9418-43a9cd38b1ac` und
+`104d3673-e65b-4ebd-9a1d-53dff28cd541` entfernt: **580 Dateien / 101 Verzeichnisse /
+59.204.844.909 Bytes**. Dazu gehören B, W, A und ausschließlich vier native W-Nebenbestände für
+Vorschauen, Smartvorschauen, Hilfs-/Synchronisationsdaten. Vorher Eigentum, geschlossene alte Owner,
+keine Lightroom-Prozesse, exakte unveränderte B-/A-Dateimetadaten, beide Marker, sämtliche Windows-
+Attribute/Linkgrenzen und der aktuelle vollständige Testbaum bestätigt. 15 synthetische Gegenproben,
+vollständiger Root-Quellreview und neue eigentümergebundene Freigabe vor Mutation. Jede einzelne
+Datei/leer gewordene Verzeichniswurzel mit frischer Prüfung entfernt, synchronisiertes Vorher-/Nachher-
+Journal, Marker zuletzt. Keine neue Kataloginhaltslesung und keine automatische Restlöschung.
+Ergebnis `d01809d0…/removal-result.json`, SHA
+`b9b4b375628fd2144378ddaaf7c5cb2dd4b8f2aa6ea78e56aaea9918a6ed2c0a`, tatsächlicher Exit 0.
+Danach nur den überprüft leeren datierten Elterncontainer per `rmdir` entfernt; keine weiteren Dateien.
+Alle D:-Rohbelege, gefrorenen Prüfquellen, Journale und kleinen historischen Originale bleiben erhalten.
+Abgebrochene ältere Vorbereitungsbelege werden weder umgeschrieben noch als aktive Arbeiten behandelt.
+
+**Veröffentlichung und öffentlicher Schlussvergleich.** Funktions-/Datenstand
+`08f6cf27d12df468ceec000932c6e46ffdcddca9` ist regulär auf `main` veröffentlicht, kein Force-Push.
+[Pages-Lauf 40433622331](https://github.com/felixkfm90/iucn-species-data/actions/runs/40433622331)
+beendet Qualitätsprüfung einschließlich Abhängigkeitsprüfung, Artefaktbau und Deployment erfolgreich.
+Unabhängige GitHub-API-Beobachtung `dfd13e22…/github-release-observation.json`, SHA
+`45f93682a118e304661d94e6e706f0aab6d0b991490c292246c25af151bf1291`.
+Alle fünf geänderten öffentlichen Projekt-JSONs stimmen mit den exakten Git-Blobbytes dieses Commits
+überein. Die beiden repräsentativ geprüften entfernten Löwen-Medienpfade liefern 404.
+`400cd385…/public-release-data-result.json`, SHA
+`7ed07bba8b676ace48467e4e0c7e9922a642ba12a2a89274ea8ca4c20a2955c4`.
+Öffentliche JS-/CSS-/Footer-/Cachequellen gegenüber der angenommenen Websitefassung unverändert;
+keine neue vollständige Seitensichtung behauptet. Die anschließende reine Dokumentationsfortschreibung
+ändert keinen Funktions-/Datenstand. Ihr tatsächlicher Commit-/CI-Schluss wird als technische
+`final-published-state.json`-Quittung in einer eigenen verwalteten Programm-temp-Sitzung gesichert;
+keine zweite Audit- oder Übergabedokumentation.
+
+**Bereinigungsbilanz und Schutzmenge.** Insgesamt **180.230.600.593 Bytes (180,23 GB / rund 167,85 GiB)**
+nachweislich entbehrlicher Dateiinhalte entfernt: ersetzter Großtest-Fehlversuch, abgeschlossene
+Restore-Testinstallation, B/W/A samt privaten Vorschauen, ausschließlich Löwen-Testmedien und ein
+16.305-Byte-Modulanalysecache. Der Cache war der bekannte unversionierte PowerShell-Laufzeitrest;
+nach stabiler Identitäts-/Hashprüfung nur diese Datei und ihre danach leeren drei Elternordner entfernt.
+`6d1dae83…/cache-removal.json`, SHA
+`fc8281f4efe1922464dcd91fcace3946ffad2c020c966165e485d6741ae272e0`.
+Der leere E:-Datumscontainer ist separat quittiert: `401ca070…/empty-container-removal.json`, SHA
+`cbe6880d957abc57b216ccdb57e56f7c9958dbc76608dd8ee78a0a6323c187f8`.
+Diese Summe ist keine gemessene Laufwerks-Nettobilanz; kleine Beleg-/Rücknahmedateien wurden gleichzeitig
+behalten beziehungsweise erzeugt. Geschützte aktive/vorherige Taxonomiestände, Quelleneingänge,
+Recovery-/Identitätshistorie, NAS-Archive, normale Bearbeitungssicherungen und dauerhafte Auditbelege
+bleiben erhalten. Ihr Schutz wird durch Alter, fehlenden Textverweis oder `.gitignore` nicht aufgehoben.
+Es wurde keine neue NAS-Sicherung des 27.-Oktober-Stands behauptet oder ohne Auftrag angelegt.
+
+**Gesamt-Go und Grenzen.** Der beauftragte Umfang für Explorer, Taxonomie, Lightroom, Medien,
+Speicher/Restore, Website und GitHub ist mit den hier getrennten automatisierten, nativen und
+öffentlichen Nachweisen angenommen. Kein ungelöster P0/P1 und keine erforderliche unbeantwortete
+Nutzerentscheidung im unabhängigen Schlussreview. Bestehende erfolgreiche Abnahmen wurden erhalten,
+reproduzierte Fehler korrigiert, die beauftragte konkrete Bereinigung ausgeführt und aktuelle Doku
+zusammengeführt. Dies ist keine Aussage unbegrenzter Fehlerfreiheit oder eine Erlaubnis weiterer Betriebsaktionen.
+
+Bewusst verbleibend: automatischer IUCN-Kartenabruf/403 als Anbieter-Todo mit Browser-/Dateiimport;
+fehlende geeignete offene Soundalternativen und vorhandene NC-Nutzungsgrenzen (10.19). Physischer
+Touch, Screenreader, andere Windows-DPI-Konfigurationen, produktiver Datenbank-Kaltstart und langfristiger
+Speicherverlauf sind keine beanspruchten Messungen. Aktive Fortschritts-/Leistungsbeobachtung A-64 beim
+nächsten ohnehin beauftragten realen Aufbau ergänzen, dafür keinen neuen Produktivtest auslösen.
+Nach dem Audit ausdrücklich vorgemerkt: **Alternativtextworkflow, Android-App und Erstellen/Einpflegen
+neuer Artseiten** mit den Abnahmekriterien aus 10.46/10.47. Das sind Folgeaufträge, keine offenen Auditprüfungen.
+
+Lightroom und eigene Testfenster sind geschlossen; reguläre .40 ist aktiv und Standardstart zeigt auf
+den normalen D:-Katalog. Alle eigenen laufenden Kopier-, Lese-, Mess-, Beleg- und Bereinigungsowner sind
+tatsächlich beendet. Historische Fehlerbelege bleiben als solche erhalten. Felix hat normales
+Herunterfahren nach Abschluss ausdrücklich beauftragt; vor dem Auslösen nochmals veröffentlichte
+Endrevision, sauberen Git-Stand und fehlende aktive Lightroom-/Explorer-Schreiber prüfen. Kein Zwangsende.

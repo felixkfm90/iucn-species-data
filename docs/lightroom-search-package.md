@@ -7,7 +7,8 @@ gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwe
 seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
 vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
 Felix bestätigte Weissstorch/Rebhuhn im Explorer, tatsächliche Lightroom-Zuweisung und Erhalt nach
-Schließen/Wiederöffnen. Weitere Funktions-/Bediengrenzen und das Phase-10-Audit bleiben offen.
+Schließen/Wiederöffnen. Das Gesamtaudit ist im vereinbarten Umfang abgeschlossen; verbleibende
+Betriebs-/Bediengrenzen sind im führenden Auditauftrag ausdrücklich zugeordnet.
 Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](taxonomy-partial-source-recovery.md).
 
 .40 bündelt die katalogweiten Grunddaten der Artänderungsprüfung in 250er-SDK-Leseblöcken.

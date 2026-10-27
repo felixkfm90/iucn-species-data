@@ -11,8 +11,8 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 - [Projekt-README](../README.md): Installation, Bedienung und Betrieb.
 - [Roadmap](roadmap.md): aktueller Arbeitsstand und nächste Schritte.
 - [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md): einzige führende Auditdatei einschließlich
-  Vorabregeln, Entscheidungen und Befunde; Explorer, Website und Lightroom angenommen. Letzte
-  Bereinigung, Quellenendprüfung und Veröffentlichungsannahme unter Abschnitt 10.55.
+  Vorabregeln, Entscheidungen, Befunde und Gesamtabschluss vom 27. Oktober einschließlich gezielter
+  Bereinigung, Quellenendprüfung und Veröffentlichungsnachweisen unter Abschnitt 10.55.
 - [Taxonomie-Betriebsstand](taxonomy-current-status.md): abgeschlossene Reparatur und reguläres Quellenupdate, aktives lokales Paar und offene Abnahmen.
 - [Projektstatus](project-status.md): einzige aktuelle Quelle für Arten-/Assetzähler und Pflege-/Lizenzlisten; automatisch erzeugt.
 - [Dokumentationsregeln](documentation-lifecycle.md): Zuständigkeiten, historische Berichte und Prüfpflichten.

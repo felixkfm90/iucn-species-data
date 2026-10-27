@@ -7,21 +7,13 @@ stellt öffentliche Artdaten, Verbreitungskarten, Tierstimmen und Frontend-Modul
 
 ## Aktueller Arbeitsstand
 
-Das Gesamtaudit wurde am 8. Oktober 2026 von Felix ausdrücklich gestartet. Der
-[Auditauftrag Phase 10.5](docs/audit-auftrag-phase-10-5.md) ist die einzige führende Datei für Auftrag,
-Arbeitsgrenzen, Entscheidungen, Befunde und späteren Abschluss. Dieser neue Hauptarbeitschat bleibt für
-weitere beauftragte Projektarbeiten bestehen. Der Auditstart erlaubt keine zusätzliche Veröffentlichung.
-Die ab 11. Oktober priorisierten Lightroom-FN-/Monatskorrekturen und die frühe Artanlageprüfung sind
-inzwischen umgesetzt und gezielt geprüft; das Gesamtaudit wird fortgesetzt. Quellkorrektur, tatsächlich
-geladene Version, produktiver Datenbankabschluss und weitere eigene Abnahmen bleiben im Auditauftrag
-getrennt nachgewiesen. Den aktuellen integrierten Prüfstand und die verbleibenden Grenzen führt
-Abschnitt 10.55. Die früheren Medien-/Neustartprüfungen mit Korrektur des Artassistenten stehen unter
-10.32 und 10.33; die automatische FN-Artseitenverknüpfung ist unter 10.35 nachgewiesen.
-Die lokale Explorer-Abschlussprüfung und das vereinbarte Websitepaket sind am 26. Oktober abgeschlossen.
-Die Lightroom-Großprobe ist am 27. Oktober einschließlich genauer Rücknahme, vollständigem FN-Endvergleich
-und unverändertem Originalkatalog bestanden. Aktuelle Plug-in-Version ist 0.4.24.40.
-Gemeinsame Quellenveröffentlichung, Abschlussbereinigung und Gesamt-Go bleiben offen;
-die verbindliche Einordnung steht im Auditauftrag.
+Das am 8. Oktober 2026 beauftragte Gesamtaudit ist am **27. Oktober abgeschlossen**. Explorer,
+Website und Lightroom sind im vereinbarten Umfang angenommen; die gezielte Abschlussbereinigung ist
+ausgeführt. Gesamt-Go, Prüf-/Veröffentlichungsnachweise und verbleibende Betriebsgrenzen stehen
+ausschließlich im [Auditauftrag Phase 10.5, Abschnitt 10.55](docs/audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
+Aktuelles Lightroom-Plug-in ist **0.4.24.40**. Die Großprobe einschließlich genauer Rücknahme und
+unverändertem Originalkatalog ist bestanden. Weitere Arbeiten richten sich nach Felix' Auftrag;
+die vereinbarten Folgevorhaben stehen in der [Roadmap](docs/roadmap.md).
 
 Aktuelle Verträge und historische Nachweise sind über die [Dokumentationsübersicht](docs/README.md)
 erreichbar. [Roadmap](docs/roadmap.md), [Taxonomie-Betriebsstand](docs/taxonomy-current-status.md) und der
