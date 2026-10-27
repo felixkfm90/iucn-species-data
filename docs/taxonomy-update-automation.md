@@ -1,6 +1,12 @@
 # Gespeicherter Gesamtweg für Taxonomie-Updates
 
-Stand: 2026-10-23 · Wiederanlauf vom 13. Oktober abgeschlossen; neues Quellenupdate geschützt angehalten
+Stand: 2026-10-27 · Update-Abschlussaktion als Folgevorhaben vorgemerkt
+
+Der aktuelle Update-/Paarstand steht im [Taxonomie-Betriebsstand](taxonomy-current-status.md);
+das Gesamtaudit ist seit 27. Oktober im vereinbarten Umfang abgeschlossen. Abschluss und Grenzen führt
+der [Auditauftrag, Abschnitt 10.55](audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
+
+## Historischer Update- und Wiederanlaufstand bis 23. Oktober
 
 Dieser Vertrag ergänzt den [Quellenupdatevertrag](taxonomy-reference-update.md) und
 [FN-Nutzungsnachweis](lightroom-catalog-usage.md). Der freigegebene lokale Ersatzauftrag
@@ -19,6 +25,24 @@ Aufbau aus den schon vorhandenen Quellen. Die inzwischen erneut geöffneten Kata
 wieder einen aktuellen requestgebundenen Nutzungsnachweis und normalen Lightroomabschluss.
 Details und tatsächlicher Ausführungsstand ausschließlich unter
 [Auditauftrag, Abschnitt 10.51](audit-auftrag-phase-10-5.md#1051-fortsetzung-und-neues-col-update--23-oktober).
+
+## Vorgemerkt: wählbare Abschlussaktion nach erfolgreichem Update
+
+Felix ergänzt am 27. Oktober als To-do, bereits vor einer Datenbankaktualisierung festlegen zu können,
+was nach ihrem erfolgreichen Abschluss geschieht. Dieses Vorhaben ist in der [Roadmap](roadmap.md) aufgenommen;
+eine Abschlussautomatik ist damit noch nicht umgesetzt oder gestartet.
+
+- Vor dem konkreten Updateauftrag eine Aktion auswählen können, beispielsweise **nichts tun**,
+  **Programm beenden** oder **Computer herunterfahren**. Weitere klassische Optionen wie Neustart
+  oder Ruhezustand und die Speicherung einer Vorauswahl im späteren Konzept festlegen.
+- **Nichts tun** bleibt der sichere Standard. Die Auswahl an den konkreten Auftrag binden und vor
+  der Auslösung erkennbar machen; eine vorgemerkte Systemaktion muss rechtzeitig abwählbar sein.
+- Erst nach dem vollständig erfolgreichen Gesamtweg einschließlich geprüftem Master-/Suchpaketpaar
+  auslösen. Ein bloß abgeschlossener Quellenimport, wartende Schritte, Fehler oder Abbruch reichen nicht.
+- Vor Beenden oder Herunterfahren eigene Schreibvorgänge regulär abschließen. Keine erzwungene
+  Prozessbeendigung oder Umgehung offener Speicherrückfragen anderer Programme vorsehen.
+- Spätere Abnahme: Auswahl vor Start, erfolgreicher Abschluss, Fehler/Abbruch und rechtzeitige Abwahl
+  gezielt praktisch prüfen. Heute keine Datenbankaktualisierung oder Systemaktion für dieses To-do ausführen.
 
 ## Bedienung
 

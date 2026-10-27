@@ -59,11 +59,16 @@ Testaufbau starten. Weitere Umsetzung und Veröffentlichung benötigen Felix' je
 - **Mehrbenutzerunterstützung:** Nutzung durch mehrere Personen und auf mehreren Rechnern konzipieren und
   umsetzen; Benutzer-/Berechtigungsmodell, gemeinsame und private Daten sowie Schutz vor Bearbeitungskonflikten
   festlegen. Den bestehenden Mehrgeräte-/Update-/Sicherungsplan dabei einbeziehen.
+- **Abschlussaktion nach Datenbankaktualisierung:** Vor dem Start wählen können, was nach vollständig
+  erfolgreichem Abschluss passiert, etwa nichts tun, Programm beenden oder Computer herunterfahren.
+  Weitere klassische Systemaktionen im Konzept festlegen; Standard bleibt nichts tun. Fehler, Abbruch
+  oder wartende Schritte dürfen keine Erfolgsaktion auslösen. Details im [Updatevertrag](taxonomy-update-automation.md#vorgemerkt-wählbare-abschlussaktion-nach-erfolgreichem-update).
 
 Die verbindlichen Ziele der ersten drei Vorhaben stehen im Auditauftrag, Abschnitte 10.46 und 10.47.
 Installer und Mehrbenutzerunterstützung hat Felix am 27. Oktober im Folgechat ergänzt; die fachliche
-Einordnung steht im [Mehrgeräte-/Backupplan](multi-device-backup-plan.md). Alle fünf Vorhaben sind
-vorgemerkt; die konkrete Umsetzung richtet sich nach dem jeweiligen Folgeauftrag. Frühere Ausbauideen
+Einordnung steht im [Mehrgeräte-/Backupplan](multi-device-backup-plan.md). Die wählbare Update-Abschlussaktion
+hat Felix anschließend ebenfalls vorgemerkt. Alle sechs Vorhaben sind aufgenommen; die konkrete Umsetzung
+richtet sich nach dem jeweiligen Folgeauftrag. Frühere Ausbauideen
 sind keine laufenden Umsetzungsaufträge.
 
 ## Fachstände
