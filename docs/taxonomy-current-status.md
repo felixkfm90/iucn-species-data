@@ -1,6 +1,6 @@
 # Aktueller Taxonomie-Betriebsstand
 
-Stand: 2026-10-26
+Stand: 2026-10-27
 
 Dieses Dokument ist der kompakte Einstieg für den heutigen lokalen Taxonomie-Betrieb. Die vollständigen
 Freigaben, Datenvergleiche und historischen Laufberichte stehen im
@@ -30,8 +30,11 @@ geöffnet; Original-Plug-in 0.4.24.39 bestätigt dort das neue gemeinsame Paar. 
 Testserie besteht inzwischen Mehrblockpause/Wiederöffnung mit 253 Testfotos in beiden Richtungen,
 SDK-Fehler, Commit-vor-Journal-Wiederanlauf sowie Konflikt-/Teil-/Endrücknahme einschließlich unabhängigem
 vollständigem Endvergleich. Der Testkatalog ist geschlossen; reguläre .39 und D:-Hauptkatalog sind
-wiederhergestellt. Großkatalog-Leistungsprüfung und übrige Betriebsgrenzen bleiben offen. Einzelbelege,
-datierte Zwischenstände und jüngster Gesamtprüfstand ausschließlich im Auditauftrag 10.54.
+wiederhergestellt. Die anschließende Großkatalogprobe ist am 27. Oktober einschließlich Ein-Foto-
+Übernahme/Rücknahme und vollständigem FN-Endvergleich bestanden; alle 116 Dateien des normalen
+D:-Katalogs stimmen abschließend mit dem Ausgang überein. Reguläre .40 ist aktiviert, Standardstart
+zeigt auf D:, ohne den Originalkatalog erneut zu öffnen. Einzelbelege und genaue Grenzen ausschließlich
+im Auditauftrag 10.55; frühere datierte Zwischenstände unter 10.54 bleiben historisch.
 
 Der vereinbarte Erhalt historischer Quellenfälle gilt nur für unbenutzte, ungeschützte Identitäten:
 bisherige Kennung und Daten bleiben erhalten, neue Auswahl und Zuweisung bleiben gesperrt, solange
@@ -91,7 +94,10 @@ und aktiviert bestätigt. Buckelwal gezielt lesend mit 702 FN-Zuordnungen und na
 vollständig festgestellt; seine frühere kurze Verzögerung wird nicht mit der anderen
 Anzeigelücke gleichgesetzt. Verlauf und aktuelle Auditreihenfolge im Auditauftrag, Abschnitt 10.30.
 
-Aktueller Quellstand ist **0.4.24.39**, regulär nach normalem Neustart am Projektpfad tatsächlich gelesen.
+Aktueller Quellstand ist **0.4.24.40**, regulär am Projektpfad nativ geladen und aktiviert.
+.40 bündelt die vollständigen Katalog-Grundlesungen in 250er-SDK-Abfragen; Schutzumfang bleibt erhalten.
+Der private .41-Großlauf verwendet identische Leselogik und ist einschließlich genauer Rücknahme bestanden.
+Der folgende .39-Nachweis beschreibt die davor abgeschlossene Detailfensterprüfung.
 .39 schützt die Lebensdauer des Zuweisungsfensters beim Wechsel zum Detail-Leser; 58/58 direkte
 Detail-/Vertragsprüfungen bestehen. Die private .39 besteht zweimaliges Schließen des Detail-Lesers per X
 und die anschließende ausdrückliche dritte Suche. Der spätere enge native Detailfensterlauf bestätigt
@@ -103,7 +109,7 @@ Rücknahme auf den dokumentierten Arrayzugriff mit numerischen Kennungen und exa
 Split B, Split C und Merge F bestehen inzwischen jeweils native Übernahme und genaue Rücknahme;
 alle sechs eigenen Testeinträge, geschützte Felder/Stichwörter und die inkrementelle Statistik sind
 unabhängig nachgeprüft. Auch Mehrblockpause/Wiederöffnung und gezielte SDK-, Commit-/Journal- und
-Konflikt-/Rücknahmefälle sind inzwischen bestanden; die repräsentative Großkatalogprüfung bleibt offen.
+Konflikt-/Rücknahmefälle sind inzwischen bestanden; die spätere Großkatalogprüfung ist unter 10.55 angenommen.
 Die private .39 ist nach
 diesen Tests deaktiviert und reguläre .39 vor der Rückkehr in den D-Hauptkatalog aktiviert; die erneute
 Plug-in-Kontrolle im wieder geöffneten Hauptkatalog ist inzwischen bestanden. Nachweise und der

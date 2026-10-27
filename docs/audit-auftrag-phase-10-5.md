@@ -1,8 +1,8 @@
 # Auditauftrag Phase 10.5 – Gesamtprojekt, Betrieb und Weiterentwicklung
 
-Stand: 2026-10-26
+Stand: 2026-10-27
 
-Status: **Gesamtaudit läuft; lokale Explorer-Abschlussprüfung und vereinbartes Websitepaket am 26. Oktober abgeschlossen. Lightroom und Gesamtabschluss stehen aus.** Felix hat den Start des Gesamtaudits am 8. Oktober in diesem
+Status: **Explorer und Website abgeschlossen; Lightroom-Großprobe am 27. Oktober einschließlich Rücknahme und Originalschutz bestanden. Abschließende Bereinigung, Quellenprüfung und Veröffentlichung laufen.** Felix hat den Start des Gesamtaudits am 8. Oktober in diesem
 neuen Hauptarbeitschat ausdrücklich beauftragt. Der laufende Nachweis steht in Abschnitt 10; ein Abschluss
 oder eine pauschale Freigabe zum Löschen, Umziehen oder Veröffentlichen ist damit nicht verbunden.
 Dies ist die **einzige führende Datei für Auditauftrag, Vorabregeln, Entscheidungen, offene Auditfragen und
@@ -824,21 +824,21 @@ bleiben gesonderte Nachweise.
 | A-46 / P2 – Korrigiert, eigene Browser-/Lightroomrunde bestanden | Bestätigte globale Namenswahl erneuert das Detail, während derselbe Suchtreffer in Explorer und Lightroom noch den alten Namen zeigt. | Bestehenden passenden Treffer aus frischen Details erneuern; alte Antworten bei geänderter Anfrage/ID verwerfen. Explorer 55/55, Plug-in .34 70/70; native Rückwahl/Anbieterstandard, Gegenrichtung und kontrollierter Aktivierungsfehler mit erfolgreicher Wiederholung bestanden. Gesamtgate 50 Gruppen / 1.863 Tests bestanden. | Alle fünf vollständigen Katalogeinträge unverändert. Begleitender Präferenzweg nach Fotozuweisung automatisiert geprüft; eigene reine Namensrunde führt keine Fotozuweisung oder produktive Namensänderung aus. Abschnitt 10.36. |
 | A-47 / P2 – Korrigiert, Browsergegenprobe bestanden | Nach Abbruch/Escape der Explorer-Namensvorschau verlor die Oberfläche den Tastaturfokus; eine alte Vorschauantwort konnte noch eine Bestätigung öffnen. | Namensworkflow bindet Vorschau vor Bestätigung an Anfrage/Taxon/Auswahl und stellt tatsächlich verlorenen Fokus nach Reaktivierung des Auslösers wieder her. 70/70 gezielte Fälle; echter Browser mit Escape, gezieltem Klickabbruch und schmaler Ansicht bestanden. Gesamtgate 50 Gruppen / 1.878 Tests bestanden. | Andere bewusst fokussierte Eingaben bleiben erhalten; keine gespeicherte Namensänderung in dieser Gegenprobe. Keine Windows-DPI-/Screenreader-Gesamtabnahme. Abschnitt 10.38. |
 | A-48 / P2 – Korrigiert und nativ bestätigt | Sommer- und Wintergoldhähnchen öffentlich erreichbar, Explorer meldet trotz „Website prüfen“ nicht veröffentlicht: Squarespace liefert am nackten Sitemap-Pfad weiterhin den alten öffentlichen Cache. | Reproduzierter Vergleich: alter Stand 135 Seiten ohne beide Arten; frische gebundene Sitemapabfrage 137 mit beiden genauen Artkennungen. Jede tatsächliche neue Sitemap-/Untersitemapabfrage erhält ausschließlich eine eigene Erneuerungskennung. Lokaler Cache, Host-/Weiterleitungs-/XML-/Größen-/Zeitgrenzen unverändert. | Vor Fix 10/12 mit zwei erwarteten Fehlern; danach gezielt 26/26, Live-Service sowie tatsächlicher regulärer Neustart, beide nativen Links, erneute Websiteprüfung und passend geöffnete öffentliche Zielseiten bestanden. Vollgate unter 10.40 mit 50 Gruppen/1.881 Tests bestanden; erneuter Live-Servicebeleg vom 20. Oktober unter 10.43. Keine CMS-/Veröffentlichungs- oder Artdatenänderung. |
-| A-49 / P2 – korrigiert; native Grund-, Mehrblock- und Störfälle angenommen | Echte IdentityWriter-/StatisticsIndex-Module mit künstlich verzögerter SDK-Lesesicht: erste Zielstichwortkennung wird vor Commit gelesen; Artänderungsstatistik übernimmt noch den alten FN-Stand. | .35 bindet reale Zielobjekte nach Commit mit frischem Schutzvergleich und projiziert Statistik aus vollständigem Journalziel plus erhaltenem Vorzustand. Gültige Vorherprobe 14/16 mit genau beiden Fehlern, nach Korrektur erweitert 170/170 gezielt und unabhängiges Code-Go. | Split B/C und Merge F mit vollständiger Rücknahme angenommen. Mehrblockpause/Wiederöffnung mit 250+3 in beiden Richtungen sowie SDK-Rollback, Commit-vor-Journal-Wiederanlauf und Konflikt-/Teil-/Endrücknahme unabhängig bestanden. Repräsentative Großkatalogprobe für Laufzeit, Prozess-RAM und Abbruch bleibt gesondert offen; 10.50/10.51 und aktueller Endstand 10.54. |
+| A-49 / P2 – korrigiert; native Grund-, Mehrblock- und Störfälle angenommen | Echte IdentityWriter-/StatisticsIndex-Module mit künstlich verzögerter SDK-Lesesicht: erste Zielstichwortkennung wird vor Commit gelesen; Artänderungsstatistik übernimmt noch den alten FN-Stand. | .35 bindet reale Zielobjekte nach Commit mit frischem Schutzvergleich und projiziert Statistik aus vollständigem Journalziel plus erhaltenem Vorzustand. Gültige Vorherprobe 14/16 mit genau beiden Fehlern, nach Korrektur erweitert 170/170 gezielt und unabhängiges Code-Go. | Split B/C und Merge F mit vollständiger Rücknahme angenommen. Mehrblockpause/Wiederöffnung mit 250+3 in beiden Richtungen sowie SDK-Rollback, Commit-vor-Journal-Wiederanlauf und Konflikt-/Teil-/Endrücknahme unabhängig bestanden. Großkataloglauf einschließlich Ein-Foto-Übernahme/Rücknahme, Laufzeitfenstern, unverändertem realem FN-Bestand und Originalschutz am 27. Oktober bestanden; getrennte Abbruch-/Störproben bleiben gültig. Aktueller Endstand und Grenzen in 10.55. |
 | A-50 / P2 – korrigiert und im Browser bestätigt | Eigene Browserprobe der Artanlage: Nach fehlgeschlagenem Verfügbarkeitsstatus und nach Escape aus dem freien Artassistenten landet der tatsächliche Fokus auf BODY. Neue Art wird vor dem asynchronen Vorabcheck deaktiviert; dadurch geht der Rückkehrpunkt verloren. | Eigener ursprünglicher Auslöser wird nach dem Vorabcheck nur bei verlorenem Fokus und unverändertem gültigem Auftrag wieder fokussiert; bewusst anderweitig gesetzter Fokus bleibt erhalten. Reproduktion 46/51 mit fünf erwarteten Fehlern, anschließend 51/51. | Vollgate 50 Gruppen/1.904 bestanden. Tatsächlich sieben Browser-Schließwege mit Fokus auf Neue Art sowie Anfangsfokus im freien Formular bestätigt; sauberer unveränderter Laufabschluss unter 10.49. Kein Hauptkatalog-/Artenschreiben. |
 | A-51 / P2 – native Schließ-/Suchmatrix bestanden; Skalierungsgrenze benannt | Der modale Taxonomiedetail-Leser war hinter dem Zuweisungsfenster verdeckt; später Nichtbedienbarkeit nach wiederholter Rückkehr beobachtet. | .36 schließt den eigenen Floater vor der Anzeige; .39 erzeugt eine neue Viewhierarchie je Generation bei erhaltenen Properties/einmaligen Observern. Ergänzend am 24. Oktober private .46 mit unveränderter .39-Detail-/Suchlogik: Escape auf erster/letzter Seite, normaler Schließknopf, Fertig, Zurück/Weiter, fünf erneute Detailaufrufe, neue Gamma-Suche, nutzbarer Tabfokus und normaler Fensterschluss bestanden. | Geschlossene Kopien vor/nach dem Lauf bestätigen alle sechs Rohidentitäten/FN-Felder/IPTC/Stichwortrelationen/Statistik unverändert; Original .39 und Hauptkatalog D: zurückgestellt. Aussage gilt für die tatsächlich verwendete Windows-Anzeige; andere Systemschrift-/DPI-Einstellungen nicht abgenommen. Genaue SDK-Ursache nicht behauptet; 10.51 und Fortsetzung vom 24. Oktober. |
 | A-52 / P2 – Kennungskorrektur nativ bestätigt | Eigene Split-Übernahme stoppte vor Journalanlage: Lua reicht SDK-UUID großgeschrieben weiter, Journal verlangt Kleinschreibung. | .37 normalisiert und prüft Typ/Gruppenform am Erzeuger; gekoppelte Vorherprobe 8/19, danach 19/19 und Integration 93/93. Vollgate .37 50/1.923. Die folgende native Runde legt genau einen gültigen Lauf an; .38 setzt ihn erfolgreich fort. | Der konkrete UUID-Fehler ist überwunden. Das ersetzt nicht die separate vollständige Übernahme-/Rücknahmematrix; A-53 und 10.50 führen deren Grenzen. |
-| A-53 / P2 – korrigiert; native Grund-, Mehrblock- und Störfälle angenommen | .37 bereitete das Journal vor, meldete aber vorhandenes `Tiere (FN)` als gelöscht/umbenannt. | .38 verwendet dokumentierten Batch-SDK-Zugriff mit numerischen IDs/exakter Objektbindung. Identische Vorherprobe 10/32, danach 32/32; Integration 227/227, Vollgate 50/1.937. Vorhandenen Ein-Foto-Lauf nativ fortgesetzt und angewendet. | Split B/C und Merge F einschließlich Rücknahme, 250+3 in beiden Richtungen sowie die getrennten SDK-/Journal-/Konfliktfälle unabhängig bestanden. Keine Wiederholung des alten B-Übernahmelaufs. Repräsentativer Großkatalogbetrieb bleibt offen; heutiger vollständiger Endvergleich und Rückkehr zu Original .39/Hauptkatalog D: unter 10.54. |
+| A-53 / P2 – korrigiert; native Grund-, Mehrblock- und Störfälle angenommen | .37 bereitete das Journal vor, meldete aber vorhandenes `Tiere (FN)` als gelöscht/umbenannt. | .38 verwendet dokumentierten Batch-SDK-Zugriff mit numerischen IDs/exakter Objektbindung. Identische Vorherprobe 10/32, danach 32/32; Integration 227/227, Vollgate 50/1.937. Vorhandenen Ein-Foto-Lauf nativ fortgesetzt und angewendet. | Split B/C und Merge F einschließlich Rücknahme, 250+3 in beiden Richtungen sowie die getrennten SDK-/Journal-/Konfliktfälle unabhängig bestanden. Keine Wiederholung des alten B-Übernahmelaufs. Großkataloglauf einschließlich vollständigem FN-Endvergleich am 27. Oktober bestanden; reguläre .40 aktiviert und D:-Startkatalog bestätigt, ohne erneute Originalöffnung. Historische .39-Rückkehr unter 10.54, aktueller Abschluss unter 10.55. |
 | A-54 / P2 – Schutzregel und produktiver Paarabschluss bestanden | Neues CoL-Update stoppt an 17 bereits bestätigten Klassifikationen ohne aktuellen Zielgruppenbeleg; allgemeiner Fehler zunächst ohne Art/Grund. | Genau eine lesende Quellprüfung: 1.978 passende/17 fehlende Belege, gültige Historie. Felix erlaubt abgesicherten Erhalt unbenutzter, ungeschützter IDs/Tupel/Daten bei gesperrter neuer Auswahl. Eigener gebundener Retentionsbeleg; bestehende Erstprüfung bleibt streng. | Core, Workflow und Such-/Zuweisungspfad einschließlich Raw-CoL-/Supplement-Umgehung unabhängig geprüft; damaliges Gate 50 Gruppen/1.993 Tests bei 165 unveränderten Quellen bestanden. Neuer Auftrag 0d0b6e9e… besteht nach A-66/A-69 am 24. Oktober frische FN-Erfassung, normales Lightroomende und die gemeinsame Übernahme. Kein Umbiegen gleichnamiger Arten; aktive Fortschritts-/Leistungsgrenze A-64 getrennt offen, 10.51/10.53/10.54. |
 | A-55 / P2 – CMS-CSS-Kompilierungsfehler nach gesonderter Freigabe live behoben | Version 42 enthielt trotz HTTP 200 nur 557 Byte Compilerfehler. Roher CMS-Text war bytegleich der gültigen Standard-CSS-Datei. Zwei vollständige `clip-path`-Werte ausschließlich im CMS LESS-escaped; Koordinaten und Rechenwerte unverändert. | Vor Speichern frischer Quellhash unverändert; unabhängige CMS-Neuladung bestätigt exakt den Kandidaten. Öffentliche Version 43 enthält 10.951 Byte Stilregeln ohne Compilerfehler und beide unveränderten Formeln. Artseite und Übersicht laden 43; nachhaltige CMS-Eingaberegel in README ergänzt. | Eng begrenzte Freigabe ausgeführt und nachgeprüft, keine Root-Modul-/Footer-/Pages-Veröffentlichung. Eigenständiges Wendehals-Rasterproblem A-56 anschließend gesondert korrigiert; Belege 10.52/10.53. |
 | A-56 / P2 – visuelle Kartenüberschrift auf Wendehals live korrigiert | Zweizeilige Überschrift im zu schmalen CMS-Raster reichte rund 22,55–22,75 Pixel in das Kartenbild. | Überschrift auf Kartenbreite erweitert; unabhängige öffentliche Neuladung bestätigt eine vollständige Zeile und 6,78125 Pixel positiven Abstand zum geladenen Kartenbild. Alle 22 rohen Textarrays unverändert. | Desktop und CMS-Mobilvorschau visuell bestanden; keine physische Mobil-/Screenreader-Abnahme. Logische Karten-/Überschriftenreihenfolge unverändert. Belege und unabhängiger Review unter 10.53. |
-| A-57 / P2 – veröffentlicht und öffentlich bestätigt | Tatsächliche Übersicht mit `sort.js?v=1.0.1` zeigte Weitere Tiere vor Wendehals und Wintergoldhähnchen. | Exakt diese normalisierte Kachel steht zuletzt; echte Arten bleiben alphabetisch. Gegenprobe zuerst 1/6, danach 6/6; registrierte Gruppe 31/31 bestanden. | Freigegebener Commit 0db6a69 und Pages 40006195707 erfolgreich; CMS lädt 1.0.2. Öffentliche Reihenfolge Weißstorch → Wendehals → Wintergoldhähnchen → Weitere Tiere samt Originalbild bestätigt. Vollständige Drei-Ansichtenprüfung separat offen; 10.54. |
+| A-57 / P2 – veröffentlicht und öffentlich bestätigt | Tatsächliche Übersicht mit `sort.js?v=1.0.1` zeigte Weitere Tiere vor Wendehals und Wintergoldhähnchen. | Exakt diese normalisierte Kachel steht zuletzt; echte Arten bleiben alphabetisch. Gegenprobe zuerst 1/6, danach 6/6; registrierte Gruppe 31/31 bestanden. | Freigegebener Commit 0db6a69 und Pages 40006195707 erfolgreich; CMS lädt 1.0.2. Öffentliche Reihenfolge Weißstorch → Wendehals → Wintergoldhähnchen → Weitere Tiere samt Originalbild bestätigt. Die Sortierregel ist anschließend im gemeinsamen Websitepaket in drei Ansichten geprüft; 10.54. |
 | A-58 / P2 – Zoom 1.0.9 veröffentlicht und öffentlich nachgeprüft | In 1.0.8 schloss einmal Escape eigenen Zoom und umgebende Galerie. | Gekoppelte vollständige Tastensequenz einschließlich Loslassen und Wiederholungen abgesichert; 37/37 registrierte Prüfungen. Echte Galerie: Tab/Shift-Tab im Dialog, erster Escape erhält Foto, Galerie, `itemId` und Fokus am Zoomknopf; nächster Escape schließt Galerie. | Enger Vier-Dateien-Commit fae6d4f, Pages 40009956926 erfolgreich; CMS lädt 1.0.9. Frische unverdeckte Originalbilder und AX unter 10.54. Keine physische Touch-/Screenreaderabnahme. |
 | A-59 / P2 – Kontakt-/Footer-/Ausrüstungslayout veröffentlicht und geprüft | Formular und Datenschutzhinweis, Footercredit und Spenden sowie mehrzeilige Produktüberschriften überlagerten sich; schmale Footerzelle schnitt Mailadressen ab. | Freigegebene enge Raster-/Umbruchregeln, compilerfeste Langformen. Öffentliche CSS 46; neun vollständige Ansichten, 33 Originalbilder und 42 Produktüberschrift-/Textpaare unabhängig geprüft. | Alle genannten Überlagerungen behoben, Mailadressen vollständig. Referenzcommit 5bfe3a6, Pages 40015107621 mit drei erfolgreichen Jobs; 10.54. |
 | A-60 / P3 – veröffentlicht und öffentlich geprüft | Kontaktüberschrift und einzelne Ausrüstungsüberschriften brachen innerhalb von Wörtern; Tabletphotos auf Kontakt/Über uns beschnitten eine Person. | V3 ausdrücklich freigegeben; unabhängige CMS-Neuladung bestätigt den exakten Kandidaten, öffentlich CSS 48. Zwölf Zellen einschließlich Sizilien und alle 47 Originale unabhängig angesehen. | Beide Personen in schmalen Ansichten vollständig, freigegebene Wörter und Abstände lesbar, 42 Ausrüstungspaare weiterhin getrennt. Keine vollständige Funktionsabnahme daraus; 10.54. |
-| A-61 / P3 – Tabletvarianten lokal angenommen; Home-Hinweis veröffentlicht | Home-Personenfotos/-Formular und Spenden-Textfluss/Titel auf Tablet. | Felix’ gewählte vollständige Fotos, gestapelte Home-Bereiche, breite Spendentexte und kompaktere Spendentitel integriert und nativ bestätigt; Knopf etwa 164 × 44 bei 768/820. Vorhandener Kontakthinweis bei Home ergänzt, öffentlich in drei Ansichten sowie tatsächliches Linkziel geprüft. | Gemeinsame CSS-/Footer-/Pages-Veröffentlichung offen. Die anschließend gezeigte mobile Variante „Ganze Wörter“ ist ebenfalls angenommen, integriert und bei 320/390/768/1280 bestätigt. Kein Formularversand oder Zahlung. Endstand in 10.54. |
+| A-61 / P3 – gewählte Varianten veröffentlicht und öffentlich geprüft | Home-Personenfotos/-Formular und Spenden-Textfluss/Titel auf Tablet. | Felix’ gewählte vollständige Fotos, gestapelte Home-Bereiche, breite Spendentexte und kompaktere Spendentitel integriert und nativ bestätigt; Knopf etwa 164 × 44 bei 768/820. Vorhandener Kontakthinweis bei Home ergänzt, öffentlich in drei Ansichten sowie tatsächliches Linkziel geprüft. | Gemeinsame CSS-/Footer-/Pages-Veröffentlichung und öffentliche Nachprüfung bestanden. Die anschließend gezeigte mobile Variante „Ganze Wörter“ ist ebenfalls angenommen, integriert und bei 320/390/768/1280 bestätigt. Kein Formularversand oder Zahlung. Endstand in 10.54. |
 | A-62 / P2 – veröffentlicht und öffentlich geprüft | Latium steht Desktop/Tablet unter 2022, mobil nach 2023; das „In Arbeit“-Band liegt breit bei Montenegro, mobil bei Costa Rica. | Felix bestätigt damals Latium überall unter 2022 und ausschließlich Montenegro mit Band. Exakte alte oder vollständig reparierte Blockfolge vor Mutation geprüft; 23 Sortiertests und drei vollständige lokale Ansichten bestanden. | Sort 1.0.3 / CSS 49 veröffentlicht, beide Pagesläufe erfolgreich; alle 31 öffentlichen Originale in drei Ansichten unabhängig GO, 10.54. Die neue Statusregel vom 25. Oktober erweitert diesen damaligen Auftrag unter A-76. |
-| A-63 / P3 – gewählte Typografie lokal integriert und nativ bestätigt | Mobile Wortzerlegung bei Datenschutz, Haithabu und Lütjenburg. | Angenommene „Ganze Wörter“-Varianten exakt übernommen; tatsächliche mobile Browseransichten ohne horizontalen Überlauf bestätigt. Wildlife Tablet bleibt nach Felix’ Entscheidung in ganzen Wörtern zweizeilig wie bisher; Reiseübersicht ebenfalls erhalten. | Kein Rechtsinhalt geändert. Gemeinsame Veröffentlichung/öffentliche Nachprüfung bleibt offen; Kategorienfolge bei A-76 bereits entschieden. Endstand in 10.54. |
+| A-63 / P3 – gewählte Typografie veröffentlicht und öffentlich geprüft | Mobile Wortzerlegung bei Datenschutz, Haithabu und Lütjenburg. | Angenommene „Ganze Wörter“-Varianten exakt übernommen; tatsächliche mobile Browseransichten ohne horizontalen Überlauf bestätigt. Wildlife Tablet bleibt nach Felix’ Entscheidung in ganzen Wörtern zweizeilig wie bisher; Reiseübersicht ebenfalls erhalten. | Kein Rechtsinhalt geändert. Gemeinsame Veröffentlichung und öffentliche Nachprüfung sind bestanden; Kategorienfolge bei A-76 ebenfalls abgeschlossen. Endstand in 10.54. |
 | A-64 / P2 – Abschlussanzeige lokal korrigiert und nativ bestätigt | Veralteter Suchindexfortschritt, hängende/überholte GET-Antworten und historischer179er-Konfliktdetailtext konnten dem tatsächlichen Ablauf widersprechen. | Bestehende Statusleser und Detailrenderer korrigiert; reproduzierte rote Gegenproben jetzt grün. Aktuelles Gesamtgate50 Gruppen/2.086 bestanden. Native Neuladung zeigt Abschluss und korrekte historische Quellenhinweise ohne Sperrtext. | Abschlussanzeige abgenommen. Leistungs-/Fortschrittsabnahme während eines künftigen echten aktiven Aufbaus bleibt gesondert offen; dafür keinen unnötigen produktiven Aufbau starten, 10.54. |
 | A-65 / P3 – acht Textkorrekturen und Katzenfokus öffentlich umgesetzt | Belegte Griechenland-Schreibfehler und stark angeschnittene Klosterkatze. | Acht freigegebene minimale Korrekturen in echten CMS-Feldern gespeichert, auf allen fünf betroffenen öffentlichen Seiten bestätigt; Buttonziel tatsächlich geöffnet. Nur das bestehende Katzenbild auf Fokus 50 % / 100 % gestellt, drei Ansichten und Galerie/Zoom/Escape geprüft. | Bildquellen, Reihenfolge, quadratische Vorschauen und Nachbarbeschriftungen erhalten. Keine neuen Seiten/Knöpfe ohne Ziel ergänzt. Allgemeiner Alternativtext-Workflow bleibt nach dem Audit; keine gemeinsame Pages-/CSS-Veröffentlichung daraus. Endstand Schritt 5 in 10.54. |
 | A-66 / P1 – Retentionskorrektur produktiv bestanden | Job und Updateworkflow seit 20:46:03 UTC `failed`: „Die Identitätshistorie der Retention wurde verändert.“ Native Anzeige verblieb beim alten Job. | Fehler mit echten Buildern reproduziert; getrennte historische/finale Bindung und zwölf neue Regressionen unabhängig geprüft und lokal übernommen. Gemeinsame Regression 186/186 und Gesamtgate 50 Gruppen/2.034 bestanden. | Neuer gebundener Auftrag 0d0b6e9e… mit eigener FN-Erfassung und normalem Lightroomende besteht am 24. Oktober den gemeinsamen Paarabschluss. Alter Fehlauftrag erhalten; Anzeigegrenze A-64 getrennt offen, 10.54. |
@@ -10007,3 +10007,385 @@ hinzugefügt und gesondert auf Verweise/Stil geprüft. Die Veröffentlichung erf
 die tatsächlichen Commit-/Push-/CI-Ergebnisse bindet der ausschließlich technische lokale Beleg
 `temp/explorer/effa1813-6175-40e0-a0de-1336836703fd/checkpoint-publication.json`.
 Der lokale Windows-Modulanalysecache bleibt unveröffentlicht und Teil der späteren Bereinigungsprüfung.
+
+**Freigabevorbereitung für die Lightroom-Großprobe – 26. Oktober.** Felix beauftragt die Fortsetzung
+und verlangt ausdrücklich Schutz des normalen Katalogs und aller Originalbilder; er fragt nach der
+noch erforderlichen Freigabe. Das ist noch keine konkrete Großkopier-/Betriebsfreigabe. Frische reine
+Dateimetadaten: Original `D:/Lightroom Katalog/Lightroomkatalog aktuell.lrcat` 3.610.714.112 Bytes,
+vollständiges `.lrcat-data` mit 115 regulären direkten Dateien 15.902.788.658 Bytes; je Stand
+19.513.502.770 Bytes, drei Stände 58.540.508.310 Bytes, mit 2 GiB Reserve **60.687.991.958 Bytes**.
+E: meldet rund 184,50 GB frei. Keine Originalinhalte/SQLite gelesen, keine Kopie oder native Aktion.
+Die 16 gebundenen Vorbereitungsdateien aus `eb56acf9…` stimmen unverändert mit ihren Prüfsummen;
+`executeAuthorized` und operative Annahme bleiben ausgeschaltet.
+
+Konkreter vorgesehener Freigabeumfang: neuer eigener UUID-Unterordner unter
+`E:/Arten-Explorer-LR-Grosstest-2026-10-26`, drei getrennte Katalog-/Begleitbaumstände für Ausgang,
+Arbeit und Nachvergleich; vorübergehender eigener Lightroom-Katalog und eigene Plug-in-Testkopie.
+Schreib-/Rücknahmeprobe ausschließlich am neu erzeugten künstlichen JPEG mit genau gebundener
+Foto-UUID und Dateiadresse, keine bestehenden Fotozuordnungen als Schreibziel. Relevante vorhandene
+FN-/Stichwort-/Orts-/Zeitwerte werden vor/nach verglichen. Originalkatalog ausschließlich Kopierquelle,
+keine Original-SQL-Änderungen oder Testübernahme. Die Fotooriginale werden nicht bearbeitet, verschoben
+oder gelöscht. Vor dem ersten Öffnen der Arbeitskopie muss ausgeschaltetes automatisches XMP-Schreiben
+real bestätigt sein; fehlt dieser Schutz oder stimmt Katalog-/Plug-in-/Eigentümerbindung nicht, kein Start.
+Frische technische Kopier-/Schema-/Laufzeitannahmen erfolgen je Stufe innerhalb dieser Grenzen;
+aus einer bloßen Anfangskopierfreigabe folgt keine native Schreibfreigabe. Nach der Probe Rückkehr zum
+Original-Plug-in und normalen Katalog auf D:. Die konkrete menschliche Zustimmung zu Kopien und diesem
+begrenzten Testbetrieb wird noch eingeholt; keine Betriebsaktion aus dieser Vorbereitung.
+
+**Freigabe erteilt:** Felix bestätigt anschließend ausdrücklich „Kopien auf E: und den beschriebenen
+Testbetrieb freigeben. Lightroom ist frei“, mit der zusätzlichen bindenden Bedingung, dass normaler
+Katalog und Originalbilder unverändert bleiben. Die Freigabe umfasst die beschriebenen drei eigenen
+Stände und den Ein-Foto-Test; kein Originalschreibziel und keine Produktivübernahme. Frische native
+Fensterliste zeigt Lightroom geschlossen. Keine normale Katalogöffnung nur zum Beschaffen eines
+Schutzbelegs. Die technische Vorprüfung bestätigt Stufenschleifen der alten Vorbereitung: XMP-Beleg
+bereits vor Copy-B/Schema-B, FullReady mit W-/Plan-/Journalergebnissen vor Copy-W sowie fehlender
+W-Vorherlesepfad. Diese Vorbereitung bleibt unverändert; echte Belege werden nicht durch gesetzte
+Flags ersetzt. Die geschlossene reine Kopier-/Lesephase wird gesondert gebunden, der spätere native
+Start bleibt bis zu tatsächlichem XMP-Aus- und Originalbildschutznachweis gesperrt.
+
+**Geschlossene Kopierphase tatsächlich gestartet.** Der neue enge Kopiervertrag besteht 63 reine
+Gegenfälle, der physische Bündelkopierer 24 und der gebundene Laufzeitcontroller 29; dies sind
+Vorbereitungsprüfungen, keine native Großkatalogabnahme. Root liest die endgültigen Quellen,
+prüft ihre tatsächlichen Hashes und die 116 realen Quelldateistempel. Controllerquelle
+`15cc982b…/large-owner-controller.mjs`, SHA
+`bcbbe85c275cd0797c09ee0952307a616389663ea13a51a186fa98ef7501863b`.
+Neue tatsächliche Laufzeitsitzung `f31e20d2-b430-4607-9418-43a9cd38b1ac`, PID 49768 mit
+Startbindung und Zweistundenfrist; erste vollständige Hostaufnahme enthält 391 Prozesse und kein
+Lightroom. Bootstrap SHA `b8e33b1d523554108ff9941f5cf7750466c76c9198bedeca626d3f50bd112ffc`.
+Der neue E:-UUID-Ordner ist exklusiv angelegt und durch tatsächlich zurückgelesenen Eigentumsbeleg
+gebunden. Copy-B-Antrag umfasst exakt 19.513.502.770 Bytes, 115 direkte Begleitdateien und den
+Katalog; Root nimmt genau diesen Antrag an. Mögliche SQLite-/Katalogseitenablagen werden real
+ausgeschlossen, das legitime leere Companion-`LOCK` wird erhalten. Vor jedem Inhaltsöffnen folgen
+frische Prozess-, Eigentums-, Pfad-, Quellen- und Speicherprüfungen; Teilkopien bleiben bei Fehlern
+erhalten. Kein Lightroom-Start, keine Original-SQL-Abfrage und kein Foto-Schreibziel aus dieser Stufe.
+Die wiederholten Windows-Abfragen erfolgen ausschließlich direkt lesend ohne Änderung der
+Windows-Skriptrichtlinie. Der frühere `-File`-Hilfsaufruf war an dieser Richtlinie gescheitert und ist
+kein erfolgreicher Prozessbeleg. Die Quellen-Vorbereitungssitzung `15cc982b…` blieb nach einem
+Toolabbruch formal offen und wird ausschließlich als dauerhafte Quellenablage erhalten; sie wird
+nicht als operative Eigentümersitzung übernommen. Der neue Lauf besitzt seinen eigenen Eigentümer.
+Felix beauftragt zusätzlich das Herunterfahren nach Abschluss und sicherem Ende aller Prüfprozesse.
+
+**B-Kopie und tatsächlicher relevanter Schemaabgleich bestanden.** Alle 116 Dateien mit zusammen
+19.513.502.770 Bytes besitzen jeweils dieselbe SHA-256 bei Quelle-vorher, Kopierlesung,
+Ziel-Rücklesung und Quelle-nachher. Damit sind Originalkatalog und sämtliche direkten Begleitdateien
+während dieser Phase inhaltlich unverändert nachgewiesen. Kataloghash
+`28e2cb8715fe1832f2715d62a9ad0e301660c13a356c6e5fed8c7659b199053c`;
+`f31e20d2…/copy-result.json`, SHA
+`3263f1edcc5a733780da04902d8daa8b394efd0b83f17d9d66526920dff4b1b7`.
+Anschließend ausschließlich B erneut real gehasht und unveränderlich lesend die 14 erforderlichen
+Tabellen aufgenommen; keine Fotodatenabfrage daraus. Schemaergebnis SHA
+`4525e2030788626aebc0bc3846da8e03bc8e452564df303131b55b532d36a316`, Root-Annahme
+`schema-review.json`, SHA `603be50f3bfc604c42588362767c804d99309085e89294a729d4c8e993e1c175`.
+Laufzeitowner regulär beendet, tatsächlicher Exit 0, geschlossen/0/keine Helfer.
+
+Die erste nachfolgende B-Einstellungsabfrage stoppt noch vor den Einstellungszeilen am privaten
+Prüfleser: echte Node-SQLite-Spaltenobjekte besitzen einen Null-Prototyp; das gespeicherte identische
+JSON-Schema besitzt normale Objekte. Der strenge Objektvergleich wertet ausschließlich diesen
+Darstellungsunterschied als Abweichung. Fehlerbeleg `88efb5b8…/B-read-failure.json` bleibt erhalten;
+auch dieser Readowner ist geschlossen/0/keine Helfer. Kein Katalogfehler und kein XMP-Aus-Nachweis
+daraus. Enge Korrektur nur am privaten Reader: nach unveränderter vollständiger Feld-/Typprüfung
+explizite Normalisierung der sieben Spaltenfelder; echte Schemaabweichungen müssen weiterhin stoppen.
+Lightroom und der native Ein-Foto-Test wurden weiterhin nicht gestartet.
+
+**Einstellungs- und Ausgangslesung anschließend erfolgreich.** Der private Schema-Normalisierungsfix
+ist mit Null-Prototyp-/JSON-Gegenprobe und weiterhin abgewiesener echter Feldabweichung geprüft.
+15 tatsächliche Metadaten-/XMP-Namen gefunden. Exakte Werte: `AgMetadata_autoWriteXmp=0`,
+`AgMetadata_autoWriteXmpBlocked=0`, `AgSaveXMP_userEnableSave=1`; zusätzlich ausstehende
+`AgLibraryImageXMPUpdater_WorklistPending=0`. Belege `033902b9…/B-read-result.json`, SHA
+`242c1e882dfc842411d7c61aae5112545730a6b57578c3dc62e74df7c782cce9`, und `e046298a…`, SHA
+`74c4af6a32156064760ac68def803ef8213d3dc2ed59489232aaeb2692f574c7`.
+Keine Einstellungsänderung erforderlich; der spätere W-Nachweis benötigt zusätzlich die echte
+inhaltliche Gleichheit von B und W vor dem ersten Öffnen.
+
+Die erste gesamte Rohprojektion stoppt am privaten Statistikparser: Die Produktquelle
+`PluginState.statisticsRevision()` speichert die Revision beabsichtigt als Zahl, Index/Build als
+JSON-Text. Nur der Prüfleser erwartete pauschal Text. Fehlerbeleg `c0f9192f…` unverändert erhalten,
+Owner geschlossen/0/keine Helfer. Enge private Parserkorrektur akzeptiert ausschließlich bei Revision
+sichere nichtnegative Ganzzahlen beziehungsweise deren validierten JSON-Zahlenwert; Index/Build
+bleiben begrenzte JSON-Objekttexte. Gemeinsame neue Quellen `c9b709bd…`, 115/115 Gegenproben.
+Danach tatsächlicher kompletter B-Rohvergleich erfolgreich: **127.701 Katalogeinträge** und
+**126.662 Stichwortrelationen**, keine künstliche Fotoidentität. Alle realen Foto-/FN-/fünf IPTC-Felder
+Digest `779714b763e86a420c20cfa35a355a1a39aaf7f6d6fd17bcf1c69d3c30cd71af`, Relationen-Digest
+`6481c47e746e5146d869c779e201435c45e23aea05df094d7bb58550c7c231dc`.
+Beleg `c4b760b2…/B-read-result.json`, SHA
+`591afeee136e85bf6ca4bf8f3afa3b97807b6543a33401a203b6b8cf77189e12`, Owner geschlossen/0/keine Helfer.
+Andere Lightroom-/Develop-Tabellen und Originalbildbytes sind nicht Teil dieser bestehenden Projektion.
+
+**W-Betriebsowner begonnen, native Probe noch ausstehend.** Neuer eigener Owner
+`75f7dc96-5d8f-4fad-8798-629e192c585e`, PID 25836 mit echter Startbindung und maximal zwei Stunden.
+Controller `69cbde84…`, SHA `0cc105026eaa7e14fa6067bf5a0337046b7e2696009da9cefbd083b25037367b`,
+nach unabhängigem Review zusätzlich echtes Alter seit Aufnahmebeginn auf fünf Sekunden begrenzt.
+Bootstrap SHA `f1b0918f2c7ceebfd33342799e13b24ec270e8512d2c7985f4cf7d130d30597f` zeigt 396 Prozesse,
+kein Lightroom. Root-Wrapper und sechs feste Laufzeitquellen gebunden. Die private Programmkopie
+enthält 211 Dateien und genau ein neues physisches JPEG; Vorbereitung SHA
+`06a71ef55965254de8be145bf17caad001951ce5a743c5b6c6f09bda08adffbf`.
+Produkt-Plug-in bleibt **0.4.24.39**, eigener Harness ist ausdrücklich **0.4.24.40**, ohne automatische
+Produkt-Init-/Shutdown-Hooks. Statische Privatpfade sind gebunden; operative SDK-Stufen bleiben
+ausgeschaltet, bis Root echte W-/XMP-/Lade- und Fotoidentitätsnachweise vorliegen hat. Das kleine
+künstliche Vier-Taxa-Paket prüft den echten Ein-Foto-Workflow samt vollständigem Original-N-Inventar;
+es ist keine produktive Neuauflösung sämtlicher Originaltaxa. W wird ausschließlich aus geprüftem B
+exklusiv erzeugt. A folgt erst nach tatsächlicher Ein-Foto-Anwendung und regulärem Schließen von W.
+
+**W-Kopie verifiziert und privat geöffnet.** `75f7dc96…/copy-W-result.json`, SHA
+`5be38626038b3dab39603f417f6df177f45a8a3cf8a8f8196156eee4fed1c09b`, bestätigt alle 116 Dateien
+mit 19.513.502.770 Bytes und vierfach gleichen Inhaltsprüfsummen gegenüber B. Die native
+Katalogeinstellung bestätigt ausschließlich `E:\Arten-Explorer-LR-Grosstest-2026-10-26\75f7dc96-5d8f-4fad-8798-629e192c585e\work\W.lrcat`.
+Automatisches XMP-Schreiben ist auch im nativen Metadatendialog ausgeschaltet; der ursprüngliche
+Bytegleichheits-/Einstellungsbeleg vor Erstöffnung bleibt maßgeblich. Original-Plug-in **0.4.24.39**
+am normalen D:-Programmpfad sowie übereinstimmende aktuelle CoL-/Master-/Paketstände nativ erfasst;
+danach dieses Plug-in für die Privatprobe deaktiviert. Genau ein eigenes künstliches JPEG
+`large-catalog-audit-single.jpg` wurde mit **Hinzufügen**, ohne Entwicklungs-/Metadatenvorgabe und
+ohne Stichwörter in W importiert. Native Rückmeldung: ein Foto, eines ausgewählt.
+Belege in eigener laufender Sitzung `ba089786…`, insbesondere `004-…metadata-settings-receipt.json`
+SHA `940850f4b746451a4e016c821260519d7c98a0160fa7d3d666070cb23286bdcf`,
+`006-original-plugin-version-and-package-receipt.json` SHA
+`06707bc35eadbb02252abfa873ce30817f0d7c338fa330f2054d65fd443b8f73` und
+`008-one-artificial-jpeg-imported-receipt.json` SHA
+`21cf34c691e84da2a05b85e0a048fb58ec60d69355a98368deea6430d3431bca`.
+Die originale Windows-Fensteraufnahme wird unverändert gesichert. Der zunächst vorbereitete
+Loopback-Belegempfänger war für die Aufrufer nicht erreichbar und speicherte keine Nutzdaten;
+stattdessen eigener passiver Dateiempfänger, ohne Netzwerk-/Firewalländerung. Seine Prozesse sind
+vor dem angeforderten Herunterfahren gezielt zu beenden. Eine zusätzlich sichtbare Kaspersky-Meldung
+zu `numis.service.exe` aus dem anderen Numis-Projekt wurde Felix gemeldet, nicht bedient oder als
+bestätigter Schadfund gewertet. Die native Ein-Foto-Initialisierung und Identitäts-Großprobe sind
+zu diesem Zwischenstand weiterhin offen.
+
+**Private Initialisierung und vollständiger W-Vorhervergleich bestanden.** Die erste rein lesende
+Identitätsaufnahme stoppte vor jedem Fotoeingriff an der privaten Prüfhilfe: Lightroom stellt kein
+`_PLUGIN.version` bereit. Nur die private `.40`-Prüfhilfe liest nun das eigene `Info.lua.VERSION`;
+die tatsächliche Ladeversion bleibt separat durch Zusatzmodulmanager und natives Neuladen belegt.
+14 private Lua-Gegenproben bestanden. Die beiden vorübergehenden Hilfspfade wurden auch nach dem
+Fehler nativ als wieder ungesetzt bestätigt; Original-Plug-in/-Quellen unverändert.
+Die anschließende echte Importidentität lautet `F999A85D-6AD8-41BF-B529-5598FD9C14F5`, lokale ID
+27951291. Genau dieses Kunstfoto wurde einmal initialisiert, mit sieben FN-Stichwörtern und ohne
+Änderung der fünf leeren IPTC-Ortsfelder. `75f7dc96…/one-photo-init-complete.json`, SHA
+`6a600350482f91597c70706102234e584c933fe07c26ed314f24a25afe41c41a`.
+Nach tatsächlichem regulärem Schließen und frischem vollständigem LR0-Prozessnachweis folgt die
+unveränderlich lesende W-Projektion: **127.702 Einträge einschließlich genau eines Kunstfotos**;
+alle 127.701 bisherigen Foto-/FN-/fünf IPTC-Feldsätze und alle 126.662 bisherigen Stichwortrelationen
+besitzen exakt die oben belegten B-Digests. `84bf649b…/WA-read-result.json`, SHA
+`fd9b2791163b11cc329a905fa804db59d5d102fd8bc411af7c8917a93916ff74`;
+Leser regulär geschlossen/0/keine Helfer. Kein Nachweis einer Artänderung oder Rücknahme daraus.
+W wurde danach wieder privat geöffnet; Vorschau und reine Prozessspeichermessung wurden gestartet.
+
+**Erster privater Vorschauversuch gestoppt, kein Übernahmeergebnis.** Die echte SDK-Laufkennung
+`f2f823e1-43c9-45e0-b8af-4714780ca231` wurde um 22:50:49 UTC im eigenen Intent gesichert;
+ein fertiger Plan-/Ergebnisbeleg entstand nicht. Die reine Messung von 22:49:57 bis 23:04:57 UTC
+enthält 450 echte Zweitakt-Sekundenbeobachtungen ohne ausgefallenen Takt: beobachtetes Maximum
+2.447.998.976 Bytes Working Set, 2.574.581.760 Bytes Private Bytes und 843.468,75 ms CPU-Zuwachs.
+Das ist ein 15-Minuten-Ausschnitt, keine gesamte Workflowdauer und kein JS-Heapwert.
+`01c413f7…/summary.json`, SHA
+`751a243b8eede991b919cd4cd3eeba9a74e7ba0743771364e127922f72244fc5`, Messowner regulär geschlossen.
+Nach der regulären Schließanforderung zeigte die private Belegbrücke einen Fehler an; dessen genauer
+Helfergrund war in der bisherigen privaten Fehlerausgabe nicht enthalten. Native Meldung und danach
+normales Schließen mit echtem vollständigem LR0-Beleg sind unter `ad0a3046…/read-only-preview-stop-review.json`,
+SHA `b687b2f30019b82d1d2717a1a0f5387ccffc72ff77227f1d8fd31b8db9563170`, gebunden. Keine Vorbereitung,
+Übernahme oder Rücknahme ausgeführt; alter Intent bleibt unverändert, kein automatischer Schreibretry.
+Der Quellreview belegt einzeln gelesene Grunddaten aller N Fotos und wiederholte vollständige Guards.
+Ein isolierter Kandidat mit 250er-SDK-Sammelzugriffen hält den vollständigen Inventar-/Favoritenschutz
+aufrecht und besteht 30 gezielte Lua-Gegenproben; `9989c89b…/identity-batch-preparation.json`, SHA
+`86602a953c4b8ab24ddd01a07dcceaea025fc1d8fee3d8f6317d984acf7757c0`.
+Dieser Kandidat ist zu diesem Zeitpunkt weder Produktänderung noch nativ bestandene Beschleunigung.
+
+**Private Belegursache eingegrenzt; frischer Prüflauf.** Private `.41` wurde nativ am eigenen Pfad
+geladen und beide gemeinsamen Hilfspfade erneut unverändert ungesetzt bestätigt. Der zweite reine
+Vorschauversuch (`1d3d7cbe-8f11-4ce1-aa9a-59e66060e652`, tatsächlicher Intent 23:18:20 UTC)
+erreicht die Ergebnisprüfung; dort nennt die verbesserte Brücke den konkreten Fehler:
+`(p.favoriteEffects || []).every is not a function`. Leere SDK-Listen kommen durch die private
+Lua/JSON-Weitergabe als `{}` an. Dies belegt einen privaten Prüfbrückenfehler, keinen Produktfehler.
+Die enge `.41`-Helperkorrektur akzeptiert ausschließlich echte Arrays oder vollständig leere normale
+Objekte für genau die beiden bekannten Favoritenlisten, erzeugt eine neue normalisierte Plankopie
+und lässt die rohe SDK-Evidenz unverändert. Transfers bleiben echte Einzelarrays, fremde Effekte und
+Konflikte gesperrt. Fünf gezielte Gegenproben bestanden; `e6278f20…/private-one-photo-helper.mjs`, SHA
+`75e9f860e2f7c0732da033148aeaf6f1211e8e9f62f2e10139137b9f7623aa09`.
+Auch der zweite Versuch endet vor Vorbereitung/Übernahme. Lightroom und Owner `75f7dc96…` wurden
+regulär geschlossen; echter Exit 0, geschlossen/0/keine Helfer. Seine Intents und D:-Belege bleiben erhalten.
+
+Fortsetzung mit vollständig frischer Sitzung `104d3673-e65b-4ebd-9a1d-53dff28cd541`, PID 46468,
+Bootstrap SHA `26b9bffcdf42480244d399b689e306dcfd3b847012119319ebfa41800e56e980`, eigener fester
+Zweistundenfrist, neuen SDK-Stufennonces und neuer W-Kopie ausschließlich aus verifiziertem B.
+Die korrigierten privaten Quellen sind vor jeder nativen Öffnung eingefroren; Produkt `.39` bleibt
+unverändert. Integrationsbeleg `224d7453…/fresh-private41-integration.json`, SHA
+`52de6f57737c172403337d590ab92bc8f87c08feba2a3c1a0ffce856a3e90a9d`.
+Der erste Datei-Belegempfänger endet regulär mit 22 gesicherten Zuständen, ohne Speicherfehler;
+`ba089786…/evidence-result.json`, SHA `374d361b25f78ee21df3ee17ec2dead4acf9d5e51cce5b4de69ad2607ae0acdf`.
+Für die Fortsetzung neuer passiver Dateiempfänger `ff9e492b…`, ohne Netzwerk-/Fenstersteuerung.
+
+**Frischer W-Ausgang vollständig bestätigt.** `104d3673…/copy-W-result.json`, SHA
+`c1ec05cd72c596d87c48ca82d352cb0c66d87ba2ee35729871518d1b1768ab9f`, bestätigt erneut alle
+116 Dateien/19.513.502.770 Bytes mit vier gleichen Prüfsummen je Datei. Der XMP-Voröffnungsbeleg
+leitet ausgeschaltetes automatisches Schreiben und leere Warteliste aus den tatsächlich gelesenen
+B-Einstellungen und der vollständigen Bytegleichheit ab; keine Katalogeinstellung geändert.
+Private `.41` am neuen Pfad nativ aktiviert, beide gemeinsamen Hilfspfade wieder ungesetzt gelesen.
+Genau ein eigenes JPEG mit Hinzufügen/ohne Vorgaben importiert und einmal initialisiert; echte SDK-UUID
+`DAC4F5BA-42FD-4959-933E-366B7BCC212F`, lokale ID 27739599. Native Belege `ff9e492b…/001` bis `006`.
+Nach normalem Beenden und vollständigem LR0-Nachweis besteht der geschlossene W-Vorhervergleich:
+alle **127.701 ursprünglichen Foto-/FN-/IPTC-Sätze und 126.662 Stichwortrelationen unverändert**,
+genau ein künstlicher Eintrag zusätzlich. `a801e5b4…/WA-read-result.json`, SHA
+`0d61b1cd027d2df26234d70c7e988f9e944624d5cd895cc3e879dc6ea16a19fc`;
+Leser tatsächlicher Exit 0. Der ungenutzte HTTP-Belegempfänger `18f0cef9…` ist inzwischen regulär
+mit null Zuständen/0 Operationen/keinen Helfern beendet; Ergebnis SHA
+`bc87ee4f2e454114dd40553388126f9284d083c0ea0d029edae0683a0e4efe87`.
+W wurde danach erneut geöffnet; reine Prozessmessung `c604fe37…` bindet tatsächlichen Lightroom-PID
+55248/Starttick `639286557580773940`. Die neue Vorschau ist gestartet; noch keine Annahme von
+Vorbereitung, Anwendung, A-Vergleich oder Rücknahme aus diesem Zwischenstand.
+
+**Neue Vorschau, Journalvorbereitung und Einzelanwendung bestanden.** Echter SDK-Lauf
+`500cb2bf-3b51-4ffa-b9cc-a66e0125ca1e` in W `104d3673…`: Vorschau 23:57:42 bis 23:59:17 UTC
+(95 s), genau ein künstlicher Transfer, keine Favoritenwirkung oder Konflikte. Vorschauergebnis SHA
+`5172df85d78d3498672c34b6dbb19ea13b4a158bea0a25aeb16d3f158008949e`; unabhängiger gespeicherter
+Planreview bestätigt sämtliche 53 beobachteten Fotofelder, sieben Stichwörter, geschützte Ort-/Zeit-
+und IPTC-Felder sowie Paketbindung. Journalvorbereitung 00:01:03 bis 00:09:32 UTC (509 s), SHA
+`4305e565369c39b080d7cfed570e9efb7000cffed65aea7b289dd055d8056a5a`: eine vorbereitete Zeile,
+noch keine Fotoänderung. Anwendung 00:12:12 bis 00:16:02 UTC (230 s), SHA
+`1745a25040292971783cffe563a776e64766d75598bcf9bbd40927361a2068f9`: fertig, genau ein Foto geändert.
+Separater strikt lesender Journalexport bestätigt echte `applied`-Zeile und vollständige Vorher-/Nachher-
+Hashes/Planbindung; `f0668fb3…/actual-private-journal.json`, SHA
+`d52dabb5fec25d2c476e35387f3d10ace849208e4222442c444e51761e840bee`.
+Native Abschlussanzeigen `ff9e492b…/007` bis `010`; danach reguläres Schließen und erneut LR0.
+Der A-Nachvergleich und dieselbe genaue Rücknahme sind zu diesem Zwischenstand noch nicht ausgeführt.
+
+Erstes begrenztes Prozessmessfenster 23:57:05 bis 00:12:05 UTC: 450/450 echte Messpunkte, kein
+verpasster Takt, beobachtetes Maximum Working Set 4.209.971.200 Bytes/Private Bytes 3.956.744.192 Bytes,
+CPU-Zuwachs 872.156,25 ms. `c604fe37…/summary.json`, SHA
+`3efe961bf87cf6e99eeb1be9723fce69d2ba7f132e22a9c58aa76876c5455194`.
+Zweites getrenntes Fenster `1bbbd5be…` bis zum tatsächlichen Prozessende, SHA
+`e54b9dba52d3d5a1a7d57c36194a518d7a8d2d1e5f362f8b6ac68667b6ce7d56`.
+Beide Messowner tatsächlicher Exit 0, geschlossen/0/keine Helfer. Die Fenster sind keine lückenlose
+Gesamtmessung; Phasendauern stammen aus den echten SDK-Intent-/Ergebniszeiten.
+
+**Gezielte Zwischenbereinigung des ersetzten Fehlversuchs ausgeführt.** Ausschließlich
+`E:\Arten-Explorer-LR-Grosstest-2026-10-26\75f7dc96-5d8f-4fad-8798-629e192c585e` entfernt:
+348 Dateien, 97 Verzeichnisse, 20.200.035.690 Bytes Dateiinhalte. Frische vollständige Prozessfreiheit
+von Lightroom und altem Owner, feste Root-Dateikennung, Eigentumsmarker, Windows-Reparseattribute,
+einzelne Dateilinks und sämtliche Pfadgrenzen vor Entfernung überprüft. Kandidat SHA
+`131eb55753906171a8552df1a8b0ca012548a928892759d9e64eaf86210a7a8d`;
+Entfernungsquittung `aca19a34…/removal-result.json`, SHA
+`4a8679f7e6a7da26be83a739412d0f549d4ad78c9ab89a730fafc1260db84705`.
+Keine pauschale Endbereinigung: alle D:-Belege, B, neue W-/A-Sitzung, Originalkatalog und Fotos erhalten.
+Die bereits freigegebene neue A-Kopie umfasst jetzt die regulär geschlossenen 117 Dateien mit
+19.513.492.060 Bytes; keine zusätzliche ungeprüfte Katalogkopie oder Produktivöffnung.
+
+### 10.55 Lightroom-Großprobe und gemeinsamer Abschluss – 27. Oktober
+
+Dieser Abschnitt ist der aktuelle Abschlussstand; ältere offene Zwischenstände in 10.54 bleiben
+historisch. Explorer- und Website-Abnahme vom 26. Oktober werden weiterverwendet. Es wurden keine
+erneuten produktiven FN-Abgleiche, Taxonomieaufbauten oder Statistikneuaufbauten gestartet.
+
+**Großkataloglauf bestanden.** Die A-Kopie nach Anwendung besteht alle vier Datei-Prüfsummen und
+den getrennten geschlossenen Rohvergleich. `104d3673…/copy-A-result.json`, SHA
+`ff710c5418c0e8dce1e01320c4bcb8939cd5d0bec7e82765e2033d2fcf90eba9`;
+`71d3876e…/WA-read-result.json`, SHA
+`a06a8dc6f72b62f7eedd446e63e2319da4fe63c503421ae8076f5e527fa4e390`.
+Anschließend dieselbe W-Kopie wieder geöffnet und genau den Lauf `500cb2bf…` zurückgenommen:
+Rücknahmevorschau 99 s, ein berechtigtes Kunstfoto, keine Konflikte; Rücknahmevorbereitung
+106 s und Rücknahme 298 s, jeweils nativ abgeschlossen. Ergebnis `104d3673…/one-photo-99d5efa2-9889-4d91-9318-fd7e012aac9c-result.json`,
+SHA `c66233cf5c027300e436e92fa86954b1830d87bf41380991c15b62a080aa6058`.
+Echte Journalzeile `reverted`, Vorher-/Nachherbindung unabhängig zurückgelesen:
+`a000dce3…/actual-private-journal.json`, SHA
+`cec56a805778771ca6c963bc2fa29b293b347778bf19e580278368947b2a2b2e`.
+
+Nach normalem Schließen, frischer vollständiger Windows-Prozessaufnahme ohne Lightroom und
+unveränderter fester Eigentümerlaufzeit besteht auch W-final. Rohbeleg `894186b2…/WA-read-result.json`,
+SHA `4b628e17fdb8f374a47b615182f88f5fa0bda711eac19bcc8c8fe29ccdaf545c`.
+Der separate Vergleich sämtlicher gespeicherter B/W-vorher/A/W-final-Belege besteht:
+`6757b9d0…/stored-large-final-comparison.json`, SHA
+`43d4db332a9ac9597548a06f476bfbaddc57306a7ebc01938fc0fe55206913c5`,
+Stufe `applied-and-reverted`. Alle **127.701 realen Fotoeinträge im erfassten FN-/Foto-/IPTC-Umfang**
+und **126.662 realen Stichwortrelationen** sind unverändert. Die **43 Identitätsfelder** des Kunstfotos
+entsprechen nach Rücknahme exakt dem Ausgang. Geschützte Ort-/Zeitfelder, fünf IPTC-Werte,
+Dateiidentität sowie vollständige erwartete inkrementelle Statistikänderungen sind mitgeprüft.
+
+Grenze: Der vorhandene Statistikindex behält seine geerbten Gesamt-/Katalogkopfwerte. Die Probe
+belegt die einzelnen Zugangs-/Artwechsel-/Rücknahmedeltas, keine frische Vollstatistik und keinen
+Vergleich sämtlicher Lightroom-/Entwicklungstabellen oder Originalbildbytes. Die nativen Abbruch-,
+Pause-, Mehrblock-, Konflikt- und Wiederanlaufproben sind bereits getrennt angenommen; sie wurden
+nicht während des hier begrenzten Ein-Foto-Großlaufs noch einmal ausgelöst.
+
+**Laufzeit und Ressourcen.** Die Vorbereitung mit 509 s ist in diesem Katalog der langsamste belegte
+Schritt; Anwendung 230 s, Vorschau 95 s. Das ist weiterhin minutenlange Arbeit, kein Sofortversprechen.
+Die Leseschritte melden Fortschritt/Abbruch vor 250er-Blöcken; der unmittelbare Schreibwächter bleibt
+ohne eigenen Pausenpunkt. Die getrennten Prozessmessfenster aus 10.54 werden um das Rücknahmefenster
+00:41:32–00:56:32 UTC ergänzt: 450/450 Messpunkte ohne verpassten Takt, beobachtetes Working-Set-Maximum
+2.299.944.960 Bytes und Private Bytes 1.894.035.456 Bytes; CPU-Zuwachs 726.265,625 ms.
+`8d0fe9ed…/summary.json`, SHA `e3a2258975c14a76756bbdeb7ac5c2ade42e49ed05a7d3ce08d6909e9ce69e4c`.
+Alle drei Messowner und beide Katalogleser tatsächlich Exit 0; keine lückenlose Gesamtmessung oder
+JavaScript-Heapmessung behauptet. Der W-Eigentümer ist nach dem Vergleich regulär geschlossen,
+keine verlängerte/reparierte Laufzeitbindung und keine verbleibenden Helfer.
+
+**Regulärer Betriebsstand und Originalschutz.** Nach erfolgreicher Rücknahme wurde die zuvor isoliert
+102/102 geprüfte Sammellesung als Produktversion **0.4.24.40** integriert. Native private .41 und
+Produkt .40 besitzen dieselbe `IdentityCatalog.lua` (SHA
+`b8a57a23e14a6e7fd5708a381b669a468469a93273e3c34abbf398768f92dab5`).
+Fach-/Schreibschutzregeln bleiben erhalten; Details in den beiden aktuellen Lightroom-Verträgen.
+Integrationsbeleg `d121261d…/product40-integration.json`, SHA
+`7ec444205f31bf95026e685c403998cc85212a327f15ac46be8f841767c31acb`.
+Gemeinsame Helfer-/Node-Einstellungen wieder ungesetzt. Fünf eindeutig eigene alte Testregistrierungen
+aus dem Zusatzmodulmanager entfernt; normale Nutzer-Plug-ins erhalten. Reguläre .40 am D:-Produktpfad
+nativ geladen und aktiviert, Belegempfänger `ff9e492b…`, Zustände 014–021. Der Startkatalog steht bereits
+auf `D:\Lightroom Katalog\Lightroomkatalog aktuell.lrcat`; er wurde zum Schutz der Originalbytes nicht
+erneut geöffnet. Ein versehentliches Drehen ausschließlich des Kunstfotos während der Optionssuche
+wurde sofort zurückgenommen; der anschließende vollständige Endvergleich bleibt bestanden.
+
+Die unabhängige Abschlussprüfung liest alle **116 Original-Katalogdateien / 19.513.502.770 Bytes**
+ausschließlich mit Lesehandles. Jede SHA-256 stimmt mit dem tatsächlichen Ausgang vor der B-Kopie
+überein, auch Dateimenge und Metadaten bleiben während der Prüfung stabil. Kein Original-SQL-Zugriff,
+keine Originalbildöffnung oder Originalschreibaktion. `07f8ecca…/original-final-hash-result.json`, SHA
+`21e91e0800b85f2b1b6d92bbc3f398c93f31e6779dad6fe6b9ff3bcb04d30df5`, tatsächlicher Exit 0.
+Die erste alte Startfreigabe war vor Beginn zeitlich zu knapp und wurde ohne Dateiöffnung verweigert;
+die neue eigenständige Prüfungsfreigabe liegt unter `210a3155…`. Keine Änderung der W-Eigentümerfrist.
+Beide Datei-Belegempfänger und der ungenutzte HTTP-Empfänger sind regulär beendet.
+
+Die damit erledigten Großkatalog-Restgrenzen A-49/A-53 sind durch diese ergänzenden Nachweise geschlossen.
+Quellenendgate, konkret gebundene Abschlussbereinigung und tatsächliche Veröffentlichung werden im
+folgenden Abschlussabsatz erst nach ihrer Ausführung angenommen.
+
+**Abschlussbereinigung – bereits ausgeführte enge Schritte.** Die alte Löwen-Testart wurde über die
+unveränderte normale Artlösch-Fassade mit frischer Vorschau aus Projektliste, generierten Daten,
+Assessmentzuordnung und Assetpflege entfernt. Genau sechs aktive Mediendateien mit 4.251.007 Bytes und
+fünf ausschließlich dazugehörige Medienvorgänger mit 1.187.760 Bytes entfernt. Alle übrigen Projektarten,
+Referenzzuordnungen und eigenen Taxonomieentscheidungen unverändert. Der normale Retentionsschritt
+entfernte zwei ältere Mehrarten-Listenbackups; beide wurden aus zuvor unabhängig geprüften kleinen
+Belegkopien ausschließlich bei abwesendem Ziel bytegleich zurückgestellt. Alle sechs bisherigen
+Listenbackups plus die reguläre neue Löwen-Listensicherung bleiben vorhanden. Kein fremdes Backup
+dauerhaft verloren. Quelle nach 14 synthetischen Gegenproben vollständig durch Root geprüft;
+Ergebnis `723eb112…/lion-delete-result.json`, SHA
+`dd07e36fa1a80a3549c6134b7eeef71767ae9bbeadb10f43138f5bcdeb69a5dc`, tatsächlicher Exit 0.
+Der Projektstatus wurde ausschließlich mit `status:sync` neu erzeugt; aktuelle Zähler nur dort.
+Master, Suchpaket, Namensschutz und FN-Katalogregistrierung bleiben bytegleich. Die historischen
+Projektmarkierungen ihres unveränderten Aufbau-Schnappschusses sind deshalb noch vorhanden;
+das bedeutet keine angelegte Löwen-Projektart. Kein zusätzlicher Masteraufbau oder Paketwechsel nötig.
+
+Die vollständig abgenommene historische Restore-Testinstallation
+`E:\Arten-Explorer-Restore-2026-10-07` ist nach frischer vollständiger Metadaten-/Prozess-/Desktop-
+und Datenpfadprüfung ebenfalls entfernt: **3.810 Dateien, 717 Verzeichnisse einschließlich Wurzel,
+100.820.264.922 Bytes Dateiinhalte**. Darin enthalten ausschließlich die ursprüngliche Archivkopie und
+zwei abgeschlossene eigene Testlaufzeiten/Profile. Vorher 14 kleine Original-JSONs unverändert nach D:
+gesichert; bestehende Abnahme-/Manifestbelege bleiben erhalten. Die frühere Notiz „Testkopie und Belege
+bleiben erhalten“ beschrieb den damaligen Abschlussstand, keine unbegrenzte Aufbewahrung der gesamten
+100-GB-Testinstallation. Felix' spätere ausdrückliche Abschlussbereinigung umfasst diese jetzt belegte
+entbehrliche Kopie. NAS-Archive, Desktopinstallation, Originalkatalog und Fotos unberührt.
+24 synthetische Löschschutzproben und unabhängiger Root-Quellreview vor Ausführung; keine neue
+100-GB-Inhaltsprüfung und kein gegen böswillige Dateisystemrennen gehaltenes Verzeichnishandle behauptet.
+Nur gebundene einzelne Dateien und danach leere Verzeichnisse entfernt; kein breites rekursives Löschen.
+Quittung `2bf85cc3…/removal-result.json`, SHA
+`25a84e6b80fa91620635eca9fb4edf2fa3379bb583d9ae7e9645e6403080bc55`, tatsächlicher Exit 0.
+Die sofort startbare historische Testinstallation ist weg; ein späterer Wiederholungstest benötigt
+erneutes Entpacken des erhaltenen Archivs. Die angegebenen Bytes sind entfernte logische Dateiinhalte,
+keine gemessene Nettodifferenz des gesamten Laufwerks.
+
+**Integriertes Endgate bestanden.** Nach Produktintegration, enger Löwen-Bereinigung und regulärer
+Statusgenerierung genau ein vollständiger erfolgreicher `quality:ci`: **50 Gruppen / 2.268 Tests**,
+keine Fehler, Abbrüche oder Skips, einschließlich nachgelagerter Audio-/Medien-/Größen-/Projekt-/
+Status-/lokaler Siteprüfung. Geprüfter Ausgang HEAD `9dab916be5a5456d98a4ba22b4cc26009de8a9b9`,
+Änderungsstand während des 487.739-ms-Laufs unverändert. `bfc0f8fe…/quality-result.json`, SHA
+`e8e5b90df979bd093f22f97e18b39d3e6a781a12e7b9bde598ed6696cbc1abea`;
+vollständiges Log SHA `fc3938db15cbd5cdb6a7cade9ce5bf214614ed67f9432b098a1fbcd9e2f5a03c`.
+Der kleine Auswerter erwartete zunächst TAP-Zähler und meldete deshalb 0 Gruppen/Tests; die tatsächlich
+vorhandenen Unicode-Info-Zusammenfassungen sind separat vollständig ausgewertet, ohne neue Testausführung:
+`31f129b5…/quality-log-counts.json`, SHA
+`fc6e49d1e14c69874626288871e72f9cc84c1ecbd2a93ad8aab65497a35e1b5c`.
+Ein davor verweigerter Shellaufruf endete bereits vor der ersten Prüfung mit Syntaxfehler; er ist kein
+Funktionsfehler oder zweiter bestandener Quellenlauf. Nur aktuelle Dokumentationsfortschreibung folgt
+nach diesem Endgate; dafür lokale Verweis-/Stil-/Diffprüfungen gesondert. Keine weitere vollständige
+Wiederholung bestandener nativer Explorer-/Website-/Lightroomrunden ohne Regressionsgrund.

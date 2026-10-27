@@ -1,17 +1,35 @@
 # Lightroom-Artänderungen: Vorschau, Journal und Schreibkern
 
-Stand: 2026-10-23
+Stand: 2026-10-27
 
-Status: **implementiert, praktische Lightroom-Abnahme offen**. Vorschau und Journal sind
+Status: **implementiert; native Grund- und Störfälle sowie begrenzter Großkataloglauf angenommen**.
+Vorschau und Journal sind
 über den Suchhelfer verbunden; Wiederaufnahmeprüfung und favoritenabhängige Blockplanung sind implementiert.
 Der Lua-Schreibkern ist nun mit ausdrücklichem Katalogleselauf, Journalvorbereitung, blockweiser Übernahme
 und Rücknahmeprüfung verbunden. Auswahl, Bestätigungsdialoge, Fortschritt und Rücknahmebedienung sind
 über „FN Wildlife verwalten“ → „Artänderungen prüfen ...“ erreichbar. Kein produktiver
 Katalog wurde in den automatisierten Prüfungen verändert. Eingeführt in Plug-in-Version `0.4.24.13`, aktueller
-lokaler Quellstand `0.4.24.39`; die normale Zuweisung und Orts-/Zeitaktionen bleiben
+lokaler Quellstand `0.4.24.40`; die normale Zuweisung und Orts-/Zeitaktionen bleiben
 unverändert. Gesamtumfang: `taxonomy-identity-incremental-plan.md`.
 Der Benutzer hat das reine Öffnen ohne Auswahl bestätigt. Das ist keine Abnahme einer tatsächlichen
 Split-/Merge-Übernahme oder ihrer Rücknahme; hierfür weiterhin einen separaten Testkatalog verwenden.
+
+Aktueller Stand vom 27. Oktober: .40 verwendet für die katalogweiten Grundfelder dokumentierte
+SDK-Sammelzugriffe in 250er-Blöcken und ist am regulären Produktivpfad nativ als geladen belegt.
+Die private .41 enthält dieselbe `IdentityCatalog.lua`. Ihr ausdrücklich auf ein künstliches Foto
+begrenzter Großkataloglauf hat Initialisierung, Vorschau, Journalvorbereitung, Übernahme und Rücknahme
+abgeschlossen. Der unabhängige Endvergleich der geschlossenen Katalogkopien ist bestanden:
+Alle 127.701 realen Fotos bleiben in den erfassten rohen FN-/Foto-/IPTC-Werten und alle 126.662 realen
+Stichwortrelationen unverändert. Die 43 Identitätsfelder des künstlichen Fotos entsprechen nach der
+Rücknahme wieder exakt dem Vorherstand; tatsächliche Apply-/Undo-Journalzustände und gespeicherte
+SDK-Ergebnisse sind an den Vergleich gebunden. Die inkrementellen Statistikänderungen für
+Initialisierung, Übernahme und Rücknahme sind geprüft. Gesamtzahl und Katalogpfad des vorhandenen
+Index bleiben geerbt; eine frische Vollstatistik wurde nicht aufgebaut. Der Nachweis erfasst weder
+sämtliche Lightroom-/Entwicklungstabellen noch die Originalbildbytes. Die 102 isolierten
+Verhaltens-/Vertragsprüfungen belegen zusätzlich den Quellkandidaten. Daraus folgt kein Gesamtaudit-Go.
+Tatsächliche native Belege und aktuelle Abnahmegrenzen stehen im
+[Auditauftrag](audit-auftrag-phase-10-5.md). Die folgenden datierten .37-, .38- und .39-Nachweise behalten
+ihren damaligen Prüfstand.
 
 Auditkorrektur vom 22. Oktober: Der native erste Split-Versuch wurde vor Journalanlage und Fotoänderung
 angehalten, weil SDK-Laufkennungen Großbuchstaben enthalten können. .37 normalisiert neue Laufkennungen
@@ -128,7 +146,15 @@ Statistikindex allein genügt wegen möglicher Änderungen außerhalb des Plug-i
 Katalogleselauf muss nur relevante FN-Felder prüfen und darf **nicht** beim Öffnen des Zuweisungsfensters starten.
 `lightroom-identity-inventory.mjs` normalisiert diese Rücklesung, prüft ihre Konsistenz mit der Fotoauswahl und
 berücksichtigt Favoriten außerhalb der zu übertragenden Auswahl. `IdentityCatalog.lua` liest nun ausdrücklich
-alle Master-IDs und Favoritenstände. Vollständige FN-Schnappschüsse werden nur für Auswahl-/Journalfotos und
+alle Master-IDs und Favoritenstände. Ab .40 beginnt jeder Leselauf erneut mit `getAllPhotos()`;
+ein Katalogcache oder eine Beschränkung auf die Fotoauswahl ersetzt dieses Inventar nicht.
+Je höchstens 250 Fotos liest `batchGetPropertyForPlugin` gemeinsam `masterTaxonId` und `referenceImage`.
+Nur für die darin gefundenen FN-Fotos folgt `batchGetRawMetadata` mit dem Schlüssel `uuid`.
+Antworten werden über die tatsächlichen Fotoobjekte zugeordnet, nicht über ihre Reihenfolge.
+Fehlende oder fremde Fotoantworten, ungültige Werte und doppelte UUIDs stoppen die Prüfung;
+es gibt keinen stillen Ersatz durch einzelne Fotoabrufe. Ein vorhandenes leeres Antwortobjekt
+für ein Foto ohne FN-Taxonomie und ein nicht gespeicherter Favoritenwert bleiben zulässig.
+Vollständige FN-Schnappschüsse werden nur für Auswahl-/Journalfotos und
 Favoriten gelesen (höchstens 20.000); andere Nichtfavoriten tragen bewusst keinen Schnappschusshash.
 Für ein betroffenes Foto ist der vollständige Hash weiterhin Pflicht. `inventoryRows` und `observed` werden
 in der Helferbrücke validiert und gemeinsam in das interne Inventar überführt. Der Helfer besitzt keinen
@@ -225,10 +251,19 @@ nicht verfügbar weitergereicht, niemals neu erzeugt. Die Bedienung ruft je Bloc
 
 `IdentityCatalog.guard` prüft auch neu hinzugekommene oder entfernte FN-Fotos und außerhalb der Auswahl
 geänderte Favoriten. Innerhalb des Schreibzugriffs startet er weder Helfer noch Dialog oder verschachtelte
-Transaktion. Dieser sichere Erststand liest pro Block erneut die katalogweiten Grundfelder; der Vergleich
-unter Schreibsperre ist nicht pausierbar. Laufzeit und Bedienbarkeit großer Kataloge sind vor Freigabe zu
-messen, nicht aus den kleinen simulierten Tests abzuleiten. Der vorbereitende Leselauf meldet Fortschritt
-in 250er-Schritten und kann vor der nächsten Schreibaktion gestoppt werden.
+Transaktion. Auch ab .40 holt er bei jedem Aufruf mit `getAllPhotos()` die vollständige aktuelle Fotomenge
+und verwendet dieselben 250er-Sammelzugriffe; ein vorheriges Inventar wird nicht als aktuelle Prüfung
+wiederverwendet. Der Wächter enthält kein explizites `LrTasks.yield()` und keinen Pausenpunkt im
+Schreibblock. Der vorbereitende Leselauf behält Fortschritt, Abbruchprüfung und Yield vor jedem
+250er-Block. Laufzeit und Bedienbarkeit großer Kataloge sind nativ zu messen, nicht aus den simulierten
+Tests oder der Anzahl eingesparter SDK-Aufrufe abzuleiten.
+
+Die Adobe-verfasste [SDK-Referenz zu den Batchmethoden](https://lrc.mcor.dev/modules/LrCatalog.html#catalog:batchGetPropertyForPlugin)
+beschreibt beide Sammelzugriffe seit SDK3.0. Das bestehende Minimum SDK6.0 deckt sie ab.
+Der [Schreibzugriffsvertrag](https://lrc.mcor.dev/modules/LrCatalog.html#catalog:withWriteAccessDo)
+erlaubt Yield im Callback aus einem yieldfähigen Aufrufkontext, aber keine verschachtelten
+Schreibzugriffe. Die Orchestrierung bleibt im Lightroom-Task unter `LrTasks.pcall`; der Wächter
+fügt dafür weder einen eigenen Task noch einen expliziten Yield hinzu.
 
 Für leere Stichwort-, Foto- oder Entscheidungsliste verwendet der neue Workflow explizite JSON-Arrays.
 `Json.array` ist eine Opt-in-Erweiterung; gewöhnliche leere Tabellen bleiben für bestehende Aufrufer `{}`.

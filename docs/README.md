@@ -1,6 +1,6 @@
 # Dokumentationsübersicht
 
-Stand: 2026-10-25
+Stand: 2026-10-27
 
 Aktuelle Bedien- und Betriebsverträge stehen neben ausdrücklich datierten Messungen und historischen
 Planungs-/Auditberichten. Ein älteres Datum allein macht einen unveränderten Vertrag nicht ungültig; ein
@@ -11,7 +11,8 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 - [Projekt-README](../README.md): Installation, Bedienung und Betrieb.
 - [Roadmap](roadmap.md): aktueller Arbeitsstand und nächste Schritte.
 - [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md): einzige führende Auditdatei einschließlich
-  Vorabregeln, Entscheidungen und laufender Befunde; Gesamtaudit am 8. Oktober begonnen, Abschluss offen.
+  Vorabregeln, Entscheidungen und Befunde; Explorer, Website und Lightroom angenommen. Letzte
+  Bereinigung, Quellenendprüfung und Veröffentlichungsannahme unter Abschnitt 10.55.
 - [Taxonomie-Betriebsstand](taxonomy-current-status.md): abgeschlossene Reparatur und reguläres Quellenupdate, aktives lokales Paar und offene Abnahmen.
 - [Projektstatus](project-status.md): einzige aktuelle Quelle für Arten-/Assetzähler und Pflege-/Lizenzlisten; automatisch erzeugt.
 - [Dokumentationsregeln](documentation-lifecycle.md): Zuständigkeiten, historische Berichte und Prüfpflichten.

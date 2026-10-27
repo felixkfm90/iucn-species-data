@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-10-26
+Stand: 2026-10-27
 
 ## Aktueller Auftrag
 
@@ -13,7 +13,9 @@ veröffentlicht und öffentlich nachgeprüft. Die zugehörigen CMS-Inhalte sind 
 Texte bleiben außerhalb der freigegebenen Einzelkorrekturen erhalten. Das letzte Pages-Deployment
 `bc0d96c5…` besteht Qualitätsgate, Bau und Auslieferung. CMS und Footer verwenden gemeinsam
 CSS-/Taxonomiecache 1.0.19; der Bindestrich im Spendentitel ist auf Felix' Wunsch nur mobil ausgeblendet.
-Nächster Block ist die repräsentative Lightroom-Großprobe. Der fertige Quellstand ist auf Felix'
+Die repräsentative Lightroom-Großprobe ist am 27. Oktober einschließlich Rücknahme und unabhängiger
+Originalschutzprüfung bestanden. Produktversion 0.4.24.40 verwendet geprüfte SDK-Sammelabrufe.
+Nächster Block ist die Abschlussbereinigung mit gemeinsamem Quellenendgate. Der vorherige Quellstand ist auf Felix'
 ausdrücklichen Auftrag als gemeinsamer Zwischenstand versioniert; Git-/Veröffentlichungsnachweis im
 Auditauftrag. Das ist kein Gesamt-Go.
 Auftrag, Freigaben, Befunde, Belege und Abschluss stehen ausschließlich im
@@ -40,8 +42,8 @@ Teilrücknahme mit manuellem Konflikt sind einschließlich vollständigem Endver
 
 ## Bestätigte Teilergebnisse
 
-- Produktiver FN-Abgleich sowie die belegten Statistik-, Export-, Stapel- und Artänderungsgrundfälle
-  einschließlich genauer Rücknahme sind geprüft. Die verbleibende Lightroom-Matrix bleibt offen.
+- Produktiver FN-Abgleich sowie die belegten Statistik-, Export-, Stapel- und Artänderungsfälle
+  einschließlich genauer Rücknahme sind geprüft. Auch die vereinbarte Lightroom-Großprobe ist bestanden.
 - Der isolierte Großrestore einschließlich getrenntem Programmtest ist belegt.
 - Squarespace-CSS-Compilerfehler und Wendehals-Kartenüberschrift sind öffentlich korrigiert.
 - Binomenanzeige, Suchfeld, Sortierung und Zoom sind veröffentlicht; Zoom 1.0.9 besteht die tatsächliche
@@ -72,16 +74,18 @@ Teilrücknahme mit manuellem Konflikt sind einschließlich vollständigem Endver
 - Die lokale Explorer-Abschlussprüfung ist abgeschlossen. Der vorhandene Gesamtprüfstand wurde anhand
   seiner Quellen weiterverwendet; spätere Änderungen sind durch passende eigene Nachweise gedeckt.
   Desktopgruppe und lesender Projektstatusvergleich bestehen. Websiteabschluss ist ebenfalls belegt;
-  Lightroom, gemeinsame Quellenveröffentlichung, letzte Bereinigung und Gesamt-Go bleiben getrennt.
+  Die ergänzende Lightroom-Großprobe ist inzwischen bestanden; gemeinsame Quellenveröffentlichung,
+  letzte Bereinigung und Gesamt-Go bleiben getrennt.
 
-Einzelnachweise und Grenzen stehen im Auditauftrag, aktuell Abschnitt 10.54. Diese Teilergebnisse
+Einzelnachweise und Grenzen stehen im Auditauftrag, aktuell Abschnitt 10.55. Diese Teilergebnisse
 schließen das Gesamtaudit nicht ab; der Taxonomieupdate selbst ist abgeschlossen.
 
 ## Aktuelle Restreihenfolge
 
-1. **Lightroom-Restprüfungen ausführen.** Die Mehrblock- und ergänzende Detailfensterprüfung sind bestanden.
-   Die gezielten SDK-Stör-/Konfliktfälle sind bestanden. Die repräsentative Großkatalogprobe bleibt gemäß Auditauftrag offen.
-   Bestandene Prüfungen nur bei einem Regressionsgrund wiederholen. Normaler Hauptkatalog bleibt auf D:.
+1. **Lightroom-Prüfstand erhalten.** Mehrblock-, Detailfenster-, SDK-Stör-/Konflikt- und Großkatalogprobe
+   sind bestanden. Alle 116 Original-Katalogdateien stimmen abschließend mit dem Ausgang überein.
+   Reguläre .40 ist aktiviert; Standardstart zeigt auf den normalen D:-Katalog, der nicht erneut geöffnet wurde.
+   Bestandene Prüfungen nur bei einem Regressionsgrund wiederholen.
 2. **Gesamtabschluss herstellen.** Übrige Befunde schließen oder mit Grund, Ziel und Abnahmekriterium
    zuordnen. Tatsächlichen Quellenstand, Dokumentation, Qualitätsgate und unabhängigen Abschlussreview
    abgleichen; nur freigegebene Änderungen veröffentlichen und öffentlich nachprüfen.

@@ -5,19 +5,19 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-10-19T15:06:16.092Z`
+Report-Datenstand: `2026-10-27T01:22:15.170Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 64 |
-| Aktive Arten | 64 |
-| Arten in `speciesData.json` | 64 |
-| Vollständige Art-Assetordner | 64 |
-| Karten | 64 |
-| Sounds | 61 |
-| Credits | 61 |
-| Spektrogramme | 61 |
-| Artporträts | 64 |
+| Eingaben in `species_list.json` | 63 |
+| Aktive Arten | 63 |
+| Arten in `speciesData.json` | 63 |
+| Vollständige Art-Assetordner | 63 |
+| Karten | 63 |
+| Sounds | 60 |
+| Credits | 60 |
+| Spektrogramme | 60 |
+| Artporträts | 63 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
@@ -50,7 +50,7 @@ Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein techni
 - Sommergoldhähnchen
 - Wintergoldhähnchen
 
-## Aktive NC-Soundlizenzen (12)
+## Aktive NC-Soundlizenzen (11)
 
 - Bisamratte
 - Blaustirn-Blatthühnchen
@@ -60,7 +60,6 @@ Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein techni
 - Geoffroy-Klammeraffe
 - Großtrappe
 - Halsbandarassari
-- Löwe
 - Rotaugenlaubfrosch
 - Rotstirnamazone
 - Scharlachara

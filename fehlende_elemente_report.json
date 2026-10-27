@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-19T15:06:16.092Z",
+  "generatedAt": "2026-10-27T01:22:15.170Z",
   "counts": {
-    "totalSpecies": 64,
+    "totalSpecies": 63,
     "missingSoundMp3": 3,
     "missingSoundCredits": 0,
     "missingMap": 0,
@@ -10,7 +10,7 @@
     "missingCategory": 0,
     "missingTrend": 0,
     "missingSpeciesAssets": 3,
-    "ncSoundLicensesAll": 12
+    "ncSoundLicensesAll": 11
   },
   "missing": {
     "soundMp3": [
@@ -63,7 +63,6 @@
     "Geoffroy-Klammeraffe",
     "Großtrappe",
     "Halsbandarassari",
-    "Löwe",
     "Rotaugenlaubfrosch",
     "Rotstirnamazone",
     "Scharlachara"

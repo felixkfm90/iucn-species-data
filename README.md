@@ -15,10 +15,12 @@ Die ab 11. Oktober priorisierten Lightroom-FN-/Monatskorrekturen und die frühe 
 inzwischen umgesetzt und gezielt geprüft; das Gesamtaudit wird fortgesetzt. Quellkorrektur, tatsächlich
 geladene Version, produktiver Datenbankabschluss und weitere eigene Abnahmen bleiben im Auditauftrag
 getrennt nachgewiesen. Den aktuellen integrierten Prüfstand und die verbleibenden Grenzen führt
-Abschnitt 10.54. Die früheren Medien-/Neustartprüfungen mit Korrektur des Artassistenten stehen unter
+Abschnitt 10.55. Die früheren Medien-/Neustartprüfungen mit Korrektur des Artassistenten stehen unter
 10.32 und 10.33; die automatische FN-Artseitenverknüpfung ist unter 10.35 nachgewiesen.
 Die lokale Explorer-Abschlussprüfung und das vereinbarte Websitepaket sind am 26. Oktober abgeschlossen.
-Lightroom-Großprobe, gemeinsame Quellenveröffentlichung, Abschlussbereinigung und Gesamt-Go bleiben offen;
+Die Lightroom-Großprobe ist am 27. Oktober einschließlich genauer Rücknahme, vollständigem FN-Endvergleich
+und unverändertem Originalkatalog bestanden. Aktuelle Plug-in-Version ist 0.4.24.40.
+Gemeinsame Quellenveröffentlichung, Abschlussbereinigung und Gesamt-Go bleiben offen;
 die verbindliche Einordnung steht im Auditauftrag.
 
 Aktuelle Verträge und historische Nachweise sind über die [Dokumentationsübersicht](docs/README.md)

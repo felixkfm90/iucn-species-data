@@ -64,6 +64,30 @@ function catalog:getPath() sdk(); return "D:/Fotos/Testkatalog.lrcat" end
 function catalog:getAllPhotos()
   sdk(); local result = {}; for _, item in pairs(self.photos) do table.insert(result, item) end; return result
 end
+-- Adobe SDK batch replies are keyed by the actual LrPhoto objects. Reuse each
+-- photo's visibility rules so guards still see committed metadata under writes.
+function catalog:batchGetPropertyForPlugin(photos, plugin, fields)
+  sdk(); assert(plugin == _PLUGIN and #photos > 0 and #photos <= 250)
+  self.pluginBatchCalls = (self.pluginBatchCalls or 0) + 1
+  local result = {}
+  for _, item in ipairs(photos) do
+    local values = {}; for _, field in ipairs(fields) do values[field] = item:getPropertyForPlugin(plugin, field) end
+    result[item] = values
+  end
+  if self.pluginBatchMutation then return self.pluginBatchMutation(result, photos) end
+  return result
+end
+function catalog:batchGetRawMetadata(photos, keys)
+  sdk(); assert(#photos > 0 and #photos <= 250)
+  self.rawBatchCalls = (self.rawBatchCalls or 0) + 1
+  local result = {}
+  for _, item in ipairs(photos) do
+    local values = {}; for _, key in ipairs(keys) do values[key] = item:getRawMetadata(key) end
+    result[item] = values
+  end
+  if self.rawBatchMutation then return self.rawBatchMutation(result, photos) end
+  return result
+end
 local function keyword(id, name)
   assert(type(id) == "number" and id >= 1 and id % 1 == 0)
   local value = { localIdentifier = id, name = name }
@@ -508,6 +532,70 @@ Tasks.startAsyncTask(function()
   assert(catalog.created > 0) -- empty target keywords may remain; no automatic deletion
 end)
 `);
+});
+
+test("Batchinventar erhält über 250 Fotos, Nichtfavoriten und vollständige Außenfavoriten", () => {
+  execute(workflowFixture + `
+Tasks.startAsyncTask(function()
+  photo.values.referenceImage = "no"
+  for index = 1, 250 do makePhoto("ordinary-" .. index).values.referenceImage = "no" end
+  local outside = makePhoto("outside-favorite")
+  local read = Reader.read(catalog, { ["photo-one"] = true })
+  assert(#read.inventoryRows == 252 and #read.observed == 2)
+  assert(read.byUuid["photo-one"] and read.byUuid["outside-favorite"])
+  assert(catalog.pluginBatchCalls == 2 and catalog.rawBatchCalls == 2)
+  assert(Tasks.pcall(Reader.guard, catalog, read, plan.package))
+  assert(catalog.pluginBatchCalls == 4 and catalog.rawBatchCalls == 4 and stats == 0)
+  outside.values.referenceImage = "no"
+  read = Reader.read(catalog, {})
+  assert(#read.inventoryRows == 252 and #read.observed == 0)
+end)
+`);
+});
+
+test("Batchwächter schützt vorhandene Außenfavoriten und neue Favoriten direkt im Schreibzugriff", () => {
+  for (const mutation of [
+    'outside.values.referenceImage = "yes"',
+    'outside.values.germanName = "Extern veränderter Favorit"',
+  ]) {
+    execute(workflowFixture + `
+Tasks.startAsyncTask(function()
+  local outside = makePhoto("outside-selected-photos")
+  outside.values.referenceImage = ${mutation.includes('referenceImage') ? '"no"' : '"yes"'}
+  local before = Snapshot.capture(photo)
+  Workflow.prepare(catalog, input)
+  catalog.beforeLock = function() ${mutation} end
+  local ok = Tasks.pcall(Workflow.applyNext, catalog, input)
+  assert(not ok and stats == 0 and saved.photos[1].state == "prepared")
+  assert(Snapshot.equal(before, Snapshot.capture(photo)) and photo.ids[757] and not photo.ids[761])
+  assert(calls[#calls] == "photo-identity-block-confirm")
+end)
+`);
+  }
+});
+
+test("Fehlende oder widersprüchliche Batchantwort unter Schreibsperre verändert weder Foto noch Journal", () => {
+  for (const [method, mutation] of [
+    ["pluginBatchMutation", "result[photo] = nil"],
+    ["pluginBatchMutation", "result[photo].masterTaxonId = false"],
+    ["rawBatchMutation", "result[photo] = nil"],
+    ["rawBatchMutation", "result[photo].uuid = 42"],
+  ]) {
+    execute(workflowFixture + `
+Tasks.startAsyncTask(function()
+  local before = Snapshot.capture(photo)
+  Workflow.prepare(catalog, input)
+  catalog.${method} = function(result)
+    if inWrite then ${mutation} end
+    return result
+  end
+  local ok = Tasks.pcall(Workflow.applyNext, catalog, input)
+  assert(not ok and stats == 0 and saved.photos[1].state == "prepared")
+  assert(Snapshot.equal(before, Snapshot.capture(photo)) and photo.ids[757] and not photo.ids[761])
+  assert(calls[#calls] == "photo-identity-block-confirm")
+end)
+`);
+  }
 });
 
 test("Alle ausgelieferten Lua-Dateien lassen sich parsen (Fengari/Lua 5.3, kein Lightroom-SDK-Ersatz)", async () => {

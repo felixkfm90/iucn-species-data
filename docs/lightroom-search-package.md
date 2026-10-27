@@ -1,14 +1,27 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-10-25
+Stand: 2026-10-27
 Roadmap: Phase 10.2 bis 10.4
-Status: lokaler Quellstand Plug-in-Version **0.4.24.39** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
+Status: lokaler Quellstand Plug-in-Version **0.4.24.40** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
 gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
 seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
 vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
 Felix bestätigte Weissstorch/Rebhuhn im Explorer, tatsächliche Lightroom-Zuweisung und Erhalt nach
-Schließen/Wiederöffnen. Übrige Funktions-/Großbestandsabnahme und Phase-10-Audit bleiben offen.
+Schließen/Wiederöffnen. Weitere Funktions-/Bediengrenzen und das Phase-10-Audit bleiben offen.
 Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](taxonomy-partial-source-recovery.md).
+
+.40 bündelt die katalogweiten Grunddaten der Artänderungsprüfung in 250er-SDK-Leseblöcken.
+Jeder Leselauf und Schreibwächter erfasst weiterhin alle Katalogfotos frisch; vollständige Schnappschüsse
+bleiben für Auswahl-/Journalfotos und alle Favoriten erhalten. Die reguläre .40 ist am Produktivpfad
+nativ als geladen belegt. Private .41 mit identischer `IdentityCatalog.lua` hat im eigenen Großkatalog
+den Ein-Foto-Ablauf aus Initialisierung, Vorschau, Vorbereitung, Übernahme und Rücknahme abgeschlossen.
+Der unabhängige Endvergleich der geschlossenen Katalogkopien ist für die erfassten rohen
+FN-/Foto-/IPTC-Werte und Stichwortrelationen bestanden; das künstliche Foto ist zurückgenommen.
+Die inkrementellen Statistikänderungen sind geprüft, eine frische Vollstatistik wurde nicht aufgebaut.
+Die Batchregeln und genauen Nachweisgrenzen stehen im
+[Artänderungsvertrag](lightroom-identity-workflow.md#vorschau-und-favoriten); diese Funktionsprobe ist
+kein Gesamtaudit-Go. Aktuelle Belege und Abnahmegrenzen führt der
+[Auditauftrag](audit-auftrag-phase-10-5.md).
 
 .39 erhält nach dem Detail-Leser Properties und einmalige Observer. Geschlossene Fenstergenerationen
 verlieren ihre Callbackberechtigung; beide Fensterübergänge geben die SDK-Task frei. Die gezielte
@@ -16,6 +29,7 @@ Fenster-X-/Suchprüfung im eigenen Sechs-Foto-Katalog ist bestanden. Der anschli
 Detailfensterlauf bestätigt auch Escape, Fertig, Zurück/Weiter, erneute Suche und Tab-Rückkehr;
 andere Windows-Systemschrift-/DPI-Konfigurationen und die genaue ursprüngliche Ursache bleiben offen.
 
+Historischer Abschlussstand vor der jetzigen Großkatalogprobe:
 Split B/C und Merge F bestehen native Übernahme und genaue Rücknahme mit vollständigem Nachvergleich.
 Auch die Mehrblockpause/Wiederöffnung mit 253 Testeinträgen, SDK-Fehler, Commit-vor-Journal-Wiederanlauf
 und gezielte Konflikt-/Teil-/Endrücknahme sind unabhängig geprüft. Die private Testkopie ist deaktiviert;
@@ -653,7 +667,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Version `0.4.24.39`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Version `0.4.24.40`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 
