@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-10-27
+Stand: 2026-10-28
 
 ## Aktueller Stand
 
@@ -15,7 +15,8 @@ Prüf-/Veröffentlichungsnachweise und bewusste Nachweisgrenzen stehen ausschlie
 - **Lightroom:** Auditabnahme mit regulärem Plug-in **0.4.24.40**; Großprobe auf eigenen Kopien einschließlich genauer
   Rücknahme bestanden. Originalkatalogbestand unverändert; Standardkatalog liegt auf D:.
 - **Sicherung:** isolierter Großrestore mit Inhaltsprüfung und Programmstart abgenommen. Die historische
-  Testinstallation ist bereinigt; eine neue NAS-Sicherung des Abschlussstands wurde nicht erstellt.
+  Testinstallation ist bereinigt; die anschließend beauftragte vollständige NAS-Sicherung vom 28. Oktober
+  ist einschließlich Rücklese-, Quell- und Aufbewahrungsprüfung abgeschlossen (Abschnitt 10.57).
 
 Felix hat anschließend Dokumentations-/Dateibereinigung, Temp-Leerung, Sicherungsinventar und nach
 Commit/Push einen neuen lokalen Projektchat beauftragt. Der Nachlauf steht in Abschnitt 10.56 desselben
@@ -35,30 +36,39 @@ Bereinigung und Dokumentation sowie die Kontrolle des zugehörigen GitHub-Pages-
 Der Nachweis der tatsächlichen Revision und der Qualitäts-, Artefaktbau- und Deploymentergebnisse wird
 nach Ausführung privat unter `data/file-usage-review/2026-10-27/publication/` gesichert. Die örtliche
 Speicherkonfiguration und privaten Daten bleiben Git-/Pages-ignoriert; die neue Freigabe umfasst deren
-Veröffentlichung nicht. Native Lightroom-Neuladung und eine neue NAS-Sicherung bleiben getrennte Grenzen.
+Veröffentlichung nicht. Den anschließenden beauftragten Lightroom-/NAS-Nachlauf führt
+[Abschnitt 10.57](audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
 
 ## Regelbetrieb nach dem Audit
 
-Zuletzt nativ bestätigt ist die reguläre .40; neuer lokaler Quellstand für den `data`-Pfad ist .42.
-Die native Neuladung ist davon getrennt zu bestätigen. Lightroom startet standardmäßig mit dem normalen D:-Katalog.
+Quellstand und regulär geladene Version **0.4.24.42** sind seit 28. Oktober gezielt nativ bestätigt.
+Die Suche erkennt den `data`-Bestand und findet Weissstorch samt Details. Lightroom verwendet den normalen D:-Katalog.
 Angenommene Prüfungen nur bei einem Regressionsgrund wiederholen. Geschützte Quellen, Rückwege,
 NAS-Archive und dauerhafte Auditbelege bleiben erhalten. Ein künftiger echter Taxonomieaufbau kann
 die noch nicht gemessene aktive Fortschritts-/Leistungsbeobachtung ergänzen; dafür keinen reinen
 Testaufbau starten. Weitere Umsetzung und Veröffentlichung benötigen Felix' jeweiligen Auftrag.
 
-## Nächste gemeinsame Arbeiten am 28. Oktober 2026
+## Beauftragte Arbeiten am 28. Oktober 2026
 
 Felix hat am 27. Oktober diese Reihenfolge für die gemeinsame Fortsetzung am Folgetag festgelegt:
 
-1. **Lightroom-Nachprüfung:** Plug-in **0.4.24.42** regulär laden und gezielt bestätigen, dass der neue
-   `data`-Pfad und das aktuelle Suchpaket nativ korrekt erkannt werden. Schutz des normalen D:-Katalogs
-   und der Originalfotos nach dem bestehenden [Lightroom-Vertrag](lightroom-search-package.md) erhalten.
-2. **Anschließend NAS-Sicherung:** Den aktuellen bereinigten Gesamtstand einschließlich dauerhaftem
-   `data`-Bestand und örtlicher Speicherkonfiguration nach dem bestehenden
-   [Sicherungsvertrag](multi-device-backup-plan.md) vollständig sichern und das Ergebnis prüfen.
+1. **Lightroom-Nachprüfung bestanden:** .42 am regulären Produktpfad aktiviert, normale D:-Katalogadresse
+   bestätigt, Datenstände übereinstimmend und Weissstorch-Suche einschließlich drei Detailseiten erfolgreich.
+   Keine Zuweisung oder Metadatenaktion; Lightroom anschließend regulär geschlossen.
+2. **NAS-Sicherung bestanden:** Vollständiger gebundener Bestand einschließlich `data`, Speicherkonfiguration
+   und der lokal getesteten Sicherungskorrektur nach dem [Sicherungsvertrag](multi-device-backup-plan.md)
+   gesichert. Vollständige ZIP-Rücklesung, unveränderter Quellstand und Aufbewahrungsprüfung erfolgreich;
+   kein Altarchiv entfernt. Zwei Manifest-Kompatibilitätsfehler für die vorhandene PowerShell-7-Laufzeit
+   zuvor reproduziert und korrigiert, **38/38** gezielte Prüfungen bestanden. Keine Ausführungsregel geändert.
 
-Unmittelbar vor der Ausführung den tatsächlichen Programm-, Git-, Daten- und Verbraucherstand frisch
-feststellen. Beide Arbeiten sind vorgemerkt; die native .42-Bestätigung und die neue Sicherung stehen noch aus.
+Beide beauftragten Arbeiten sind abgeschlossen. Der Sicherungsstand enthält die damaligen lokalen
+Änderungen; Abschlussquittung und abschließende Dokumentation wurden danach ergänzt. Ein neuer nativer
+Restore wurde nicht durchgeführt. Tatsächliche Nachweise und Grenzen ausschließlich im
+[Auditnachlauf](audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
+
+Felix hat anschließend die Veröffentlichung der geprüften NAS-Korrektur samt Abschlussdokumentation
+und die Kontrolle des vollständigen GitHub-Pages-Laufs beauftragt. Der tatsächliche Veröffentlichungsnachweis
+wird gemäß Auditnachlauf privat gesichert; örtliche Daten und Einstellungen bleiben ausgeschlossen.
 
 ## Vereinbarte Aufgaben nach dem Audit
 

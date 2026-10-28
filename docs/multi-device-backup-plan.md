@@ -1,6 +1,6 @@
 # Phase 11 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
-Stand: 2026-10-27
+Stand: 2026-10-28
 
 ## Ziel
 
@@ -310,8 +310,22 @@ Standardziel ist `W:\Website Datenbank Backup`. In der App kann der Zielpfad ueb
 weiterhin direkt im Skript ueberschrieben werden:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/nas-backup.ps1 -BackupRoot "W:\Website Datenbank Backup"
+pwsh -NoProfile -NonInteractive -File scripts/nas-backup.ps1 -BackupRoot "W:\Website Datenbank Backup" -Progress
 ```
+
+Dieser direkte Aufruf verwendet ein vorhandenes PowerShell 7 unter seinen geltenden Ausführungsregeln.
+Aus dem Projektordner starten: Der Sicherungsquellpfad kommt aus dem Skriptpfad, die internen Git-Aufrufe
+aus dem Arbeitsverzeichnis. Der vorhandene Windows-PowerShell-5.1-Weg bleibt technisch unterstützt;
+die aktuelle Laufzeit muss die lokale Skriptausführung erlauben. Keine Ausführungsregel für eine Probe ändern.
+
+Die Manifestprüfung erhält Datumswerte seit der Korrektur vom 28. Oktober als ISO-Wert unabhängig davon,
+ob die Laufzeit JSON-Daten als Zeichenfolge oder `DateTime` zurückgibt. `sourceRecordsHash` bindet die
+exakt gespeicherte Dateireihenfolge; erneutes laufzeit-/kulturabhängiges Sortieren wäre eine andere Prüfsumme.
+Dateimenge, Pfadgrenzen, Einzelinhalte, erwartetes Manifest, Quellstand und Rotation werden weiterhin geprüft.
+Die gezielten Gegenproben bestehen in 5.1 und 7 einschließlich nachträglich vertauschter Manifestzeilen;
+der anschließend beauftragte vollständige NAS-Lauf vom 28. Oktober ist einschließlich Rücklese-,
+Quell- und Aufbewahrungsprüfung erfolgreich. Dieser tatsächliche Betriebsnachweis und seine Grenzen stehen im
+[Auditnachlauf](audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
 
 Das Skript:
 

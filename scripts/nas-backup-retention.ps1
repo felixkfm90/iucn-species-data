@@ -59,10 +59,12 @@ function Test-NasArchiveContents {
     }
     $parsedId = [guid]::Empty
     if (-not [guid]::TryParse([string]$manifest.archiveId, [ref]$parsedId)) { throw "Ungueltige Sicherungsidentitaet." }
-    $createdAt = [DateTimeOffset]::Parse([string]$manifest.createdAt)
+    $createdAtText = if ($manifest.createdAt -is [DateTime]) { $manifest.createdAt.ToString("o") }
+    else { [string]$manifest.createdAt }
+    $createdAt = [DateTimeOffset]::Parse($createdAtText, [Globalization.CultureInfo]::InvariantCulture)
     $records = @($manifest.files)
     if ($records.Count -eq 0 -or $records.Count -ne $manifest.fileCount -or
-        (Get-NasJsonHash @($records | Sort-Object path)) -ne $manifest.sourceRecordsHash) {
+        (Get-NasJsonHash $records) -ne $manifest.sourceRecordsHash) {
       throw "Dateiverzeichnis der Sicherung ist unvollstaendig oder veraendert."
     }
     $expected = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::OrdinalIgnoreCase)

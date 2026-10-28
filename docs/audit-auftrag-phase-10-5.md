@@ -10541,3 +10541,88 @@ Produkt-Plug-in bleibt .40, öffentliche JavaScript-/CSS-/Datenquellen unveränd
 native Auditserie oder produktive Datenpflege für diesen Nachlauf. Commit/Push und tatsächlicher
 Veröffentlichungsstatus werden nach Ausführung als technische Quittung neben der Belegablage
 gesichert; der neue lokale Projektchat wird erst nach dem erfolgreichen Push erstellt.
+
+### 10.57 Lightroom-Nachprüfung und NAS-Sicherung – 28. Oktober
+
+Felix setzt nach dem Hochfahren ausdrücklich den am Vortag vereinbarten Plan fort: zuerst die gezielte
+native Prüfung von Plug-in .42 nach dem `data`-Namenswechsel, anschließend vollständige NAS-Sicherung.
+Ausgang ist der saubere lokale und auf GitHub bestätigte Stand
+`6276863bb1aecd002e298fb6fde9c1d40e5f2a9b`; weitere große Folgevorhaben werden damit nicht begonnen.
+
+**Native Nachprüfung bestanden.** Lightroom regulär gestartet. Zusatzmodulmanager bestätigt
+**0.4.24.42**, aktiviert am Pfad `D:\Arten-Explorer\lightroom-plugin\FNWildlifeTaxonomy.lrplugin`, ohne
+Diagnosemeldungen. Die nativen Katalogeinstellungen bestätigen
+`D:\Lightroom Katalog\Lightroomkatalog aktuell.lrcat`. Die Suche meldet übereinstimmende lokale CoL-,
+Master- und Suchpaketstände, findet `Ciconia ciconia` mit bevorzugtem Namen **Weissstorch** und öffnet
+alle drei Taxonomiedetailseiten. Keine Zuweisung, Namenänderung oder Metadatenaktion ausgeführt.
+Die zusätzliche wöchentliche Katalogsicherungs-/Optimierungsfrage für diesen Leselauf mit
+`Diesmal überspringen` geschlossen; Planung und Optionen unverändert. Lightroom regulär beendet,
+Prozessfreiheit anschließend mit vollständigen Rechten bestätigt. Keine erneute bytegleiche
+Originalkatalogabnahme, keine originale SQL-Abfrage außerhalb Lightroom und kein Taxonomieaufbau.
+
+Der unabhängig lesende Versionsvergleich bestätigt den konfigurierten Datenpfad `D:\Arten-Explorer\data`,
+Veröffentlichung `publication-bbbfafc1-6fa7-4b8d-a8f8-6f2f2319da07`, Master
+`master-20261024014609415` und Paket `lightroom-cbbd9b7e7d35ac507d35` im zugehörigen `releases`-Ordner;
+Zustand `current` / `matching-active-versions`. Der historische Septemberordner `lightroom/active`
+wird dabei nicht als aktuelles Paket verwendet. Acht native Beobachtungen und der Versionsbeleg liegen
+privat unter `data/operational-checks/2026-10-28/ee1219c4-2b88-44c3-bf2c-47a1404266fe/`.
+
+**Sicherung vorbereitet und anschließend ausgeführt.** Ziel `W:\Website Datenbank Backup` frisch erreichbar,
+Laufwerkszuordnung und freier Platz geprüft. Kleine Manifestlesung der drei vorhandenen Archive:
+7. Oktober mit vollständigem Schema-2-Verzeichnis, Juni/August historische Kurzmanifeste. Keine
+Archivvollprüfung, Wiederherstellung, Rotation oder Entfernung aus dieser Vorprüfung abgeleitet.
+Der erste Sicherungsstart über Windows PowerShell wird von deren bestehender Ausführungsregel vor
+dem Skriptstart verweigert, Exit 1; kein ZIP angelegt. Kleine eigene Fehlerbelege bytegleich archiviert.
+
+Die vorhandene PowerShell **7.6.5** hat unverändert `RemoteSigned`. Zwei reproduzierte Fehler verhindern
+zunächst diesen Weg: `ConvertFrom-Json` liefert dort `DateTime`; die bisherige Zeichenfolgenumwandlung
+eines Datums nach dem 12. des Monats scheitert beim erneuten Parsen. Außerdem unterscheidet sich die
+Sortierung der Manifestpfade zwischen den Laufzeiten. Das unveränderte gespeicherte Oktoberverzeichnis
+ergibt korrekt `37ae293625e98ae19d7146f0a5ff141a7a14fb2f6bd28e24e407e5b5a51cf352`, erneutes Sortieren
+unter 7 dagegen `69895c8c4de8648cf84df94e3473acb61a7355f66a3ccc67ca6086e4ae889ad3`.
+Die eng begrenzte Korrektur erhält das Datum im ISO-Format und prüft die tatsächlich gespeicherte,
+bereits durch `sourceRecordsHash` gebundene Reihenfolge. Keine Inhalts-/Pfad-/Quell-/Rotationsprüfung
+entfernt. **38/38** gezielte NAS-Vertrags-, Rotations-, Dienst- und Übersichtstests bestehen ohne Skips,
+einschließlich 5.1-/7-Gegenprobe, vertauschter Manifestzeilen und vollständigem kleinen 7-Sicherungsablauf.
+
+Die automatische Freigabeprüfung eines abschließenden lesenden Prozessabgleichs lief zunächst zweimal
+ohne Entscheidung ab. Der spätere konkrete Sicherungsstart ist freigegeben und ausgeführt. Unmittelbar
+davor Lightroom-/Explorer-Abwesenheit, unveränderter Git-Stand und genau die drei inventarisierten
+NAS-Archive erneut bestätigt. Keine Ausführungsrichtlinie, Windows-Sicherheitseinstellung oder
+NAS-Zugriffsberechtigung geändert; während des gebundenen Laufs keine Projekt-/Git-/Datenänderungen.
+
+**Vollständige NAS-Sicherung bestanden.** Tatsächlicher Lauf am 28. Oktober von **15:57:18 bis
+16:37:51 MEZ**, Exit 0, `ok`, `archiveVerified` und `rotationCompleted` wahr, keine Warnung.
+Archiv `W:\Website Datenbank Backup\IUCN_Datenbank_2026-10-28_155929_6276863bb1ae.zip`,
+**30.783.153.953 Bytes**, SHA-256
+`91b870064279e287477e9cd8a6b26e9f03c0a096060d3890a1f0fa0d84f21af8`,
+Archiv-ID `064dfb64-844e-4099-bdaf-bde84203b416`. Das vollständige Manifest bindet **5.027 Dateien /
+137.673.297.515 Quelldateibytes** einschließlich Daten, Speicherkonfiguration, eigener Nachweise und
+lokaler NAS-Korrektur. Basis ist `6276863`; der tatsächliche lokale Änderungsstand ist ausdrücklich
+als `workingTreeDirty: true` gebunden. Alle ZIP-Inhalte vollständig per Einzel-SHA-256 zurückgelesen,
+Manifest und danach sämtliche Quellen/Git-Bindungen erneut verglichen. `sourceRecordsHash`:
+`d78bdf7f2c1d55608612af2c902b266cbe756373d019ddfa4b6c0072b6fe0063`.
+`.env`-Varianten und Projekt-temp fehlen wie vorgesehen. Kein neuer Restore-/Programmstart aus dem ZIP.
+
+**Aufbewahrung und Nachweise.** Zwei vollständig geprüfte Stände bleiben erhalten: neue Sicherung und
+7. Oktober. Juni/August bleiben als historische Kurzmanifestarchive zusätzlich geschützt; insgesamt vier
+ZIP-Dateien und **null entfernte Altarchive**. Kein künstlicher dritter gleicher Stand angelegt;
+bei zwei geprüften Ständen ist noch kein zusätzlicher älterer Kontrollstand ausgewiesen. Die drei
+bisherigen Archivgrößen und Änderungszeiten stimmen mit der Voraufnahme überein. Aufbewahrungsrevision:
+`ce203df91f2b9ba6af6076542fa4275f0956382b8834d8be5e25b5f9197ac0f0`.
+
+Abschlussquittung `nas-backup-result.json`, vollständige eigene Prozessausgaben, Gegenprobe und
+38-Test-Log liegen in der genannten privaten Belegablage. Nach Prozessfreiheit wurden die eigenen
+Sicherungs-/Gegenprobesitzungen bytegeprüft dorthin verschoben; `evidence-relocation.json` bindet die
+früheren Tempadressen. Diese Abschlussquittung und die abschließende Dokumentation entstehen nach dem
+gebundenen Sicherungsstand. Felix beauftragt anschließend ausdrücklich Commit und Push der geprüften
+Programmkorrektur samt Dokumentation sowie die Kontrolle des vollständigen GitHub-Pages-Laufs.
+Tatsächliche Revision, Remote-Abgleich und Qualitäts-/Build-/Deploymentergebnisse werden nach Ausführung
+privat unter `data/operational-checks/2026-10-28/ee1219c4-2b88-44c3-bf2c-47a1404266fe/publication/`
+belegt. Die örtlichen Daten, Einstellungen und Rohbelege bleiben Git-/Pages-ignoriert.
+
+Nach dem normalen Lightroomabschluss blieb ein eigener 354-Byte-Plug-in-Besitzerbeleg mit Zustand `open`,
+null Operationen, keinen Helfern und keinen Artefakten zurück. Besitzer-PID 16188 und Lightroom frisch
+als beendet bestätigt; genau diesen einzelnen Beleg samt Sitzungsordner bytegleich archiviert, Zustand
+unverändert erhalten (`native-temp-retention.json`). Keine Plug-in-Programmdatei dafür geändert.
+Projekt-temp und Plug-in-temp enthalten danach keine Dateien mehr.

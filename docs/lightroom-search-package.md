@@ -1,6 +1,6 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-10-27
+Stand: 2026-10-28
 Roadmap: Phase 10.2 bis 10.4
 Status: lokaler Quellstand Plug-in-Version **0.4.24.42** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
 gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
@@ -14,8 +14,13 @@ Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](t
 .42 unterstützt die ausgeführte Umstellung des gemeinsamen Standardordners von `Daten` auf `data`.
 Der Resolver unterstützt beide Konfigurationsnamen und löst belegte alte Datenpfade auf, ohne historische
 Journale oder Paket-/Auftragsbelege umzuschreiben. Die tatsächliche Umbenennung und ihre Nachweise stehen im
-[Speichervertrag](storage-migration.md). Für .42 ist hier noch keine native Neuladung bestätigt;
-der zuletzt nativ bestätigte reguläre Stand bleibt .40. Die zwischenzeitliche private .41 war eine Auditprobe.
+[Speichervertrag](storage-migration.md). Am **28. Oktober** ist die regulär geladene und aktivierte .42 am
+Produktpfad nativ bestätigt. Der normale D:-Katalog, übereinstimmende Datenstände und Weissstorch-Suche
+mit bevorzugtem Namen und drei Taxonomiedetailseiten sind geprüft. Keine Zuweisung oder Metadatenaktion;
+anschließend normales Schließen ohne zusätzliche Katalogoptimierung. Das ist keine erneute bytegleiche
+Originalkatalogabnahme. Den beauftragten Nachlauf führt
+[Abschnitt 10.57](audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
+Die zwischenzeitliche private .41 war eine Auditprobe.
 
 .40 bündelt die katalogweiten Grunddaten der Artänderungsprüfung in 250er-SDK-Leseblöcken.
 Jeder Leselauf und Schreibwächter erfasst weiterhin alle Katalogfotos frisch; vollständige Schnappschüsse

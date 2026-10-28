@@ -11,18 +11,19 @@ const quote = (value) => `'${String(value).replaceAll("'", "''")}'`;
 const windows = { skip: process.platform !== "win32" };
 const fixtures = `
 function New-FixtureArchive {
-  param([string]$Root, [int]$Index, [switch]$WrongContent, [switch]$Legacy, [switch]$Duplicate, [switch]$OtherProject)
+  param([string]$Root, [int]$Index, [switch]$WrongContent, [switch]$Legacy, [switch]$Duplicate, [switch]$OtherProject,
+    [string[]]$Paths = @('Daten/private.json'), [string]$CreatedAt = '')
   $filename = Join-Path $Root ("IUCN_Datenbank_fixture_{0:00}.zip" -f $Index)
   $data = [Text.Encoding]::UTF8.GetBytes("fixture-private-data-" + $Index)
   $sha = [Security.Cryptography.SHA256]::Create()
   try { $hash = ([BitConverter]::ToString($sha.ComputeHash($data))).Replace('-', '').ToLowerInvariant() }
   finally { $sha.Dispose() }
-  $records = @([pscustomobject][ordered]@{ path = 'Daten/private.json'; bytes = [long]$data.Length; sha256 = $hash })
+  $records = @($Paths | ForEach-Object { [pscustomobject][ordered]@{ path = $_; bytes = [long]$data.Length; sha256 = $hash } })
   $manifest = [ordered]@{ schemaVersion = 2; backupKind = 'arten-explorer-nas-restore'; archiveId = [guid]::NewGuid().ToString();
     projectId = ('e' * 64);
-    createdAt = ('2026-09-{0:00}T12:00:00+00:00' -f $Index); gitCommit = ('a' * 40);
+    createdAt = $(if ($CreatedAt) { $CreatedAt } else { '2026-09-{0:00}T12:00:00+00:00' -f $Index }); gitCommit = ('a' * 40);
     localDataStateHash = ('b' * 64); sourceRecordsHash = (Get-NasJsonHash $records);
-    fileCount = 1; totalBytes = [long]$data.Length; files = $records }
+    fileCount = $records.Count; totalBytes = [long]($data.Length * $records.Count); files = $records }
   if ($Legacy) { $manifest = [ordered]@{ fileCount = 1; gitCommit = ('a' * 40); createdAt = '2026-06-01T12:00:00Z' } }
   elseif ($OtherProject) { $manifest.projectId = ('f' * 64) }
   Add-Type -AssemblyName System.IO.Compression
@@ -33,12 +34,14 @@ function New-FixtureArchive {
     $entry = $zip.CreateEntry('backup-manifest.json')
     $writer = [IO.StreamWriter]::new($entry.Open(), [Text.UTF8Encoding]::new($false))
     try { $writer.Write((ConvertTo-Json -InputObject $manifest -Depth 15 -Compress)) } finally { $writer.Dispose() }
-    $entry = $zip.CreateEntry('Daten/private.json')
-    $output = $entry.Open()
-    try {
-      if ($WrongContent) { $data[0] = [byte]($data[0] + 1) }
-      $output.Write($data, 0, $data.Length)
-    } finally { $output.Dispose() }
+    foreach ($record in $records) {
+      $entry = $zip.CreateEntry($record.path)
+      $output = $entry.Open()
+      try {
+        if ($WrongContent) { $data[0] = [byte]($data[0] + 1) }
+        $output.Write($data, 0, $data.Length)
+      } finally { $output.Dispose() }
+    }
     if ($Duplicate) { $duplicateEntry = $zip.CreateEntry('Daten/private.json'); $duplicateEntry.Open().Dispose() }
   } finally { $zip.Dispose(); $stream.Dispose() }
   return $filename
@@ -63,11 +66,11 @@ function Wait-FixtureDirectoryListing {
 }
 `;
 
-function run(t, command, prepare) {
+function run(t, command, prepare, executable = "powershell.exe") {
   const root = fs.mkdtempSync(path.join(tmpdir(), "nas-rotation-"));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   if (prepare) prepare(root);
-  const output = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
+  const output = spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command",
     `$ErrorActionPreference='Stop'; ${helperSource}\n${fixtures}\n$root=${quote(root)}; ${command}`],
   { encoding: "utf8", timeout: 60000 });
   assert.equal(output.status, 0, `${output.error || ""} ${output.stderr}\n${output.stdout}`);
@@ -84,6 +87,41 @@ test("helper is definition-only and guards revisions, checksum proofs, restore l
   assert.match(helperSource, /\$ordered\[-1\]\.path/u);
   assert.doesNotMatch(helperSource, /Get-NasRetentionPlan -BackupRoot ['"](?:W:|D:)/u);
 });
+
+for (const executable of ["powershell.exe", "pwsh.exe"]) {
+  test(`NAS archive accepts a late-month date and preserves its bound record order in ${executable}`, windows, (t) => {
+    const available = spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command", "$PSVersionTable.PSVersion.Major"], { encoding: "utf8" });
+    if (available.error?.code === "ENOENT" && executable === "pwsh.exe") {
+      t.skip("PowerShell 7 is not installed");
+      return;
+    }
+    assert.equal(available.status, 0, available.stderr);
+    const result = run(t, `
+      $file = New-FixtureArchive $root 1 -Paths @('data/z.json', 'data/a.json') -CreatedAt '2026-10-28T15:34:56.1234567+01:00'
+      $verified = Test-NasArchiveContents $file
+      $zip = [IO.Compression.ZipFile]::Open($file, [IO.Compression.ZipArchiveMode]::Update)
+      try {
+        $entry = $zip.GetEntry('backup-manifest.json')
+        $reader = [IO.StreamReader]::new($entry.Open())
+        try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
+        $entry.Delete()
+        [array]::Reverse($manifest.files)
+        $replacement = $zip.CreateEntry('backup-manifest.json')
+        $writer = [IO.StreamWriter]::new($replacement.Open(), [Text.UTF8Encoding]::new($false))
+        try { $writer.Write((ConvertTo-Json -InputObject $manifest -Depth 15 -Compress)) } finally { $writer.Dispose() }
+      } finally { $zip.Dispose() }
+      $tampered = Test-NasArchiveContents $file
+      [pscustomobject]@{ accepted = $verified.ok; reason = $verified.reason; createdAt = $verified.createdAt;
+        paths = @($verified.manifest.files | ForEach-Object { $_.path }); tamperedAccepted = $tampered.ok;
+        tamperedReason = $tampered.reason } | ConvertTo-Json -Depth 5 -Compress
+    `, null, executable);
+    assert.equal(result.accepted, true, result.reason);
+    assert.equal(result.createdAt, "2026-10-28T14:34:56.1234567+00:00");
+    assert.deepEqual(result.paths, ["data/z.json", "data/a.json"]);
+    assert.equal(result.tamperedAccepted, false);
+    assert.match(result.tamperedReason, /Dateiverzeichnis/u);
+  });
+}
 
 function prepareMain(root) {
   const program = path.join(root, "program");
@@ -144,6 +182,24 @@ test("actual main script creates a verified private-data backup, excludes creden
   assert.match(result.archiveHash, /^[a-f0-9]{64}$/u);
   assert.match(result.archiveId, /^[a-f0-9-]{36}$/u);
   assert.deepEqual(result.files, ["Daten/private.json", "public.json", "storage-path.json"]);
+});
+
+test("actual main script completes and reuses a verified backup in PowerShell 7", windows, (t) => {
+  const available = spawnSync("pwsh.exe", ["-NoProfile", "-NonInteractive", "-Command", "$PSVersionTable.PSVersion.Major"], { encoding: "utf8" });
+  if (available.error?.code === "ENOENT") {
+    t.skip("PowerShell 7 is not installed");
+    return;
+  }
+  assert.equal(available.status, 0, available.stderr);
+  const result = run(t, `${mockGit}
+    $code = Get-Content -LiteralPath (Join-Path $root 'main-fixture.ps1') -Raw -Encoding UTF8
+    $nas = Join-Path $root 'nas'
+    $first = ((& ([scriptblock]::Create($code)) -BackupRoot $nas) -join [Environment]::NewLine) | ConvertFrom-Json
+    $second = ((& ([scriptblock]::Create($code)) -BackupRoot $nas) -join [Environment]::NewLine) | ConvertFrom-Json
+    [pscustomobject]@{ created = $first.ok; verified = $first.archiveVerified; rotation = $first.rotationCompleted;
+      reused = $second.skipped; count = @(Get-ChildItem -LiteralPath $nas -Filter 'IUCN_Datenbank_*.zip').Count } | ConvertTo-Json -Compress
+  `, prepareMain, "pwsh.exe");
+  assert.deepEqual(result, { created: true, verified: true, rotation: true, reused: true, count: 1 });
 });
 
 test("actual main script rejects a changed bound Git state and removes only its own incomplete ZIP", windows, (t) => {

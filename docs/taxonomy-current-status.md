@@ -1,6 +1,6 @@
 # Aktueller Taxonomie-Betriebsstand
 
-Stand: 2026-10-27
+Stand: 2026-10-28
 
 Dieses Dokument ist der kompakte Einstieg für den heutigen lokalen Taxonomie-Betrieb. Die vollständigen
 Freigaben, Datenvergleiche und historischen Laufberichte stehen im
@@ -96,8 +96,10 @@ Anzeigelücke gleichgesetzt. Verlauf und aktuelle Auditreihenfolge im Auditauftr
 
 Aktueller lokaler Quellstand ist **0.4.24.42** für den inzwischen lokal aktiven Standardordner `data`;
 der bisherige `Daten`-Name und historische Zugriffspfade bleiben unterstützt. Stand und Nachweise des
-Ordnerwechsels stehen im [Speichervertrag](storage-migration.md). Eine native Neuladung von .42 ist noch
-nicht bestätigt. Zuletzt nativ belegt ist die reguläre .40 am Projektpfad.
+Ordnerwechsels stehen im [Speichervertrag](storage-migration.md). Die regulär geladene .42 ist am
+28. Oktober am Projektpfad nativ bestätigt: übereinstimmende Datenstände und Weissstorch-Suche mit
+bevorzugtem Namen und Details. Keine neue Zuweisung oder Datenbankaktualisierung. Stand der anschließenden
+vollständig geprüften NAS-Sicherung und Nachweise im [Auditnachlauf](audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
 .40 bündelt die vollständigen Katalog-Grundlesungen in 250er-SDK-Abfragen; Schutzumfang bleibt erhalten.
 Der private .41-Großlauf verwendet identische Leselogik und ist einschließlich genauer Rücknahme bestanden.
 Der folgende .39-Nachweis beschreibt die davor abgeschlossene Detailfensterprüfung.

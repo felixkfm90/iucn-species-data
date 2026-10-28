@@ -12,8 +12,11 @@ Website und Lightroom sind im vereinbarten Umfang angenommen; die gezielte Absch
 ausgeführt. Gesamt-Go, Prüf-/Veröffentlichungsnachweise und verbleibende Betriebsgrenzen stehen
 ausschließlich im [Auditauftrag Phase 10.5, Abschnitt 10.55](docs/audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
 Aktueller lokaler Plug-in-Quellstand ist **0.4.24.42** für die ausgeführte Pfadumstellung auf `data`.
-Zuletzt nativ geladen bestätigt ist .40; dessen Großprobe einschließlich genauer Rücknahme und
-unverändertem Originalkatalog ist bestanden. Weitere Arbeiten richten sich nach Felix' Auftrag;
+Die gezielte native Nachprüfung vom **28. Oktober** bestätigt .42, den regulären Katalog und die lokale
+Suche. Die frühere Großprobe einschließlich genauer Rücknahme bleibt ein getrennter historischer Nachweis.
+Die anschließend beauftragte vollständige NAS-Sicherung ist ebenfalls inhaltlich geprüft abgeschlossen;
+Nachweise im [Auditnachlauf](docs/audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
+Weitere Arbeiten richten sich nach Felix' Auftrag;
 die vereinbarten Folgevorhaben stehen in der [Roadmap](docs/roadmap.md).
 
 Aktuelle Verträge und historische Nachweise sind über die [Dokumentationsübersicht](docs/README.md)

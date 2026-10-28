@@ -1,6 +1,6 @@
 # Gemeinsamer Datenpfad und Speicherumzug
 
-Stand: 2026-10-27
+Stand: 2026-10-28
 
 ## Aktueller Standard und beauftragte Ordnerumbenennung
 
@@ -69,7 +69,11 @@ verschoben; `evidence-relocation.json` bindet ihre früheren Tempadressen an den
 Das ursprüngliche Auditarchiv unter `data/audit-evidence/phase-10-5/` bleibt unverändert.
 
 Plug-in-Quellstand ist **0.4.24.42**; .41 war bereits für die private Auditprobe verwendet.
-Keine native .42-Neuladung oder erneute Originalkatalogabnahme beansprucht. Lightroom blieb geschlossen.
+Während der Umstellung am 27. Oktober blieb Lightroom geschlossen. Die gezielte native .42-Nachprüfung
+vom 28. Oktober ist inzwischen bestanden: regulärer Produktpfad, übereinstimmende lokale Datenstände und
+Weissstorch-Suche samt Details. Keine Zuweisung, Metadatenaktion oder erneute bytegleiche Originalkatalogabnahme.
+Nachweise und Stand der anschließend beauftragten Sicherung im
+[Auditnachlauf](audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
 Aus dem Pfadauftrag allein wurden keine NAS-Sicherung oder Veröffentlichung abgeleitet. Der anschließende
 ausdrückliche Commit-/Push-/Pages-Auftrag ist in der [Roadmap](roadmap.md) festgehalten; private Daten bleiben lokal.
 
@@ -201,7 +205,9 @@ alten Stand ersetzt werden.
 `data`, der historische Name `Daten`, lokale Konfiguration, Prozesslock und Temp sind aus Git/Pages und Quellscans ausgeschlossen.
 Das vollständige NAS-Backup berücksichtigt Daten und Konfiguration; Temp bleibt ausgeschlossen. Ein externer
 Datenpfad oder während des Backups geänderter Datenstand darf keinen vollständigen Sicherungserfolg vortäuschen.
-Keine neue produktive NAS-Sicherung zur Umsetzung gestartet.
+Für die damalige Umsetzung wurde keine neue produktive NAS-Sicherung gestartet. Die später ausdrücklich
+beauftragte und am 28. Oktober vollständig geprüfte Sicherung führt der
+[Auditnachlauf](audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
 
 Isolierte Tests prüfen Abbruch, doppelte Vorbereitung/Übernahme, Rückfall, Zielmanipulation, Links,
 relative CLI-Ziele, unabhängige Konfiguration und portable Ordnerumbenennung. Sie ersetzen keinen tatsächlichen
