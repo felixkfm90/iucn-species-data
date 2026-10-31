@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { BUNDLED_SPECIES_SOURCE, readBundledSpeciesCatalog } from "../species-content/bundled.mjs";
 import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { spawn } from "node:child_process";
@@ -141,12 +142,12 @@ test("journal ownership blocks a second live controller and close waits for prep
 test("the actual bound 63-species source produces a proposal only; no import action is executed", async () => {
   const f = fixture(); let value;
   try {
-    const root = fileURLToPath(new URL("../../", import.meta.url)), bytes = await fs.readFile(path.join(root, "data", "website", "checks", "species-content-20261031-catalog.json"));
+    const root = fileURLToPath(new URL("../../", import.meta.url)), bytes = await readBundledSpeciesCatalog(root);
     const service = { async refresh() { return { status: { connection: "online", projectId: "synthetic-project", baseUrl: "https://project.example.org", user: { id: "synthetic-admin", role: "admin" }, readOnlySession: false },
       permissions: { canManageUsers: true }, queuedChanges: 0, conflictCount: 0, busy: false, objects: [] }; },
     async create() { throw new Error("Actual import prohibited in this proposal test"); }, async approve() { throw new Error("Actual approval prohibited in this proposal test"); } };
     value = createInitialProjectImport({ service, filename: path.join(f.root, "bound-plan.sqlite"), localStorageConfirmed: true, readCatalog: async () => bytes,
-      expectedSha256: "bad4403e0032452dd9899abef6d3383ce86265f7ef01b8a01ba023e6da6984c5" });
+      expectedSha256: BUNDLED_SPECIES_SOURCE.sha256 });
     const plan = await value.prepare({ releaseForReaders: true }); assert.equal(plan.counts.willCreate, 63); assert.equal(plan.counts.total, 63); assert.equal(plan.state, "planned");
   } finally { if (value) await value.close(); f.cleanup(); }
 });
