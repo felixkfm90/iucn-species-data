@@ -27,7 +27,7 @@ export function fixture() {
     cleanup() {
       for (const store of stores) try { store.close(); } catch { /* explicitly closed by restart test */ }
       assertTestTempPath(root);
-      fs.rmSync(root, { recursive: true });
+      fs.rmSync(root, { recursive: true, maxRetries: 3, retryDelay: 25 });
       closeEmptyTestTempSession();
     }
   };

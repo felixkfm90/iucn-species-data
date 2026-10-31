@@ -246,7 +246,7 @@ test("linked profile files are rejected without reading another directory", asyn
   }
   try {
     await assert.rejects(f.prepare(undefined, { files: [{ id: "extra", relativePath: "linked/extra.json", kind: "json", required: true,
-      validate: () => ({ projectIds: [], pending: 0 }) }] }), /Verknüpfung|verknüpft|Umgeleitet/);
+      validate: () => ({ projectIds: [], pending: 0 }) }] }), { message: `Verzeichnis-/Dateilink im Temp-Pfad: ${linked}` });
     assert.equal(await fs.readFile(path.join(target, "extra.json"), "utf8"), '{"fixture":true}');
   } finally { await fs.unlink(linked); }
 });

@@ -51,6 +51,13 @@ Sicherungsmappe mit `project.sqlite` und Größen-/Hashnachweis. Kontodaten sind
 die Mappe bleibt deshalb privat und gehört in die vorhandene geschützte NAS-Sicherungsroutine.
 Eine Sicherung auf demselben NAS ersetzt nicht die unabhängige Datensicherung.
 
+Der Prüfer akzeptiert die bekannten exakten Tabellen-/Spaltenformen des ursprünglichen Schemas 1
+und des aktuellen Schemas 4. Der Nachweis bindet die tatsächlich gelesene Version; beim getrennten
+Wiederherstellen muss sie erneut übereinstimmen. Schema 4 enthält auch die Bildtext- und
+Artseitenübernahmebelege aus dem WAL. Unbekannte Versionen und zusätzliche oder fehlende Tabellen
+beziehungsweise Spalten bleiben gesperrt. Die gezielte lokale Gegenprobe umfasst 15 bestandene Fälle;
+sie verwendet ausschließlich eigene Testdaten und ersetzt keine NAS-Betriebsabnahme.
+
 Aufruf im Dienstimage mit einem jeweils neuen Ziel unter dem privaten gemounteten Projektordner:
 
 ```text

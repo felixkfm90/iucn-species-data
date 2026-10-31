@@ -6,6 +6,16 @@ import { DatabaseSync, backup } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 
 const requiredTables = ["meta", "users", "devices", "sessions", "login_attempts", "objects", "versions", "conflicts", "changes", "audit"];
+const supportedSchemas = new Map([[1, requiredTables], [4, [...requiredTables, "website_alt_receipts", "page_authoring_receipts"]]]);
+const tableColumns = {
+  meta: "key,value", users: "id,username,display_name,password_hash,role,blocked,version,created_at",
+  devices: "id,user_id,token_hash,label,expires_at,revoked,created_at", sessions: "token_hash,user_id,device_id,scope,expires_at,created_at",
+  login_attempts: "key,failures,started_at,blocked_until", objects: "kind,id,current_revision,approved_revision",
+  versions: "kind,id,revision,ordinal,parent_revision,data,author_id,created_at",
+  conflicts: "id,kind,object_id,author_id,base_revision,current_revision,base_data,current_data,proposed_data,created_at,resolved_at,resolved_by,resolution,resulting_revision",
+  changes: "author_id,change_id,request_hash,result", audit: "sequence,actor_id,action,target,created_at",
+  website_alt_receipts: "id,object_id,version_revision,body", page_authoring_receipts: "id,object_id,version_revision,body",
+};
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 
 async function localPath(filename, { existing = false } = {}) {
@@ -31,16 +41,22 @@ async function digest(filename) {
 }
 function inspect(db) {
   const integrity = db.prepare("PRAGMA integrity_check").all();
-  if (integrity.length !== 1 || Object.values(integrity[0])[0] !== "ok" || db.prepare("PRAGMA user_version").get().user_version !== 1) {
+  const databaseSchema = db.prepare("PRAGMA user_version").get().user_version, expectedTables = supportedSchemas.get(databaseSchema);
+  if (integrity.length !== 1 || Object.values(integrity[0])[0] !== "ok" || !expectedTables) {
     throw new Error("Die Projektdatenbank ist unvollständig oder besitzt ein unbekanntes Format.");
   }
-  const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((row) => row.name));
-  if (requiredTables.some((name) => !tables.has(name))) throw new Error("Benötigte Projekttabellen fehlen.");
+  const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all().map((row) => row.name));
+  if (tables.size !== expectedTables.length || expectedTables.some((name) => !tables.has(name))) throw new Error("Die Projekttabellen entsprechen keinem unterstützten Format.");
+  for (const name of expectedTables) {
+    if (db.prepare(`PRAGMA table_info(${name})`).all().map((column) => column.name).join(",") !== tableColumns[name]) {
+      throw new Error("Die Projektspalten entsprechen keinem unterstützten Format.");
+    }
+  }
   if (db.prepare("PRAGMA foreign_key_check").get()) throw new Error("Die Projektbezüge sind unvollständig.");
   const projectId = db.prepare("SELECT value FROM meta WHERE key='project_id'").get()?.value;
   if (!UUID.test(projectId || "")) throw new Error("Ein eingerichtetes gemeinsames Projekt ist erforderlich.");
-  const counts = Object.fromEntries(requiredTables.map((name) => [name, db.prepare(`SELECT count(*) AS n FROM ${name}`).get().n]));
-  return { projectId, counts };
+  const counts = Object.fromEntries(expectedTables.map((name) => [name, db.prepare(`SELECT count(*) AS n FROM ${name}`).get().n]));
+  return { databaseSchema, projectId, counts };
 }
 
 /** Uses SQLite's online backup API, so committed WAL contents are included. */
@@ -61,7 +77,7 @@ export async function createSharedProjectSnapshot({ filename, destination, local
     await fs.chmod(partial, 0o600);
     await fs.rename(partial, target);
     const manifest = { schemaVersion: 1, productId: "FN.ArtenExplorer.SharedProject", snapshotId: randomUUID(),
-      createdAt: new Date().toISOString(), databaseSchema: 1, projectId: state.projectId, counts: state.counts,
+      createdAt: new Date().toISOString(), databaseSchema: state.databaseSchema, projectId: state.projectId, counts: state.counts,
       file: "project.sqlite", bytes: (await fs.stat(target)).size, sha256: await digest(target), method: "sqlite-online-backup" };
     await fs.writeFile(path.join(directory, "snapshot.json"), `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx", mode: 0o600 });
     return manifest;
@@ -79,7 +95,7 @@ export async function validateAndRestoreSharedProjectSnapshot({ snapshotDirector
   const manifestFile = await localPath(path.join(snapshotDirectory, "snapshot.json"), { existing: true });
   if ((await fs.stat(manifestFile)).size > 65536) throw new Error("Ungültiger Sicherungsnachweis.");
   const manifest = JSON.parse(await fs.readFile(manifestFile, "utf8"));
-  if (manifest.schemaVersion !== 1 || manifest.productId !== "FN.ArtenExplorer.SharedProject" || manifest.databaseSchema !== 1
+  if (manifest.schemaVersion !== 1 || manifest.productId !== "FN.ArtenExplorer.SharedProject" || !supportedSchemas.has(manifest.databaseSchema)
     || manifest.file !== "project.sqlite" || !UUID.test(manifest.projectId || "") || !/^[a-f0-9]{64}$/.test(manifest.sha256 || "")
     || !Number.isSafeInteger(manifest.bytes) || manifest.bytes <= 0) throw new Error("Ungültiger Sicherungsnachweis.");
   const source = await localPath(path.join(snapshotDirectory, "project.sqlite"), { existing: true });
@@ -94,7 +110,8 @@ export async function validateAndRestoreSharedProjectSnapshot({ snapshotDirector
     const db = new DatabaseSync(target, { readOnly: true });
     let state;
     try { state = inspect(db); } finally { db.close(); }
-    if (state.projectId !== manifest.projectId || JSON.stringify(state.counts) !== JSON.stringify(manifest.counts)) throw new Error("Der wiederhergestellte Projektinhalt passt nicht zum Sicherungsnachweis.");
+    if (state.databaseSchema !== manifest.databaseSchema || state.projectId !== manifest.projectId
+      || JSON.stringify(state.counts) !== JSON.stringify(manifest.counts)) throw new Error("Der wiederhergestellte Projektinhalt passt nicht zum Sicherungsnachweis.");
     succeeded = true;
     return { verified: true, projectId: state.projectId, counts: state.counts, sha256: manifest.sha256, existingProjectReplaced: false };
   } finally { if (!succeeded) await fs.unlink(target).catch(() => {}); }

@@ -21,16 +21,23 @@ async function fixture(t) {
   writer.exec("BEGIN");
   for (let i = 0; i < 100; i++) insert.run("author", "synthetic-write", `row-${i}-${"x".repeat(1500)}`, "2026-10-31");
   writer.exec("COMMIT");
-  t.after(async () => { writer.close(); store.close(); await fs.rm(assertTestTempPath(root), { recursive: true, force: true }); });
+  t.after(async () => { writer.close(); store.close(); await fs.rm(assertTestTempPath(root), { recursive: true, force: true, maxRetries: 3, retryDelay: 25 }); });
   return { root, filename, writer };
 }
 
 test("NAS-Sicherung enthält echte noch nicht eingecheckte WAL-Daten und wird getrennt bytegleich wiederhergestellt", async (t) => {
   const f = await fixture(t), destination = path.join(f.root, "snapshot");
+  const revision = "22222222-2222-4222-8222-222222222222", receiptBodies = ['{"fixture":"Bildtextbeleg"}', '{"fixture":"Artseitenbeleg"}'];
+  f.writer.prepare("INSERT INTO versions VALUES ('page','fixture-page',?,1,NULL,?,'author','2026-10-31')").run(revision, '{"title":"Fixture page"}');
+  f.writer.prepare("INSERT INTO objects VALUES ('page','fixture-page',?,NULL)").run(revision);
+  for (const [index, table] of ["website_alt_receipts", "page_authoring_receipts"].entries()) {
+    f.writer.prepare(`INSERT INTO ${table} VALUES (?,'fixture-page',?,?)`).run(`receipt-${index}`, revision, receiptBodies[index]);
+  }
   assert.ok((await fs.stat(`${f.filename}-wal`)).size > 0);
   const original = await fs.readFile(f.filename);
   const manifest = await createSharedProjectSnapshot({ filename: f.filename, destination, localStorageConfirmed: true });
   assert.equal(manifest.projectId, projectId); assert.equal(manifest.counts.audit, 100);
+  assert.equal(manifest.databaseSchema, 4); assert.equal(manifest.counts.website_alt_receipts, 1); assert.equal(manifest.counts.page_authoring_receipts, 1);
   assert.deepEqual(await fs.readFile(f.filename), original);
   assert.equal(f.writer.prepare("SELECT count(*) AS n FROM audit").get().n, 100);
   f.writer.prepare("INSERT INTO audit(action,created_at) VALUES (?,?)").run("after-backup", "2026-10-31");
@@ -38,8 +45,50 @@ test("NAS-Sicherung enthält echte noch nicht eingecheckte WAL-Daten und wird ge
   const result = await validateAndRestoreSharedProjectSnapshot({ snapshotDirectory: destination, destination: target, localStorageConfirmed: true });
   assert.equal(result.verified, true); assert.equal(result.existingProjectReplaced, false);
   const probe = new DatabaseSync(target, { readOnly: true });
-  try { assert.equal(probe.prepare("SELECT count(*) AS n FROM audit").get().n, 100); } finally { probe.close(); }
+  try {
+    assert.equal(probe.prepare("SELECT count(*) AS n FROM audit").get().n, 100);
+    assert.equal(probe.prepare("PRAGMA user_version").get().user_version, 4);
+    assert.deepEqual(["website_alt_receipts", "page_authoring_receipts"].map((table) => probe.prepare(`SELECT body FROM ${table}`).get().body), receiptBodies);
+  } finally { probe.close(); }
   assert.equal(f.writer.prepare("SELECT count(*) AS n FROM audit").get().n, 101);
+});
+
+test("bekanntes Schema 1 bleibt ohne Migration bytegleich sicherbar und getrennt wiederherstellbar", async (t) => {
+  const f = await fixture(t), snapshotDirectory = path.join(f.root, "snapshot"), target = path.join(f.root, "restore.sqlite");
+  f.writer.exec("DROP TABLE page_authoring_receipts; DROP TABLE website_alt_receipts; DROP TRIGGER objects_insert_generation; DROP TRIGGER objects_update_generation; DELETE FROM meta WHERE key='objects_generation'; PRAGMA user_version=1;");
+  const before = await fs.readFile(f.filename), manifest = await createSharedProjectSnapshot({ filename: f.filename, destination: snapshotDirectory, localStorageConfirmed: true });
+  assert.equal(manifest.databaseSchema, 1); assert.equal(manifest.counts.audit, 100);
+  assert.equal(Object.hasOwn(manifest.counts, "website_alt_receipts"), false); assert.equal(Object.hasOwn(manifest.counts, "page_authoring_receipts"), false);
+  const result = await validateAndRestoreSharedProjectSnapshot({ snapshotDirectory, destination: target, localStorageConfirmed: true });
+  assert.equal(result.verified, true); assert.deepEqual(await fs.readFile(f.filename), before);
+  const probe = new DatabaseSync(target, { readOnly: true });
+  try { assert.equal(probe.prepare("PRAGMA user_version").get().user_version, 1); } finally { probe.close(); }
+  assert.equal(f.writer.prepare("PRAGMA user_version").get().user_version, 1, "die aktive Quelle wird nicht migriert");
+});
+
+test("unbekannte Versionen, unpassende Tabellen und veränderte Spalten ergeben keinen Sicherungsnachweis", async (t) => {
+  for (const sql of ["PRAGMA user_version=0", "PRAGMA user_version=2", "PRAGMA user_version=3", "PRAGMA user_version=5",
+    "DROP TABLE page_authoring_receipts", "CREATE TABLE unexpected(value TEXT)", "ALTER TABLE website_alt_receipts ADD COLUMN unexpected TEXT", "PRAGMA user_version=1"]) {
+    await t.test(sql, async (t) => {
+      const f = await fixture(t), destination = path.join(f.root, "snapshot"); f.writer.exec(sql);
+      const before = await fs.readFile(f.filename);
+      await assert.rejects(createSharedProjectSnapshot({ filename: f.filename, destination, localStorageConfirmed: true }), /unbekanntes Format|unterstützten Format/);
+      assert.deepEqual(await fs.readFile(f.filename), before);
+      await assert.rejects(fs.stat(destination), { code: "ENOENT" });
+    });
+  }
+});
+
+test("Restore bindet die Schemanummer an die geprüften Bytes und entfernt eine abgewiesene eigene Kopie", async (t) => {
+  const f = await fixture(t), snapshotDirectory = path.join(f.root, "snapshot"), target = path.join(f.root, "restore.sqlite");
+  const manifest = await createSharedProjectSnapshot({ filename: f.filename, destination: snapshotDirectory, localStorageConfirmed: true });
+  const manifestFile = path.join(snapshotDirectory, "snapshot.json");
+  await fs.writeFile(manifestFile, JSON.stringify({ ...manifest, databaseSchema: 5 }));
+  await assert.rejects(validateAndRestoreSharedProjectSnapshot({ snapshotDirectory, destination: target, localStorageConfirmed: true }), /Ungültiger Sicherungsnachweis/);
+  await assert.rejects(fs.stat(target), { code: "ENOENT" });
+  await fs.writeFile(manifestFile, JSON.stringify({ ...manifest, databaseSchema: 1 }));
+  await assert.rejects(validateAndRestoreSharedProjectSnapshot({ snapshotDirectory, destination: target, localStorageConfirmed: true }), /passt nicht zum Sicherungsnachweis/);
+  await assert.rejects(fs.stat(target), { code: "ENOENT" });
 });
 
 test("NAS-Sicherung überschreibt weder vorhandene Sicherung noch ein bestehendes Restoreziel", async (t) => {
