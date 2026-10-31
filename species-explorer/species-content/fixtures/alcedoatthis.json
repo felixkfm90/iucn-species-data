@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "fixtureKind": "public-main-excerpt",
+  "url": "https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/alcedoatthis",
+  "sourceObservedAt": "2026-10-30T20:59:15.312Z",
+  "bytes": 20813,
+  "sha256": "c791daf7dcc1e42dee79bce7880af5ad62c6c9a4cc9f70cf91842185a505a9bd",
+  "editorialSha256": "647f828d3e7c312c058979411b3a00799bd4a4d7586d2a8bb520211ed29ae36c",
+  "galleryTextSha256": "0466b82aa564569d310d6f6ba09943d4789405df69f4c8aa2f1d70bede3b52e4",
+  "sections": 9,
+  "paragraphs": 18,
+  "galleryImages": 39
+}

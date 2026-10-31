@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "fixtureKind": "public-main-excerpt",
+  "url": "https://www.fnwildlifetravel.de/wildlife/afrika/acinonyxjubatus",
+  "sourceObservedAt": "2026-10-30T20:59:16.148Z",
+  "bytes": 15696,
+  "sha256": "4b5df68f9994ced7ef70d4d9476da51d77955af0bb0aa9d92d5ea919f25e6d52",
+  "editorialSha256": "5daa202f32ea99c631ba1e1cd5151c6080419de8fd029d76d4b9a0a470078028",
+  "galleryTextSha256": "46b9aa049b9ba9268e0b36d2e0653dced55be0d125cd6cd493874180139426cc",
+  "sections": 11,
+  "paragraphs": 35,
+  "galleryImages": 19
+}

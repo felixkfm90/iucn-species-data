@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { tmpdir, assertTestTempPath, closeEmptyTestTempSession } from "../../scripts/test-temp.mjs";
 import { parseWebsiteEditorialPage, canonicalWebsiteImageSource } from "../website-alt-parser.mjs";
@@ -11,7 +10,7 @@ import { captureSpeciesPages } from "./capture.mjs";
 import { validateSpeciesSnapshot } from "./validate.mjs";
 import { buildCatalog } from "../shared-project/catalog.mjs";
 
-const root = fileURLToPath(new URL("../../", import.meta.url));
+const fixtures = new URL("./fixtures/", import.meta.url);
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const record = (slug = "fixtureowl") => ({ URLSlug: slug, "Wissenschaftlicher Name": "Strix fixture", "Deutscher Name": "Testkauz",
   "Größe": "12-14 cm", "Gewicht": "30 g", "Lebenserwartung": "4 Jahre", "Status": "LC", "Trend": "Stabil",
@@ -145,20 +144,24 @@ test("the whole-export validator rejects an invented gallery checksum", async ()
 
 for (const [slug, scientific, common, expectedFirst] of [["alcedoatthis", "Alcedo atthis", "Eisvogel", "_OM11184_20260509_09_22_28.JPG"],
   ["acinonyxjubatus", "Acinonyx jubatus", "Gepard", "_7R50577.JPG"]]) {
-  test(`bound historical ${slug} example preserves every heading/paragraph and the full gallery order`, async () => {
-    const base = path.join(root, "data", "website", "checks", `species-samples-20261030-${slug}-source`);
-    const metadata = JSON.parse(await fs.readFile(`${base}.json`, "utf8")), bytes = await fs.readFile(`${base}.html`);
+  test(`bound public <main> excerpt for ${slug} preserves every heading/paragraph and the full gallery order`, async () => {
+    const metadata = JSON.parse(await fs.readFile(new URL(`${slug}.json`, fixtures), "utf8")), bytes = await fs.readFile(new URL(`${slug}.html`, fixtures));
+    assert.equal(metadata.fixtureKind, "public-main-excerpt");
     assert.equal(digest(bytes), metadata.sha256); assert.equal(bytes.length, metadata.bytes);
-    const original = parseWebsiteEditorialPage(bytes.toString("utf8"), metadata.url);
-    assert.equal(original.complete, true);
+    const editorial = parseWebsiteEditorialPage(bytes.toString("utf8"), metadata.url);
+    assert.equal(editorial.complete, true); assert.equal(digest(JSON.stringify(editorial)), metadata.editorialSha256);
+    assert.equal(editorial.sections.length, metadata.sections);
+    assert.equal(editorial.sections.reduce((count, section) => count + section.paragraphs.length, 0), metadata.paragraphs);
+    assert.equal(editorial.gallerySources.length, metadata.galleryImages);
     const result = buildSpeciesContent({ record: { ...record(slug), "Wissenschaftlicher Name": scientific, "Deutscher Name": common },
       pageUrl: metadata.url, html: bytes.toString("utf8"), localMedia: localMedia() });
     assert.equal(result.complete, true);
-    assert.deepEqual(result.data.sections.map((section) => section.title), original.sections.map((section) => section.heading || "Einleitung"));
-    for (const [index, section] of original.sections.entries()) {
+    assert.deepEqual(result.data.sections.map((section) => section.title), editorial.sections.map((section) => section.heading || "Einleitung"));
+    for (const [index, section] of editorial.sections.entries()) {
       for (const paragraph of section.paragraphs) assert.ok(result.data.sections[index].text.includes(paragraph.text));
     }
-    assert.deepEqual(result.data.media.gallery.map((entry) => canonicalWebsiteImageSource(entry.url)), original.gallerySources);
+    assert.deepEqual(result.data.media.gallery.map((entry) => canonicalWebsiteImageSource(entry.url)), editorial.gallerySources);
+    assert.equal(digest(JSON.stringify(result.data.media.gallery)), metadata.galleryTextSha256);
     assert.equal(new URL(result.data.media.gallery[0].url).pathname.split("/").at(-1), expectedFirst);
     assert.equal(result.evidence.htmlSha256, metadata.sha256);
   });

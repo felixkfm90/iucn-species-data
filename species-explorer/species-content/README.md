@@ -54,4 +54,11 @@ eigenen Capture-Tempdateien nachweisen. Ein lokaler Export ersetzt keine CMS-, N
 
 Tests: `node --no-warnings --test --test-isolation=none --test-concurrency=1 species-explorer/species-content/export.test.mjs`.
 Die synthetischen Dateifixtures entstehen ausschließlich in einer eigenen `scripts/test-temp.mjs`-Sitzung.
-Zwei bereits gebundene historische HTML-Beispiele prüfen zusätzlich volle Fachtext- und Bildfolge-Parität.
+Zwei versionierte öffentliche `<main>`-Ausschnitte unter `fixtures/` prüfen zusätzlich volle Fachtext-
+und Bildfolge-Parität. Sie enthalten nur redaktionelle Textblöcke und Galeriemarkup, keine Skripte,
+Styles, Kopf-/Fußzeilen, Trackingattribute oder Bilddateien. Vor der Übernahme wurden sämtliche
+Parserabschnitte, Absätze, Blockbelege und Galeriequellen sowie die vollständigen exportierten Inhalte
+mit den unveränderten privaten Originalbelegen verglichen. Die Metadaten nennen öffentliche URL,
+ursprünglichen Beobachtungszeitpunkt und eigene Ausschnittbytes/SHA256; Inhaltsprüfsummen binden auch
+die komplette Parserausgabe und Galerie-Bildtexte. Die Tests benötigen keine privaten Laufzeitdateien
+und führen keine neuen Websiteabrufe aus. Die bestehenden LF-Regeln gelten auch für diese Hashbindungen.
