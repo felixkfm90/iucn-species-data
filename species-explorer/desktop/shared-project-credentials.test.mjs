@@ -14,6 +14,7 @@ function encryptedFake() {
   const key = randomBytes(32), calls = { encrypt: 0, decrypt: 0 };
   let available = true, rotate = false;
   return { calls, setAvailable(value) { available = value; }, rotateNext() { rotate = true; },
+    getSelectedStorageBackend() { return "gnome_libsecret"; },
     async isAsyncEncryptionAvailable() { return available; },
     async encryptStringAsync(plaintext) {
       calls.encrypt++;
@@ -84,12 +85,26 @@ test("relative, root, network and control-character profile paths are rejected",
     assert.throws(() => createSharedProjectCredentialStore({ directory, safeStorage: encryptedFake() }), { code: "credential_unsafe_path" });
   }
 });
+test("known Linux backends round-trip the encrypted fake without plaintext storage", () => scoped(async ({ safeStorage, directory, file }) => {
+  const original = Object.getOwnPropertyDescriptor(process, "platform");
+  try {
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    for (const backend of ["gnome_libsecret", "kwallet", "kwallet5", "kwallet6"]) {
+      const store = createSharedProjectCredentialStore({ directory, safeStorage: { ...safeStorage, getSelectedStorageBackend: () => backend } });
+      const value = credentials();
+      await store.set(backend, value);
+      assert.deepEqual(await store.get(backend), value);
+      assert.equal((await fs.readFile(file(backend))).includes(Buffer.from(value.sessionToken)), false);
+    }
+  } finally { Object.defineProperty(process, "platform", original); }
+}));
 test("Linux basic_text and unknown backends are rejected", () => scoped(async ({ safeStorage, directory }) => {
   const original = Object.getOwnPropertyDescriptor(process, "platform");
   try {
     Object.defineProperty(process, "platform", { value: "linux", configurable: true });
-    for (const backend of ["basic_text", "unknown"]) {
-      const store = createSharedProjectCredentialStore({ directory, safeStorage: { ...safeStorage, getSelectedStorageBackend: () => backend } });
+    for (const backend of [undefined, "basic_text", "unknown"]) {
+      const store = createSharedProjectCredentialStore({ directory, safeStorage: { ...safeStorage,
+        getSelectedStorageBackend: backend === undefined ? undefined : () => backend } });
       await assert.rejects(store.set("key", credentials()), { code: "credential_encryption_unavailable" });
     }
   } finally { Object.defineProperty(process, "platform", original); }
