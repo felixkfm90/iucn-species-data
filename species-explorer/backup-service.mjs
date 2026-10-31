@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { readNasBackupArchives } from "./nas-backup-archives.mjs";
+import { atomicWriteJson } from "./taxonomy-storage.mjs";
 
 const MAX_BACKUP_ROOT_LENGTH = 500;
 const MAX_BACKUPS = 3;
@@ -54,6 +55,8 @@ function initialBackupState(backupRoot) {
     error: "",
     skipped: false,
     reason: "",
+    includesDeviceProfiles: false,
+    deviceProfile: null,
   };
 }
 
@@ -68,8 +71,10 @@ export async function createBackupService({
   spawnProcess = spawn,
   readArchives = readNasBackupArchives,
   tempSession = null,
+  deviceBackupProvider = null,
 }) {
   let processHandle = null;
+  let runPromise = null, previewPromise = null, operationController = null, closing = false;
   let settings = await loadExplorerSettings();
   let currentBackupRoot = normalizeBackupRoot(settings.nasBackupRoot) || defaultBackupRoot;
   let state = initialBackupState(currentBackupRoot);
@@ -94,8 +99,7 @@ export async function createBackupService({
   }
 
   async function writeExplorerSettings(nextSettings) {
-    await mkdir(join(repoRoot, "species-explorer"), { recursive: true });
-    await writeFile(localSettingsPath, `${JSON.stringify(nextSettings, null, 2)}\n`, "utf8");
+    await atomicWriteJson(localSettingsPath, nextSettings);
   }
 
   function publicSettingsPayload() {
@@ -106,11 +110,12 @@ export async function createBackupService({
       settingsFile: `species-explorer/${localSettingsFile}`,
       maxBackups: MAX_BACKUPS,
       retentionPolicy: RETENTION_POLICY,
+      deviceProfilesConfigured: Boolean(deviceBackupProvider),
     };
   }
 
   function isBackupActive() {
-    return Boolean(processHandle || state.status === "running");
+    return Boolean(processHandle || runPromise || previewPromise || state.status === "running");
   }
 
   async function saveBackupSettings(payload = {}) {
@@ -137,7 +142,7 @@ export async function createBackupService({
     return process.platform === "win32" ? "powershell.exe" : "pwsh";
   }
 
-  function nasBackupArgs({ dryRun = false, force = false, progress = false } = {}) {
+  function nasBackupArgs({ dryRun = false, force = false, progress = false, snapshot = null } = {}) {
     const args = [
       "-NoProfile",
       "-ExecutionPolicy",
@@ -152,22 +157,35 @@ export async function createBackupService({
     if (dryRun) args.push("-DryRun");
     if (force) args.push("-Force");
     if (progress) args.push("-Progress");
+    if (deviceBackupProvider) args.push("-RequireDeviceSnapshot");
+    if (snapshot) args.push("-DeviceSnapshotManifest", snapshot.manifestPath);
     return args;
   }
 
-  function runCommandCapture(command, args) {
+  function runCommandCapture(command, args, { track = false, signal } = {}) {
     return new Promise((resolveRun) => {
+      signal?.throwIfAborted();
       const child = spawnProcess(command, args, {
         cwd: repoRoot,
-        env: process.env,
+        env: { ...process.env, IUCN_NAS_BACKUP_DIR: currentBackupRoot },
         windowsHide: true,
       });
+      if (track) processHandle = child;
       const stdout = [];
       const stderr = [];
+      let finished = false;
+      const abort = () => { child.kill?.(); };
+      signal?.addEventListener("abort", abort, { once: true });
+      const finish = (result) => {
+        if (finished) return; finished = true;
+        signal?.removeEventListener("abort", abort);
+        if (processHandle === child) processHandle = null;
+        resolveRun(result);
+      };
       child.stdout.on("data", (chunk) => stdout.push(chunk));
-      child.stderr.on("data", (chunk) => stderr.push(chunk));
-      child.on("error", (error) => resolveRun({ code: 1, stdout: "", stderr: error.message }));
-      child.on("close", (code) => resolveRun({
+      child.stderr.on("data", (chunk) => { stderr.push(chunk); if (track) appendBackupProcessOutput(chunk.toString("utf8")); });
+      child.on("error", (error) => { if (!child.pid) finish({ code: 1, stdout: "", stderr: error.message }); else stderr.push(Buffer.from(error.message)); });
+      child.on("close", (code) => finish({
         code: Number.isInteger(code) ? code : 1,
         stdout: Buffer.concat(stdout).toString("utf8").trim(),
         stderr: Buffer.concat(stderr).toString("utf8").trim(),
@@ -216,6 +234,7 @@ export async function createBackupService({
   }
 
   async function previewNasBackup() {
+    if (closing) throw new Error("Der Sicherungsdienst wird geschlossen.");
     if (isBackupActive()) {
       const error = new Error("Es läuft bereits ein NAS-Backup");
       error.statusCode = 409;
@@ -226,39 +245,73 @@ export async function createBackupService({
       error.statusCode = 409;
       throw error;
     }
-    const result = await runCommandCapture(powershellExecutable(), nasBackupArgs({ dryRun: true }));
-    if (result.code !== 0) {
-      const error = new Error(result.stderr || result.stdout || "Backup-Vorschau fehlgeschlagen");
-      error.statusCode = 500;
-      throw error;
+    operationController = new AbortController();
+    previewPromise = executePreview(operationController.signal).finally(() => { previewPromise = null; operationController = null; });
+    return previewPromise;
+  }
+
+  async function withDeviceSnapshot(signal, action) {
+    let snapshot = null;
+    try {
+      snapshot = deviceBackupProvider ? await deviceBackupProvider.prepare({ signal }) : null;
+      if (deviceBackupProvider && !snapshot) throw new Error("Der eingerichtete persönliche Offlinebestand lieferte keinen Sicherungsnachweis.");
+      signal.throwIfAborted();
+      await snapshot?.assertSourcesUnchanged();
+      const result = await action(snapshot);
+      signal.throwIfAborted();
+      await snapshot?.assertSourcesUnchanged();
+      return result;
+    } finally { await snapshot?.dispose(); }
+  }
+
+  function checkDeviceResult(parsed, snapshot) {
+    if (snapshot && (parsed.includesDeviceProfiles !== true || parsed.deviceSnapshotStateHash !== snapshot.summary.stateHash || parsed.devicePending !== snapshot.summary.pending)) {
+      throw new Error("Die NAS-Sicherung bestätigt den persönlichen Offlinebestand nicht vollständig.");
     }
-    const parsed = parseJsonProcessOutput(result.stdout, "Backup-Vorschau lieferte keine gültige Antwort");
-    return {
-      mode: "nas-backup",
-      backupRoot: parsed.backupRoot || currentBackupRoot,
-      skipped: Boolean(parsed.skipped),
-      reason: parsed.reason || "",
-      archivePath: parsed.archivePath || parsed.latestBackup || "",
-      fileCount: Number(parsed.fileCount ?? 0),
-      totalBytes: Number(parsed.totalBytes ?? 0),
-      gitCommit: parsed.gitCommit || "",
-      workingTreeDirty: Boolean(parsed.workingTreeDirty),
-      retentionWouldRemove: Number(parsed.retentionWouldRemove ?? 0),
-      retainedCheckpoint: parsed.retainedCheckpoint || "",
-      retainedArchivePaths: parsed.retainedArchivePaths || [],
-      protectedArchives: parsed.protectedArchives || [],
-      rotationPlanRevision: parsed.rotationPlanRevision || "",
-      retentionPolicy: parsed.retentionPolicy || RETENTION_POLICY,
-      warnings: [
-        "Das Backup wird als ZIP auf dem NAS gespeichert und enthält Projektdateien, Git-Stand, den gemeinsamen Datenordner, node_modules und lokale Werkzeuge.",
-        "Temporäre Test-, Staging-, Pipeline-Asset-Backup- und Logdateien werden nicht gesichert.",
-        "Die Rotation behält zwei jüngere geprüfte Sicherungen und einen älteren geschützten Kontrollstand. Erst nach Prüfung der neuen Sicherung werden entbehrliche geprüfte Archive entfernt.",
-        "Nicht prüfbare oder unbekannte Altarchive bleiben zusätzlich geschützt; sie werden nicht allein wegen der Anzahl gelöscht.",
-      ],
-    };
+  }
+
+  async function executePreview(signal) {
+    return withDeviceSnapshot(signal, async (snapshot) => {
+      const result = await runCommandCapture(powershellExecutable(), nasBackupArgs({ dryRun: true, snapshot }), { signal });
+      if (result.code !== 0) {
+        const error = new Error(result.stderr || result.stdout || "Backup-Vorschau fehlgeschlagen");
+        error.statusCode = 500;
+        throw error;
+      }
+      const parsed = parseJsonProcessOutput(result.stdout, "Backup-Vorschau lieferte keine gültige Antwort");
+      checkDeviceResult(parsed, snapshot);
+      return {
+        mode: "nas-backup",
+        backupRoot: parsed.backupRoot || currentBackupRoot,
+        skipped: Boolean(parsed.skipped),
+        reason: parsed.reason || "",
+        archivePath: parsed.archivePath || parsed.latestBackup || "",
+        fileCount: Number(parsed.fileCount ?? 0),
+        totalBytes: Number(parsed.totalBytes ?? 0),
+        gitCommit: parsed.gitCommit || "",
+        workingTreeDirty: Boolean(parsed.workingTreeDirty),
+        retentionWouldRemove: Number(parsed.retentionWouldRemove ?? 0),
+        retainedCheckpoint: parsed.retainedCheckpoint || "",
+        retainedArchivePaths: parsed.retainedArchivePaths || [],
+        protectedArchives: parsed.protectedArchives || [],
+        rotationPlanRevision: parsed.rotationPlanRevision || "",
+        retentionPolicy: parsed.retentionPolicy || RETENTION_POLICY,
+        deviceProfile: snapshot?.summary ?? null,
+        includesDeviceProfiles: Boolean(snapshot),
+        warnings: [
+          "Das Backup wird als ZIP auf dem NAS gespeichert und enthält Projektdateien, Git-Stand, den gemeinsamen Datenordner, node_modules und lokale Werkzeuge.",
+          "Temporäre Test-, Staging-, Pipeline-Asset-Backup- und Logdateien werden nicht gesichert.",
+          "Die Rotation behält zwei jüngere geprüfte Sicherungen und einen älteren geschützten Kontrollstand. Erst nach Prüfung der neuen Sicherung werden entbehrliche geprüfte Archive entfernt.",
+          "Nicht prüfbare oder unbekannte Altarchive bleiben zusätzlich geschützt; sie werden nicht allein wegen der Anzahl gelöscht.",
+          snapshot ? "Die ausdrücklich eingerichteten persönlichen Gerätedaten und offenen Offlineänderungen werden mitgesichert. Anmeldedaten bleiben ausgeschlossen; eine Wiederherstellung wird zuerst als getrennte Kopie geprüft."
+            : "Persönliche Gerätedaten außerhalb des Projektordners sind in diesem Aufruf nicht eingerichtet und nicht enthalten.",
+        ],
+      };
+    });
   }
 
   function startNasBackup(payload = {}) {
+    if (closing) throw new Error("Der Sicherungsdienst wird geschlossen.");
     if (isBackupActive()) {
       const error = new Error("Es läuft bereits ein NAS-Backup");
       error.statusCode = 409;
@@ -278,77 +331,51 @@ export async function createBackupService({
       startedAt: new Date().toISOString(),
     };
     appendBackupLog(force ? "NAS-Backup wird erzwungen gestartet." : "NAS-Backup wird gestartet.");
-    void executeNasBackupRun(force).catch((error) => {
+    operationController = new AbortController();
+    runPromise = executeNasBackupRun(force, operationController.signal).catch((error) => {
       state.status = "failed";
       state.completedAt = new Date().toISOString();
       state.error = error.message;
       state.phase = "Backup fehlgeschlagen";
       appendBackupLog(`Unerwarteter Backupfehler: ${error.message}`);
-    });
+    }).finally(() => { runPromise = null; operationController = null; });
     return state;
   }
 
-  function executeNasBackupRun(force) {
-    return new Promise((resolveRun) => {
-      let stdoutBuffer = "";
-      const child = spawnProcess(powershellExecutable(), nasBackupArgs({ force, progress: true }), {
-        cwd: repoRoot,
-        env: { ...process.env, IUCN_NAS_BACKUP_DIR: currentBackupRoot },
-        windowsHide: true,
-      });
-      processHandle = child;
-      child.stdout.on("data", (chunk) => { stdoutBuffer += chunk.toString("utf8"); });
-      child.stderr.on("data", (chunk) => appendBackupProcessOutput(chunk.toString("utf8")));
-      child.on("error", (error) => {
-        processHandle = null;
-        state.status = "failed";
-        state.completedAt = new Date().toISOString();
-        state.error = error.message;
-        state.phase = "Backup fehlgeschlagen";
-        appendBackupLog(`Prozessfehler: ${error.message}`);
-        resolveRun();
-      });
-      child.on("close", (code) => {
-        processHandle = null;
-        state.completedAt = new Date().toISOString();
-        if (code === 0) {
-          try {
-            const result = parseJsonProcessOutput(stdoutBuffer, "Backup-Lauf lieferte keine gültige Antwort");
-            state.status = "completed";
-            state.skipped = Boolean(result.skipped);
-            state.reason = result.reason || "";
-            state.archivePath = result.archivePath || result.latestBackup || "";
-            state.backupRoot = result.backupRoot || currentBackupRoot;
-            state.fileCount = Number(result.fileCount ?? state.fileCount);
-            state.totalBytes = Number(result.totalBytes ?? state.totalBytes);
-            state.retainedBackups = Number(result.retainedBackups ?? 0);
-            state.removedBackups = Number(result.removedBackups ?? 0);
-            state.retainedCheckpoint = result.retainedCheckpoint || "";
-            state.retainedArchivePaths = result.retainedArchivePaths || [];
-            state.protectedArchives = result.protectedArchives || [];
-            state.rotationPlanRevision = result.rotationPlanRevision || "";
-            state.percent = 100;
-            state.phase = state.skipped ? "Kein neues Backup erforderlich" : "Backup abgeschlossen";
-            appendBackupLog(
-              state.skipped
-                ? state.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt."
-                : `Backup erstellt: ${state.archivePath}`,
-            );
-          } catch (error) {
-            state.status = "failed";
-            state.error = error.message;
-            state.phase = "Backup fehlgeschlagen";
-            appendBackupLog(error.message);
-          }
-        } else {
-          state.status = "failed";
-          state.error = stdoutBuffer.trim() || `Backup wurde mit Code ${code} beendet`;
-          state.phase = "Backup fehlgeschlagen";
-          appendBackupLog(state.error);
-        }
-        resolveRun();
-      });
+  async function executeNasBackupRun(force, signal) {
+    const { result, deviceProfile } = await withDeviceSnapshot(signal, async (snapshot) => {
+      if (isPipelineActive() || isAssetWriteActive()) throw new Error("Während der Vorbereitung hat ein anderer Schreibvorgang begonnen.");
+      const captured = await runCommandCapture(powershellExecutable(), nasBackupArgs({ force, progress: true, snapshot }), { track: true, signal });
+      if (captured.code !== 0) throw new Error(captured.stderr || captured.stdout || `Backup wurde mit Code ${captured.code} beendet`);
+      const result = parseJsonProcessOutput(captured.stdout, "Backup-Lauf lieferte keine gültige Antwort");
+      checkDeviceResult(result, snapshot);
+      return { result, deviceProfile: snapshot?.summary ?? null };
     });
+    state.completedAt = new Date().toISOString();
+    state.status = "completed";
+    state.deviceProfile = deviceProfile;
+    state.includesDeviceProfiles = Boolean(deviceProfile);
+    state.skipped = Boolean(result.skipped);
+    state.reason = result.reason || "";
+    state.archivePath = result.archivePath || result.latestBackup || "";
+    state.backupRoot = result.backupRoot || currentBackupRoot;
+    state.fileCount = Number(result.fileCount ?? state.fileCount);
+    state.totalBytes = Number(result.totalBytes ?? state.totalBytes);
+    state.retainedBackups = Number(result.retainedBackups ?? 0);
+    state.removedBackups = Number(result.removedBackups ?? 0);
+    state.retainedCheckpoint = result.retainedCheckpoint || "";
+    state.retainedArchivePaths = result.retainedArchivePaths || [];
+    state.protectedArchives = result.protectedArchives || [];
+    state.rotationPlanRevision = result.rotationPlanRevision || "";
+    state.percent = 100;
+    state.phase = state.skipped ? "Kein neues Backup erforderlich" : "Backup abgeschlossen";
+    appendBackupLog(state.skipped ? state.reason || "Seit dem letzten Backup wurden keine Änderungen erkannt." : `Backup erstellt: ${state.archivePath}`);
+  }
+
+  async function close() {
+    closing = true;
+    operationController?.abort(new Error("Sicherung wegen Programmschließung abgebrochen."));
+    await Promise.allSettled([runPromise, previewPromise].filter(Boolean));
   }
 
   return {
@@ -359,5 +386,6 @@ export async function createBackupService({
     isBackupActive,
     getState: () => state,
     listArchives,
+    close,
   };
 }

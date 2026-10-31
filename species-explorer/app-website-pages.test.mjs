@@ -57,7 +57,9 @@ function fixture(fetchJson) {
   const hint = { dataset: { speciesWebsiteHint: "jynxtorquilla" }, innerHTML: "", hidden: true };
   const detail = { querySelector: (selector) => selector === "[data-species-website]" ? slot : hint,
     set innerHTML(_) { throw new Error("Medien-/Detailbereich darf nicht neu aufgebaut werden"); } };
-  const elements = { detailPanel: detail, websitePagesSummary: {}, websitePagesCheck: { addEventListener() {} } };
+  const elements = { detailPanel: detail, websitePagesSummary: {}, websitePagesCheck: {
+    listeners: {}, addEventListener(type, fn) { this.listeners[type] = fn; },
+  } };
   let changed = 0;
   const timers = [];
   const controller = api.createWebsitePagesController({ state, elements, fetchJson, escapeHtml,
@@ -65,6 +67,20 @@ function fixture(fetchJson) {
     setTimeoutImpl: (fn, ms) => { timers.push({ fn, ms }); return timers.length; }, clearTimeoutImpl() {} });
   return { state, slot, hint, elements, controller, timers, changed: () => changed };
 }
+
+test("Website-Prüfbutton ist im Lesemodus gesperrt; vorhandene öffentliche Links bleiben lesbar", async () => {
+  const calls = [], h = fixture(async url => { calls.push(url); return ready("jynxtorquilla"); });
+  await h.controller.start();
+  h.elements.websitePagesCheck.listeners.click();
+  assert.equal(calls.length, 1);
+  assert.match(h.slot.innerHTML, /Auf FN-Website öffnen/);
+  h.state.editMode = true;
+  h.elements.websitePagesCheck.listeners.click();
+  await new Promise(setImmediate);
+  assert.equal(calls.at(-1), "/api/website/species-pages?refresh=1");
+  assert.equal(calls.length, 2);
+  h.controller.stop();
+});
 
 test("Neue Veröffentlichung erscheint nach erneuter Prüfung ohne Linkeingabe oder Medien-Neuaufbau", async () => {
   const calls = [];

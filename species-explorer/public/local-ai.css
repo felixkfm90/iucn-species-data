@@ -1,0 +1,30 @@
+.local-ai-dialog {
+  width: min(860px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  border-radius: 12px;
+  color: inherit;
+}
+.local-ai-dialog::backdrop { background: rgb(0 0 0 / 45%); }
+.local-ai-shell { padding: 1.1rem; }
+.local-ai-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.local-ai-header h2 { margin: 0; font-size: 1.25rem; }
+.local-ai-note { font-size: 0.9rem; opacity: 0.8; }
+.local-ai-layout { display: grid; grid-template-columns: minmax(160px, 0.85fr) minmax(0, 1.5fr); gap: 1.1rem; }
+.local-ai-preview { margin: 0; }
+.local-ai-preview img { display: block; width: 100%; max-height: 350px; object-fit: contain; border-radius: 6px; }
+.local-ai-editor { min-width: 0; }
+.local-ai-editor label { display: block; }
+.local-ai-editor textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 6rem; }
+.local-ai-status { min-height: 2.5em; margin-top: 0; }
+.local-ai-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.7rem; }
+.local-ai-installation { margin-bottom: 1rem; }
+.local-ai-installation p { margin-top: 0; }
+.local-ai-installation progress { max-width: 100%; margin-top: 0.6rem; }
+.local-ai-details { margin: 0.75rem 0; }
+.local-ai-details p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.local-ai-dialog [hidden] { display: none !important; }
+@media (max-width: 600px) {
+  .local-ai-layout { grid-template-columns: 1fr; }
+  .local-ai-preview img { max-height: 230px; }
+}

@@ -8,9 +8,10 @@ const context = vm.createContext({ Headers });
 new vm.Script(source, { filename: "app-foundation.js" }).runInContext(context);
 const { createInitialExplorerState, createExplorerApiClient } = context.SpeciesExplorerFoundation;
 
-function jsonResponse(payload, { ok = true } = {}) {
+function jsonResponse(payload, { ok = true, status = ok ? 200 : 400 } = {}) {
   return {
     ok,
+    status,
     async json() {
       return payload;
     },
@@ -109,6 +110,7 @@ test("API-Client erhält strukturierte Fehler und behandelt nicht erreichbare Re
   const errorClient = createExplorerApiClient({
     fetchImpl: async () => jsonResponse({
       error: "Eingabe ungültig",
+      code: "forbidden",
       details: ["Detail"],
       fieldErrors: { german: "Pflichtfeld" },
     }, { ok: false }),
@@ -119,6 +121,8 @@ test("API-Client erhält strukturierte Fehler und behandelt nicht erreichbare Re
     errorClient.fetchJson("/api/settings"),
     (error) => {
       assert.equal(error.message, "Eingabe ungültig");
+      assert.equal(error.code, "forbidden");
+      assert.equal(error.status, 400);
       assert.deepEqual([...error.details], ["Detail"]);
       assert.equal(error.fieldErrors.german, "Pflichtfeld");
       return true;

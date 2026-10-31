@@ -1,15 +1,130 @@
-import { tmpdir } from "../scripts/test-temp.mjs";
+import { assertTestTempPath, tmpdir } from "../scripts/test-temp.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
-import { downloadCatalogueArchive, normalizeCatalogueRelease } from "./taxonomy-release-client.mjs";
+import { discoverLatestCatalogueRelease, downloadCatalogueArchive, normalizeCatalogueRelease } from "./taxonomy-release-client.mjs";
 
 import {
   createTaxonomyMaintenanceService,
   taxonomyMaintenanceInternals,
 } from "./taxonomy-maintenance-service.mjs";
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+test("Beenden wartet auf die laufende Startprüfung einschließlich Cache-Schreiben", async (t) => {
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-close-check-"));
+  const bodyEntered = deferred(), body = deferred();
+  let startup, closing, secondClosing, calls = 0;
+  const service = createTaxonomyMaintenanceService({
+    taxonomyRoot: path.join(root, "data", "taxonomy"), repoRoot: root,
+    referenceService: { reset() {} }, readPointer: async () => null,
+    discoverRelease: (options) => discoverLatestCatalogueRelease({ ...options,
+      fetchImpl: async () => {
+        calls += 1;
+        return { ok: true, status: 200, json: async () => {
+          bodyEntered.resolve();
+          await body.promise;
+          return { result: [{ key: 2, issued: "2026-10-31", origin: "xrelease" }] };
+        } };
+      },
+    }),
+  });
+  t.after(async () => {
+    body.resolve();
+    await Promise.allSettled([startup, closing, secondClosing, service.close()]);
+    await fs.rm(assertTestTempPath(root), { recursive: true, force: true });
+  });
+  startup = service.startupCheck();
+  await bodyEntered.promise;
+  let completed = 0;
+  closing = service.close().then(() => { completed += 1; });
+  secondClosing = service.close().then(() => { completed += 1; });
+  await new Promise((resolve) => setImmediate(resolve));
+  const completedWhilePending = completed;
+  body.resolve();
+  await Promise.all([startup, closing, secondClosing]);
+  const cached = JSON.parse(await fs.readFile(service.cachePath, "utf8"));
+  assert.equal(completedWhilePending, 0, "Auch ein zweites close() muss auf den noch ausstehenden Schreibabschluss warten");
+  assert.equal(completed, 2);
+  assert.equal(cached.latest.releaseId, "col-xr-2026-10-31-2");
+  assert.equal(calls, 1);
+  await fs.rm(assertTestTempPath(root), { recursive: true, force: true });
+  await new Promise((resolve) => setImmediate(resolve));
+  await assert.rejects(fs.access(root), { code: "ENOENT" });
+  await assert.rejects(service.checkLatest(), { statusCode: 503 });
+});
+
+test("Beenden wartet auf alle Versionsprüfungen auch bei einem fehlgeschlagenen Abruf", async (t) => {
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-close-concurrent-"));
+  const requests = [deferred(), deferred()];
+  let calls = 0, first, second, closing;
+  const service = createTaxonomyMaintenanceService({ taxonomyRoot: path.join(root, "taxonomy"), repoRoot: root,
+    referenceService: { reset() {} }, discoverRelease: () => requests[calls++].promise });
+  t.after(async () => {
+    requests.forEach((request) => request.resolve({ latest: latestRelease(), checkedAt: "2026-10-31T00:00:00Z" }));
+    await Promise.allSettled([first, second, closing, service.close()]);
+    await fs.rm(assertTestTempPath(root), { recursive: true, force: true });
+  });
+  first = service.checkLatest().catch((error) => error);
+  second = service.checkLatest();
+  let completed = false;
+  closing = service.close().then(() => { completed = true; });
+  requests[0].reject(new Error("simulierter Metadatenfehler"));
+  assert.match((await first).message, /Metadatenfehler/);
+  await new Promise((resolve) => setImmediate(resolve));
+  const completedWithSecondPending = completed;
+  requests[1].resolve({ latest: latestRelease(), checkedAt: "2026-10-31T00:00:00Z" });
+  await Promise.all([second, closing]);
+  assert.equal(completedWithSecondPending, false, "Ein fehlgeschlagener Abruf beendet die übrigen laufenden Prüfungen nicht");
+  assert.equal(completed, true);
+  assert.equal(calls, 2);
+});
+
+test("Beenden schließt den gestarteten Projektvergleich ab und beginnt danach keinen Versionsabruf", async (t) => {
+  const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-close-comparison-"));
+  const entered = deferred(), finish = deferred();
+  const reportPath = path.join(root, "taxonomy", "comparison.json");
+  let startup, closing, pointerReads = 0, releaseChecks = 0;
+  const service = createTaxonomyMaintenanceService({ taxonomyRoot: path.join(root, "taxonomy"), repoRoot: root,
+    referenceService: { reset() {} },
+    readPointer: async () => { pointerReads += 1; return { activeRelease: "col-active" }; },
+    readProjectConflicts: async () => null,
+    compareProjectSpecies: async () => {
+      entered.resolve();
+      await finish.promise;
+      await fs.mkdir(path.dirname(reportPath), { recursive: true });
+      await fs.writeFile(reportPath, "{}\n");
+    },
+    discoverRelease: async () => { releaseChecks += 1; return { latest: latestRelease(), checkedAt: "2026-10-31T00:00:00Z" }; },
+  });
+  t.after(async () => {
+    finish.resolve();
+    await Promise.allSettled([startup, closing, service.close()]);
+    await fs.rm(assertTestTempPath(root), { recursive: true, force: true });
+  });
+  startup = service.startupCheck();
+  await entered.promise;
+  let completed = false;
+  closing = service.close().then(() => { completed = true; });
+  await new Promise((resolve) => setImmediate(resolve));
+  const completedWhileComparing = completed;
+  finish.resolve();
+  await Promise.all([startup, closing]);
+  assert.equal(completedWhileComparing, false);
+  assert.equal(await fs.readFile(reportPath, "utf8"), "{}\n");
+  assert.equal(releaseChecks, 0);
+  assert.equal(await service.startupCheck(), null);
+  assert.equal(pointerReads, 1, "Nach dem Schließen darf auch keine neue Startprüfung anlaufen");
+});
 
 test("Referenzstatus liefert echte Messmengen getrennt von alten Phasenmarken und löscht veraltete Zähler", async (t) => {
   const root = await fs.mkdtemp(path.join(tmpdir(), "taxonomy-progress-"));

@@ -1,6 +1,6 @@
 # AGENTS.md – Arten-Explorer, Lightroom und Wildlife-Website
 
-Stand: 2026-10-27
+Stand: 2026-10-31
 
 ## Aktueller Auftrag
 
@@ -16,6 +16,13 @@ Vorbereitungsfreigaben sind historische Nachweise, keine neue Betriebs-/Veröffe
 Im Folgechat hat Felix den gemeinsamen Ordnernamen `data` und alle nötigen Pfadanpassungen beauftragt.
 Der lokale Namenswechsel ist ausgeführt; Vollzug und Prüfgrenzen stehen im bestehenden
 [Speichervertrag](docs/storage-migration.md).
+
+Felix hat am 31. Oktober den gemeinsam geklärten Gesamtumfang für Mehrbenutzerbetrieb, Android,
+Artseiten-/Bildtextvorbereitung, Windows-Installer und Update-Abschlussaktionen ausdrücklich zur
+Umsetzung bestätigt. Die bestätigten Rahmenbedingungen führt der bestehende
+[Mehrgerätevertrag](docs/multi-device-backup-plan.md); aktueller Integrationsstand und offene Arbeiten
+stehen in der Roadmap. Grundbaustein-, Paketbau-, native Desktop- und NAS-/Zielgeräteabnahme getrennt
+belegen. Bestehende lokale Bedienung und Felix' eigene Bildtextänderungen während der Entwicklung erhalten.
 
 ## Projekt und führende Quellen
 
@@ -44,6 +51,10 @@ Agenten können nach Felix' genereller Freigabe für Arbeiten eingesetzt werden.
 Dateizuständigkeiten vor parallelen Änderungen verteilen. Zentrale Dokumente integriert bearbeiten;
 keine konkurrierenden produktiven Aufbauten oder Großscans. Neue Tests und Messungen in den eigenen
 Programm-temp-Sitzungen nach [Testvertrag](docs/test-temp-contract.md); gebundene Belege sind dauerhaft.
+
+Vor jeder Computer-Use-Nutzung mit dem aktuellen Arbeitschat des Projekts Numis-Katalog abstimmen.
+Nur ein Projekt bedient den Desktop; dessen Freigabe abwarten und das Ende der eigenen Nutzung zurückmelden.
+Während einer angekündigten Anmeldung oder QR-Kopplung des anderen Projekts keine Screenshots aufnehmen.
 
 ## Code- und Dokumentationspflicht
 

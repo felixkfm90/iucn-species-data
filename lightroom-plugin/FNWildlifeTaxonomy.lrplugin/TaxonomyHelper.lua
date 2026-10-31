@@ -189,7 +189,9 @@ local function resolveNodePath(configuredPath)
   local tempRoot = cleanText(LrPathUtils.getStandardFilePath("temp"))
   local localAppData = tempRoot ~= "" and LrPathUtils.parent(tempRoot) or ""
   local systemDrive = string.match(tempRoot, "^([A-Za-z]:)") or "C:"
+  local repositoryRoot = LrPathUtils.parent(LrPathUtils.parent(_PLUGIN.path))
   local candidates = {
+    LrPathUtils.child(repositoryRoot, "runtime/node/node.exe"),
     systemDrive .. "\\Program Files\\nodejs\\node.exe",
     systemDrive .. "\\Program Files (x86)\\nodejs\\node.exe",
   }

@@ -188,6 +188,8 @@ export class TaxonomyMaintenanceService {
     this.preview = null;
     this.child = null;
     this.closed = false;
+    this.pendingChecks = new Set();
+    this.closePromise = null;
   }
 
   assertOpen() {
@@ -206,7 +208,20 @@ export class TaxonomyMaintenanceService {
     this.state.progressTotal = progress?.total ?? null;
   }
 
-  async checkLatest({ force = false, visible = false } = {}) {
+  trackCheck(pending) {
+    this.pendingChecks.add(pending);
+    void pending.then(
+      () => this.pendingChecks.delete(pending),
+      () => this.pendingChecks.delete(pending),
+    );
+    return pending;
+  }
+
+  checkLatest(options = {}) {
+    return this.trackCheck(this.runLatestCheck(options));
+  }
+
+  async runLatestCheck({ force = false, visible = false } = {}) {
     this.assertOpen();
     if (visible && !this.isActive()) {
       this.state = {
@@ -270,8 +285,14 @@ export class TaxonomyMaintenanceService {
     });
   }
 
-  async startupCheck() {
+  startupCheck() {
+    if (this.closed) return Promise.resolve(null);
+    return this.trackCheck(this.runStartupCheck());
+  }
+
+  async runStartupCheck() {
     await this.refreshProjectComparisonIfNeeded().catch(() => null);
+    if (this.closed) return null;
     return this.checkLatest({ force: false, visible: false }).catch(() => null);
   }
 
@@ -842,10 +863,14 @@ export class TaxonomyMaintenanceService {
     }
   }
 
-  async close() {
-    if (this.closed) return;
+  close() {
+    if (this.closePromise) return this.closePromise;
     this.closed = true;
     if (this.child && !this.child.killed) this.child.kill();
+    // Startup checks can still be writing their cache or comparison report.
+    // Keep every close caller waiting until those already started checks finish.
+    this.closePromise = Promise.allSettled([...this.pendingChecks]).then(() => {});
+    return this.closePromise;
   }
 }
 

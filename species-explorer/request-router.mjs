@@ -3,6 +3,7 @@ import {
   assertLocalRequestHost,
   assertWriteRequest,
 } from "./request-security.mjs";
+import { matchProjectFeatureRoute } from "./project-feature-routes.mjs";
 import {
   MAX_JSON_BODY_BYTES,
   readJsonBody,
@@ -27,9 +28,17 @@ const READ_RESOURCES = new Map([
   ["/api/backup/archives", "backup-archives"],
   ["/api/reload", "reload"],
   ["/api/website/species-pages", "website-species-pages"],
+  ["/api/website/alt-texts", "website-alt-texts"],
 ]);
 
 const POST_ROUTES = new Map([
+  ["/api/website/alt-texts/discover", { name: "website-alt-texts", action: "discover" }],
+  ["/api/website/alt-texts/scan", { name: "website-alt-texts", action: "scan" }],
+  ["/api/website/alt-texts/draft", { name: "website-alt-texts", action: "draft" }],
+  ["/api/website/alt-texts/approve", { name: "website-alt-texts", action: "approve" }],
+  ["/api/website/alt-texts/verify", { name: "website-alt-texts", action: "verify" }],
+  ["/api/website/alt-texts/connect-transfer", { name: "website-alt-texts", action: "connectTransfer" }],
+  ["/api/website/alt-texts/transfer", { name: "website-alt-texts", action: "transfer" }],
   ["/api/pipeline/preview", { name: "pipeline", action: "preview" }],
   ["/api/pipeline/start", { name: "pipeline", action: "start" }],
   ["/api/settings/backup", { name: "backup-settings", action: "save" }],
@@ -98,6 +107,8 @@ const ASSET_PREVIEW_MESSAGES = {
 export function matchExplorerRoute(method, pathname) {
   const normalizedMethod = String(method || "GET").toUpperCase();
   const normalizedPath = String(pathname || "/");
+  const projectFeature = matchProjectFeatureRoute(normalizedMethod, normalizedPath);
+  if (projectFeature) return projectFeature;
 
   if (normalizedPath === "/api/session") return { name: "session" };
 
@@ -239,6 +250,20 @@ export function createExplorerRequestHandler({
         assertWriteRequest(request, { expectedOrigin, sessionToken, sessionProtection });
       }
 
+      if (["shared-project", "update-completion", "local-ai", "website-alt-sync"].includes(route.name)) {
+        assertBrowserReadContext(request, expectedOrigin);
+        const payload = request.method === "POST" ? await readJsonBody(request, {
+          maxBytes: route.name === "local-ai" ? 32 * 1024
+            : (route.name === "shared-project" && ["create", "editExisting", "resolve"].includes(route.action)
+              || route.name === "website-alt-sync" && route.action === "resolve")
+              ? 2 * 1024 * 1024 + MAX_JSON_BODY_BYTES : MAX_JSON_BODY_BYTES,
+        }) : {};
+        const operation = route.name === "shared-project" ? operations.sharedProject
+          : route.name === "local-ai" ? operations.localAi : route.name === "website-alt-sync" ? operations.websiteAltSync : operations.updateCompletion;
+        sendJson(response, 200, await operation({ ...route, payload, searchParams: url.searchParams }));
+        return;
+      }
+
       if (route.name === "asset-preview-file") {
         const id = decodeRouteId(route.encodedId);
         const token = String(url.searchParams.get("token") ?? "");
@@ -284,6 +309,12 @@ export function createExplorerRequestHandler({
       if (route.name === "pipeline") {
         const payload = await readJsonBody(request);
         sendJson(response, 200, await operations.pipeline({ action: route.action, payload }));
+        return;
+      }
+
+      if (route.name === "website-alt-texts") {
+        const payload = await readJsonBody(request);
+        sendJson(response, 200, await operations.websiteAltTexts({ action: route.action, payload }));
         return;
       }
 
@@ -364,7 +395,7 @@ export function createExplorerRequestHandler({
       }
 
       if (route.name === "read") {
-        if (["backup-archives", "website-species-pages"].includes(route.resource)) assertBrowserReadContext(request, expectedOrigin);
+        if (["backup-archives", "website-species-pages", "website-alt-texts"].includes(route.resource)) assertBrowserReadContext(request, expectedOrigin);
         sendJson(response, 200, await operations.read({ resource: route.resource,
           ...(route.resource === "website-species-pages" ? { searchParams: url.searchParams } : {}) }));
         return;
@@ -399,6 +430,7 @@ export function createExplorerRequestHandler({
     } catch (error) {
       sendJson(response, error.statusCode ?? 500, {
         error: error.message,
+        code: /^[a-zA-Z0-9_]{1,80}$/.test(error.code || "") ? error.code : undefined,
         details: error.details ?? [],
         fieldErrors: error.fieldErrors ?? {},
       });

@@ -1,0 +1,246 @@
+import fs from "node:fs";
+import path from "node:path";
+import { createHash, randomUUID } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
+import { buildCatalog } from "./catalog.mjs";
+import { canonicalJson } from "./security.mjs";
+import { check, ProjectError } from "./errors.mjs";
+
+const sha = (value) => createHash("sha256").update(value).digest("hex");
+const dataHash = (data) => sha(canonicalJson(data));
+const live = (pid) => { try { process.kill(pid, 0); return true; } catch (error) { return error.code !== "ESRCH"; } };
+
+/** Explicit initial public-content import. No automatic execution, source discovery or external publication. */
+export function createInitialProjectImport({ service, filename, localStorageConfirmed = false, readCatalog,
+  expectedSha256, expectedSpeciesCount = 63, clock = Date.now } = {}) {
+  check(service && ["refresh", "create", "approve"].every((key) => typeof service[key] === "function")
+    && typeof readCatalog === "function" && /^[a-f0-9]{64}$/.test(expectedSha256), 400, "invalid_import_config", "Der Erstbestand benötigt eine ausdrücklich gebundene Quelle und Dienstfassade.");
+  check(Number.isSafeInteger(expectedSpeciesCount) && expectedSpeciesCount > 0 && expectedSpeciesCount <= 10000,
+    400, "invalid_import_config", "Ungültiger gebundener Artumfang.");
+  check(localStorageConfirmed === true && typeof filename === "string" && path.isAbsolute(filename)
+    && !/^(?:\\\\|\/\/|file:)/i.test(filename), 400, "unsafe_storage", "Ein persönliches lokales Importjournal ist erforderlich.");
+  let current = path.parse(filename).root;
+  for (const part of path.relative(current, filename).split(path.sep)) {
+    current = path.join(current, part);
+    if (fs.existsSync(current)) check(!fs.lstatSync(current).isSymbolicLink(), 400, "unsafe_storage", "Verknüpfte Journalpfade sind nicht zulässig.");
+  }
+  fs.mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
+  const db = new DatabaseSync(filename); fs.chmodSync(filename, 0o600);
+  db.exec("PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA trusted_schema=OFF;");
+  const version = db.prepare("PRAGMA user_version").get().user_version;
+  if (version !== 0 && version !== 1) { db.close(); throw new ProjectError(409, "unsupported_schema", "Unbekannte Importjournalversion."); }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS plans(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,base_url TEXT NOT NULL,
+      source_hash TEXT NOT NULL,release_readers INTEGER NOT NULL,state TEXT NOT NULL,created_at TEXT NOT NULL,last_error TEXT);
+    CREATE TABLE IF NOT EXISTS items(plan_id TEXT NOT NULL REFERENCES plans(id),id TEXT NOT NULL,name TEXT NOT NULL,
+      target_json TEXT NOT NULL,target_hash TEXT NOT NULL,state TEXT NOT NULL,expected_revision TEXT,expected_approval TEXT,
+      intent_actor TEXT,PRIMARY KEY(plan_id,id));
+    CREATE TABLE IF NOT EXISTS receipts(sequence INTEGER PRIMARY KEY AUTOINCREMENT,plan_id TEXT NOT NULL REFERENCES plans(id),
+      object_id TEXT,operation TEXT NOT NULL,phase TEXT NOT NULL,revision TEXT,actor_id TEXT,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT NOT NULL,pid INTEGER NOT NULL);
+    PRAGMA user_version=1;
+  `);
+  const owner = randomUUID();
+  let running = false, runningPromise = null, preparing = false, preparationPromise = null, closing = false, closed = false, lastClosedStatus = null;
+  const now = () => new Date(clock()).toISOString();
+  function open() { check(!closed && !closing, 409, "import_closed", "Das Importjournal wird geschlossen."); }
+  function tx(fn) { db.exec("BEGIN IMMEDIATE"); try { const result = fn(); db.exec("COMMIT"); return result; } catch (error) { db.exec("ROLLBACK"); throw error; } }
+  function acquire() {
+    tx(() => {
+      const existing = db.prepare("SELECT * FROM lease WHERE id=1").get();
+      check(!existing || existing.owner === owner || !live(existing.pid), 409, "import_in_use", "Ein anderer laufender Prozess verwendet dieses Importjournal.");
+      db.prepare("INSERT OR REPLACE INTO lease VALUES (1,?,?)").run(owner, process.pid);
+    });
+  }
+  function release() { db.prepare("DELETE FROM lease WHERE id=1 AND owner=?").run(owner); }
+  function receipt(planId, id, operation, phase, revision, actor) {
+    db.prepare("INSERT INTO receipts(plan_id,object_id,operation,phase,revision,actor_id,created_at) VALUES (?,?,?,?,?,?,?)")
+      .run(planId, id, operation, phase, revision ?? null, actor ?? null, now());
+  }
+  async function source() {
+    let bytes;
+    try { bytes = await readCatalog(); } catch { throw new ProjectError(503, "bound_source_unavailable", "Der gebundene Anfangskatalog ist nicht lesbar."); }
+    check((Buffer.isBuffer(bytes) || bytes instanceof Uint8Array) && bytes.length <= 5 * 1024 * 1024
+      && sha(bytes) === expectedSha256, 409, "bound_source_changed", "Die Katalogbytes stimmen nicht mit dem geprüften Anfangsbestand überein.");
+    let catalog;
+    try { catalog = buildCatalog(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes))); }
+    catch { throw new ProjectError(400, "invalid_import_catalog", "Der Anfangskatalog erfüllt den vereinbarten Datenvertrag nicht."); }
+    check(catalog.species.length === expectedSpeciesCount, 409, "import_scope_changed", "Der gebundene Artumfang stimmt nicht überein.");
+    return catalog;
+  }
+  async function inspect(plan) {
+    const state = await service.refresh({ users: true });
+    check(state.status?.connection === "online" && state.status.user?.role === "admin" && !state.status.readOnlySession
+      && state.permissions?.canManageUsers === true, 403, "import_admin_required", "Der Erstbestand benötigt eine volle Online-Anmeldung der Administration.");
+    check(state.queuedChanges === 0 && state.conflictCount === 0 && !state.busy, 409, "import_local_work_pending", "Bitte lokale Änderungen und Konflikte zuerst abschließen.");
+    if (plan) check(state.status.projectId === plan.project_id && state.status.baseUrl === plan.base_url,
+      409, "import_project_changed", "Das verbundene Projekt oder der Server wurde geändert.");
+    return { state, objects: new Map(state.objects.filter((item) => item.kind === "species").map((item) => [item.id, item])) };
+  }
+  function planRow(id) { const row = db.prepare("SELECT * FROM plans WHERE id=?").get(id); check(row, 404, "import_plan_missing", "Der Importplan ist nicht vorhanden."); return row; }
+  function items(id) { return db.prepare("SELECT * FROM items WHERE plan_id=? ORDER BY id").all(id); }
+  function validatePlanSource(plan, catalog) {
+    const rows = items(plan.id), targets = new Map(catalog.species.map((item) => [item.id, item]));
+    check(plan.source_hash === expectedSha256 && rows.length === targets.size, 409, "import_journal_drift", "Die Journalbindung stimmt nicht mehr mit der geprüften Quelle überein.");
+    for (const item of rows) {
+      check(targets.has(item.id) && dataHash(JSON.parse(item.target_json)) === dataHash(targets.get(item.id))
+        && ["pending", "skipped", "create-intent", "created", "approve-intent", "approved"].includes(item.state)
+        && (item.state === "skipped" || item.target_hash === dataHash(targets.get(item.id))),
+      409, "import_journal_drift", "Eine Journalposition wurde gegenüber dem bestätigten Quellinhalt verändert.");
+    }
+  }
+  function drift(plan, observed) {
+    const result = [];
+    for (const item of items(plan.id)) {
+      const actual = observed.objects.get(item.id);
+      if (item.state === "pending") {
+        if (actual) result.push({ id: item.id, reason: "object-created-since-plan" });
+      } else if (item.state === "create-intent") {
+        if (actual && !(dataHash(actual.data) === item.target_hash && actual.ordinal === 1 && actual.authorId === item.intent_actor
+          && (!actual.approvedRevision || actual.approvedRevision === actual.revision && plan.release_readers))) result.push({ id: item.id, reason: "unconfirmed-creation-does-not-match" });
+      } else if (!actual || actual.revision !== item.expected_revision
+        || dataHash(actual.data) !== (item.state === "skipped" ? item.target_hash : dataHash(JSON.parse(item.target_json)))
+        || (item.state !== "approve-intent" && actual.approvedRevision !== item.expected_approval)
+        || item.state === "approve-intent" && actual.approvedRevision !== item.expected_approval && actual.approvedRevision !== actual.revision) {
+        result.push({ id: item.id, reason: "version-content-or-approval-changed" });
+      }
+    }
+    return result;
+  }
+  function view(id, differences = []) {
+    const plan = planRow(id), rows = items(id), count = (state) => rows.filter((item) => item.state === state).length;
+    return { schemaVersion: 1, planId: id, projectId: plan.project_id, baseUrl: plan.base_url, sourceSha256: plan.source_hash,
+      releaseForReaders: Boolean(plan.release_readers), state: plan.state, createdAt: plan.created_at, lastError: plan.last_error,
+      canApply: plan.state !== "complete" && !differences.length, drift: differences, externalPublication: "not-performed",
+      counts: { total: rows.length, skippedExisting: count("skipped"), pending: count("pending"), created: count("created"), approved: count("approved"),
+        uncertain: count("create-intent") + count("approve-intent"), willCreate: count("pending") + count("create-intent"),
+        existingDifferent: rows.filter((item) => item.state === "skipped" && item.target_hash !== dataHash(JSON.parse(item.target_json))).length },
+      items: rows.map((item) => ({ id: item.id, commonName: item.name, state: item.state, revision: item.expected_revision, approvedRevision: item.expected_approval,
+        existingMatchesSource: item.state === "skipped" ? item.target_hash === dataHash(JSON.parse(item.target_json)) : null })) };
+  }
+  function status() {
+    if (closed) return { ...lastClosedStatus, running: false, busy: false, closed: true };
+    const row = db.prepare("SELECT id FROM plans WHERE state<>'superseded' ORDER BY created_at DESC,rowid DESC LIMIT 1").get();
+    return { running, busy: running || preparing, closed: false, plan: row ? view(row.id) : null };
+  }
+  async function prepareWork({ releaseForReaders = false } = {}) {
+    open(); check(!running, 409, "import_running", "Der Import läuft bereits.");
+    check(typeof releaseForReaders === "boolean", 400, "invalid_import_confirmation", "Die interne Freigabe muss ausdrücklich gewählt werden.");
+    acquire();
+    try {
+      const catalog = await source(), observed = await inspect();
+      const previous = db.prepare("SELECT * FROM plans WHERE project_id=? AND base_url=? AND state IN ('planned','running','stopped','complete') ORDER BY rowid DESC LIMIT 1")
+        .get(observed.state.status.projectId, observed.state.status.baseUrl);
+      if (previous) {
+        check(previous.source_hash === expectedSha256, 409, "bound_source_changed", "Der offene Importplan gehört zu einer anderen Quellfassung.");
+        validatePlanSource(previous, catalog);
+        if (previous.state === "complete" || Boolean(previous.release_readers) === releaseForReaders) return view(previous.id, drift(previous, observed));
+        check(db.prepare("SELECT count(*) AS n FROM receipts WHERE plan_id=? AND phase='intent'").get(previous.id).n === 0,
+          409, "import_options_changed", "Ein bereits begonnener Import behält seine bestätigte Freigabeentscheidung.");
+        db.prepare("UPDATE plans SET state='superseded' WHERE id=?").run(previous.id);
+      }
+      const id = randomUUID();
+      tx(() => {
+        db.prepare("INSERT INTO plans VALUES (?,?,?,?,?,'planned',?,NULL)").run(id, observed.state.status.projectId, observed.state.status.baseUrl, expectedSha256, Number(releaseForReaders), now());
+        for (const item of catalog.species) {
+          const existing = observed.objects.get(item.id);
+          db.prepare("INSERT INTO items VALUES (?,?,?,?,?,?,?,?,NULL)").run(id, item.id, item.commonName, JSON.stringify(item),
+            existing ? dataHash(existing.data) : dataHash(item), existing ? "skipped" : "pending", existing?.revision ?? null, existing?.approvedRevision ?? null);
+        }
+        receipt(id, null, "plan", "prepared", null, observed.state.status.user.id);
+      });
+      return view(id);
+    } finally { release(); }
+  }
+  async function execute({ planId, confirmed = false, confirmInternalRelease = false } = {}) {
+    check(confirmed === true, 400, "import_confirmation_required", "Der angezeigte Importplan muss ausdrücklich bestätigt werden.");
+    const plan = planRow(planId);
+    check(!plan.release_readers || confirmInternalRelease === true, 400, "import_release_confirmation_required", "Die interne Freigabe für Projektleser benötigt eine eigene Bestätigung.");
+    acquire();
+    try {
+      const catalog = await source(); validatePlanSource(plan, catalog);
+      if (plan.state === "complete") {
+        const observed = await inspect(plan);
+        check(!drift(plan, observed).length, 409, "import_drift", "Der bereits quittierte Stand wurde inzwischen geändert.");
+        return view(planId);
+      }
+      db.prepare("UPDATE plans SET state='running',last_error=NULL WHERE id=?").run(planId);
+      for (let item of items(planId)) {
+        check(!closing, 409, "import_stopped", "Der Import wurde vor dem nächsten Schritt angehalten.");
+        const observed = await inspect(plan), differences = drift(plan, observed);
+        check(!closing, 409, "import_stopped", "Der Import wurde vor der nächsten Änderung angehalten.");
+        check(differences.length === 0, 409, "import_drift", "Der Projektstand ist vom bestätigten Importplan abgewichen. Es wurde nichts überschrieben.");
+        if (["skipped", "approved"].includes(item.state)) continue;
+        if (item.state === "created" && !plan.release_readers) continue;
+        let actual = observed.objects.get(item.id);
+        if (item.state === "create-intent" && actual) {
+          tx(() => {
+            db.prepare("UPDATE items SET state=?,expected_revision=?,expected_approval=? WHERE plan_id=? AND id=?")
+              .run(actual.approvedRevision === actual.revision ? "approved" : "created", actual.revision, actual.approvedRevision, planId, item.id);
+            receipt(planId, item.id, "create", "recovered-confirmed", actual.revision, observed.state.status.user.id);
+            if (actual.approvedRevision === actual.revision) receipt(planId, item.id, "approve", "recovered-confirmed", actual.revision, observed.state.status.user.id);
+          });
+          item = db.prepare("SELECT * FROM items WHERE plan_id=? AND id=?").get(planId, item.id);
+        }
+        if (["pending", "create-intent"].includes(item.state)) {
+          tx(() => {
+            db.prepare("UPDATE items SET state='create-intent',intent_actor=? WHERE plan_id=? AND id=?").run(observed.state.status.user.id, planId, item.id);
+            receipt(planId, item.id, "create", "intent", null, observed.state.status.user.id);
+          });
+          actual = await service.create({ kind: "species", id: item.id, data: JSON.parse(item.target_json) });
+          check(actual.revision && dataHash(actual.data) === dataHash(JSON.parse(item.target_json)) && !actual.localPending,
+            409, "import_drift", "Die Anlagequittung entspricht nicht dem bestätigten Inhalt.");
+          tx(() => {
+            db.prepare("UPDATE items SET state='created',expected_revision=?,expected_approval=? WHERE plan_id=? AND id=?")
+              .run(actual.revision, actual.approvedRevision, planId, item.id);
+            receipt(planId, item.id, "create", "confirmed", actual.revision, observed.state.status.user.id);
+          });
+          item = db.prepare("SELECT * FROM items WHERE plan_id=? AND id=?").get(planId, item.id);
+        }
+        if (plan.release_readers && item.state !== "approved") {
+          check(!closing, 409, "import_stopped", "Die Anlage ist quittiert; die interne Freigabe bleibt offen.");
+          const checked = await inspect(plan);
+          check(!closing, 409, "import_stopped", "Die interne Freigabe wurde vor dem nächsten Schreibschritt angehalten.");
+          check(drift(plan, checked).length === 0, 409, "import_drift", "Der Projektstand wurde vor der internen Freigabe geändert.");
+          actual = checked.objects.get(item.id);
+          if (!(item.state === "approve-intent" && actual.approvedRevision === item.expected_revision)) {
+            tx(() => { db.prepare("UPDATE items SET state='approve-intent' WHERE plan_id=? AND id=?").run(planId, item.id);
+              receipt(planId, item.id, "approve", "intent", item.expected_revision, checked.state.status.user.id); });
+            actual = await service.approve("species", item.id, { expectedRevision: item.expected_revision });
+            check(actual.revision === item.expected_revision && actual.approvedRevision === item.expected_revision
+              && dataHash(actual.data) === dataHash(JSON.parse(item.target_json)), 409, "import_drift", "Die Freigabequittung entspricht nicht der geprüften Version.");
+          }
+          tx(() => { db.prepare("UPDATE items SET state='approved',expected_approval=? WHERE plan_id=? AND id=?").run(item.expected_revision, planId, item.id);
+            receipt(planId, item.id, "approve", item.state === "approve-intent" ? "recovered-confirmed" : "confirmed", item.expected_revision, checked.state.status.user.id); });
+        }
+      }
+      const observed = await inspect(plan);
+      check(!drift(plan, observed).length, 409, "import_drift", "Der Abschlussstand wurde inzwischen geändert.");
+      tx(() => { db.prepare("UPDATE plans SET state='complete',last_error=NULL WHERE id=?").run(planId); receipt(planId, null, "plan", "complete", null, observed.state.status.user.id); });
+      return view(planId);
+    } catch (error) {
+      const code = error instanceof ProjectError ? error.code : "import_not_confirmed";
+      db.prepare("UPDATE plans SET state='stopped',last_error=? WHERE id=?").run(code, planId);
+      if (error instanceof ProjectError) throw error;
+      throw new ProjectError(503, "import_not_confirmed", "Der letzte Importschritt ist nicht bestätigt. Das Journal und beide Bestände bleiben erhalten; bitte vor einer Wiederaufnahme prüfen.");
+    } finally { release(); }
+  }
+  function apply(input) {
+    open(); check(!running && !preparing, 409, "import_running", "Der Import oder die Planprüfung läuft bereits."); running = true;
+    runningPromise = execute(input).finally(() => { running = false; }); return runningPromise;
+  }
+  return { prepare(input) {
+      open(); check(!running && !preparing, 409, "import_running", "Der Import oder die Planprüfung läuft bereits.");
+      preparing = true; preparationPromise = prepareWork(input).finally(() => { preparing = false; }); return preparationPromise;
+    }, apply,
+    start(input) { const task = apply(input); task.catch(() => {}); return status(); }, status,
+    backupProjectIds() { open(); return db.prepare("SELECT DISTINCT project_id AS id FROM plans ORDER BY id").all().map((row) => row.id); },
+    receipts(planId) { open(); return db.prepare("SELECT sequence,object_id AS objectId,operation,phase,revision,actor_id AS actorId,created_at AS createdAt FROM receipts WHERE plan_id=? ORDER BY sequence").all(planId); },
+    async close() {
+      if (closed) return; closing = true;
+      if (preparationPromise) await preparationPromise.catch(() => {});
+      if (runningPromise) await runningPromise.catch(() => {});
+      lastClosedStatus = status(); release(); db.close(); closed = true;
+    }
+  };
+}

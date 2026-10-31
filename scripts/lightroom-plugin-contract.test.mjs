@@ -15,6 +15,48 @@ async function source(file) {
   return fs.readFile(path.join(PLUGIN_ROOT, file), "utf8");
 }
 
+test("Lightroom bevorzugt die installierte Node-Laufzeit und erhält bewusste Einstellung und bisherige Rückfälle", async () => {
+  const { default: fengari } = await import("fengari");
+  const { lua, lauxlib, lualib, to_luastring } = fengari;
+  const helper = await source("TaxonomyHelper.lua");
+  for (const scenario of ["installed", "configured", "configured-missing", "system", "local", "fallback"]) {
+    const state = lauxlib.luaL_newstate(); lualib.luaL_openlibs(state);
+    const script = `
+      local scenario = "${scenario}"
+      _PLUGIN = { path = "D:/fixture/lightroom-plugin/FNWildlifeTaxonomy.lrplugin" }
+      local installed = "D:/fixture/runtime/node/node.exe"
+      local system = "C:\\\\Program Files\\\\nodejs\\\\node.exe"
+      local localNode = "C:/Users/felix/AppData/Local/Programs/nodejs/node.exe"
+      local explicit = "D:/chosen/node.exe"
+      function import(name)
+        if name == "LrPrefs" then return { prefsForPlugin = function()
+          return {nodePath = scenario:find("configured") and explicit or ""} end } end
+        if name == "LrPathUtils" then return {
+          child = function(a,b) return a .. "/" .. b end,
+          parent = function(p) return p:match("^(.*)/[^/]+$") end,
+          getStandardFilePath = function() return "C:/Users/felix/AppData/Local/Temp" end } end
+        if name == "LrFileUtils" then return { exists = function(p)
+          if p == installed then return scenario == "installed" or scenario:find("configured") end
+          if p == explicit then return scenario == "configured" end
+          if p == system then return scenario == "system" or scenario == "installed" end
+          if p == localNode then return scenario == "local" end
+          return false end } end
+        return {}
+      end
+      function require(name) assert(name == "Json"); return {} end
+      local helper = (function() ${helper} end)()
+      local expected = scenario:find("configured") and explicit or scenario == "installed" and installed
+        or scenario == "system" and system or scenario == "local" and localNode or "node.exe"
+      assert(helper.runtimeNodePath() == expected, helper.runtimeNodePath() .. " != " .. expected)
+    `;
+    try {
+      assert.equal(lauxlib.luaL_loadstring(state, to_luastring(script)), lua.LUA_OK, lua.lua_tojsstring(state, -1));
+      const result = lua.lua_pcall(state, 0, 0, 0);
+      assert.equal(result, lua.LUA_OK, `${scenario}: ${result === lua.LUA_OK ? "" : lua.lua_tojsstring(state, -1)}`);
+    } finally { lua.lua_close(state); }
+  }
+});
+
 test("Explizite FN-Nutzungserfassung liest nur SDK-Kennungen zweimal und speichert nach Abbruch oder Änderung nichts", async () => {
   const { default: fengari } = await import("fengari");
   const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -237,7 +279,7 @@ test("Lightroom-Plug-in besitzt deutsche Aktionen und vollständigen Metadatenve
     /VERSION\s*=\s*\{[\s\S]*?major\s*=\s*(\d+)[\s\S]*?minor\s*=\s*(\d+)[\s\S]*?revision\s*=\s*(\d+)[\s\S]*?build\s*=\s*(\d+)/,
   );
   assert.ok(version, "Info.lua muss eine vollständig lesbare Plug-in-Version enthalten");
-  assert.equal(version.slice(1).join("."), "0.4.24.42");
+  assert.equal(version.slice(1).join("."), "0.4.24.43");
   assert.match(
     provider,
     new RegExp(`Version: ${version.slice(1).join("\\.")}`),
@@ -1241,7 +1283,7 @@ test("Aufgeräumte Metadatenansicht und Plug-in-Info verbergen technische Felder
     visibleTagsets,
     /masterTaxonId|projectTaxonId|taxonomyPath|taxonomyKeywordIds|locationTimeKeywordIds|locationTimeKeywordNames/,
   );
-  assert.match(provider, /Version: 0\.4\.24\.42/);
+  assert.match(provider, /Version: 0\.4\.24\.43/);
   assert.match(provider, /TaxonomyHelper\.searchPackageStatus\(\)/);
   assert.match(provider, /Taxonomiedatenbank, Aktualisierungen und Sicherungen werden zentral im Arten-Explorer verwaltet/);
   assert.match(helper, /function TaxonomyHelper\.searchPackageStatus\(\)/);

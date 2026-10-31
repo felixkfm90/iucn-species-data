@@ -107,6 +107,7 @@ test("Datenbank-Aktionen zeigen Hauptaufgaben und bündeln alle Sonderwege einma
     ["data-pipeline-mode", "manual-maps"], ["data-pipeline-mode", "nc-sounds"], ["data-pipeline-mode", "cleanup"],
     ["data-taxonomy-database-action", "build-baseline"], ["data-taxonomy-database-action", "rollback"],
     ["data-taxonomy-database-action", "storage"], ["data-backup-action", "nas"], ["data-settings-action", "backup-path"],
+    ["id", "shared-project-open"],
   ]) {
     const pattern = new RegExp(`${attribute}="${value}"`, "g");
     assert.equal([...chooser.matchAll(pattern)].length, 1, `${value}: genau ein vorhandener Einstieg`);
@@ -119,6 +120,10 @@ test("Datenbank-Aktionen zeigen Hauptaufgaben und bündeln alle Sonderwege einma
   assert.match(main, /id="taxonomy-maintenance-conflicts"[^>]*\bhidden\b/);
   assert.match(more, /data-taxonomy-database-action="build-baseline" hidden/);
   assert.match(more, /<details class="action-group action-group-danger">/);
+  const settings = more.slice(more.indexOf("<h4>Backup und Einstellungen</h4>"), more.indexOf('<details class="action-group action-group-danger">'));
+  assert.match(settings, /id="shared-project-open" class="edit-only"/);
+  const website = htmlSource.slice(htmlSource.indexOf('class="website-pages-overview"'), htmlSource.indexOf('id="detail-panel"'));
+  assert.doesNotMatch(website.split("</section>")[0], /id="shared-project-open"/);
 });
 
 test("Weitere Aktionen sind beim Wiederöffnen geschlossen; Navigation bleibt schreibfrei und Sonderläufe bleiben Vorschauen", async () => {

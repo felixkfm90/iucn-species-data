@@ -1,0 +1,100 @@
+import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import test from "node:test";
+import { createExplorerRequestHandler, matchExplorerRoute } from "./request-router.mjs";
+import { invokeSharedProjectOperation } from "./project-feature-routes.mjs";
+import { createLocalMutationBarrier } from "./local-mutation-barrier.mjs";
+import { startUpdateWithCompletion } from "./update-completion/start.mjs";
+
+test("Projekt- und Abschlussrouten bleiben hinter lokalen Sitzungs-/Originprüfungen", async (t) => {
+  const calls = [];
+  const handler = createExplorerRequestHandler({ host: "127.0.0.1", sessionToken: "fixture-token", publicDir: ".", repoRoot: ".",
+    operations: { sharedProject: async (value) => { calls.push(value); return { ok: true }; },
+      updateCompletion: async (value) => { calls.push(value); return { available: true }; } } });
+  const server = createServer(handler);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => { server.closeAllConnections(); return new Promise((resolve) => server.close(resolve)); });
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  let response = await fetch(`${origin}/api/shared-project/connect`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  assert.equal(response.status, 403); await response.text(); assert.equal(calls.length, 0);
+  response = await fetch(`${origin}/api/shared-project`, { headers: { origin: "https://foreign.invalid" } });
+  assert.equal(response.status, 403); await response.text(); assert.equal(calls.length, 0);
+  response = await fetch(`${origin}/api/shared-project/objects/species/eisvogel`, { method: "POST",
+    headers: { "content-type": "application/json", "x-species-explorer-session": "fixture-token", origin },
+    body: JSON.stringify({ data: { commonName: "Eisvogel" }, expectedEditRevision: "shown" }) });
+  assert.equal(response.status, 200); await response.text();
+  assert.equal(calls[0].action, "editExisting"); assert.equal(calls[0].id, "eisvogel");
+  response = await fetch(`${origin}/api/taxonomy/update-completion/cancel`, { method: "POST",
+    headers: { "content-type": "application/json", "x-species-explorer-session": "fixture-token", origin }, body: "{}" });
+  assert.equal(response.status, 200); await response.text(); assert.equal(calls[1].action, "cancel");
+  response = await fetch(`${origin}/api/shared-project/objects/species/eisvogel`, { method: "POST",
+    headers: { "content-type": "application/json", "x-species-explorer-session": "fixture-token", origin },
+    body: JSON.stringify({ data: { title: "Vollständige Seite", text: "x".repeat(30000) }, expectedEditRevision: "shown" }) });
+  assert.equal(response.status, 200, "complete structured pages must fit beyond the small control-message limit"); await response.text();
+  response = await fetch(`${origin}/api/shared-project/connect`, { method: "POST",
+    headers: { "content-type": "application/json", "x-species-explorer-session": "fixture-token", origin },
+    body: JSON.stringify({ password: "x".repeat(30000) }) });
+  assert.equal(response.status, 413, "control and login requests retain the small limit"); await response.text();
+});
+
+test("lokale Routen stellen keine freie Bindungs-, Claim- oder native Ausführungsaktion bereit", () => {
+  for (const path of ["/api/taxonomy/update-completion/execute", "/api/taxonomy/update-completion/bind", "/api/taxonomy/update-completion/claim"]) {
+    assert.notEqual(matchExplorerRoute("POST", path).name, "update-completion");
+  }
+  assert.notEqual(matchExplorerRoute("GET", "/api/shared-project/users/11111111-1111-4111-8111-111111111111").name, "shared-project");
+  assert.deepEqual(matchExplorerRoute("POST", "/api/shared-project/devices/11111111-1111-4111-8111-111111111111/revoke"),
+    { name: "shared-project", action: "revokeDevice", id: "11111111-1111-4111-8111-111111111111" });
+});
+
+test("Projektadapter gibt nur benannte Methoden weiter und bleibt ohne Einrichtung ehrlich nicht verfügbar", async () => {
+  assert.equal((await invokeSharedProjectOperation(null, { action: "snapshot" })).available, false);
+  await assert.rejects(invokeSharedProjectOperation(null, { action: "connect" }), { statusCode: 503 });
+  const received = [];
+  await invokeSharedProjectOperation({ editExisting: (...args) => received.push(args) },
+    { action: "editExisting", kind: "page", id: "athen", payload: { data: { title: "Athen" }, expectedEditRevision: "revision" } });
+  assert.deepEqual(received, [["page", "athen", { data: { title: "Athen" }, expectedEditRevision: "revision" }]]);
+  await assert.rejects(invokeSharedProjectOperation({}, { action: "close" }), { statusCode: 404 });
+});
+
+test("Schließbarriere wartet begonnene Mutation ab und verhindert neue Aufträge bis zur Freigabe", async () => {
+  const barrier = createLocalMutationBarrier(), finishWrite = barrier.enter();
+  const acquiring = barrier.acquire();
+  assert.equal(barrier.closing, true); assert.equal(barrier.active, 1);
+  assert.throws(() => barrier.enter(), { statusCode: 409 });
+  finishWrite(); finishWrite();
+  const release = await acquiring;
+  assert.equal(barrier.active, 0); assert.throws(() => barrier.enter());
+  release(); release();
+  barrier.enter()(); assert.equal(barrier.active, 0);
+});
+
+test("nicht abgeschlossene Mutation hebt nur den misslungenen Schließversuch wieder auf", async () => {
+  const barrier = createLocalMutationBarrier({ timeoutMs: 10 }), finish = barrier.enter();
+  await assert.rejects(barrier.acquire(), { statusCode: 409 });
+  assert.equal(barrier.closing, false); assert.equal(barrier.active, 1);
+  finish(); barrier.enter()();
+});
+
+test("Startadapter bindet Auswahl vor wirklichem Start und wiederholt keinen bestätigten Lauf", async () => {
+  const events = [], choice = { action: "shutdown", deviceId: "device-fixture", requestId: "request" };
+  const selection = { selectionId: "selection", deviceId: choice.deviceId };
+  const completion = { prepareSelection: async () => { events.push("select"); return selection; },
+    bindStartedRun: async ({ updateRunId }) => { events.push("bind"); selection.updateRunId = updateRunId; }, cancel: async () => events.push("cancel") };
+  const workflow = { updateRunId: "actual-run", status: "waiting-lightroom" };
+  const coordinator = { start: async (payload) => { assert.equal(payload.completion, undefined); events.push("start"); return workflow; }, status: async () => workflow };
+  assert.deepEqual(await startUpdateWithCompletion({ coordinator, completion, payload: { confirmed: true, completion: choice } }), workflow);
+  assert.deepEqual(events, ["select", "start", "bind"]);
+  assert.deepEqual(await startUpdateWithCompletion({ coordinator, completion, payload: { completion: choice } }), workflow);
+  assert.deepEqual(events, ["select", "start", "bind", "select"]);
+});
+
+test("Startfehler wählt Aktion ab; verlorene optionale Bindung behauptet keinen fehlgeschlagenen wirklichen Updatebeginn", async () => {
+  let cancelled = 0;
+  const completion = { prepareSelection: async () => ({ selectionId: "s", deviceId: "d" }),
+    bindStartedRun: async () => { throw new Error("Binding failure"); }, cancel: async () => { cancelled++; } };
+  await assert.rejects(startUpdateWithCompletion({ completion, coordinator: { start: async () => { throw new Error("Start failure"); } }, payload: { completion: {} } }), /Start failure/);
+  assert.equal(cancelled, 1);
+  const result = await startUpdateWithCompletion({ completion, coordinator: { start: async () => ({ updateRunId: "real" }) }, payload: { completion: {} } });
+  assert.equal(result.updateRunId, "real"); assert.ok(result.completionWarning); assert.equal(cancelled, 2);
+  await assert.rejects(startUpdateWithCompletion({ coordinator: {}, payload: { completion: { action: "shutdown" } } }), { statusCode: 409 });
+});

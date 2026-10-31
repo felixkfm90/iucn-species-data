@@ -1,6 +1,6 @@
 # Monthly Site Audit
 
-Stand: 2026-10-26
+Stand: 2026-10-31
 
 Ziel: Einmal pro Monat soll die komplette Website und GitHub-Pages-Integration strukturiert geprueft werden. Das Audit
 soll nicht jeden unveraenderten Bereich erneut manuell im Detail pruefen, aber keinen Bereich ignorieren. Unveraenderte
@@ -49,8 +49,9 @@ Reale Galerie und Rückkehransicht zusätzlich zu automatisierten Gegenproben pr
 Die [Footer-Referenz](squarespace-footer.html) führt die Skript-/Cacheversionen; das gekoppelte
 [Standard-CSS](squarespace-custom.css) gehört zum selben Quellvergleich. Diese Quellen beschreiben den
 verbindlichen Einbau- und Cachevertrag. Pages-Veröffentlichung, CMS-Übernahme sowie tatsächlich geladene
-öffentliche Module, CSS und Darstellung sind getrennt zu prüfen. Während des laufenden Gesamtaudits stehen
-Ergebnisse und Grenzen ausschließlich im [Auditauftrag Phase 10.5](audit-auftrag-phase-10-5.md).
+öffentliche Module, CSS und Darstellung sind getrennt zu prüfen. Ergebnisse und Grenzen des am
+27. Oktober abgeschlossenen Gesamtaudits stehen ausschließlich im
+[Auditauftrag Phase 10.5, Abschnitt 10.55](audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
 Datierte Live-Belege gelten nur für den jeweils gebundenen Prüfzeitpunkt und Quellstand.
 
 Das responsive Artseiten-Grundlayout erhält die volle Bildbreite mit bisherigem Ausschnitt,

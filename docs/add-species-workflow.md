@@ -1,8 +1,278 @@
 # Add Species Workflow
 
-Stand: 2026-10-23
+Stand: 2026-10-31
 
 Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
+
+## Vorbereitung des künftigen Website-Artseitenworkflows
+
+Lesender Abgleich vom 28. Oktober auf Programmstand `97a1b68a2663e62e87c4fa473a917fe83a3f7ec5`:
+Felix lässt die entscheidungsfreien Vorarbeiten erledigen. Der heutige Artassistent bleibt der unten
+beschriebene Betriebsablauf; der vollständige Websiteworkflow wird erst gemeinsam abgegrenzt.
+Der bestätigte [Auftrag aus Auditabschnitt 10.47](audit-auftrag-phase-10-5.md#1047-auditfortsetzung-und-späterer-artseitenworkflow--20-oktober)
+umfasst Artanlage, Inhaltsentwurf, Bildauswahl, Alternativtexte, redaktionelle Prüfung, Vorschau und
+kontrollierte Einpflege. Vorhandene Strukturen und Felix' Korrekturen erhalten; Fachangaben belegen,
+Unbekanntes offenlassen und Bilder oder fertige Texte nicht allein aus Dateinamen ableiten.
+
+Felix legt anschließend Mehrbenutzerunterstützung als Voraussetzung für dieses Vorhaben fest:
+Sein Bruder soll ebenfalls Texte eingeben und Artseiten anlegen können. Die initiale
+[Alttextfassung](image-alt-audit.md#erste-lokale-fassung-bedienung-und-betriebsgrenzen) beginnt vorher.
+Am 29. Oktober beauftragt er zusätzlich die selbstständige Übertragung freigegebener Bildtexte mit eigener
+Browseranmeldung. Dieser begrenzte Textübernahmeweg wird im Alttextvertrag geführt; die vollständige
+Artseitenerstellung bleibt ein späteres gemeinsam abzugrenzendes Vorhaben nach dem Mehrbenutzerausbau.
+
+### Bestätigter Zielablauf vom 31. Oktober 2026
+
+Felix konkretisiert den vollständigen Artseitenworkflow im Rahmen der gemeinsamen Abstimmung aller
+großen Folgevorhaben. Die folgenden Vorgaben und der zusammenhängende Gesamtumfang sind am
+31. Oktober ausdrücklich zur Umsetzung bestätigt. Konkrete Vorlage und technische Umsetzung werden daraus abgeleitet.
+
+| Schritt | Bestätigtes Verhalten |
+| --- | --- |
+| Bilder bereitstellen | Felix oder sein Bruder liefern die Bilder. Die Reihenfolge muss durch sie festlegbar und in der zusammengesetzten Seite nachvollziehbar sein. |
+| Texte bereitstellen | Sie liefern die Fachtexte unter den entsprechenden Überschriften, beispielsweise Aussehen und Lebensraum. Die bereits vorhandenen unterschiedlichen Artgliederungen werden bei der späteren Vorlagenwahl berücksichtigt. |
+| Alternativtexte | Für die bereitgestellten Bilder werden bildbezogene Alternativtexte vorgeschlagen. Diese bleiben vor der Freigabe manuell änderbar und an das konkrete Bild gebunden. Die bisherigen Regeln aus dem Alttextvertrag gelten weiter. |
+| Fehlender Fachabschnitt | Eine fehlende Eingabe löst einen Hinweis aus, ob der Abschnitt bewusst leer bleiben soll. Eine bestätigte Leerstelle bleibt erhalten. Nur wenn keine Eingabe vorliegt und der Abschnitt nicht leer bleiben soll, werden ergänzende Textvorschläge angeboten; fachliche Angaben benötigen nachvollziehbare Quellen. |
+| Seite zusammensetzen | Bilder, gewählte Reihenfolge, Fachtexte und Bildtexte werden zu einer vollständigen prüfbaren Artseite zusammengesetzt und vor der Veröffentlichung bereitgestellt. |
+| Vorprüfung | Vor Felix' beziehungsweise seines Bruders abschließender Durchsicht soll Codex die Seite bereits inhaltlich und in der Darstellung prüfen; technische Prüfungen ergänzen diesen Schritt. Unklare Fachangaben und offene Ergebnisse bleiben sichtbar. |
+| Menschliche Abnahme und Veröffentlichung | Felix beziehungsweise sein Bruder sehen die vorbereitete Seite abschließend durch und geben sie bei passendem Ergebnis ausdrücklich öffentlich frei. Ziel ist, nach dieser Durchsicht nur noch die vorbereitete Seite veröffentlichen zu müssen. |
+
+Die menschliche Endabnahme bleibt auch nach einer Vorprüfung erhalten. Vorschläge und inhaltliche
+Vorprüfungen sollen ohne diesen Chat direkt im Explorer laufen; kostenpflichtige Dienste schließt
+Felix aus. Eine dafür geeignete lokale Lösung ist zunächst auf Qualität, Geschwindigkeit und
+Hardwarebedarf zu prüfen. Eine mögliche Grundlage bieten lokale Bild-/Textmodelle; die offizielle
+[Ollama-Dokumentation](https://docs.ollama.com/faq) beschreibt lokalen Betrieb, die
+[Bildverarbeitung](https://docs.ollama.com/capabilities/vision) bildbezogene Beschreibungen. Dies ist eine
+zu untersuchende Möglichkeit, keine ausgewählte oder installierte Abhängigkeit und kein Qualitätsnachweis.
+Die lesende Rechnerabfrage vom 31. Oktober meldet hier 64 GiB Arbeitsspeicher und einen Intel Core
+i5-14600K. Das vorhandene NVIDIA-Werkzeug meldet zusätzlich eine GeForce RTX 5070 mit 12.227 MiB
+Grafikspeicher und Treiber 610.88. Das ist eine Hardwareaufnahme, kein ausgeführter Modell-/Qualitäts-
+oder Geschwindigkeitsnachweis. NAS-Eignung und Ausstattung des zweiten PCs sind weiter offen.
+Technische Vollständigkeits-/Zuordnungsprüfungen sind von der modellgestützten inhaltlichen Vorprüfung
+zu unterscheiden; bei fehlendem oder ungeeignetem Modell bleibt deren Ergebnis offen.
+Diese Vorgaben beschreiben den künftigen Ablauf, keine Freigabe heutiger Einzeltexte oder CMS-Änderungen.
+Die Vollseitenfunktion ist weiterhin nach dem benötigten Mehrbenutzerausbau vorgesehen.
+
+### Technischer Umsetzungsstand vom 31. Oktober
+
+Die anfängliche Hardwareaufnahme ist inzwischen um eine begrenzte tatsächliche lokale Modellprobe
+ergänzt: Qwen3-VL-4B-Instruct mit Q4_K_M-Gewichten und Bildprojektor unter llama.cpp b11960.
+Modell-/Runtimequellen sind gebunden und geprüft; es wurde kein kostenpflichtiger Dienst verwendet
+und kein Foto an einen KI-Dienst hochgeladen. Vier reale Fotos und drei synthetische quellengebundene
+Textfälle wurden mit dem regulären Einzelaufruf inhaltlich bewertet. Die ersten interaktiven
+Textaufrufe hatten die Frage nicht ausgeführt und zählen ausdrücklich nicht als erfolgreiche Textfälle.
+Ein eigener CPU-Lauf mit vollständig ausgeschalteter GPU-Nutzung ist getrennt belegt.
+
+Die Probe liefert brauchbare Vorschläge, zeigt aber auch Grenzen: frühe Bildläufe enthielten eine
+falsche Farbangabe beziehungsweise eine unzutreffende Tunnelbeschreibung. Die vereinbarte Regel ohne
+Schlusspunkt wurde trotz Aufforderung nicht zuverlässig eingehalten. Der Produktweg muss daher
+bearbeitbare Vorschläge, deterministische seitentypabhängige Formatierung und menschliche Freigabe
+verbinden. Eine kleine Probe ist keine allgemeine fachliche Richtigkeits- oder Geschwindigkeitsgarantie.
+Der laufende Einbau verwendet einen eigenen lokal begrenzten Bild-/Textdienst; dies ist noch keine
+abgenommene Vollseitenfunktion. Quellen und semantische Bewertung stehen privat unter
+`data/website/checks/local-ai-feasibility-20261031*`.
+
+Der [Inhaltsexport](../species-explorer/species-content/README.md) erfasst den vollständigen datierten
+öffentlichen Artseitenbestand mit Fachüberschriften, Absätzen, tatsächlicher Galerieabfolge und
+vorhandenen Quellen-/Lizenzhinweisen. Hauptmedien sind gegen reale lokale Bytes gebunden;
+nicht heruntergeladenen Galeriefotos werden keine Dateigrößen oder Prüfsummen zugeschrieben.
+Der Export erzeugt einen prüfbaren Importplan und veröffentlicht nichts. Unfreigegebene lokale
+Bildtextentwürfe gehören nicht zum öffentlichen Anfangsbestand. Diese Grundlage ist unabhängig
+gegen alle erfassten Quellseiten geprüft; sie ersetzt keine Freigabe künftiger neuer Seiten.
+
+Primärquellen: [Modell](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF),
+[gebundene lokale Laufzeit](https://github.com/ggml-org/llama.cpp/releases/tag/b11960).
+
+### Vorhandene Ausgangsbasis
+
+| Baustein | Heute vorhanden | Für den Folgeworkflow noch fehlend |
+| --- | --- | --- |
+| Artanlage | `species-explorer/species-create.mjs`, Namens-/Slug-/Assetkollisionsprüfungen und wiederaufnehmbare Medienaufträge | Erstellt keine Squarespace-Seite; heutiger CMS-Nachlauf bleibt manuell. |
+| Öffentliche Module | Steckbrief, Taxonomie, Status, Portrait, Sound, Karte und angenommenes responsives Artseiten-Grundlayout | Redaktionelle Textabschnitte und Galerieauswahl sind damit nicht erzeugt oder geprüft. Layoutvertrag: [Websitevertrag](monthly-site-audit.md#öffentliche-bedien--und-css-verträge). |
+| Seitenverknüpfung | `species-explorer/website-species-pages.mjs` und `species-explorer/public/app-website-pages.js` erkennen öffentliche Seiten anhand genauer Slugs, auch in mehreren Bereichen | Kein Zugriff auf unveröffentlichte Entwürfe, kein CMS-Schreibweg. |
+| Lokale Vorschau | `scripts/local-squarespace-preview.mjs` und `tools/squarespace-preview/index.html` zeigen vorhandene Module in drei Ansichten | Keine vollständige Artseiten-/Galerievorschau; die enge Route-Positivliste enthält derzeit auch keine Kartenroute. |
+| Alternativtexte | [Bestätigte Ziele und Prüfgrenzen](image-alt-audit.md#entscheidungen-und-nachprüfung-vom-29-oktober-2026), seitenweiser Explorer-Ablauf und begrenzte Browser-Schreibanbindung; tatsächliche Delphi-Übernahme am 30. Oktober bestätigt | Neue Artseiten dürfen vorher online stehen, fehlende Texte bleiben offen. Der praktisch bestätigte Reisegalerie-Schreibweg erzeugt keine Artseite und keinen neuen Galerieaufbau. |
+
+Vorhandene Tests für Artanlage, Websiteverknüpfung, Modulvorschau, Barrierefreiheit und Artseitenkopf
+sind eingebunden. Sie ersetzen keine Abnahme eines erst später entwickelten vollständigen Seitenworkflows.
+Für diese Vorbereitung wurde keine Art angelegt und keine Website- oder CMS-Seite geändert.
+
+### Gemeinsam zu klären
+
+| Kennung | Fachliche Entscheidung |
+| --- | --- |
+| ART-1 | Bereitgestellte gegliederte Fachtexte und bewusste Leerstellen sind bestätigt. Konkretes vorhandenes Muster, Gliederungsvarianten und zulässige Quellen für ausdrücklich gewünschte Ergänzungen bleiben festzulegen. |
+| ART-2 | Bereitgestellte Bilder, selbst festlegbare Reihenfolge und manuell änderbare Alternativtextvorschläge sind bestätigt. Zulieferung, Hauptfoto/Ausschnitt und konkrete Auswahlbedienung werden daraus abgeleitet beziehungsweise am Muster geprüft. |
+| ART-3 | Vollständige Vorbereitung neuer Artseiten und Vorprüfung vor menschlicher Endabnahme sind bestätigt. Vorschläge und Vorprüfung sollen ohne Chat direkt im Explorer und ohne kostenpflichtige Dienste funktionieren; lokale Machbarkeit noch prüfen. Bestehende Arten/Seiten sind auch offline am PC bearbeitbar; eine pauschale Umstellung sämtlicher vorhandener CMS-Seiten ist damit nicht beauftragt. |
+| ART-4 | Welche Pilotart nutzen wir für den ersten vollständigen Arbeitsfall, zusammen mit der Alttextabstimmung? |
+
+### Vorbereitete Abnahme
+
+Bereits gefordert sind ein vollständiger freigegebener Seitenentwurf mit belegten Texten, Bildern und
+Alternativtexten, kontrollierte Einpflege, öffentliche Darstellung und automatische Explorer-Verknüpfung.
+Wiederholung darf keine Dubletten und keine unbemerkten Überschreibungen menschlicher Änderungen erzeugen.
+Ergänzende Prüfvorschläge: Ein zwischen Entwurf und Übernahme geändertes Ziel stoppt die Übernahme;
+unvollständige oder abgebrochene Übertragung bleibt erkennbar und ist ohne Doppelanlage fortsetzbar.
+Konkretes Muster, Pilot und Abnahmeumfang werden erst gemeinsam bestätigt.
+
+Aus dem Zielablauf vom 31. Oktober folgen zusätzlich diese Pflichtfälle für die spätere Abnahme:
+Eine noch ungeklärte Leerstelle erzeugt einen Hinweis; eine bewusst bestätigte Leerstelle bleibt auch
+nach erneuter Vorprüfung leer. Ein gewünschter, aber noch fehlender Abschnitt bietet einen belegten
+Vorschlag an, ohne vorhandene Eingaben still zu ersetzen. Gewählte Bildreihenfolge und manuell
+geänderte Alternativtexte bleiben in Vorschau und übernommener Seite erhalten. Vorprüfung und offene
+Befunde sind vor der menschlichen Veröffentlichungsentscheidung erkennbar. Diese Fälle sind
+vorbereitet, noch keine ausgeführte Vollseitenabnahme.
+
+## Seitengruppen und Bausteine: Vorbereitung vom 30. Oktober 2026
+
+Felix beauftragt ausdrücklich die Einteilung der bestehenden Seiten im Hintergrund, damit anschließend
+Regeln je Seitengruppe vereinbart und später vollständige Artseiten aus bereitgestellten Bildern und
+Texten aufgebaut werden können. Das ist eine Vorbereitung zur gemeinsamen Abstimmung. Es setzt noch
+keine neue Vorlage, Pflichtgliederung, Benutzerberechtigung oder CMS-Anlagefunktion fest. Diese Vorbereitung
+erfolgte während der von Felix gewünschten Computer-Use-Pause und las ausschließlich öffentliche Seiten
+und lokale Quellen. Die spätere freigegebene Mykene-Übernahme bleibt davon im Alttextvertrag getrennt.
+
+### Vollständigkeit und Beleg
+
+Die frische Sitemapprüfung und öffentliche HTML-Aufnahme umfassen am 30. Oktober um 19:29 Uhr MEZ
+alle **137 Sitemapadressen** sowie die zusätzliche Startadresse und zwei bekannte Weiterleitungen:
+**140 Adressen, davon 138 Inhaltsadressen und zwei HTTP-302-Verweise**. Alle Antworten wurden erfolgreich
+gelesen, keine Adresse bleibt ohne vorgeschlagene Gruppe. Der Alttextbestand ist vor/nach der Aufnahme
+bytegleich. Keine CMS-, Bildtext- oder Websiteänderung und keine Browser-/Desktopbedienung.
+
+Der private Einzelbeleg `data/website/checks/page-clusters-20261030.json` enthält jede Adresse mit
+vorgeschlagener Gruppe, öffentlichem Antwortstatus, Abrufzeit, HTML-Prüfsumme, kanonischer Adresse,
+deklarierter Abschnittsfolge, Blockarten, Überschriften, Modulplatzhaltern und Auffälligkeiten. Die davon
+abgeleitete `page-clusters-20261030.html` im selben Ordner ist nach Gruppe und Suchbegriff filterbar;
+sie öffnet sich nicht automatisch. Diese Dateien sind datierte Arbeitsbelege, keine zweite produktive
+Seitenverwaltung. Aufbewahrung gemäß [Tempvertrag](temp-retention.md).
+
+Erfasst ist die öffentliche statische Struktur. Skripte wurden nicht ausgeführt, Bilder nicht heruntergeladen
+und Module nicht erneut visuell abgenommen. Interne Galerie-/Listencontainer werden nicht als weitere
+Seitenabschnitte gezählt. Unveröffentlichte CMS-Entwürfe und unbekannte, nicht gelistete/verknüpfte Seiten
+sind nicht durch diesen Vollständigkeitsbeleg abgedeckt. Neue Adressen müssen später erneut eingeordnet
+werden; diese Momentaufnahme übernimmt das nicht als laufenden Dienst.
+
+### Vorgeschlagene Seitengruppen
+
+Die Zahlen bezeichnen Adressen dieser datierten Aufnahme und keine zusätzlich angelegten Inhalte.
+
+| Gruppe | Adressen | Beleg und sinnvolle Abgrenzung |
+| --- | ---: | --- |
+| Artporträts | 63 | Bekannter Artslug unter `/wildlife/Region/Art`, Treffer in beiden Artendateien, sieben bekannte Modulplatzhalter und eine Galerie. Eine konkrete Art bildet den fachlichen Kontext. |
+| Regionale Artenübersichten | 4 | Afrika, Costa Rica, heimische Tierwelt und Island; jeweils Einstieg, weitere Inhalte und eine deklarierte Vorschauliste. |
+| Wildlife-Gesamtübersicht | 1 | `/wildlife/uebersicht`; Einstieg in die regionalen Bereiche, keine einzelne Art. |
+| Einzelne Reiseübersichten | 8 | `/reisen/Jahr-Reise`; jeweils Inhaltskopf und Vorschauliste für Stationen/Themen. Kurze Bildtextvorschläge seit Felix' Anweisung vom 31. Oktober ebenfalls ohne Schlusspunkt; Alttexte und sichtbare Kachelbeschreibungen bleiben unabhängig. |
+| Reise-Gesamtübersicht | 1 | `/reisen/uebersicht`; Einstieg in die einzelnen Reisen, eigene Bild-/Linkblöcke. |
+| Reise-Unterseiten | 53 | `/reisen/Jahr-Reise/Station`; jeweils Inhaltskopf und eine deklarierte Galerie. Ort, Naturraum, Unterkunft oder gemischte Sammlung sind zusätzliche Themenmerkmale. |
+| Startseite | 2 | `/` und `/home` antworten beide mit HTTP 200 und nennen dasselbe kanonische Startseitenziel. Zwei Adressen einer gemeinsamen Startseitendarstellung; keine automatische Umleitung oder Bereinigung beauftragt. |
+| Profil und Service | 3 | Über uns, Ausrüstung und Kontakt. Gleiche Verwaltungsgruppe, aber unterschiedliche Inhalte; das Kontaktformular ist ein eigener Baustein. |
+| Unterstützung | 1 | Spenden; eigene Informations-/Handlungsseite, keine Reise- oder Artvorlage. |
+| Rechtliche Seiten | 2 | Impressum und Datenschutz. Keine künstliche Foto- oder Galeriepflicht und keine allgemeine redaktionelle Umschreibung. |
+| Weiterleitungen | 2 | `/reisen-1` führt nach `/reisen/uebersicht`, `/wildlife` nach `/wildlife/uebersicht`; keine zusätzlichen Inhaltsvorlagen. |
+
+Die Zuordnung nutzt mehrere passende Signale. Eine URL oder ein Titel allein genügt später nicht für
+eine verbindliche Artidentität: Auch eine künftige allgemeine Galerie könnte unter einem gleich tiefen
+Wildlife-Pfad liegen, und Übersichten nennen im Titel ebenfalls Artenporträts. Widersprüchliche oder neue
+Strukturen sollen zunächst ausdrücklich zur Einordnung offenbleiben. Diese Reaktion ist ein Vorschlag
+für die spätere Umsetzung, noch keine neue produktive Klassifizierung.
+
+Reise-Unterseiten erhalten als Vorbereitung zusätzliche Themenmerkmale: Kultur/Stadt/historische Stätte,
+Landschaft/Naturraum, Tierbeobachtung mit mehreren Arten, Unterkunft/Aufenthalt, Route/Unterwegssein
+oder Sammlung „Weitere Eindrücke“. Diese Themen sind kombinierbar und benötigen keine eigene Vorlage
+für jede Kombination. Boca Tapada verbindet beispielsweise Landschaft, Unterkunft und mehrere Tierarten;
+der Seitenname bestimmt dort nicht die Art jedes einzelnen Fotos. Sieben `sonstige`-Seiten sind Sammlungen.
+
+### Wiederkehrende Artseitengliederung
+
+Alle 63 Artseiten haben im öffentlichen HTML dieselben sieben bekannten Platzhalter für Porträt,
+Steckbrief, Taxonomie, Status, Sound und die zweiteilige Kartenintegration sowie eine Galerie.
+Ein Sound-Platzhalter bedeutet nicht, dass tatsächlich eine Aufnahme oder ein Spektrogramm vorhanden ist.
+Die bereits akzeptierten bewussten Medienlücken bleiben erhalten.
+
+Die Textgliederung zeigt zwei vorhandene Varianten: **48 Seiten mit kürzerem Aufbau**, **15 mit den
+zusätzlichen Abschnitten Entwicklung und Besonderheiten**. In allen Seiten stehen Allgemein, Aussehen,
+Verbreitung, Lebensraum, Nahrung, Beobachtungstipp und Verbreitungskarte; dazu kommen beobachtet
+40-mal Brut und 23-mal Fortpflanzung. Reihenfolge und Benennung unterscheiden sich teilweise.
+Das ist eine Aufnahme des Bestands, keine Entscheidung, dass diese Abschnitte künftig überall Pflicht sind.
+Eine biologische Einordnung wird nicht allein aus einer Abschnittsbezeichnung abgeleitet.
+
+Diese Gliederung liefert konkrete Kandidaten für ART-1. Als Vergleich eignen sich etwa Eisvogel mit
+kürzerem Aufbau und Gepard beziehungsweise Rotaugenlaubfrosch mit erweiterten Abschnitten. Welcher
+Aufbau die erste Vorlage wird und welche Ausnahmen gelten, wird mit Felix am konkreten Muster bestätigt.
+Die private kompakte Übersicht `data/website/checks/editorial-review-20261030.html` stellt dafür
+Eisvogel, Gepard, Boca Tapada, Mykene, Griechenlandübersicht und Heimische Tierwelt gegenüber.
+Sie bündelt zugleich die bestehenden bildgebundenen Rückfragen; Abnahme und Prüfgrenzen stehen im
+[Alttextvertrag](image-alt-audit.md#kompakte-bedienung-und-gesamtprüfung-vom-30-oktober-2026).
+
+### Zwei vollständig aufgenommene Artseitenbeispiele
+
+Die vertiefte Vorbereitung vom 30. Oktober stellt Eisvogel und Gepard mit ihren vollständigen
+vorhandenen Fachtexten, Überschriften, deklarierten Galeriefolgen, öffentlichen Bildtexten und getrennt
+markierten lokalen Entwürfen/Freigaben gegenüber. Artmodule, tatsächlich vorhandene Assetdateien,
+Rückverweise und Hintergründe sind quellengebunden ergänzt. Private Arbeitsansicht:
+`data/website/checks/species-samples-20261030.html`; vollständiger Beleg und unabhängige Prüfung als
+gleichnamige JSON-Datei beziehungsweise `species-samples-20261030-validation.json`.
+
+| Bestehendes Beispiel | Fachtextblöcke | Galeriefotos | Bekannte Modulplatzhalter | Besonderheit |
+| --- | ---: | ---: | ---: | --- |
+| Eisvogel | 9 | 39 | 7 | Kürzere Gliederung; Ton und Spektrogramm vorhanden. |
+| Gepard | 11 | 19 | 7 | Zusätzlich Entwicklung und Besonderheiten; bewusst fehlende Stimme bleibt erhalten. |
+
+126 Verweise, Original-HTML-Prüfsummen, vollständige statische Textabdeckung, Galeriefolge und lokaler
+Bildtextbezug sind geprüft. Allgemein und Verbreitungskarte enthalten im statischen Fachblock keine
+Prosa; dynamische Modulquellen sind getrennt ausgewiesen. Daraus folgt keine leere öffentliche Darstellung
+und keine Modulzuordnung allein anhand benachbarter Textreihenfolge. Keine Fotos heruntergeladen,
+Fachtexte umgeschrieben oder neu freigegeben; der Bildtextspeicher ist bytegleich geblieben.
+Die Arbeitsansicht ist inhaltlich/strukturell geprüft, nicht erneut optisch abgenommen. Die spätere native
+Eisvogel-Feldinventur ist davon getrennt im [Alttextvertrag](image-alt-audit.md#native-cms-feldinventur-und-veröffentlichungsvorbereitung-vom-30-oktober-2026) dokumentiert.
+Die offenen Teile von ART-1 bis ART-4 bleiben gemeinsam zu entscheiden; bestätigte Vorgaben stehen im
+[Zielablauf](#bestätigter-zielablauf-vom-31-oktober-2026). Die Beispiele legen kein Importformat und keine neue Vorlage fest.
+
+### Seitentyp und Bausteinrolle getrennt behandeln
+
+| Baustein | Schon vorhanden oder vereinbart | Für den späteren Regelkatalog noch abzugrenzen |
+| --- | --- | --- |
+| Kopf, Titel, Rückverweis und Haupt-/Hintergrundfoto | Angenommenes responsives Layout; gebundene Logo-/Hintergrundstandards | Hauptfotoauswahl, Fokus/Ausschnitt, Mehrfachverwendung und zulässige Abweichungen je Vorlage |
+| Artmodule | Bestehende öffentliche Steckbrief-, Taxonomie-, Status-, Sound-, Porträt- und Kartenfunktionen | Pflicht/optional/bewusst fehlend sowie geprüfte Zuordnung zur konkreten Art |
+| Redaktionelle Fachabschnitte | Die oben aufgenommenen vorhandenen Gliederungen und vorhandene Fachtexte | Verbindliche Abschnitte, Umfang, Quellen, Aktualität und Umgang mit fehlenden Angaben |
+| Galeriefoto | Seiten-/Quellen-/Verwendungsbindung, Bildprüfung und menschliche Textfreigabe | Auswahl, Reihenfolge, Motivbeschreibung, sichtbare Beschriftung und Textkopplung je tatsächlichem Feldtyp |
+| Vorschauliste oder Linkkachel | Auf Reise- und Regionalübersichten als eigener Abschnitt belegt | Zusammenspiel von Bildtext, sichtbarem Titel und Linkziel; keine pauschale Dekorativ- oder Captionregel |
+| Formular, Ausrüstung, Unterstützung und Rechtstext | Eigene allgemeine Inhalte | Eigenständige Regeln, ohne eine Artseiten- oder Reisevorlage darüberzulegen |
+
+Dieselbe Papageientaucherquelle kommt beispielsweise als Hintergrund, informatives Artseitenfoto und
+Wildlife-Übersichtskachel vor. Eine Bildregel darf deshalb nicht allein an Datei oder Bildquelle hängen.
+Der vorhandene Alttextparser speichert noch keine verlässliche CMS-Blockidentität; benachbarter Kartentitel,
+Link und Foto sind nicht bereits als vollständiges Vorlagenobjekt gebunden.
+
+Der praktisch bestätigte automatische Schreibweg unterstützt vorhandene freigegebene Beschreibungsfelder
+von Reisegalerien. Er ordnet keine neuen Bilder an, erzeugt keine Galerie, Artseite oder Linkkachel und
+übernimmt keine Artseitentexte. Neue Artseiten bleiben ein späteres Vorhaben nach dem Mehrbenutzerausbau.
+
+### Vorbereitete Übergabe für spätere neue Artseiten
+
+Aus bereitgestellten Bildern und gegliederten Texten soll gemäß dem bestätigten Zielablauf ein
+prüfbarer Seitenentwurf entstehen. Als Eingabepaket sind vorzubereiten: eindeutige Art und Zielbereich,
+ausgewählte Muster-/Vorlagenvariante, Fachtexte mit Quellen und offenen Angaben, Hauptfoto und
+Galerieauswahl mit Reihenfolge und Motivtexten, vorhandene beziehungsweise bewusst fehlende Medien
+sowie gewünschter Veröffentlichungszustand. Das legt kein Importformat oder Speichermodell fest.
+
+Vor Umsetzung sind die noch offenen Teile von ART-1 bis ART-4 anhand dieser Einteilung zu beantworten:
+
+- Welche Gliederung und Bausteine sind Pflicht, optional oder eine besondere Variante?
+- Welche belegten Quellen dürfen für ausdrücklich gewünschte Ergänzungen fehlender Fachabschnitte verwendet werden?
+- Wie werden Hauptfoto, Galerie, Reihenfolge, Bildausschnitt und mehrfach verwendete Fotos festgelegt?
+- Welche Beschriftungs-/Alternativtextregeln gelten bei Artfotos und Übersichtskacheln? Die bereits
+  bestätigten Reise-Unterseitenregeln gelten nicht automatisch für diese anderen Bausteine.
+- Was bedeutet vollständig bei bewusst fehlendem Sound oder anderen Medien? Die erlaubte frühere
+  Veröffentlichung mit offenem Alttextbedarf bleibt davon getrennt sichtbar möglich.
+- Die angenommenen [Benutzerstufen](multi-device-backup-plan.md#angenommene-benutzerstufen) auf Entwurf, Änderung, Freigabe und Veröffentlichung anwenden; Felix und sein Bruder erhalten gleichen Vollzugriff.
+- Welche konkreten Vorschau-, Konflikt-, Wiederanlauf- und öffentlichen Abnahmefälle gehören zum Pilot?
+
+Die beobachteten langen Reise-Beschriftungen und die schon bestätigten Bildregeln führt ausschließlich
+der [Alttextvertrag](image-alt-audit.md#seitengruppenbezogene-regelvorbereitung-vom-30-oktober-2026).
+Die Regelabstimmung kann mit einem der vorhandenen Muster beginnen; diese Vorbereitung erteilt keine
+Redaktions- oder Veröffentlichungsfreigabe für weitere Seiten.
 
 ## Verfügbarkeit vor dem Öffnen
 

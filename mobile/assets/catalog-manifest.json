@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "bundled-public-catalog",
+  "label": "Mitgelieferte öffentliche Daten",
+  "catalogSha256": "bad4403e0032452dd9899abef6d3383ce86265f7ef01b8a01ba023e6da6984c5",
+  "catalogBytes": 733439,
+  "revision": "a21e77e8aaf3cf9fa682ebae41d54f98e5ccd6f23372bd089cb774ab29220e8a",
+  "generatedAt": "2026-10-31T08:16:40.720Z",
+  "speciesCount": 63,
+  "galleryReferenceCount": 852,
+  "bundledMediaFiles": 0
+}

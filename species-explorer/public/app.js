@@ -79,12 +79,7 @@ const explorerApi = explorerFoundation.createExplorerApiClient({
     state.sessionToken = token;
   },
 });
-const {
-  ensureSessionToken,
-  fetchJson,
-  loadExplorerSnapshot,
-  fetchRevision,
-} = explorerApi;
+const { ensureSessionToken, fetchJson, loadExplorerSnapshot, fetchRevision } = explorerApi;
 const {
   escapeHtml,
   safeUrl,
@@ -120,11 +115,7 @@ const {
   renderUnitOptions,
   renderManualMeasurementEditor,
 } = explorerMeasurements;
-const {
-  iucnDistributionMapUrl,
-  fileToBase64,
-  waitForAudioMetadata,
-} = explorerEditorFiles;
+const { iucnDistributionMapUrl, fileToBase64, waitForAudioMetadata } = explorerEditorFiles;
 const {
   openDialog,
   createDialogController,
@@ -132,10 +123,7 @@ const {
   releaseMediaWithin,
 } = explorerDialogs;
 const { createQuickConfirm } = explorerConfirmation;
-const {
-  createMessageSetter,
-  createFieldFeedbackController,
-} = explorerFormFeedback;
+const { createMessageSetter, createFieldFeedbackController } = explorerFormFeedback;
 const { createNewSpeciesFormModel } = explorerNewSpeciesForm;
 const { createEditorFormModel } = explorerEditorForm;
 const { setupBackupSettings } = explorerSettings;
@@ -373,7 +361,22 @@ const {
 });
 
 const websitePagesController = explorerWebsitePages.createWebsitePagesController({ state, elements, fetchJson, escapeHtml, onChange: applyFilters });
-
+const localAiController = window.SpeciesExplorerLocalAi.createLocalAiController({ fetchJson, createDialogController,
+  confirmAction: showQuickConfirm, safeImageUrl: window.SpeciesExplorerWebsiteAltTexts.safeImageUrl });
+const websiteAltTextsController = window.SpeciesExplorerWebsiteAltTexts.setupWebsiteAltTexts({ fetchJson, escapeHtml, createDialogController,
+  canEdit: () => state.editMode, confirmAction: showQuickConfirm, openImageSuggestion: (input) => localAiController.openForImage(input) });
+const { controller: sharedProjectController, importer: sharedProjectImporter } = window.SpeciesExplorerSharedProject.setupSharedProject({
+  fetchJson, confirmAction: showQuickConfirm, createDialogController, canEdit: () => state.editMode,
+});
+window.addEventListener("pagehide", () => {
+  void localAiController.dispose({ discard: true }).catch(() => {});
+}, { once: true });
+window.SpeciesExplorerCompletion = window.SpeciesExplorerDesktopCompletion.setupDesktopCompletion({
+  fetchJson, selectionContainer: document.querySelector("#update-completion-selection"),
+  statusContainer: document.querySelector("#update-completion-notice"),
+  draftProviders: [() => websiteAltTextsController.hasUnsavedDrafts(), () => sharedProjectController.hasUnsavedChanges(),
+    () => localAiController.hasUnsavedChanges(), () => sharedProjectImporter.busy],
+});
 const {
   refreshExplorerModelOnly,
   loadData,
@@ -568,10 +571,7 @@ const { setupSpeciesEditor } = explorerSpeciesEditor.createSpeciesEditorControll
   backupRetentionText,
 });
 
-const {
-  setupSpeciesRefresh,
-  setupSpeciesDelete,
-} = createSpeciesActionsController({
+const { setupSpeciesRefresh, setupSpeciesDelete } = createSpeciesActionsController({
   state,
   elements,
   fetchJson,

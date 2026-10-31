@@ -118,7 +118,7 @@
     function start() {
       if (started) return inflight;
       started = true;
-      elements.websitePagesCheck?.addEventListener("click", () => { void refresh({ refresh: true }); });
+      elements.websitePagesCheck?.addEventListener("click", () => { if (state.editMode) void refresh({ refresh: true }); });
       elements.reloadButton?.addEventListener("click", () => { void refresh({ refresh: true }); });
       global.addEventListener?.("beforeunload", stop);
       return refresh();

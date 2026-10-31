@@ -29,7 +29,7 @@ const mainSource = await readFile(new URL("./main.mjs", import.meta.url), "utf8"
 const closeSource = mainSource.slice(mainSource.indexOf("async function handleWindowClose("),
   mainSource.indexOf("\nasync function boot()"));
 
-function createCloseHarness({ statuses = {}, answers = [], messageHook = null } = {}) {
+function createCloseHarness({ statuses = {}, answers = [], messageHook = null, presentation = null } = {}) {
   const calls = [];
   const dialogs = [];
   const read = (name, fallback) => async () => {
@@ -42,7 +42,7 @@ function createCloseHarness({ statuses = {}, answers = [], messageHook = null } 
   };
   const dependencies = {
     managedServer: { baseUrl: "http://fixture.invalid" },
-    mainWindow: { destroy: () => calls.push("destroy") },
+    mainWindow: { destroy: () => calls.push("destroy"), ...(presentation ? { webContents: {} } : {}) },
     app: { quit: () => calls.push("quit") },
     dialog: {
       showMessageBox: async (_window, options) => {
@@ -55,6 +55,8 @@ function createCloseHarness({ statuses = {}, answers = [], messageHook = null } 
     getExplorerPipelineStatus: read("pipeline", { status: "idle" }),
     getExplorerBackupStatus: read("backup", { status: "idle" }),
     getExplorerPendingChanges: read("pending", { hasPendingChanges: false }),
+    getExplorerWebsiteAltTransferStatus: read("website-transfer", { running: false }),
+    readTrustedCompletionPresentation: async () => { calls.push("ui-drafts"); return presentation; },
     stopManagedExplorerServer: async () => calls.push("stop"),
     isBackupBlockingShutdown,
     isPipelineBlockingShutdown,
@@ -62,8 +64,8 @@ function createCloseHarness({ statuses = {}, answers = [], messageHook = null } 
   // Execute the actual main-module close handler with inert Electron dependencies.
   const close = new Function("deps", `
     const {managedServer,mainWindow,app,dialog,getExplorerPipelineStatus,
-      getExplorerBackupStatus,getExplorerPendingChanges,stopManagedExplorerServer,
-      isBackupBlockingShutdown,isPipelineBlockingShutdown}=deps;
+      getExplorerBackupStatus,getExplorerPendingChanges,getExplorerWebsiteAltTransferStatus,stopManagedExplorerServer,
+      isBackupBlockingShutdown,isPipelineBlockingShutdown,readTrustedCompletionPresentation}=deps;
     let quitting=false;
     let closeCheckInProgress=false;
     ${closeSource}
@@ -72,11 +74,43 @@ function createCloseHarness({ statuses = {}, answers = [], messageHook = null } 
   return { calls, dialogs, close: () => close({ preventDefault: () => calls.push("prevent") }) };
 }
 
-test("Desktop-Schließen beendet nach drei lesbaren unkritischen Statuswerten", async () => {
+test("Desktop-Schließen beendet nach vier lesbaren unkritischen Statuswerten", async () => {
   const harness = createCloseHarness();
   await harness.close();
-  assert.deepEqual(harness.calls, ["prevent", "pipeline", "backup", "pending", "stop", "destroy", "quit"]);
+  assert.deepEqual(harness.calls, ["prevent", "pipeline", "backup", "pending", "website-transfer", "stop", "destroy", "quit"]);
   assert.equal(harness.dialogs.length, 0);
+});
+
+test("Desktop-Schließen erhält noch nicht gespeicherte gemeinsame Formulare standardmäßig", async () => {
+  const harness = createCloseHarness({ presentation: { known: true, uiDrafts: true }, answers: [0] });
+  await harness.close();
+  assert.equal(harness.dialogs[0].title, "Noch nicht gespeicherte Eingaben");
+  assert.equal(harness.calls.includes("stop"), false);
+  assert.equal(harness.calls.includes("destroy"), false);
+});
+
+test("Desktop-Schließen benennt auch unbekannte Formulare als offene Prüfung", async () => {
+  const harness = createCloseHarness({ presentation: { known: false }, answers: [0] });
+  await harness.close();
+  assert.equal(harness.dialogs[0].title, "Status nicht vollständig geprüft");
+  assert.match(harness.dialogs[0].detail, /Offene Formulare/);
+  assert.equal(harness.calls.includes("stop"), false);
+});
+
+test("Desktop-Schließen wartet eine laufende Website-Übernahme ab und bietet kein erzwungenes Schließen an", async () => {
+  const harness = createCloseHarness({ statuses: { "website-transfer": { running: true } }, answers: [1] });
+  await harness.close();
+  assert.equal(harness.dialogs[0].title, "Website-Texte werden noch übertragen");
+  assert.deepEqual(harness.dialogs[0].buttons, ["App offen lassen"]);
+  assert.equal(harness.calls.includes("stop"), false);
+  assert.equal(harness.calls.includes("destroy"), false);
+});
+
+test("Unlesbarer Website-Übernahmestatus hält die App offen und benennt genau diese Grenze", async () => {
+  const harness = createCloseHarness({ statuses: { "website-transfer": new Error("timeout") } });
+  await harness.close();
+  assert.match(harness.dialogs[0].detail, /Website-Textübernahme/);
+  assert.equal(harness.calls.includes("destroy"), false);
 });
 
 test("Desktop-Schließen erhält bekannte Warnungen trotz eines anderen Lesefehlers", async () => {

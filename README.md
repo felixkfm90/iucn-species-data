@@ -11,7 +11,9 @@ Das am 8. Oktober 2026 beauftragte Gesamtaudit ist am **27. Oktober abgeschlosse
 Website und Lightroom sind im vereinbarten Umfang angenommen; die gezielte Abschlussbereinigung ist
 ausgeführt. Gesamt-Go, Prüf-/Veröffentlichungsnachweise und verbleibende Betriebsgrenzen stehen
 ausschließlich im [Auditauftrag Phase 10.5, Abschnitt 10.55](docs/audit-auftrag-phase-10-5.md#1055-lightroom-großprobe-und-gemeinsamer-abschluss--27-oktober).
-Aktueller lokaler Plug-in-Quellstand ist **0.4.24.42** für die ausgeführte Pfadumstellung auf `data`.
+Aktueller lokaler Plug-in-Quellstand ist **0.4.24.43**: zusätzlich zur Pfadumstellung auf `data`
+erkennt Lightroom die vom Installer mitgelieferte Node-Laufzeit. Die .43 ist lokal geprüft;
+das regulär geladene Plug-in ist zuletzt mit .42 nativ bestätigt.
 Die gezielte native Nachprüfung vom **28. Oktober** bestätigt .42, den regulären Katalog und die lokale
 Suche. Die frühere Großprobe einschließlich genauer Rücknahme bleibt ein getrennter historischer Nachweis.
 Die anschließend beauftragte vollständige NAS-Sicherung ist ebenfalls inhaltlich geprüft abgeschlossen;
@@ -27,7 +29,7 @@ Frühere ausführliche Root-Verläufe sind vollständig im Git-Stand
 
 ## Installation und Start
 
-Windows benötigt Node.js 24 und die gesperrten Abhängigkeiten aus `package-lock.json`:
+Für den bisherigen Quellbetrieb benötigt Windows Node.js 24 und die gesperrten Abhängigkeiten aus `package-lock.json`:
 
 ```powershell
 npm.cmd ci
@@ -38,6 +40,15 @@ Die Desktop-Verknüpfung wird mit `npm.cmd run species:desktop:shortcut` eingeri
 ist ausschließlich über `127.0.0.1` erreichbar. Der Desktopstart bevorzugt Port `4177` und verwendet
 bei Belegung einen freien lokalen Ersatzport. Installation, Fensterverhalten und Startwege erklärt der
 [Desktopvertrag](docs/desktop-shell-plan.md).
+
+Ein vollständiges [Windows-Setuppaket](installer/README.md) mit gebundenen benötigten Laufzeiten ist
+als privates Prüfpaket gebaut und an getrennten Dateiinstallationen geprüft. Die laufende Integration
+erfordert einen neuen Paketbau; eine frische Windows-/Lightroom-Einrichtung ist noch offen.
+Bestehende Daten unter `D:\Arten-Explorer` werden vom Setup nicht automatisch übernommen.
+
+Beim regulären Beenden wartet der Explorer auch auf bereits begonnene stille Versionsprüfungen und
+deren Schreibabschluss. Ein laufender langsamer Abruf kann das Beenden bis zu seinen bestehenden
+Zeitgrenzen verzögern; die Einzelheiten stehen im Desktopvertrag.
 
 Der aktuelle Programmordner ist `D:\Arten-Explorer`. Der gemeinsame Datenpfad wird aus `storage-path.json`
 gelesen; lokal ist seit dem Namenswechsel vom 27. Oktober `D:\Arten-Explorer\data` aktiv. `data` ist auch
@@ -55,6 +66,70 @@ benötigt. Der Resolver verwendet `FFMPEG_PATH`, das vorhandene Werkzeug unter `
 oder den Systempfad. Die Linux-Qualitätsprüfung installiert FFmpeg ausdrücklich.
 
 ## Bedienung und Datenfluss
+
+Im **Lesemodus** sind **Website prüfen**, **Website-Bildtexte** und **Gemeinsames Projekt** ausgeblendet
+und ihre Aufrufe gesperrt. Zum Arbeiten zuerst oben in den **Bearbeitungsmodus** wechseln.
+Vorhandene Links zu öffentlichen FN-Artseiten und die automatische Anzeige ihres Prüfstands bleiben nutzbar.
+
+### Gemeinsames Projekt
+
+**Datenbank-Aktionen → Weitere Aktionen → Backup und Einstellungen → Gemeinsames Projekt** öffnet
+die persönliche Verbindung zum künftigen NAS-Dienst sowie den
+gemeinsamen Redaktionsbereich. Bestehende Arten/Seiten können als lokale Entwürfe bearbeitet und
+anschließend ausdrücklich abgeglichen werden; widersprüchliche Fassungen bleiben zur Entscheidung
+erhalten. Neue Objekte und interne Freigaben benötigen die Onlineverbindung und die passende Rolle.
+Eine interne Freigabe veröffentlicht keine Squarespace-Seite. Personen-/Geräteverwaltung ist nach
+den eigenen Rechten verfügbar. Die Dienstadresse und persönlichen Zugänge werden bei der tatsächlichen
+NAS-Einrichtung festgelegt. Bis dahin bleibt der bisherige lokale Bestandsworkflow verfügbar.
+
+Entwürfe werden mit **Entwurf lokal speichern** gesichert. Das Schließen des Bereichs erhält seine
+Formulareingaben während derselben Programmsitzung; vor dem Beenden der App offene Eingaben speichern.
+Der Explorer warnt vor Verlust. Gerätecache und geschützte Anmeldetokens liegen im persönlichen
+Appprofil, getrennt von gemeinsamen Daten. Einrichtung, Betriebsgrenzen und aktueller
+[Mehrgerätestand](docs/multi-device-backup-plan.md) bleiben getrennt von der lokalen Komponentenprüfung.
+
+### Website-Bildtexte
+
+**Website-Bildtexte** bei der Websiteübersicht öffnet die seitenweise Bild-/Textprüfung. Der Dialog
+zeigt vorhandene oder fehlende Texte, Entwürfe, Freigaben und öffentlich bestätigte Ausgaben.
+Vorschauen kommen direkt von Squarespace beziehungsweise den vorhandenen Website-Grafiken; lokal werden
+nur Zuordnungen, Texte und Prüfstände gespeichert. **Entwürfe zur Abnahme** zeigt die vorbereiteten Texte,
+**Mit Prüfhinweisen** die bildgebundenen Rückfragen.
+Die Hauptansicht nennt den nächsten Schritt; **Hilfe und Seitenbestand** enthält Erklärungen und
+Bestandsverwaltung. Bereits bestätigte Bilder lassen sich über **Text bearbeiten** aufklappen.
+**Öffentliche Website erfassen** unter **Hilfe und Seitenbestand** liest die öffentliche Seitenliste, Seiten und interne Links.
+Neue Seiten erscheinen beim Abgleich als offene Arbeit; einzelne Seiten lassen sich gezielt aktualisieren.
+
+**Text freigeben** speichert den aktuellen Text und gibt ihn in einem Schritt frei. Nur als Zwischenstand
+speichern: **Weitere Aktionen und Hinweise → Entwurf speichern**. Bei offenen Eingaben nennt der Hinweis
+Bildnummer und gegebenenfalls Seite; **Offene Eingabe anzeigen** führt direkt zum betroffenen Bild.
+Danach startet **In Squarespace übernehmen** die freigegebenen Texte der ausgewählten
+Seite. Eine vorherige Verbindung ist nicht nötig: Bei Bedarf öffnet derselbe Auftrag das eigene
+Squarespace-Fenster für deine Anmeldung und fährt danach automatisch fort. **Squarespace verbinden**
+beziehungsweise **Squarespace öffnen** bleibt unter **Seitenaktionen** als zusätzlicher Browserzugang verfügbar.
+Nach erkannter Anmeldung blendet der Explorer das Anmeldefenster automatisch aus
+und zeigt **Erfolgreich mit Squarespace verbunden**. Du musst es weder schließen noch minimieren.
+**Squarespace öffnen** zeigt es bei Bedarf wieder an. Während einer Übernahme wird das Fenster automatisch
+aktiviert und danach wieder ausgeblendet; eine erforderliche Neuanmeldung bleibt sichtbar.
+Der erste Schreibweg unterstützt Galerie-Beschreibungen auf Reise-Unterseiten;
+andere Felder bleiben sichtbar offen. Dieser Weg ist mit den fünf freigegebenen Delphi-Texten am
+30. Oktober praktisch bestätigt. Nach jedem Bildtext schließt er die Galerie regulär; bei verzögerter
+Veröffentlichung prüft er die öffentliche Ausgabe begrenzt erneut, ohne die Texte nochmals zu schreiben.
+Bereits gespeicherte Seitenbearbeitungen werden beim Seitenwechsel regulär beendet; offene Änderungen
+stoppen den Wechsel sichtbar. Neue automatisch vorbereitete kurze Reisebildtexte stehen ohne Schlusspunkt.
+Die Freigabe allein ist noch kein Erfolgsnachweis. **Öffentliche Ausgabe prüfen** liest die veröffentlichte
+Seite und vergleicht sie mit der Freigabe; dieser Button überträgt keine Texte. Auf Reise-Unterseiten
+werden auch die gekoppelten sichtbaren Bildunterschriften geprüft. Das bekannte FN-Headerlogo behält
+als Startseitenlink seinen vorhandenen Squarespace-Text. Das Footerlogo und Inhalts-Hintergrundbilder
+werden dekorativ vorausgewählt. Bereits passende bekannte Standards erscheinen nach frischem öffentlichem
+Abgleich automatisch als geprüft; abweichende eigene Entwürfe und Freigaben bleiben erhalten.
+Der FN-Logoname erscheint im Explorer lesbar mit **&**; sein gespeicherter Website-Prüfwert bleibt erhalten.
+Neue Seiten dürfen vorher online gehen; fehlende Texte bleiben offen.
+Bekannte automatisch erzeugte Artgrafiken werden mit erfasst und als solche bezeichnet. Ihre vorhandenen
+Funktionsbeschriftungen werden an der Website-Funktion gepflegt. Bedienung, Speicherung und Erfassungsgrenzen führt der
+[Alttextvertrag](docs/image-alt-audit.md#erste-lokale-fassung-bedienung-und-betriebsgrenzen).
+
+### Arten und Datenbank
 
 Die Artseite zeigt neben den Statusangaben **Auf FN-Website öffnen**, sobald die öffentliche FN-Seitenliste
 eine passende Artkennung enthält. Mehrere Bereiche werden als getrennte Links angeboten. Fehlt die Art dort,

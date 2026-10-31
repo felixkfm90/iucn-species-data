@@ -11,6 +11,7 @@ transparenten Außenbereich sowie eine weiße Flugzeugturbine verlangt.
 - Das korrigierte PNG hat SHA-256 `63922bd5c1735dd4a31aa4d7c721adf2d16cc1b2a8082bf41f55403a6d22651e`.
 
 Die Dateien gehören zur lokalen Desktop-Hülle. Die Website und ihr FN-Logo sind unabhängig davon.
-`desktop/main.mjs` bindet das Fenstersymbol, `desktop/install-shortcut.ps1` das Symbol einer bewusst
+`desktop/window-branding.mjs` liefert das gemeinsame Fenstersymbol für `desktop/main.mjs` und das
+zusätzliche Squarespace-Fenster; `desktop/install-shortcut.ps1` bindet das Symbol einer bewusst
 neu eingerichteten Desktop-Verknüpfung. Vorhandene Verknüpfungen werden durch eine Quelländerung nicht
 automatisch überschrieben.

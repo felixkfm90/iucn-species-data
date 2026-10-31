@@ -1,0 +1,38 @@
+services:
+  project:
+    image: fn-arten-explorer-project:0.1.0
+    build:
+      context: ..
+      dockerfile: nas/Dockerfile
+    platform: linux/amd64
+    user: "${FN_PROJECT_UID:?Lokale NAS-Benutzerkennung erforderlich}:${FN_PROJECT_GID:?Lokale NAS-Gruppenkennung erforderlich}"
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "127.0.0.1:4317:4317"
+    volumes:
+      - type: bind
+        source: ${FN_PROJECT_DIRECTORY:?Bestätigter lokaler NAS-Datenordner erforderlich}
+        target: /project
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FN_PROJECT_CONFIGURATION:?Vorbereiteter Konfigurationsordner erforderlich}
+        target: /configuration
+        read_only: true
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    stop_grace_period: 30s
+    pids_limit: 64
+    mem_limit: 1g
+    cpus: 1.5
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "3"

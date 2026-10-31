@@ -1,6 +1,6 @@
 # Lightroom-Artänderungen: Vorschau, Journal und Schreibkern
 
-Stand: 2026-10-27
+Stand: 2026-10-31
 
 Status: **implementiert; native Grund- und Störfälle sowie begrenzter Großkataloglauf angenommen**.
 Vorschau und Journal sind
@@ -9,7 +9,7 @@ Der Lua-Schreibkern ist nun mit ausdrücklichem Katalogleselauf, Journalvorberei
 und Rücknahmeprüfung verbunden. Auswahl, Bestätigungsdialoge, Fortschritt und Rücknahmebedienung sind
 über „FN Wildlife verwalten“ → „Artänderungen prüfen ...“ erreichbar. Kein produktiver
 Katalog wurde in den automatisierten Prüfungen verändert. Eingeführt in Plug-in-Version `0.4.24.13`, aktueller
-lokaler Quellstand `0.4.24.42`; die normale Zuweisung und Orts-/Zeitaktionen bleiben
+lokaler Quellstand `0.4.24.43`; die normale Zuweisung und Orts-/Zeitaktionen bleiben
 unverändert. Gesamtumfang: `taxonomy-identity-incremental-plan.md`.
 Der Benutzer hat das reine Öffnen ohne Auswahl bestätigt. Das ist keine Abnahme einer tatsächlichen
 Split-/Merge-Übernahme oder ihrer Rücknahme; hierfür weiterhin einen separaten Testkatalog verwenden.

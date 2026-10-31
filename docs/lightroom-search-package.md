@@ -1,8 +1,8 @@
 # Lightroom-Suchpaket und FN-Wildlife-Plug-in
 
-Stand: 2026-10-28
+Stand: 2026-10-31
 Roadmap: Phase 10.2 bis 10.4
-Status: lokaler Quellstand Plug-in-Version **0.4.24.42** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
+Status: lokaler Quellstand Plug-in-Version **0.4.24.43** unterstützt den gemeinsamen Master-/Suchpaketzeiger und die daran
 gebundene Namenskorrektur. Der belegte Teilquellenverlust nach dem ersten Paarwechsel vom 28. September ist
 seit 1. Oktober durch die eng bestätigte Quellenreparatur behoben. Das gemeinsam aktivierte Paar ist unabhängig
 vollständig geprüft; alle 154 ursprünglichen IDs aktiv, vier Ersatz-IDs historisch, keine fremden Zusatz-IDs.
@@ -10,6 +10,13 @@ Felix bestätigte Weissstorch/Rebhuhn im Explorer, tatsächliche Lightroom-Zuwei
 Schließen/Wiederöffnen. Das Gesamtaudit ist im vereinbarten Umfang abgeschlossen; verbleibende
 Betriebs-/Bediengrenzen sind im führenden Auditauftrag ausdrücklich zugeordnet.
 Aktueller [Betriebsstand](taxonomy-current-status.md) und [Reparaturabschluss](taxonomy-partial-source-recovery.md).
+
+.43 ergänzt den Installerbetrieb: ohne ausdrücklich eingestellten Node-Pfad wird zuerst
+`runtime/node/node.exe` unter dem zum Plug-in gehörenden Projekt gesucht. Bewusste Pfadeinstellungen,
+Systeminstallation, lokale Installation und bisheriger Namensrückfall bleiben erhalten. Der installierte
+Lightroom-Rückweg prüft die lokale Installationsbindung und startet den nativen Appstarter ohne Shell;
+Entwicklungsinstallationen behalten den bisherigen Startweg. Automatisierte Lua-/Startwegtests ersetzen
+keine neue reguläre .43-Ladung und keine Lightroom-Einrichtung auf dem zweiten PC.
 
 .42 unterstützt die ausgeführte Umstellung des gemeinsamen Standardordners von `Daten` auf `data`.
 Der Resolver unterstützt beide Konfigurationsnamen und löst belegte alte Datenpfade auf, ohne historische
@@ -680,7 +687,7 @@ Versionierter Pfad:
 lightroom-plugin/FNWildlifeTaxonomy.lrplugin/
 ```
 
-Das Plug-in trägt die Quellversion `0.4.24.42`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
+Das Plug-in trägt die Quellversion `0.4.24.43`. Jede Änderung an einer Plug-in-Datei erhöht diese Version in `Info.lua`
 und in der sichtbaren Anzeige des Zusatzmodul-Managers. Dokumentation und Vertragstest werden im selben Commit
 nachgezogen, damit der tatsächlich geladene Stand eindeutig kontrollierbar bleibt. Enthalten sind:
 

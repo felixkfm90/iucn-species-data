@@ -186,7 +186,7 @@
         preview.hidden = false;
         save.disabled = result.changes.length === 0;
         renderList();
-        setMessage(message, result.changes.length ? "Bitte die Änderungen und Hinweise prüfen. Die Übernahme benötigt noch Ihre Bestätigung." : "Keine Änderung erforderlich.");
+        setMessage(message, result.changes.length ? "Bitte Änderungen und Hinweise prüfen und die Übernahme bestätigen." : "Keine Änderung erforderlich.");
       } catch (error) {
         if (!current(ticket, id) || chosen !== selection) return;
         phase = "list";
@@ -263,7 +263,7 @@
       archiveLoading = true;
       archiveRefresh.disabled = true;
       archiveRoot.textContent = "";
-      archives.innerHTML = "<p>Archivübersicht wird gelesen…</p>";
+      archives.innerHTML = "";
       setMessage(archiveMessage, "Archivübersicht wird gelesen…");
       try {
         const result = await fetchJson("/api/backup/archives");

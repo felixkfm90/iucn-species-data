@@ -1,6 +1,6 @@
 # Lebenszyklus der Projektdokumentation
 
-Stand: 2026-10-27
+Stand: 2026-10-31
 
 Diese Regeln verhindern, dass aktuelle Zähler, aktive Pflegelisten und historische Projektstände wieder
 widersprüchlich an mehreren Stellen gepflegt werden.
@@ -71,6 +71,16 @@ widersprüchlich an mehreren Stellen gepflegt werden.
   unveröffentlichte Änderungen einbezogen wurden. Ein Review des veröffentlichten Repositorys bezeichnet
   den lokalen Audit-/Betriebsstand nicht ohne dessen aktuelle Quellen als ungeprüft oder unbegonnen.
   Fehlt lokaler Zugriff, diese Grenze ausdrücklich nennen; historische und inzwischen ergänzte Nachweise trennen.
+- Wiederkehrende Reviews lesen zuerst den aktuellen Remote-HEAD sowie README, AGENTS, Roadmap und die dort
+  verlinkten führenden Fachstände. Ältere Absätze und Berichte dürfen einen später ausdrücklich angenommenen
+  Abschluss nicht wieder zu einer offenen Prüfung machen. Ein älteres Dokumentdatum allein belegt keine Lücke.
+- Arten-/Asset-/Lizenzzahlen aus dem aktuellen generierten Projektstatus übernehmen; bei lokalem Zugriff
+  mit `status:check` gegenprüfen. Aktiven Paarstand aus dem Taxonomie-Betriebsstand beziehungsweise den
+  aktuellen lokalen Aktivzeigern lesen, keine historischen Manifestbeispiele als gegenwärtig ausgeben.
+- Den Pages-Lauf an den tatsächlich geprüften Commit binden und Qualitätsprüfung, Artefaktbau und Deployment
+  getrennt feststellen. Aktuell bestätigte Abnahmen bleiben datierte Nachweise; im Review nicht erneut
+  ausgeführte native Prüfungen heißen nicht automatisch fehlend. Lokale, noch unveröffentlichte
+  Folgearbeiten bleiben von auf GitHub/Pages verfügbaren Funktionen getrennt.
 
 ## Pflicht bei künftigen Änderungen
 

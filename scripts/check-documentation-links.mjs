@@ -39,7 +39,19 @@ function relativeFromRoot(absolutePath) {
   return path.relative(rootDir, absolutePath).replaceAll(path.sep, "/");
 }
 
-const files = [path.join(rootDir, "AGENTS.md"), path.join(rootDir, "README.md"), ...collectMarkdownFiles(docsDir)];
+const moduleDirectories = ["installer", "nas", "mobile", "species-explorer/shared-project",
+  "species-explorer/species-content", "species-explorer/update-completion", "species-explorer/local-ai",
+  "species-explorer/page-authoring", "species-explorer/desktop/assets"];
+// Only direct project documentation, never generated builds, SDK caches, model
+// downloads or dependency READMEs beneath a module.
+const moduleFiles = moduleDirectories.flatMap((relative) => {
+  const directory = path.join(rootDir, relative);
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".md"))
+    .map((entry) => path.join(directory, entry.name));
+});
+const files = [path.join(rootDir, "AGENTS.md"), path.join(rootDir, "README.md"), ...collectMarkdownFiles(docsDir), ...moduleFiles];
 const missing = [];
 
 for (const filePath of files) {

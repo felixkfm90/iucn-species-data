@@ -94,7 +94,8 @@ und aktiviert bestätigt. Buckelwal gezielt lesend mit 702 FN-Zuordnungen und na
 vollständig festgestellt; seine frühere kurze Verzögerung wird nicht mit der anderen
 Anzeigelücke gleichgesetzt. Verlauf und aktuelle Auditreihenfolge im Auditauftrag, Abschnitt 10.30.
 
-Aktueller lokaler Quellstand ist **0.4.24.42** für den inzwischen lokal aktiven Standardordner `data`;
+Aktueller lokaler Quellstand ist **0.4.24.43** mit Erkennung der gebündelten Node-Laufzeit;
+die letzte reguläre native Ladeprüfung betrifft .42. Die ausgeführte Pfadumstellung verwendet `data`;
 der bisherige `Daten`-Name und historische Zugriffspfade bleiben unterstützt. Stand und Nachweise des
 Ordnerwechsels stehen im [Speichervertrag](storage-migration.md). Die regulär geladene .42 ist am
 28. Oktober am Projektpfad nativ bestätigt: übereinstimmende Datenstände und Weissstorch-Suche mit

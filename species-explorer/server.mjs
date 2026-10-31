@@ -18,7 +18,12 @@ import {
   buildExplorerRevision,
 } from "./explorer-model.mjs";
 import { renderMapJpeg } from "./media-assets.mjs";
-import { closeActiveFileStreams } from "./http-routing.mjs";
+import { closeActiveFileStreams, sendJson } from "./http-routing.mjs";
+import { createLocalMutationBarrier } from "./local-mutation-barrier.mjs";
+import { invokeSharedProjectOperation } from "./project-feature-routes.mjs";
+import { startUpdateWithCompletion } from "./update-completion/start.mjs";
+import { createInitialProjectImport } from "./shared-project/initial-import.mjs";
+import { BUNDLED_SPECIES_SOURCE, readBundledSpeciesCatalog } from "./species-content/bundled.mjs";
 import { createExplorerRequestHandler } from "./request-router.mjs";
 import { createSpeciesCreateOperations } from "./species-create.mjs";
 import { speciesCreationAvailability } from "./species-creation-availability.mjs";
@@ -35,6 +40,7 @@ import { createAssetMaintenanceOperations } from "./asset-maintenance.mjs";
 import { createPipelineController } from "./pipeline-controller.mjs";
 import { createProjectPublicationService } from "./project-publication.mjs";
 import { createBackupService } from "./backup-service.mjs";
+import { createExplorerDeviceBackupProvider } from "./shared-project/explorer-backup.mjs";
 import { createTaxonomyReferenceService } from "./taxonomy-reference-service.mjs";
 import { prepareTaxonomyPublicationInWorker } from "./taxonomy-publication-process.mjs";
 import { createTaxonomyMaintenanceService } from "./taxonomy-maintenance-service.mjs";
@@ -53,6 +59,7 @@ import { createTaxonomyProviderRefreshService } from "./taxonomy-provider-refres
 import { createTaxonomySupplementService } from "./taxonomy-supplement-service.mjs";
 import { defaultTaxonomyRoot } from "./taxonomy-storage.mjs";
 import { createWebsiteSpeciesPagesService } from "./website-species-pages.mjs";
+import { createWebsiteAltTextsService } from "./website-alt-service.mjs";
 
 const APP_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = resolve(APP_DIR, "..");
@@ -116,6 +123,19 @@ export async function createExplorerServer({
   lightroomCloseGate = null,
   pipelineSpawnProcess,
   websitePagesService = createWebsiteSpeciesPagesService(),
+  websiteAltTextsService = null,
+  websiteAltTransferAdapter = null,
+  sharedProjectService = null,
+  sharedProjectOptions = null,
+  sharedProjectImportOptions = null,
+  websiteAltSyncService = null,
+  websiteAltSyncOptions = null,
+  localAiService = null,
+  localAiOptions = null,
+  deviceBackupProfile = null,
+  deviceBackupProvider = null,
+  backupServiceFactory = createBackupService,
+  updateCompletionFactory = null,
 } = {}) {
   await cleanupManagedExplorerTemp({ repoRoot, phase: "startup" });
   await cleanupOrphanTempSessions({ repoRoot, owner: "explorer" });
@@ -125,6 +145,35 @@ export async function createExplorerServer({
   let modelRefreshPromise = null;
   const previewTokens = new Map();
   const sessionToken = createSessionToken();
+  const mutationBarrier = createLocalMutationBarrier();
+  let sharedProject = sharedProjectService;
+  let sharedProjectInitializationFailed = false;
+  if (!sharedProject && sharedProjectOptions) {
+    try { sharedProject = await (await import("./shared-project/explorer-service.mjs")).createExplorerSharedProjectService(sharedProjectOptions); }
+    catch { sharedProjectInitializationFailed = true; }
+  }
+  let initialProjectImport = null, initialProjectImportFailed = false;
+  if (sharedProject && sharedProjectImportOptions) {
+    try { initialProjectImport = createInitialProjectImport({ ...sharedProjectImportOptions, service: sharedProject,
+      readCatalog: () => readBundledSpeciesCatalog(repoRoot), expectedSha256: BUNDLED_SPECIES_SOURCE.sha256,
+      expectedSpeciesCount: BUNDLED_SPECIES_SOURCE.speciesCount }); }
+    catch { initialProjectImportFailed = true; }
+  }
+  let application;
+  const websiteAltTexts = websiteAltTextsService || createWebsiteAltTextsService({ repoRoot,
+    transferAdapter: websiteAltTransferAdapter });
+  let websiteAltSync = websiteAltSyncService, websiteAltSyncInitializationFailed = false;
+  if (!websiteAltSync && websiteAltSyncOptions) {
+    try { websiteAltSync = (await import("./shared-project/explorer-alt-sync.mjs")).createExplorerWebsiteAltSync({
+      ...websiteAltSyncOptions, websiteAltTexts, sharedProject }); }
+    catch { websiteAltSyncInitializationFailed = true; }
+  }
+  let localAi = localAiService, localAiInitializationFailed = false;
+  if (!localAi && localAiOptions) {
+    try { localAi = (await import("./local-ai/explorer-service.mjs")).createExplorerLocalAiService({ ...localAiOptions,
+      repoRoot, websiteAltTexts, species: () => model.species, sharedProject }); }
+    catch { localAiInitializationFailed = true; }
+  }
   const speciesListPath = join(repoRoot, "species_list.json");
   const speciesDataPath = join(repoRoot, "speciesData.json");
   const speciesReferenceMappingsPath = join(repoRoot, "species-reference-mappings.json");
@@ -259,6 +308,19 @@ export async function createExplorerServer({
     );
   }
 
+  const backupService = await backupServiceFactory({
+    repoRoot,
+    defaultBackupRoot: nasBackupRoot,
+    localSettingsPath,
+    localSettingsFile: LOCAL_SETTINGS_FILE,
+    backupLogLineLimit: BACKUP_LOG_LINE_LIMIT,
+    tempSession,
+    isPipelineActive,
+    isAssetWriteActive: () => assetWriteActive || creationMutationActive,
+    deviceBackupProvider: deviceBackupProvider || (deviceBackupProfile ? createExplorerDeviceBackupProvider({
+      ...deviceBackupProfile, sharedProject, initialProjectImport, tempSession,
+    }) : null),
+  });
   const {
     runCommandCapture,
     synchronizeProjectStatusForPublication,
@@ -284,16 +346,7 @@ export async function createExplorerServer({
     listArchives: listNasBackupArchives,
     isBackupActive,
     getState: getBackupState,
-  } = await createBackupService({
-    repoRoot,
-    defaultBackupRoot: nasBackupRoot,
-    localSettingsPath,
-    localSettingsFile: LOCAL_SETTINGS_FILE,
-    backupLogLineLimit: BACKUP_LOG_LINE_LIMIT,
-    tempSession,
-    isPipelineActive,
-    isAssetWriteActive: () => assetWriteActive || creationMutationActive,
-  });
+  } = backupService;
 
   taxonomyMaintenanceService = createTaxonomyMaintenanceService({
     taxonomyRoot,
@@ -641,6 +694,30 @@ export async function createExplorerServer({
     }
   }
 
+  async function readLocalWorkState() {
+    const [pendingChanges, website, shared, sharedAlt] = await Promise.all([
+      pendingChangesPayload(), websiteAltTexts.snapshot(), sharedProject?.snapshot(), websiteAltSync?.blockingState(),
+    ]);
+    const sharedKnown = !sharedProjectInitializationFailed && (!sharedProject || typeof shared?.busy === "boolean"
+      && Number.isSafeInteger(shared?.queuedChanges) && Number.isSafeInteger(shared?.conflictCount));
+    const sharedPending = Number(shared?.queuedChanges || 0) + Number(shared?.conflictCount || 0);
+    return {
+      known: sharedKnown && !pendingChanges.error && !initialProjectImportFailed && !localAiInitializationFailed
+        && !websiteAltSyncInitializationFailed && (!websiteAltSync || sharedAlt?.known === true)
+        && (!localAi || localAi.blockingState().known),
+      writersActive: Boolean(mutationBarrier.active || assetWriteActive || creationMutationActive || pipelineRuntime.assetReviewSaving || shared?.busy || sharedAlt?.busy),
+      jobsActive: Boolean(isPipelineActive() || initialProjectImport?.status().busy || localAi?.blockingState().busy),
+      pipeline: { ...pipelineState }, backup: getBackupState(), websiteTransfer: website.transfer,
+      pendingChanges: { ...pendingChanges, hasPendingChanges: pendingChanges.hasPendingChanges || sharedPending > 0 || sharedAlt?.pending > 0 || sharedAlt?.conflicts > 0 },
+    };
+  }
+  const updateCompletion = updateCompletionFactory ? await updateCompletionFactory({
+    taxonomyRoot, masterService: taxonomyMasterService, maintenanceService: taxonomyMaintenanceService,
+    readLocalWorkState,
+    quiesceForCompletion: () => application.quiesceForCompletion(),
+    closeAppServer: () => application.close(),
+  }) : null;
+
   const requestHandler = createExplorerRequestHandler({
     host,
     sessionToken,
@@ -813,6 +890,7 @@ export async function createExplorerServer({
         } finally { creationMutationActive = false; }
       },
       async read({ resource, searchParams }) {
+        if (resource === "website-alt-texts") return websiteAltTexts.snapshot();
         if (resource === "website-species-pages") {
           return websitePagesService.snapshot({ refresh: searchParams?.get("refresh") === "1" });
         }
@@ -849,6 +927,57 @@ export async function createExplorerServer({
         error.statusCode = 404;
         throw error;
       },
+      async websiteAltTexts({ action, payload }) {
+        return websiteAltTexts[action](payload);
+      },
+      async websiteAltSync(operation) {
+        if (!websiteAltSync) {
+          if (operation.action === "snapshot") return { available: false, pages: [], busy: false, permissions: { canEdit: false, canApprove: false },
+            message: websiteAltSyncInitializationFailed ? "Das persönliche Bildtextjournal konnte nicht geöffnet werden. Vorhandene Daten bleiben erhalten."
+              : "Gemeinsame Bildtexte in der Desktop-App mit eingerichteter Projektanmeldung verwenden." };
+          throw Object.assign(new Error("Die gemeinsame Bildtextanbindung ist auf diesem Gerät nicht verfügbar."), { statusCode: 409 });
+        }
+        return websiteAltSync.operation(operation);
+      },
+      async sharedProject(operation) {
+        if (operation.action.startsWith("import-")) {
+          if (!initialProjectImport) {
+            if (operation.action === "import-status") return { available: false, busy: false,
+              message: initialProjectImportFailed ? "Das persönliche Importjournal konnte nicht geöffnet werden. Vorhandene Dateien bleiben erhalten." : "Erstbestand in der Desktop-App mit eingerichtetem Projekt vorbereiten." };
+            throw Object.assign(new Error("Der Erstbestandsimport ist auf diesem Gerät nicht verfügbar."), { statusCode: 409 });
+          }
+          if (operation.action === "import-status") return { ...initialProjectImport.status(), available: true, source: BUNDLED_SPECIES_SOURCE };
+          if (operation.action === "import-prepare") return initialProjectImport.prepare(operation.payload);
+          if (operation.action === "import-start") return initialProjectImport.start(operation.payload);
+          if (operation.action === "import-receipts") {
+            const planId = initialProjectImport.status().plan?.planId;
+            return { receipts: planId ? initialProjectImport.receipts(planId) : [] };
+          }
+        }
+        if (sharedProjectInitializationFailed && operation.action === "snapshot") return {
+          ...await invokeSharedProjectOperation(null, operation),
+          message: "Der persönliche Projektcache konnte nicht geöffnet werden. Vorhandene Dateien bleiben erhalten. Bitte die Geräteablage prüfen; die lokalen Explorerfunktionen bleiben erreichbar.",
+        };
+        return invokeSharedProjectOperation(sharedProject, operation);
+      },
+      async localAi(operation) {
+        if (!localAi) {
+          if (operation.action === "status") return { available: false, busy: false,
+            message: localAiInitializationFailed ? "Die lokale Bild-/Texthilfe konnte nicht geöffnet werden. Bitte die persönliche Geräteablage prüfen." : "Die optionale lokale Bild-/Texthilfe wird in der Desktop-App eingerichtet." };
+          throw Object.assign(new Error("Die lokale Bild-/Texthilfe ist auf diesem Gerät noch nicht verfügbar."), { statusCode: 409 });
+        }
+        return localAi.operation(operation);
+      },
+      async updateCompletion({ action, payload }) {
+        if (!updateCompletion) {
+          if (action === "status") return { available: false, action: "none", status: "unavailable" };
+          throw Object.assign(new Error("Abschlussaktionen sind nur in der Desktop-App verfügbar."), { statusCode: 409 });
+        }
+        if (action === "status") return updateCompletion.status();
+        if (action === "displayed") return updateCompletion.acknowledgeCountdown(payload);
+        if (action === "cancel") return updateCompletion.cancel(payload);
+        throw Object.assign(new Error("Unbekannte Abschlussaktion."), { statusCode: 404 });
+      },
       async taxonomyRead({ resource, reference, searchParams }) {
         if (resource === "master-status") return { ...await taxonomyMasterService.status(),
           updateWorkflow: { ...await taxonomyUpdateCoordinator.status(), available: true } };
@@ -874,7 +1003,9 @@ export async function createExplorerServer({
         throw error;
       },
       async taxonomyMaintenance({ action, payload }) {
-        if (action === "sequence-start") return taxonomyUpdateCoordinator.start(payload);
+        if (action === "sequence-start") return startUpdateWithCompletion({
+          coordinator: taxonomyUpdateCoordinator, completion: updateCompletion, payload,
+        });
         if (action === "sequence-resume") return taxonomyUpdateCoordinator.resume(payload);
         if (action === "sequence-restart-preview") return taxonomyUpdateCoordinator.restartBuildPreview();
         if (action === "sequence-restart-build") return taxonomyUpdateCoordinator.restartBuild(payload);
@@ -945,17 +1076,25 @@ export async function createExplorerServer({
   });
   const server = createHttpServer((request, response) => {
     void (async () => {
-      const release = await tempSession.beginOperation();
-      try { await requestHandler(request, response); }
-      finally { await release(); }
-    })().catch(() => { if (!response.destroyed) response.destroy(); });
+      const isMutation = request.method === "POST" && !request.url?.startsWith("/api/taxonomy/update-completion/");
+      const releaseMutation = isMutation ? mutationBarrier.enter() : () => {};
+      let release;
+      try { release = await tempSession.beginOperation(); await requestHandler(request, response); }
+      finally { await release?.(); releaseMutation(); }
+    })().catch((error) => {
+      if (!response.headersSent && !response.destroyed) sendJson(response, error.statusCode || 500, { error: error.message });
+      else if (!response.destroyed) response.destroy();
+    });
   });
   let closePromise;
 
-  return {
+  application = {
     host,
     port,
     server,
+    readLocalWorkState,
+    quiesceForCompletion: () => mutationBarrier.acquire(),
+    startBackgroundFeatures() { updateCompletion?.startMonitoring(); },
     listen() {
       return new Promise((resolveListen, reject) => {
         server.once("error", reject);
@@ -975,6 +1114,13 @@ export async function createExplorerServer({
           server.close((error) => (error && error.code !== "ERR_SERVER_NOT_RUNNING" ? reject(error) : resolveClose()));
         });
         closeActiveFileStreams();
+        await updateCompletion?.close();
+        await backupService.close();
+        await localAi?.close();
+        await initialProjectImport?.close();
+        await websiteAltSync?.close();
+        await sharedProject?.close();
+        await websiteAltTexts.close?.();
         await taxonomyUpdateCoordinator.close();
         await taxonomyMasterService.close();
         await taxonomyMaintenanceService.close();
@@ -986,6 +1132,7 @@ export async function createExplorerServer({
       return closePromise;
     },
   };
+  return application;
 }
 
 function parsePort(argv) {

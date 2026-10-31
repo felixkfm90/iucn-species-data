@@ -68,7 +68,8 @@ Die drei geschlossenen eigenen Prüfsitzungen wurden nach Prozess-/Eigentums- un
 verschoben; `evidence-relocation.json` bindet ihre früheren Tempadressen an den aktuellen Belegort.
 Das ursprüngliche Auditarchiv unter `data/audit-evidence/phase-10-5/` bleibt unverändert.
 
-Plug-in-Quellstand ist **0.4.24.42**; .41 war bereits für die private Auditprobe verwendet.
+Die Pfadumstellung wurde mit Plug-in-Quellstand **0.4.24.42** ausgeführt; .41 war bereits für die private Auditprobe verwendet.
+Der aktuelle Quellstand und die davon getrennte tatsächliche Ladung stehen im [Lightroom-Vertrag](lightroom-search-package.md).
 Während der Umstellung am 27. Oktober blieb Lightroom geschlossen. Die gezielte native .42-Nachprüfung
 vom 28. Oktober ist inzwischen bestanden: regulärer Produktpfad, übereinstimmende lokale Datenstände und
 Weissstorch-Suche samt Details. Keine Zuweisung, Metadatenaktion oder erneute bytegleiche Originalkatalogabnahme.

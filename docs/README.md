@@ -1,6 +1,6 @@
 # Dokumentationsübersicht
 
-Stand: 2026-10-27
+Stand: 2026-10-31
 
 Aktuelle Bedien- und Betriebsverträge stehen neben ausdrücklich datierten Messungen und historischen
 Planungs-/Auditberichten. Ein älteres Datum allein macht einen unveränderten Vertrag nicht ungültig; ein
@@ -20,6 +20,13 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
   [CI und Veröffentlichung](ci-quality-gate.md).
 
 ## Taxonomie und Lightroom
+
+Die bestätigten neuen Arbeiten führt die [Roadmap](roadmap.md). Aktuelle Modul-/Paketdetails:
+[gemeinsamer Dienst](../species-explorer/shared-project/README.md), [NAS-Betriebspaket](../nas/README.md),
+[Windows-Installer](../installer/README.md), [Android-App](../mobile/README.md),
+[öffentlicher Inhaltsexport](../species-explorer/species-content/README.md) und
+[Update-Abschlussaktion](../species-explorer/update-completion/README.md). Diese lokalen
+Umsetzungsstände sind keine neuen NAS-/Zielgeräte- oder Veröffentlichungsabnahmen.
 
 - [Gesamtplan Phase 9/10](global-taxonomy-lightroom-plan.md).
 - [Quellenentscheidung](taxonomy-source-decision.md), [Ergänzungsnamen](taxonomy-reference-supplements.md).
@@ -58,14 +65,14 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
 
 ## Desktop, Sicherheitsgrenzen und Aufbewahrung
 
-- [Desktop-Betrieb](desktop-shell-plan.md), [historischer Desktop-App-Plan](desktop-app-plan.md).
+- [Desktop-Betrieb und vorbereitete Android-Abstimmung](desktop-shell-plan.md), [historischer Desktop-App-Plan](desktop-app-plan.md).
 - [Lokale API-Sicherheit](explorer-api-security.md), [temporäre Dateien](temp-retention.md).
 - Historische private Rohbelege liegen nach dem Bereinigungsnachlauf in der im Tempvertrag erklärten
   Belegablage; sie sind kein zusätzlicher Auditbericht und kein Bestandteil der Websiteveröffentlichung.
 - [Gemeinsamer Datenpfad, geprüfter Umzug und ausgeführter Namenswechsel zu `data`](storage-migration.md),
   [Test- und Messpfade](test-temp-contract.md).
 - [Datenwechsel und Artassistent-Prüfabschluss vom 4. Oktober](audits/2026-10-04-storage-and-species-wizard.md).
-- [Mehrgeräte-/Update-/NAS-Plan](multi-device-backup-plan.md): offene Phase 11 von heutigen Funktionen trennen.
+- [Mehrgeräte-/Update-/NAS-Plan](multi-device-backup-plan.md): heutigen Betrieb, vorbereiteten Installer-/Benutzerumfang und noch nicht umgesetzten Mehrgeräteentwurf trennen.
 
 ## Squarespace und Website
 
@@ -74,7 +81,7 @@ historischer Erfolgsnachweis ersetzt jedoch keine Abnahme späterer Änderungen.
   [Website-/Monatsauditvertrag](monthly-site-audit.md).
 - [Vorschau-/Veröffentlichungsvertrag Phase 8](phase-8-preview-release.md).
 - [Monatsaudit-Ablauf](monthly-site-audit.md), [SEO-Arbeitsliste](seo-worklist.md),
-  [Bild-Alternativtexte](image-alt-audit.md).
+  [Bild-Alternativtexte](image-alt-audit.md): aktuelle Workflowvorbereitung und historische Juni-/Juli-Aufnahme getrennt.
 - [Historische CSS-Prüfung](css-layout-audit.md): datierter Prüf- und Übernahmestand; damalige Einbauanweisungen
   ersetzen nicht die heutige kanonische Importregel des oben verlinkten Websitevertrags.
 - [Taxonomie-Pyramiden-Übergabe](taxonomy-redesign-handoff.md): historischer Auftrag; keine neue Umsetzungsfreigabe.

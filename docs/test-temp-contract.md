@@ -54,6 +54,16 @@ der gesonderten Betriebsprüfung.
 
 ## Gezielte Prüfung
 
+Der Nachlauf vom **31. Oktober** hat einen nachlaufenden Versionscache-Schreiber gezielt reproduziert
+und dessen regulären Abschluss korrigiert; Details im [Desktopvertrag](desktop-shell-plan.md#schreibabschluss-der-startprüfung-vom-31-oktober).
+Die vier im Gesamtprüfbeleg vom 30. Oktober ausdrücklich erhaltenen eigenen Sitzungen sind danach
+einzeln auf Besitzer, Prozessfreiheit, Pfadgrenzen, Verknüpfungen und unveränderte Dateihashes geprüft.
+Alle **45 kleinen Dateien / 32.601 Bytes** bleiben bytegleich privat unter
+`data/website/checks/retained-test-fixtures-20261031/` erhalten. Erst nach gesicherter Gegenprobe wurden
+die exakt benannten Testreste und danach leere Ordner entfernt; kein pauschaler Temp-Löschlauf.
+Die Zuordnungsquittung `retained-test-fixtures-20261031.json` bindet alte Adressen und heutige Belege.
+Historische Prüfberichte bleiben unverändert; diese Überführung ist keine neue Datenbank-/NAS-Bereinigung.
+
 Die folgenden Gegenproben stammen vom 4. Oktober. Die tatsächliche Archivierung und Temp-Leerung
 vom 27. Oktober ist getrennt im Auditauftrag, Abschnitt 10.56, belegt; diese alten Tests wurden dafür
 nicht als neue Funktionsprüfung ausgegeben.

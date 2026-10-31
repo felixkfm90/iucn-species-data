@@ -522,6 +522,7 @@
         usageConsent: { allCatalogsConfirmed: true, noChangesUntilClose: true },
       } : {
         confirmed: true, decision, token: sourcePreview?.token || "",
+        completion: global.SpeciesExplorerCompletion?.getSelection(),
         usageConsent: { allCatalogsConfirmed: true, noChangesUntilClose: true },
         candidateId: candidate?.candidateId || "", buildJobId: master.buildJob?.id || "",
         buildJobRevision: candidate?.buildJobRevision || "",
@@ -540,7 +541,7 @@
           }
         }
       }
-      setActionMessage(closeMessage || [workflow.message, workflow.error].filter(Boolean).join(" "), workflow.error ? "error" : "info");
+      setActionMessage([closeMessage || workflow.message, workflow.error, workflow.completionWarning].filter(Boolean).join(" "), workflow.error ? "error" : workflow.completionWarning ? "warning" : "info");
       if (workflow.active) watchUpdateWorkflow();
       await refreshSnapshots();
     }

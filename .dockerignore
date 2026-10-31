@@ -1,0 +1,12 @@
+**
+!nas/
+!nas/Dockerfile
+!nas/snapshot.mjs
+!species-explorer/
+!species-explorer/shared-project/
+!species-explorer/shared-project/errors.mjs
+!species-explorer/shared-project/security.mjs
+!species-explorer/shared-project/catalog.mjs
+!species-explorer/shared-project/store.mjs
+!species-explorer/shared-project/http.mjs
+!species-explorer/shared-project/cli.mjs

@@ -162,7 +162,8 @@
     }
 
     function handleBeforeUnload(event) {
-      if (!shouldWarnBeforeUnload({
+      const uiDrafts = global.SpeciesExplorerCompletionPresentation?.({})?.uiDrafts === true;
+      if (!uiDrafts && !shouldWarnBeforeUnload({
         pendingChanges: state.pendingChanges,
         pipelineStatus: state.pipelineStatusSnapshot?.status,
         backupStatus: state.backupStatusSnapshot?.status,

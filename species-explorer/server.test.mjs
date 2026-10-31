@@ -37,6 +37,7 @@ import {
   getExplorerPipelineStatus,
   getExplorerBackupStatus,
   getExplorerPendingChanges,
+  getExplorerWebsiteAltTransferStatus,
   isPipelineBlockingShutdown,
   startManagedExplorerServer,
   stopManagedExplorerServer,
@@ -127,6 +128,19 @@ for (const [label, readStatus] of [
     });
   });
 }
+
+test("Desktop-Schließprüfung wartet auf vollständigen Website-Übernahmestatus und begrenzt dessen Abruf", async () => {
+  let complete = false;
+  await withDesktopDeadlineServer((_request, response) => {
+    response.writeHead(200, { "content-type": "application/json" });
+    if (complete) response.end('{"transfer":{"running":true,"status":"running"}}');
+    else response.write('{"transfer":');
+  }, async (baseUrl) => {
+    await assert.rejects(getExplorerWebsiteAltTransferStatus(baseUrl, { timeoutMs: 80 }));
+    complete = true;
+    assert.deepEqual(await getExplorerWebsiteAltTransferStatus(baseUrl, { timeoutMs: 250 }), { running: true, status: "running" });
+  });
+});
 
 function requestStatusWithHost(baseUrl, pathname, hostHeader) {
   const target = new URL(pathname, baseUrl);
@@ -456,6 +470,27 @@ test("Desktop-Lifecycle startet und stoppt den Explorer-Server verwaltet", async
 
   await stopManagedExplorerServer(managed);
   managed.server = null;
+});
+
+test("Desktop-Portausweichung verwendet einen frischen Squarespace-Adapter nach geschlossenem Fehlversuch", async (context) => {
+  const repoRoot = await createEditableFixture();
+  registerFixtureCleanup(context, repoRoot);
+  const adapters = [];
+  await withDesktopDeadlineServer((_request, response) => response.end("occupied"), async (occupied) => {
+    const managed = await withServerFixtureStorageEnvironment(repoRoot, () => startManagedExplorerServer({ repoRoot,
+      preferredPort: Number(new URL(occupied).port), websiteAltTransferAdapterFactory: () => {
+        const adapter = { closed: false, snapshot: async () => ({ available: true, connected: false }),
+          connect: async () => ({}), transfer: async () => ({ results: [] }), close: async () => { adapter.closed = true; } };
+        adapters.push(adapter); return adapter;
+      } }));
+    try {
+      assert.equal(managed.usedFallbackPort, true);
+      assert.equal(adapters.length, 2);
+      assert.equal(adapters[0].closed, true);
+      assert.equal(adapters[1].closed, false);
+    } finally { await stopManagedExplorerServer(managed); }
+    assert.equal(adapters[1].closed, true);
+  });
 });
 
 test("Server-Test verlangt eigene Pfade; der Lifecycle-Test ersetzt und restauriert geerbte Speicheroptionen", async (context) => {

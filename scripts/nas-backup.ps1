@@ -3,10 +3,15 @@ param(
   [int]$MaxBackups = 3,
   [switch]$DryRun,
   [switch]$Force,
-  [switch]$Progress
+  [switch]$Progress,
+  [string]$DeviceSnapshotManifest = "",
+  [switch]$RequireDeviceSnapshot
 )
 
 $ErrorActionPreference = "Stop"
+if ($RequireDeviceSnapshot -and -not $DeviceSnapshotManifest) {
+  throw "Die eingerichtete persoenliche Offline-Sicherung benoetigt ihren gebundenen Geraete-Snapshot."
+}
 
 function Invoke-Git {
   param([string[]]$Arguments)
@@ -214,6 +219,125 @@ function Add-FileToArchive {
   }
 }
 
+function Assert-DeviceLocalPath {
+  param([string]$Root, [string]$Path)
+  $fullRoot = [IO.Path]::GetFullPath($Root).TrimEnd('\', '/')
+  $fullPath = [IO.Path]::GetFullPath($Path)
+  if ($fullRoot.StartsWith('\\') -or $fullPath.StartsWith('\\') -or
+      -not $fullPath.StartsWith($fullRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Persoenliche Sicherung verlaesst ihren lokalen gebundenen Bereich."
+  }
+  $cursor = $fullPath
+  while ($cursor) {
+    if (Test-Path -LiteralPath $cursor) {
+      $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+      if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Verknuepfte persoenliche Sicherungspfade sind unzulaessig." }
+    }
+    $next = [IO.Path]::GetDirectoryName($cursor)
+    if ($next -eq $cursor) { break }
+    $cursor = $next
+  }
+}
+
+function Get-DeviceFileFingerprint {
+  param([string]$Root, [string]$Path)
+  Assert-DeviceLocalPath -Root $Root -Path $Path
+  if (-not (Test-Path -LiteralPath $Path)) { return [pscustomobject]@{ exists = $false } }
+  $before = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+  if ($before.PSIsContainer -or $before.Length -gt (1024 * 1024 * 1024)) { throw "Ungueltige persoenliche Sicherungsdatei." }
+  # Live SQLite owns a read/write handle; this is a stability fingerprint,
+  # never a replacement for the SQLite online-backup snapshot itself.
+  $sha = [Security.Cryptography.SHA256]::Create()
+  $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+  try { $hash = ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToLowerInvariant() }
+  finally { $stream.Dispose(); $sha.Dispose() }
+  $after = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+  if ($before.Length -ne $after.Length -or $before.LastWriteTimeUtc -ne $after.LastWriteTimeUtc) {
+    throw "Persoenliche Daten wurden waehrend der Pruefung geaendert."
+  }
+  return [pscustomobject]@{ exists = $true; bytes = [long]$after.Length; sha256 = $hash }
+}
+
+function Assert-DeviceSnapshotOriginals {
+  param($Plan)
+  if (-not $Plan) { return }
+  foreach ($original in @($Plan.manifest.originals)) {
+    $actual = Get-DeviceFileFingerprint -Root $Plan.manifest.profileRoot -Path $original.path
+    if ($actual.exists -ne $original.exists -or $actual.exists -and
+        ($actual.bytes -ne $original.bytes -or $actual.sha256 -ne $original.sha256)) {
+      throw "Persoenliche Offline-Daten wurden seit der Snapshot-Erstellung geaendert; keine Vollsicherung und keine Rotation."
+    }
+  }
+}
+
+function Get-DeviceSnapshotPlan {
+  param([string]$ManifestPath)
+  if (-not $ManifestPath) { return $null }
+  $stagingRoot = [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($ManifestPath))
+  Assert-DeviceLocalPath -Root $stagingRoot -Path $ManifestPath
+  $manifestFile = Get-Item -LiteralPath $ManifestPath -Force -ErrorAction Stop
+  if ($manifestFile.PSIsContainer -or $manifestFile.Length -gt (1024 * 1024)) { throw "Ungueltige persoenliche Snapshot-Uebergabe." }
+  $value = [IO.File]::ReadAllText($ManifestPath) | ConvertFrom-Json
+  $ownerPath = Join-Path $stagingRoot '.fn-temp-session.json'
+  Assert-DeviceLocalPath -Root $stagingRoot -Path $ownerPath
+  $owner = [IO.File]::ReadAllText($ownerPath) | ConvertFrom-Json
+  if ($owner.ownership -ne 'fn-wildlife-temp' -or $owner.schemaVersion -ne 1 -or
+      $owner.owner -ne 'explorer' -or $owner.sessionId -ne (Split-Path -Leaf $stagingRoot) -or
+      $owner.state -notin @('open', 'closing') -or $owner.operations -lt 1 -or
+      $value.schemaVersion -ne 1 -or $value.backupKind -ne 'arten-explorer-device-handoff' -or
+      $value.deviceId -notmatch '^device-[a-f0-9-]{36}$' -or $value.stateHash -notmatch '^[a-f0-9]{64}$' -or
+      $value.stagingRoot -ne $stagingRoot -or @($value.files).Count -lt 1 -or @($value.files).Count -gt 33 -or
+      @($value.originals).Count -gt 64 -or $value.pending -lt 0) { throw "Persoenliche Snapshot-Eigentuemer-/Geraetebindung fehlt." }
+  $prefix = "device-profiles/$($value.deviceId)/"
+  $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+  $files = @(); $records = @(); $manifestCount = 0; $profileManifestSource = ''
+  foreach ($entry in @($value.files)) {
+    $name = [string]$entry.path
+    if (-not $name.StartsWith($prefix, [StringComparison]::Ordinal) -or $name.Contains('\') -or $name.Contains(':') -or
+        $name -match '(^|/)\.{1,2}(/|$)' -or $name -match '(?i)(credential|password|token|secret|\.bin$|\.env(?:\.|$))' -or
+        $name -notmatch '\.(sqlite|json)$' -or -not $seen.Add($name) -or $entry.sha256 -notmatch '^[a-f0-9]{64}$' -or
+        $null -eq $entry.bytes -or [long]$entry.bytes -lt 0 -or [long]$entry.bytes -gt (1024 * 1024 * 1024)) {
+      throw "Ungueltiger persoenlicher Archivpfad."
+    }
+    if ($name -eq ($prefix + 'device-backup-manifest.json')) { $manifestCount++; $profileManifestSource = $entry.sourcePath }
+    Assert-DeviceLocalPath -Root $stagingRoot -Path $entry.sourcePath
+    if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($entry.sourcePath)) -ne $stagingRoot -or
+        -not @($owner.artifacts | Where-Object { $_.relative -eq (Split-Path -Leaf $entry.sourcePath) -and $_.type -eq 'file' }).Count) {
+      throw "Die persoenliche Snapshotdatei gehoert nicht zur verwalteten Sitzung."
+    }
+    $actual = Get-DeviceFileFingerprint -Root $stagingRoot -Path $entry.sourcePath
+    if (-not $actual.exists -or $actual.bytes -ne [long]$entry.bytes -or $actual.sha256 -ne $entry.sha256) {
+      throw "Persoenliche Snapshotdatei stimmt nicht mit ihren Pruefwerten ueberein."
+    }
+    $files += [pscustomobject]@{ FullName = $entry.sourcePath; Length = [long]$entry.bytes; BackupEntryName = $name }
+    $records += [pscustomobject][ordered]@{ path = $name; bytes = [long]$entry.bytes; sha256 = [string]$entry.sha256 }
+  }
+  if ($manifestCount -ne 1) { throw "Persoenliches Wiederherstellungsmanifest fehlt." }
+  $profileManifest = [IO.File]::ReadAllText($profileManifestSource) | ConvertFrom-Json
+  if ($profileManifest.schemaVersion -ne 1 -or $profileManifest.backupKind -ne 'arten-explorer-device-profile' -or
+      $profileManifest.deviceId -ne $value.deviceId -or $profileManifest.stateHash -ne $value.stateHash -or
+      $profileManifest.pending -ne $value.pending -or $profileManifest.completeness -ne 'all-configured-files' -or
+      (ConvertTo-Json -InputObject @($profileManifest.projectIds) -Compress) -ne (ConvertTo-Json -InputObject @($value.projectIds) -Compress) -or
+      @($profileManifest.files).Count -ne ($records.Count - 1)) { throw "Persoenliche Wiederherstellungsbindung ist widerspruechlich." }
+  foreach ($record in @($profileManifest.files)) {
+    $found = @($records | Where-Object { $_.path -eq ($prefix + $record.relativePath) -and
+      $_.sha256 -eq $record.sha256 -and $_.bytes -eq $record.bytes })
+    if ($found.Count -ne 1) { throw "Persoenliches Dateiverzeichnis ist unvollstaendig." }
+  }
+  foreach ($original in @($value.originals)) {
+    Assert-DeviceLocalPath -Root $value.profileRoot -Path $original.path
+    $originalRelative = Get-RelativePathFromRoot -Root $value.profileRoot -FullPath $original.path
+    if ($original.path -notmatch '\.(json|sqlite(?:-wal)?)$' -or
+        $originalRelative -match '(?i)(credential|password|token|secret|\.bin$|\.env(?:\.|$))' -or
+        $original.exists -and ($original.sha256 -notmatch '^[a-f0-9]{64}$' -or $null -eq $original.bytes)) {
+      throw "Ungueltige persoenliche Originalbindung."
+    }
+  }
+  $plan = [pscustomobject]@{ manifest = $value; files = $files; records = $records; handoffHash = Get-FileSha256Hex -Path $ManifestPath }
+  Assert-DeviceSnapshotOriginals -Plan $plan
+  return $plan
+}
+
 function Write-BackupProgress {
   param(
     [int]$Percent,
@@ -262,6 +386,11 @@ $statusHash = Get-Sha256Hex $gitStatus
 Write-BackupProgress -Percent 4 -Message "Dauerhafte lokale Daten werden fuer den Backup-Nachweis geprueft"
 $files = @(Get-BackupSourceFiles -RepoRoot $repoRoot)
 $sourceRecords = @(Get-BackupSourceRecords -RepoRoot $repoRoot -Files $files)
+$deviceSnapshotPlan = Get-DeviceSnapshotPlan -ManifestPath $DeviceSnapshotManifest
+if ($deviceSnapshotPlan) {
+  $files += @($deviceSnapshotPlan.files)
+  $sourceRecords += @($deviceSnapshotPlan.records)
+}
 $sourceRecordsHash = Get-NasJsonHash $sourceRecords
 $localDataStateHash = Get-LocalDataStateHash -RepoRoot $repoRoot -SourceRecords $sourceRecords
 
@@ -277,6 +406,10 @@ $latestVerified = if ($latestStateKey -eq $currentStateKey) {
 
 if (-not $Force -and $latestVerified -and $latestVerified.ok -and $latestVerified.manifest.projectId -eq $projectId) {
   $rotationPlan = Get-NasRetentionPlan -BackupRoot $backupRootResolved -MaxBackups $MaxBackups -ExpectedProjectId $projectId -VerifiedProofs @($latestVerified)
+  if ($deviceSnapshotPlan) {
+    $skipDevicePlan = Get-DeviceSnapshotPlan -ManifestPath $DeviceSnapshotManifest
+    if ($skipDevicePlan.handoffHash -ne $deviceSnapshotPlan.handoffHash) { throw "Persoenliche Snapshot-Uebergabe wurde waehrend der Archivpruefung geaendert." }
+  }
   $rotation = if (-not $DryRun -and $rotationPlan.removeArchives.Count) { Invoke-NasRetentionPlan -Plan $rotationPlan }
   elseif (-not $DryRun) { [pscustomobject]@{ ok = $true; reason = ""; removedArchivePaths = @() } } else { $null }
   Write-BackupProgress -Percent 100 -Message "Kein neues Backup erforderlich"
@@ -301,6 +434,9 @@ if (-not $Force -and $latestVerified -and $latestVerified.ok -and $latestVerifie
     removedBackups = if ($rotation) { $rotation.removedArchivePaths.Count } else { 0 }
     rotationCompleted = if ($rotation) { $rotation.ok } else { $false }
     rotationWarning = if ($rotation) { $rotation.reason } else { "" }
+    deviceSnapshotStateHash = if ($deviceSnapshotPlan) { $deviceSnapshotPlan.manifest.stateHash } else { $null }
+    devicePending = if ($deviceSnapshotPlan) { $deviceSnapshotPlan.manifest.pending } else { $null }
+    includesDeviceProfiles = [bool]$deviceSnapshotPlan
   }
   $result | ConvertTo-Json -Depth 5
   exit 0
@@ -327,6 +463,7 @@ $manifest = [ordered]@{
   localDataStateHash = $localDataStateHash
   sourceRecordsHash = $sourceRecordsHash
   includesLocalData = ((Test-Path -LiteralPath (Join-Path $repoRoot "data")) -or (Test-Path -LiteralPath (Join-Path $repoRoot "Daten")))
+  includesDeviceProfiles = [bool]$deviceSnapshotPlan
   nodeVersion = (node -p "process.version")
   includesNodeModules = (Test-Path -LiteralPath (Join-Path $repoRoot "node_modules"))
   includesFfmpeg = (Test-Path -LiteralPath (Join-Path $repoRoot "local-tools\ffmpeg"))
@@ -344,6 +481,11 @@ $manifest = [ordered]@{
   fileCount = $files.Count
   totalBytes = ($files | Measure-Object Length -Sum).Sum
   files = $sourceRecords
+}
+if ($deviceSnapshotPlan) {
+  $manifest.deviceProfiles = @([ordered]@{ deviceId = $deviceSnapshotPlan.manifest.deviceId;
+    projectIds = @($deviceSnapshotPlan.manifest.projectIds); stateHash = $deviceSnapshotPlan.manifest.stateHash;
+    pending = $deviceSnapshotPlan.manifest.pending; completeness = 'all-configured-files' })
 }
 
 if ($DryRun) {
@@ -364,6 +506,9 @@ if ($DryRun) {
     protectedArchives = $rotationPlan.protectedArchives
     rotationPlanRevision = $rotationPlan.revision
     retentionWouldRemove = [Math]::Max(0, $rotationPlan.verifiedArchiveCount + 1 - $MaxBackups)
+    deviceSnapshotStateHash = if ($deviceSnapshotPlan) { $deviceSnapshotPlan.manifest.stateHash } else { $null }
+    devicePending = if ($deviceSnapshotPlan) { $deviceSnapshotPlan.manifest.pending } else { $null }
+    includesDeviceProfiles = [bool]$deviceSnapshotPlan
   } | ConvertTo-Json -Depth 5
   exit 0
 }
@@ -390,7 +535,8 @@ try {
     $lastProgressPercent = 10
     foreach ($file in $files) {
       $processedFiles += 1
-      $relative = Get-RelativePathFromRoot -Root $repoRoot -FullPath $file.FullName
+      $relative = if ($file.BackupEntryName) { $file.BackupEntryName }
+        else { Get-RelativePathFromRoot -Root $repoRoot -FullPath $file.FullName }
       Add-FileToArchive -Archive $archive -SourcePath $file.FullName -EntryName (Convert-ToZipPath $relative)
       $currentPercent = 10 + [int][Math]::Floor(($processedFiles / [Math]::Max(1, $files.Count)) * 85)
       if ($currentPercent -gt $lastProgressPercent -or $processedFiles -eq $files.Count) {
@@ -405,6 +551,14 @@ try {
   $verifiedArchive = Test-NasArchiveContents -ArchivePath $pendingArchivePath -ExpectedManifest $manifest
   if (-not $verifiedArchive.ok) { throw "NAS-Backuppruefung fehlgeschlagen: $($verifiedArchive.reason)" }
   $afterRecords = @(Get-BackupSourceRecords -RepoRoot $repoRoot -Files @(Get-BackupSourceFiles -RepoRoot $repoRoot))
+  if ($deviceSnapshotPlan) {
+    $checkedDevicePlan = Get-DeviceSnapshotPlan -ManifestPath $DeviceSnapshotManifest
+    if ($checkedDevicePlan.handoffHash -ne $deviceSnapshotPlan.handoffHash -or
+        (Get-NasJsonHash $checkedDevicePlan.records) -ne (Get-NasJsonHash $deviceSnapshotPlan.records)) {
+      throw "Persoenliche Snapshot-Uebergabe wurde waehrend der Sicherung geaendert."
+    }
+    $afterRecords += @($checkedDevicePlan.records)
+  }
   if ((Get-LocalDataStateHash -RepoRoot $repoRoot -SourceRecords $afterRecords) -ne $localDataStateHash) {
     throw "Dauerhafte Daten wurden waehrend der Sicherung geaendert. Dieses Backup wird nicht als vollstaendig uebernommen; bitte nach Abschluss der Datenaktion erneut sichern."
   }
@@ -434,6 +588,9 @@ Write-BackupProgress -Percent 100 -Message "Backup abgeschlossen"
 
 [pscustomobject]@{
   ok = $true
+  deviceSnapshotStateHash = if ($deviceSnapshotPlan) { $deviceSnapshotPlan.manifest.stateHash } else { $null }
+  devicePending = if ($deviceSnapshotPlan) { $deviceSnapshotPlan.manifest.pending } else { $null }
+  includesDeviceProfiles = [bool]$deviceSnapshotPlan
   dryRun = $false
   skipped = $false
   archivePath = $archivePath

@@ -1,6 +1,6 @@
 # Gespeicherter Gesamtweg für Taxonomie-Updates
 
-Stand: 2026-10-27 · Update-Abschlussaktion als Folgevorhaben vorgemerkt
+Stand: 2026-10-31 · Update-Abschlussaktion bestätigt und lokal integriert; native Prüfung offen
 
 Der aktuelle Update-/Paarstand steht im [Taxonomie-Betriebsstand](taxonomy-current-status.md);
 das Gesamtaudit ist seit 27. Oktober im vereinbarten Umfang abgeschlossen. Abschluss und Grenzen führt
@@ -32,17 +32,101 @@ Felix ergänzt am 27. Oktober als To-do, bereits vor einer Datenbankaktualisieru
 was nach ihrem erfolgreichen Abschluss geschieht. Dieses Vorhaben ist in der [Roadmap](roadmap.md) aufgenommen;
 eine Abschlussautomatik ist damit noch nicht umgesetzt oder gestartet.
 
-- Vor dem konkreten Updateauftrag eine Aktion auswählen können, beispielsweise **nichts tun**,
-  **Programm beenden** oder **Computer herunterfahren**. Weitere klassische Optionen wie Neustart
-  oder Ruhezustand und die Speicherung einer Vorauswahl im späteren Konzept festlegen.
+Felix bestätigt am 31. Oktober den Umfang: vier Aktionen und keine zusätzliche NAS-Sicherung als
+Abschlussschritt. Die routinemäßige NAS-Sicherung behält ihren eigenen Zeitplan.
+
+- Vor dem konkreten Updateauftrag zwischen **nichts tun**, **Explorer beenden**, **Computer
+  herunterfahren** und **Computer neu starten** wählen können. Energiesparen und Ruhezustand gehören
+  nicht zum ersten Umfang. Die Aktion betrifft den dafür eindeutig festgelegten PC, nicht das NAS.
 - **Nichts tun** bleibt der sichere Standard. Die Auswahl an den konkreten Auftrag binden und vor
   der Auslösung erkennbar machen; eine vorgemerkte Systemaktion muss rechtzeitig abwählbar sein.
 - Erst nach dem vollständig erfolgreichen Gesamtweg einschließlich geprüftem Master-/Suchpaketpaar
   auslösen. Ein bloß abgeschlossener Quellenimport, wartende Schritte, Fehler oder Abbruch reichen nicht.
 - Vor Beenden oder Herunterfahren eigene Schreibvorgänge regulär abschließen. Keine erzwungene
   Prozessbeendigung oder Umgehung offener Speicherrückfragen anderer Programme vorsehen.
+- Keine zusätzliche Sicherung vor der Abschlussaktion starten. Eine bereits laufende routinemäßige
+  Sicherung bleibt im regulären Schließschutz berücksichtigt; ihr eigener Zeitplan wird nicht verändert.
 - Spätere Abnahme: Auswahl vor Start, erfolgreicher Abschluss, Fehler/Abbruch und rechtzeitige Abwahl
   gezielt praktisch prüfen. Heute keine Datenbankaktualisierung oder Systemaktion für dieses To-do ausführen.
+
+### Entscheidungsfreie technische Vorbereitung vom 28. Oktober
+
+Felix beauftragt die Vorarbeiten vor der gemeinsamen Umfangsklärung. Lesend geprüfter Programmstand:
+`97a1b68a2663e62e87c4fa473a917fe83a3f7ec5`. Keine neue Aktualisierung oder Systemaktion gestartet.
+
+| Vorhandener Baustein | Bedeutung und Grenze für die spätere Umsetzung |
+| --- | --- |
+| `TaxonomyUpdateCoordinator.start()` | Speichert bereits einen konkreten `updateRunId` und bestätigten Startumfang. Noch keine Auswahl oder Quittung einer Abschlussaktion. |
+| `assertPairCurrent()` und `finish()` in `taxonomy-update-coordinator.mjs` | Prüfen den gemeinsamen Quellen-/Master-/Suchpaketabschluss vor dem gespeicherten Zustand `completed`. Ein Quellenimport oder ein bloßer UI-Prozentwert ist kein Gesamterfolg. |
+| Gespeicherte Warte-/Fehler-/Wiederanlaufzustände | `waiting-lightroom`, `waiting-usage`, `waiting-decisions`, Fehler, Pause und Unterbrechung bestehen bereits. Sie sind keine Auslösegründe für eine Erfolgsaktion. |
+| `desktop/main.mjs` und `desktop/server-lifecycle.mjs` | Regulärer Schließweg mit getrennten Prüfungen für Pipeline, NAS-Sicherung und offene Änderungen vorhanden. Keine automatische Betriebssystemaktion oder entsprechende Desktop-Schnittstelle im heutigen `preload.cjs`. |
+| Koordinator-/Wiederanlauf-/Desktoptests | Vorhandene Grundlagen für Erfolg, fremde Aufträge, Wiederanlauf und Schließschutz. Sie prüfen noch keine vorgemerkte Abschlussaktion. |
+
+Für die spätere Umsetzung Auswahl, Abwahl, Auslösestatus und Ergebnis an den konkreten Auftrag binden.
+Wiederholte Statusabfragen, Neustart oder alte Abschlussquittungen dürfen keine erneute Aktion auslösen.
+Die genaue Zustandsfortschreibung und die Grenze zwischen Fachservice, Desktop und Betriebssystem
+erst nach bestätigtem Verhalten festlegen; keine Systembefehle in Browsermodule einbauen.
+
+### Bestätigte Entscheidungen
+
+| Kennung | Fachliche Entscheidung |
+| --- | --- |
+| END-1 | Bestätigt: nichts tun, Explorer beenden, PC herunterfahren, PC neu starten. Energiesparen und Ruhezustand zunächst nicht benötigt. |
+| END-2 | Vor dem konkreten Lauf auswählen; Standard nichts tun und rechtzeitige Abwahl bestätigt. Benachrichtigung, Auftragsbindung und Verhalten bei Wiederöffnung daraus ableiten; keine unbemerkte erneute Aktivierung einer alten Auswahl. |
+| END-3 | Bestätigt: keine zusätzliche NAS-Sicherung vor der Aktion; Sicherungen laufen routinemäßig nach Zeitplan. Aktion an den eindeutig festgelegten PC binden, NAS nicht herunterfahren. Die erste mobile Fassung ist ein lesendes Nachschlagewerk. |
+
+Bereits bestätigt bleiben der Standard **nichts tun**, ausschließliche Auslösung nach vollständigem
+Erfolg, rechtzeitige Abwahl und regulärer Abschluss eigener Schreibvorgänge. Andere Programme nicht
+zwangsweise beenden. Diese Grundregeln stehen nicht erneut zur Auswahl.
+
+### Umsetzung nach Gesamtfreigabe vom 31. Oktober
+
+Die [Abschlussmodule](../species-explorer/update-completion/README.md) und der Desktopbesitzer sind
+mit dem tatsächlichen gespeicherten Updateweg verbunden. Die Auswahl im Updatebereich wird vor
+dem Start gespeichert und intern an dessen neue Run-ID gebunden. Eine wiederholte identische
+Startanfrage gibt den gebundenen Auftrag zurück. Schlägt nur die optionale Bindung fehl, bleibt der
+wirklich gestartete Updateauftrag erhalten und die Abschlussaktion wird deaktiviert.
+
+Erfolg verlangt den gespeicherten Gesamtabschluss, aktuelle Statusdienste und passende konkrete
+Master-/Suchpaket-/Veröffentlichungskennungen. Ein sichtbarer abbrechbarer Countdown läuft erst
+danach volle 60 Sekunden. Eigene Writer, Routinebackup, Websiteübernahme, wartende gemeinsame
+Änderungen, offene Formulare und unbekannte Prüfwerte halten die Aktion an. Beim Schließen wird
+eine Mutationsbarriere erworben; danach werden Auftrag und Paar erneut geprüft und die eigenen
+Dienste abgeschlossen. Der dauerhafte Ausführungsclaim wird höchstens einmal verwendet.
+
+Die native Anforderung enthält kein erzwungenes Schließen anderer Programme. Keine Systemaktion
+wurde im Entwicklungslauf ausgeführt. Isolierte Zustands-/Adapter-/UI- und zusätzliche wirkliche
+Loopback-Integrationstests sind von der noch offenen Prüfung im neu gestarteten Desktop und der
+späteren tatsächlichen Windows-Abschlussaktion getrennt. Die Sicherungsroutine bleibt unabhängig.
+
+### Vorbereitete zusätzliche Abnahmefälle
+
+Als Vorschläge für die gemeinsame Bestätigung: Jede gewählte Aktion einmal nach frischem Gesamterfolg
+auslösen; keine Aktion bei Fehler, Abbruch, Pause, wartender Entscheidung oder unbekanntem Status.
+Abwahl vor Auslösung, mehrfaches Statuslesen, Wiederöffnung, Absturz/Wiederanlauf und ein fremder Auftrag
+dürfen keine ungewollte Aktion erzeugen. Laufende Sicherung, offene Schreibvorgänge und Speicherrückfragen
+beachten. Zunächst mit austauschbarer Testausführung prüfen; eine echte Abschaltung erst im vereinbarten
+praktischen Abnahmefall. Heute sind keine solchen Systemaktionstests ausgeführt.
+
+### Vertiefte Abschlussvorbereitung vom 31. Oktober
+
+28 zusätzliche isolierte Fälle prüfen tatsächliche vorhandene Funktionen mit injizierten kleinen
+Diensten, ohne Datenbankaufbau oder Systemaktion. Ein gesunder gemeinsamer Quellen-/Master-/Suchpaketstand
+wird genau einmal als `completed` gespeichert; wiederholtes Fortschreiben dupliziert diesen Abschluss nicht.
+Offene Kandidaten, fehlende oder veraltete Pakete, aktive Dienste, offene Korrekturen/Identitäten,
+Quellenfehler, Pause und Wartezustände erzeugen keinen erfolgreichen Gesamtabschluss. Vier vorhandene
+Desktop-Statusleser sind zusätzlich an einem eigenen kurzlebigen Loopback-Stub geprüft.
+Private Quellen-/Testmatrix und Ergebnisse: `data/website/checks/mobile-completion-preparation-20261031.json`
+beziehungsweise `-probe.json`; keine neue Aktionsfunktion ist damit implementiert.
+
+Für die spätere Integration sind drei Grenzen konkret belegt: Der reguläre Desktop-Schließweg prüft
+Pipeline, Sicherung, gespeicherte Projektänderungen und Website-Übernahme, aber nicht selbst den
+erfolgreichen Update-Gesamtabschluss. Der serverseitige Projektänderungsstand umfasst keine flüchtigen
+ungespeicherten Dialogfelder; deren bestehende eigene Schutzwege sind einzubeziehen. Schließlich muss
+der tatsächliche Abschluss eigener Hintergrundschreiber und des Servers vor der gewählten Systemaktion
+bestätigt sein. Ein akzeptierter Schließversuch allein genügt nicht. Diese Grenzen gehören in den später
+Integrations-/Abnahmeumfang. Die inzwischen bestätigten Rahmenbedingungen zu END-1 bis END-3 stehen oben;
+eine neue Abschlussautomatik oder Zielgeräteabnahme folgt daraus noch nicht.
 
 ## Bedienung
 
@@ -233,7 +317,10 @@ Dokumentierte Grundlage: [Adobe-authored API-Referenz, LrCatalog](https://lrc.mc
 [Adobe SDK Guide, Initialisierung/Shutdown S. 23–24](https://ioconsolerykerprodcdn.azureedge.net/static/installers/lr/sdk/2022/cross_platform/v13/doc/Lightroom%20Classic%20SDK%20Guide_1655133965.pdf).
 API-Spiegel und älterer offizieller Guide sind keine Zusage eines allgemeinen Beobachters in neueren Versionen.
 
-## Prüfstand und noch nötige Abnahme
+## Historische Prüfstände und damalige Abnahmegrenzen
+
+Die folgenden datierten Nachweise beschreiben den Stand bis Mitte Oktober. Der aktuelle Auditabschluss
+steht in Abschnitt 10.55 des Auditauftrags; offene Prüfungen einer künftigen Abschlussaktion stehen oben.
 
 Am **13. Oktober** bestanden die abschließenden Koordinator-/Jobgruppen **142/142** Fälle für die
 Endzeitkorrektur und den neuen Prüfsummenhinweis. Das anschließende vollständige lokale Endgate bestand
@@ -260,6 +347,7 @@ und behoben, ohne die Umfangsprüfung zu lockern: im engen Weg echte Entscheidun
 unverändert erhalten, neue Markerfortschreibung nur im regulären Aufbau. 65 Reparatur-/Feldschutztests bestanden.
 [Datierter Umsetzungsnachweis und Abnahmeliste](audits/2026-10-03-pre-audit-implementation.md).
 
-Dies ersetzt nicht die praktische SDK-/Explorer-Gesamtabnahme mit dem neu geladenen Plug-in. Die übrigen
-[Bedien- und Betriebsgrenzen](roadmap.md) sowie Phase 10.5 bleiben offen. Keine weitere aktuelle Quellenversion
-oder lange Produktivaktion allein für diesen Nachweis starten; der nächste reale Updateweg wird separat freigegeben.
+Diese früheren Prüfungen ersetzten damals nicht die noch ausstehende praktische SDK-/Explorer-Gesamtabnahme.
+Deren späteren Abschluss und bewusste Nachweisgrenzen führt der Auditauftrag. Keine weitere Quellenversion
+oder lange Produktivaktion allein für einen erneuten Nachweis starten; ein nächster realer Updateweg benötigt
+einen eigenen Auftrag. Aktuelle Folgevorhaben und Betriebsgrenzen stehen in der [Roadmap](roadmap.md).

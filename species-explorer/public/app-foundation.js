@@ -92,6 +92,8 @@
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         const error = new Error(payload.error || "Anfrage ist fehlgeschlagen");
+        error.status = response.status;
+        if (/^[a-zA-Z0-9_]{1,80}$/.test(payload.code || "")) error.code = payload.code;
         error.details = payload.details || [];
         error.fieldErrors = payload.fieldErrors || {};
         throw error;

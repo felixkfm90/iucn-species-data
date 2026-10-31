@@ -1,0 +1,78 @@
+const readActions = new Map([["", "snapshot"], ["/objects", "list"], ["/conflicts", "conflicts"], ["/users", "users"], ["/devices", "devices"],
+  ["/import", "import-status"], ["/import/receipts", "import-receipts"]]);
+const writeActions = new Map([["/connect", "connect"], ["/disconnect", "disconnect"], ["/sync", "sync"],
+  ["/refresh", "refresh"], ["/objects", "create"], ["/users", "createUser"], ["/password", "changePassword"],
+  ["/import/prepare", "import-prepare"], ["/import/start", "import-start"]]);
+
+/** Local front-end routes only; the remote NAS API keeps its own role checks. */
+export function matchProjectFeatureRoute(method, pathname) {
+  const read = method === "GET" || method === "HEAD";
+  const altShared = pathname.match(/^\/api\/website\/alt-texts\/shared(?:\/(page|conflicts|link|queue|sync|pull|import|resolve))?$/);
+  if (altShared && (read && [undefined, "page", "conflicts"].includes(altShared[1])
+      || method === "POST" && ["link", "queue", "sync", "pull", "import", "resolve"].includes(altShared[1]))) {
+    return { name: "website-alt-sync", action: altShared[1] || "snapshot" };
+  }
+  if (pathname === "/api/local-ai" && read) return { name: "local-ai", action: "status" };
+  const aiAction = pathname.match(/^\/api\/local-ai\/(download|cancel-download|suggest-alt|suggest-text|review-text)$/);
+  if (aiAction && method === "POST") return { name: "local-ai", action: aiAction[1] };
+  const aiJob = pathname.match(/^\/api\/local-ai\/jobs\/([a-f0-9-]{36})(\/cancel)?$/);
+  if (aiJob && (read && !aiJob[2] || method === "POST" && aiJob[2])) return { name: "local-ai", action: read ? "get" : "cancel", id: aiJob[1] };
+  if (pathname === "/api/taxonomy/update-completion" && read) return { name: "update-completion", action: "status" };
+  const completion = pathname.match(/^\/api\/taxonomy\/update-completion\/(displayed|cancel)$/);
+  if (completion && method === "POST") return { name: "update-completion", action: completion[1] };
+  if (!pathname.startsWith("/api/shared-project")) return null;
+  const tail = pathname.slice("/api/shared-project".length);
+  const exact = (read ? readActions : method === "POST" ? writeActions : new Map()).get(tail);
+  if (exact) return { name: "shared-project", action: exact };
+  const object = tail.match(/^\/objects\/(species|page)\/([a-z0-9]+(?:-[a-z0-9]+)*)(\/approve)?$/);
+  if (object && (read && !object[3] || method === "POST")) {
+    return { name: "shared-project", action: read ? "get" : object[3] ? "approve" : "editExisting", kind: object[1], id: object[2] };
+  }
+  const conflict = tail.match(/^\/conflicts\/([a-f0-9-]{36})(\/resolve)?$/);
+  if (conflict && (read && !conflict[2] || method === "POST" && conflict[2])) {
+    return { name: "shared-project", action: read ? "conflict" : "resolve", id: conflict[1] };
+  }
+  const user = tail.match(/^\/users\/([a-f0-9-]{36})$/);
+  if (user && method === "POST") return { name: "shared-project", action: "updateUser", id: user[1] };
+  const device = tail.match(/^\/devices\/([a-f0-9-]{36})\/revoke$/);
+  if (device && method === "POST") return { name: "shared-project", action: "revokeDevice", id: device[1] };
+  return null;
+}
+
+export async function invokeSharedProjectOperation(service, { action, kind, id, payload = {}, searchParams } = {}) {
+  if (!service) {
+    if (action === "snapshot") return { schemaVersion: 1, available: false,
+      status: { connection: "disconnected", pending: 0, conflicts: 0 },
+      permissions: { canRead: false, canEdit: false, canCreate: false, canApprove: false, canManageUsers: false, canManageDevices: false, canChangePassword: false },
+      objects: [], conflicts: [], users: [], devices: [], busy: false, queuedChanges: 0, conflictCount: 0,
+      message: "Gemeinsames Projekt in der Desktop-App einrichten.", externalPublication: "not-performed" };
+    throw Object.assign(new Error("Das gemeinsame Projekt ist auf diesem Gerät noch nicht eingerichtet."), { statusCode: 503 });
+  }
+  switch (action) {
+    case "snapshot": return service.snapshot();
+    case "connect": return service.connect(payload);
+    case "disconnect": return service.disconnect();
+    case "sync": return service.sync();
+    case "refresh": return service.refresh(payload);
+    case "list": return service.list({ kind: searchParams?.get("kind") || undefined });
+    case "get": return service.get(kind, id);
+    case "editExisting": return service.editExisting(kind, id, payload);
+    case "create": return service.create(payload);
+    case "approve": return service.approve(kind, id, payload);
+    case "conflicts": return service.conflicts();
+    case "conflict": {
+      const conflicts = await service.conflicts();
+      const found = (Array.isArray(conflicts) ? conflicts : conflicts.conflicts || []).find((entry) => entry.id === id);
+      if (!found) throw Object.assign(new Error("Der lokale Konflikt ist nicht mehr vorhanden."), { statusCode: 404 });
+      return found;
+    }
+    case "resolve": return service.resolve(id, payload);
+    case "users": return service.users();
+    case "createUser": return service.createUser(payload);
+    case "updateUser": return service.updateUser(id, payload);
+    case "devices": return service.devices();
+    case "revokeDevice": return service.revokeDevice(id);
+    case "changePassword": return service.changePassword(payload);
+    default: throw Object.assign(new Error("Unbekannte Projektaktion."), { statusCode: 404 });
+  }
+}

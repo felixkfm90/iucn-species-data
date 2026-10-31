@@ -64,13 +64,21 @@ export async function startManagedExplorerServer({
   preferredPort = normalizePort(process.env.SPECIES_EXPLORER_DESKTOP_PORT, DEFAULT_PORT),
   allowPortFallback = true,
   healthTimeoutMs = DEFAULT_HEALTH_TIMEOUT_MS,
+  websiteAltTransferAdapter = null,
+  websiteAltTransferAdapterFactory = null,
+  sharedProjectOptions = null,
+  sharedProjectImportOptions = null,
+  localAiOptions = null,
+  updateCompletionFactory = null,
 } = {}) {
   const candidates = [normalizePort(preferredPort)];
   if (allowPortFallback && candidates[0] !== 0) candidates.push(0);
 
   let lastError = null;
   for (const port of candidates) {
-    const server = await createExplorerServer({ repoRoot, host, port });
+    const transferAdapter = websiteAltTransferAdapterFactory ? websiteAltTransferAdapterFactory() : websiteAltTransferAdapter;
+    const server = await createExplorerServer({ repoRoot, host, port, websiteAltTransferAdapter: transferAdapter,
+      sharedProjectOptions, sharedProjectImportOptions, localAiOptions, updateCompletionFactory });
     try {
       const address = await server.listen();
       const baseUrl = addressToBaseUrl(address, host);
@@ -108,6 +116,11 @@ export async function getExplorerBackupStatus(baseUrl, options) {
 
 export async function getExplorerPendingChanges(baseUrl, options) {
   return fetchJson(`${baseUrl}/api/pending-changes`, options);
+}
+
+export async function getExplorerWebsiteAltTransferStatus(baseUrl, options) {
+  const snapshot = await fetchJson(`${baseUrl}/api/website/alt-texts`, options);
+  return snapshot.transfer;
 }
 
 export function isPipelineBlockingShutdown(status) {

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-31",
+  "node": {
+    "version": "24.22.1",
+    "url": "https://nodejs.org/dist/v24.22.1/win-x64/node.exe",
+    "sha256": "d702daa815eabbff763c7d3808e235cf031cf2ca70211b56847bc72f51e240e5",
+    "bytes": 93915464,
+    "verification": "https://nodejs.org/dist/v24.22.1/SHASUMS256.txt"
+  },
+  "electron": {
+    "version": "42.11.18",
+    "url": "https://github.com/electron/electron/releases/download/v42.11.18/electron-v42.11.18-win32-x64.zip",
+    "sha256": "95db2e9cdbe61d292f28ba42e863518b605115a79e6aebb3c21d5a99b28f35ba",
+    "bytes": 149404826,
+    "verification": "https://api.github.com/repos/electron/electron/releases/tags/v42.11.18"
+  },
+  "git": {
+    "version": "2.56.0.windows.4",
+    "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/MinGit-2.56.0.4-64-bit.zip",
+    "sha256": "e3bf78351fe777fba47ddee5950082f8a98bb0f02604fdc7ba3ee2cb68ffa877",
+    "bytes": 39846926,
+    "verification": "https://api.github.com/repos/git-for-windows/git/releases/tags/v2.56.0.windows.4"
+  },
+  "ffmpeg": {
+    "version": "8.1.1",
+    "url": "https://github.com/GyanD/codexffmpeg/releases/download/8.1.1/ffmpeg-8.1.1-essentials_build.zip",
+    "archiveSha256": "6f58ce889f59c311410f7d2b18895b33c03456463486f3b1ebc93d97a0f54541",
+    "ffmpegSha256": "228d7a8556258de907fdb55f36850078ebc7680b84ec30d84ea02e99bec1d1eb",
+    "ffprobeSha256": "0fde260f5abd35c9cafd96f594cc76365a780c1b73a90e35b6a3409ea1db1bf0",
+    "source": "https://github.com/FFmpeg/FFmpeg/commit/239f2c733d"
+  }
+}

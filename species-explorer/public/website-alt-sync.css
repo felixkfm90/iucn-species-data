@@ -1,0 +1,19 @@
+.website-alt-sync-dialog { width: min(1100px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
+.website-alt-sync-header { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.website-alt-sync-header h2 { margin-top: 0; }
+.website-alt-sync-status { padding: 10px 12px; border-left: 3px solid #29694b; background: #edf4ef; white-space: pre-wrap; }
+.website-alt-sync-comparisons { display: grid; gap: 16px; margin-top: 18px; }
+.website-alt-sync-card { display: grid; grid-template-columns: minmax(150px, 230px) minmax(0, 1fr); gap: 18px; padding: 14px; border: 1px solid #d2dcd6; border-radius: 8px; background: white; }
+.website-alt-sync-card figure { margin: 0; }
+.website-alt-sync-card img { display: block; width: 100%; max-height: 250px; object-fit: contain; background: #edf1ee; }
+.website-alt-sync-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.website-alt-sync-side { min-width: 0; }
+.website-alt-sync-side h4 { margin: 0 0 6px; }
+.website-alt-sync-side p { margin: 6px 0; }
+.website-alt-sync-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.website-alt-sync-base { grid-column: 1 / -1; }
+.website-alt-sync-dialog [hidden] { display: none !important; }
+@media (max-width: 700px) {
+  .website-alt-sync-card, .website-alt-sync-sides { grid-template-columns: 1fr; }
+  .website-alt-sync-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+}

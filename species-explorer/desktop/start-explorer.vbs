@@ -1,7 +1,7 @@
 Option Explicit
 
 Dim fso, shell, scriptDir, repoRoot, electronCmd, mainScript, logDir, logFile, command
-Dim correctionArgument, argumentPattern
+Dim correctionArgument, argumentPattern, runtimeMarker, installedNode, installedHelper, launchResult
 
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set shell = CreateObject("WScript.Shell")
@@ -30,6 +30,23 @@ electronCmd = fso.BuildPath(repoRoot, "node_modules\.bin\electron.cmd")
 mainScript = fso.BuildPath(repoRoot, "species-explorer\desktop\main.mjs")
 logDir = fso.BuildPath(repoRoot, "species-explorer\logs")
 logFile = fso.BuildPath(logDir, "desktop-launch.log")
+
+shell.CurrentDirectory = repoRoot
+runtimeMarker = fso.BuildPath(repoRoot, "installer-runtime.json")
+If fso.FileExists(runtimeMarker) Then
+  installedNode = fso.BuildPath(repoRoot, "runtime\node\node.exe")
+  installedHelper = fso.BuildPath(scriptDir, "installed-launcher.mjs")
+  If Not fso.FileExists(installedNode) Or Not fso.FileExists(installedHelper) Then
+    MsgBox "Die installierte Laufzeit fehlt. Bitte die Installation reparieren.", vbExclamation, "Arten-Explorer"
+    WScript.Quit 1
+  End If
+  launchResult = shell.Run(Quote(installedNode) & " " & Quote(installedHelper) & correctionArgument, 0, True)
+  If launchResult <> 0 Then
+    MsgBox "Die Installation konnte nicht gestartet werden. Bitte die Pfadbindung prüfen oder die Installation reparieren.", _
+      vbExclamation, "Arten-Explorer"
+  End If
+  WScript.Quit launchResult
+End If
 
 If Not fso.FileExists(electronCmd) Then
   MsgBox "Electron wurde nicht gefunden." & vbCrLf & vbCrLf & _

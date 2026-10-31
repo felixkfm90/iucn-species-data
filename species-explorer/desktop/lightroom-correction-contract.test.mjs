@@ -14,13 +14,18 @@ test("Desktop-Verknüpfung verwendet den Installationsordner statt eines festen 
   assert.doesNotMatch(installer, /[A-Z]:\\(?:IUCN_Datenbank|Arten-Explorer)\b/i);
 });
 
-test("Desktopfenster und Verknüpfung verwenden das eigene vollständige Mehrgrößensymbol", async () => {
-  const [main, bytes] = await Promise.all([
+test("alle Explorerfenster und Verknüpfung verwenden das eigene vollständige Mehrgrößensymbol", async () => {
+  const [main, browser, branding, bytes] = await Promise.all([
     readFile(new URL("./main.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./squarespace-browser.mjs", import.meta.url), "utf8"),
+    readFile(new URL("./window-branding.mjs", import.meta.url), "utf8"),
     readFile(new URL("./assets/arten-explorer-transparent.ico", import.meta.url)),
   ]);
-  assert.match(main, /process\.platform === "win32" \? "\.\/assets\/arten-explorer-transparent\.ico" : "\.\/assets\/arten-explorer\.png"/);
-  assert.match(main, /new BrowserWindow\(\{[\s\S]*?icon: WINDOW_ICON/);
+  assert.match(branding, /process\.platform === "win32" \? "\.\/assets\/arten-explorer-transparent\.ico" : "\.\/assets\/arten-explorer\.png"/);
+  for (const source of [main, browser]) {
+    assert.match(source, /import \{ EXPLORER_WINDOW_ICON \} from "\.\/window-branding\.mjs"/);
+    assert.match(source, /new BrowserWindow\(\{[\s\S]*?icon: EXPLORER_WINDOW_ICON/);
+  }
   assert.equal(bytes.readUInt16LE(0), 0);
   assert.equal(bytes.readUInt16LE(2), 1);
   assert.equal(bytes.readUInt16LE(4), 7);

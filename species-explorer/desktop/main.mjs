@@ -1,25 +1,29 @@
-import { app, BrowserWindow, dialog, shell } from "electron";
+import { app, BrowserWindow, dialog, safeStorage, shell } from "electron";
 import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import {
   getExplorerBackupStatus,
   getExplorerPendingChanges,
   getExplorerPipelineStatus,
+  getExplorerWebsiteAltTransferStatus,
   isBackupBlockingShutdown,
   isPipelineBlockingShutdown,
   startManagedExplorerServer,
   stopManagedExplorerServer,
 } from "./server-lifecycle.mjs";
 import { activateExplorerWindow } from "./window-activation.mjs";
+import { EXPLORER_WINDOW_ICON } from "./window-branding.mjs";
+import { createSquarespaceBrowserAdapter } from "./squarespace-browser.mjs";
+import { createSquarespaceGalleryDriver } from "./squarespace-gallery-driver.mjs";
+import { loadLocalDeviceProfile } from "./device-profile.mjs";
+import { createSharedProjectCredentialStore } from "./shared-project-credentials.mjs";
+import { createDesktopUpdateCompletionOwner, readTrustedCompletionPresentation } from "./update-completion-owner.mjs";
 import {
   consumeLightroomCorrectionHandoff,
   parseLightroomCorrectionRequestIds,
 } from "../lightroom-correction-handoff.mjs";
 
 const WINDOW_TITLE = "Arten-Explorer";
-const WINDOW_ICON = fileURLToPath(new URL(
-  process.platform === "win32" ? "./assets/arten-explorer-transparent.ico" : "./assets/arten-explorer.png",
-  import.meta.url,
-));
 const START_PAGE = "data:text/html;charset=utf-8,"
   + encodeURIComponent(`
 <!doctype html>
@@ -63,6 +67,7 @@ let quitting = false;
 let closeCheckInProgress = false;
 let pendingSecondInstanceActivation = false;
 let explorerPageReady = false;
+let personalProjectProfile = null;
 const pendingCorrectionRequests = [];
 const handledCorrectionRequestIds = new Set();
 
@@ -100,7 +105,7 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 720,
     title: WINDOW_TITLE,
-    icon: WINDOW_ICON,
+    icon: EXPLORER_WINDOW_ICON,
     backgroundColor: "#edf3f0",
     show: false,
     webPreferences: {
@@ -162,7 +167,7 @@ async function showStartupError(error) {
     await restartServerAndLoad();
   } else {
     quitting = true;
-    await stopManagedExplorerServer(managedServer).catch(() => {});
+    await stopManagedExplorerServer(managedServer);
     app.quit();
   }
 }
@@ -171,9 +176,44 @@ async function restartServerAndLoad() {
   try {
     explorerPageReady = false;
     await stopManagedExplorerServer(managedServer).catch(() => {});
-    managedServer = await startManagedExplorerServer();
+    managedServer = await startManagedExplorerServer({
+      sharedProjectOptions: personalProjectProfile ? {
+        filename: join(personalProjectProfile.directory, "project-cache.sqlite"), localStorageConfirmed: true,
+        credentialStore: personalProjectProfile.credentials,
+      } : null,
+      sharedProjectImportOptions: personalProjectProfile ? {
+        filename: join(personalProjectProfile.directory, "initial-import.sqlite"), localStorageConfirmed: true,
+      } : null,
+      localAiOptions: personalProjectProfile ? {
+        cacheRoot: join(personalProjectProfile.directory, "local-ai"), deviceId: personalProjectProfile.device.id,
+      } : null,
+      deviceBackupProfile: personalProjectProfile ? {
+        profileRoot: personalProjectProfile.directory, deviceId: personalProjectProfile.device.id,
+      } : null,
+      updateCompletionFactory: personalProjectProfile ? (serverContext) => createDesktopUpdateCompletionOwner({
+        device: personalProjectProfile.device, stateRoot: join(personalProjectProfile.directory, "update-completion"), serverContext,
+        getWindow: () => mainWindow, getBaseUrl: () => managedServer?.baseUrl,
+        acquireDesktopClose() {
+          if (quitting || closeCheckInProgress) throw new Error("Ein anderer Schließvorgang läuft bereits.");
+          closeCheckInProgress = true;
+          return () => { closeCheckInProgress = false; };
+        },
+        async finishExplorerExit() { quitting = true; mainWindow?.destroy(); app.quit(); },
+        async restoreAfterFailure({ error, serverClosed }) {
+          closeCheckInProgress = false;
+          if (serverClosed) await restartServerAndLoad();
+          await dialog.showMessageBox(mainWindow, { type: "warning", buttons: ["Zur App"],
+            title: "Abschlussaktion angehalten", message: error.message,
+            detail: "Der Ausgang wird nicht automatisch wiederholt. Bitte den gespeicherten Status prüfen." });
+        },
+        onError: () => {},
+      }) : null,
+      websiteAltTransferAdapterFactory: () =>
+      createSquarespaceBrowserAdapter({ BrowserWindow, parentWindow: () => mainWindow,
+        driver: createSquarespaceGalleryDriver() }) });
     await mainWindow.loadURL(managedServer.baseUrl);
     explorerPageReady = true;
+    managedServer.server.startBackgroundFeatures();
     deliverPendingCorrectionRequests();
     if (managedServer.usedFallbackPort) {
       mainWindow.webContents.send?.("desktop-warning", "Port 4177 war belegt; die App nutzt einen freien Ersatzport.");
@@ -192,12 +232,15 @@ async function handleWindowClose(event) {
     let pipelineStatus = null;
     let backupStatus = null;
     let pendingChanges = null;
+    let websiteTransfer = null;
+    let uiDrafts = false;
     const unknownStatuses = [];
     if (managedServer?.baseUrl) {
       const results = await Promise.allSettled([
         getExplorerPipelineStatus(managedServer.baseUrl),
         getExplorerBackupStatus(managedServer.baseUrl),
         getExplorerPendingChanges(managedServer.baseUrl),
+        getExplorerWebsiteAltTransferStatus(managedServer.baseUrl),
       ]);
       const checks = [
         { label: "Pipeline", valid: (value) =>
@@ -205,13 +248,26 @@ async function handleWindowClose(event) {
         { label: "Sicherungsstatus", valid: (value) =>
           ["idle", "running", "completed", "failed"].includes(value?.status) },
         { label: "Änderungsstatus", valid: (value) => typeof value?.hasPendingChanges === "boolean" },
+        { label: "Website-Textübernahme", valid: (value) => typeof value?.running === "boolean" },
       ];
       const values = results.map((result, index) => {
         if (result.status === "fulfilled" && checks[index].valid(result.value)) return result.value;
         unknownStatuses.push(checks[index].label);
         return null;
       });
-      [pipelineStatus, backupStatus, pendingChanges] = values;
+      [pipelineStatus, backupStatus, pendingChanges, websiteTransfer] = values;
+    }
+    if (mainWindow?.webContents) {
+      const presentation = await readTrustedCompletionPresentation(mainWindow, managedServer?.baseUrl, {});
+      if (!presentation.known) unknownStatuses.push("Offene Formulare");
+      else uiDrafts = presentation.uiDrafts;
+    }
+
+    if (websiteTransfer?.running) {
+      await dialog.showMessageBox(mainWindow, { type: "warning", buttons: ["App offen lassen"],
+        title: "Website-Texte werden noch übertragen",
+        message: "Bitte die laufende Squarespace-Übernahme und ihre öffentliche Nachprüfung abwarten." });
+      return;
     }
 
     if (isPipelineBlockingShutdown(pipelineStatus) || isBackupBlockingShutdown(backupStatus)) {
@@ -246,6 +302,15 @@ async function handleWindowClose(event) {
       if (response.response !== 1) return;
     }
 
+    if (uiDrafts) {
+      const response = await dialog.showMessageBox(mainWindow, {
+        type: "warning", buttons: ["Zur App zurück", "Eingaben verwerfen und schließen"], defaultId: 0, cancelId: 0,
+        title: "Noch nicht gespeicherte Eingaben", message: "In einem Formular liegen noch Eingaben oder ein offener Bearbeitungsdialog vor.",
+        detail: "Speichere die Eingaben vor dem Schließen. Gespeicherte lokale Entwürfe bleiben beim Neustart erhalten.",
+      });
+      if (response.response !== 1) return;
+    }
+
     if (unknownStatuses.length) {
       const response = await dialog.showMessageBox(mainWindow, {
         type: "warning",
@@ -273,10 +338,21 @@ async function handleWindowClose(event) {
 }
 
 async function boot() {
+  const directory = join(app.getPath("userData"), "personal-project");
+  let profileWarning = "";
+  try {
+    personalProjectProfile = { directory, device: await loadLocalDeviceProfile(directory),
+      credentials: createSharedProjectCredentialStore({ directory: join(directory, "credentials"), safeStorage }) };
+  } catch {
+    personalProjectProfile = null;
+    profileWarning = "Das persönliche Geräteprofil konnte nicht geöffnet werden. Gemeinsames Projekt und Abschlussaktionen sind vorübergehend nicht verfügbar. Die vorhandenen lokalen Explorerfunktionen bleiben erreichbar.";
+  }
   createWindow();
   const correctionRequests = queueCorrectionRequests(process.argv);
   await restartServerAndLoad();
   await correctionRequests;
+  if (profileWarning) await dialog.showMessageBox(mainWindow, { type: "warning", buttons: ["Zur App"],
+    title: "Persönliches Geräteprofil prüfen", message: profileWarning });
 }
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
