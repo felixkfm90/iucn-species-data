@@ -535,6 +535,7 @@ test("Website prüfen entfernt W nach einer neuen Seite mit echtem Listenrendere
   try {
     await h.websiteController.start();
     assert.equal(h.flags("newbird").length, 1);
+    h.state.editMode = true;
     h.elements.speciesList.scrollTop = 87;
     h.elements.speciesList.children[1].focus();
     h.elements.websitePagesCheck.emit("click");
