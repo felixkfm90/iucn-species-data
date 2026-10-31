@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import path from "node:path";
 import { createExplorerLocalAiService } from "./explorer-service.mjs";
 
 function deferred() {
@@ -21,7 +22,7 @@ function fixture(t, { shared = null, serviceOverrides = {}, cacheOverrides = {} 
   get(id, ownerId) { const job = jobs.get(id); if (!job || job.ownerId !== ownerId) throw new Error("Fremder Auftrag"); return job; },
   cancel(id, ownerId) { calls.push({ action: "cancel", id, ownerId }); return this.get(id, ownerId); },
   close: async () => { calls.push("ai-close"); }, ...serviceOverrides };
-  const service = createExplorerLocalAiService({ cacheRoot: "D:\\synthetic-personal-profile\\local-ai", deviceId: "synthetic-device", repoRoot: "D:\\synthetic-workspace",
+  const service = createExplorerLocalAiService({ cacheRoot: path.resolve("synthetic-personal-profile", "local-ai"), deviceId: "synthetic-device", repoRoot: path.resolve("synthetic-workspace"),
     websiteAltTexts: { snapshot: async () => ({}) }, sharedProject: { snapshot: async () => profile },
     cacheFactory: () => cache, workerFactory: () => worker, imageLoaderFactory: () => images, serviceFactory: () => ai });
   t.after(() => service.close());
