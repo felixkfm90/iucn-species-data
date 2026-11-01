@@ -1,6 +1,6 @@
 # AGENTS.md – Arten-Explorer, Lightroom und Wildlife-Website
 
-Stand: 2026-10-31
+Stand: 2026-11-01
 
 ## Aktueller Auftrag
 
@@ -23,6 +23,8 @@ Umsetzung bestätigt. Die bestätigten Rahmenbedingungen führt der bestehende
 [Mehrgerätevertrag](docs/multi-device-backup-plan.md); aktueller Integrationsstand und offene Arbeiten
 stehen in der Roadmap. Grundbaustein-, Paketbau-, native Desktop- und NAS-/Zielgeräteabnahme getrennt
 belegen. Bestehende lokale Bedienung und Felix' eigene Bildtextänderungen während der Entwicklung erhalten.
+Felix hat die Entwicklungspause am 1. November ausdrücklich aufgehoben. Den bestätigten Umfang wieder
+weiterführen; gemeldete Fehler behalten Vorrang. Computer Use weiterhin vorab mit Numis abstimmen.
 
 ## Projekt und führende Quellen
 

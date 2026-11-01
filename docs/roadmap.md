@@ -1,6 +1,6 @@
 # Roadmap
 
-Stand: 2026-10-31
+Stand: 2026-11-01
 
 ## Aktueller Stand
 
@@ -51,29 +51,95 @@ Testaufbau starten. Weitere Umsetzung und Veröffentlichung benötigen Felix' je
 
 ## Laufende Umsetzung nach Gesamtfreigabe vom 31. Oktober
 
-**Aktuelle Priorität:** Felix hat die weitere Funktionsentwicklung am 31. Oktober wegen des
-verbleibenden Creditbudgets pausiert. Ausschließlich gemeldete Fehler beheben und gezielt prüfen;
-keine neuen Funktionen oder allgemeinen Vorbereitungsrunden beginnen. Der vorhandene Zwischenstand
-bleibt erhalten. Die aktuelle Squarespace-/Bildtexthilfe-Fehlerprüfung führt der
+**Aktuelle Priorität:** Felix hat die Entwicklungspause am **1. November aufgehoben** und die
+Fortsetzung des bestätigten Gesamtumfangs beauftragt. Gemeldete Fehler behalten Vorrang. Bildtextbrücke,
+Android-Folgepaket und privates Windows-Prüfpaket sind lokal integriert beziehungsweise gebaut und
+geprüft. NAS-Dienst und erste persönliche Explorerverbindung sind eingerichtet; nächster Schwerpunkt
+ist der verlustfreie Anschluss der normalen Artbearbeitung an denselben gemeinsamen Bestand;
+die SDK-/Desktopnutzung weiter mit Numis abstimmen. Die Squarespace-/Bildtexthilfe-Fehlerprüfung führt der
 [Bildtextvertrag](image-alt-audit.md).
 
+Die feste Seitenauswahl mit getrennten Scrollbereichen ist im Quellstand und in einer isolierten
+echten Browserdarstellung geprüft. Normale Bildblöcke/Kacheln erhalten im Quellstand einen gemeinsamen
+Seitenabschluss statt eines vollständigen Öffnen-/Speichern-Zyklus je Bild; die tatsächliche CMS-Probe
+dieses neuen Ablaufs ist noch offen. Nach regulärem Explorerneustart sind die getrennten Scrollbereiche,
+die erhaltene Listenposition und „Vorhandenen Text beibehalten“ nativ geprüft; keine CMS-Eingabe.
+
 Felix hat den gemeinsam geklärten Gesamtumfang ausdrücklich bestätigt; erneute Grundsatzbestätigungen
-sind dafür nicht nötig. Die weitere Umsetzung bleibt nach seiner Priorisierung pausiert. Am 31. Oktober
-hat er nach der Einordnung von **Gemeinsames Projekt** unter **Datenbank-Aktionen → Weitere Aktionen →
+sind dafür nicht nötig. Am 31. Oktober hat er nach der Einordnung von **Gemeinsames Projekt** unter **Datenbank-Aktionen → Weitere Aktionen →
 Backup und Einstellungen** den Commit und Push des geprüften zusammenhängenden lokalen Standes beauftragt.
 Diese Quellveröffentlichung ersetzt keine noch offene NAS-, Installer-, Lightroom- oder Zielgeräteabnahme.
 
 | Bereich | Lokal erreicht | Noch zu vervollständigen |
 | --- | --- | --- |
-| Gemeinsames Projekt | Rollen-/Anmeldedienst, Versions-/Konfliktkern, atomar paginierter Offlineclient, expliziter Erstimport und neuer Explorerbereich; seitenweise Bildtextbrücke samt Vergleichsdialog isoliert geprüft | Bildtextbrücke durchgehend anschließen, weitere fachliche Abgleiche, initiale Einrichtung und tatsächlicher Mehrgeräte-/NAS-Betrieb |
-| Android | APK 0.1.1+2 mit vollständigem öffentlichem Anfangskatalog tatsächlich gebaut und mit 66 Fällen geprüft; Galerie-Offlinedownload im Folgequellstand 0.1.2+3 ergänzt | Folgequellstand analysieren/testen und erneut bauen, dann beide Zielgeräte abnehmen |
-| Installer | Echtes privates Prüfpaket sowie isolierte Dateiinstallation, Update/Reparatur und Datenerhalt; Lightroom-Startwegintegration .43 | Nach Integration neu bauen, Auslieferungsnachweise und frischer Windows-/Lightroom-Gerätebetrieb |
+| Gemeinsames Projekt | Rollen-/Anmeldedienst, Versions-/Konfliktkern, Offlineclient und Erstimport; normale Artenansicht, Grunddatenbearbeitung und feldweiser Konfliktvergleich lokal angeschlossen und mit künstlichen Daten sichtbar geprüft; Bildtextvergleich und Sicherung integriert; NAS-Dienst und persönliche Verbindung einschließlich Neustart bestätigt | Anfangsübernahme bewusst bestätigen, übrige Fachwege anschließen und tatsächlichen Mehrgeräte-/NAS-Betrieb abnehmen |
+| Android | ARM64-Debug-APK 0.1.2+3 mit Anfangskatalog und optionaler Offlinegalerie am 1. November tatsächlich gebaut; Analyzer und 89 Fälle bestanden, Signatur/Logos/Katalog geprüft und SDK-Komponentenmetadaten unverändert | Beide Zielgeräte einschließlich echter Downloads, Ton, Wiederöffnung und Anmeldung abnehmen |
+| Installer | Privates Prüfpaket am 1. November mit integriertem Bildtext-/Sicherungsanschluss gebaut; alle 14 tatsächlichen Paketproben bestanden; Lightroom-Startwegintegration .43 | Neueren normalen gemeinsamen Art-, Konflikt- und Freigabeanschluss erneut paketieren; Auslieferungsnachweise und frischer Windows-/Lightroom-Gerätebetrieb; kein reguläres Veröffentlichungspaket |
 | Update-Abschluss | Dauerhafte Auswahl-/Auftragsbindung, Erfolgsnachweis, Countdown und sichere Desktop-/Serververdrahtung | Integrierte native Bedienprüfung und später gezielte reale Abschlussaktion |
-| Lokale Bild-/Texthilfe | Schema-/Downloadfehler korrigiert; tatsächliche CPU-Probe mit zwei Bildern und einer Quellenprüfung sowie vollständiger persönlicher Download und nativer Explorer-Bildvorschlag erfolgreich | Redaktionelle Ergebnisprüfung bleibt erforderlich; weitere Anbindung von Textabschnitten ist pausiert |
+| Lokale Bild-/Texthilfe | Schema-/Downloadfehler korrigiert; tatsächliche CPU-Probe mit zwei Bildern und einer Quellenprüfung sowie vollständiger persönlicher Download und nativer Explorer-Bildvorschlag erfolgreich | Redaktionelle Ergebnisprüfung und weitere Anbindung von Textabschnitten |
 | Neue Artseiten | Tatsächliche Vorlagen, persistierter CAS-/Freigabe-/CMSplankern und gemeinsamer Transportadapter mit 39 isolierten Fällen geprüft | Durchgehender Editor, tatsächliche Bilderbereitstellung, Vorprüfung und beobachtete kontrollierte CMS-Einpflege |
 
+Für den Anschluss der normalen Artbearbeitung ist der vollständige gemeinsame Arbeitsdatensatz
+quellseitig ergänzt: Originalfelder, erzeugte Fassung und geschützte Assetbindungen bleiben erhalten;
+der mobile Katalog bleibt eine lesende Projektion. Der neue Backendweg für Grunddaten nutzt
+personengebundene Vorschauen und dieselbe Offlinewarteschlange, einschließlich Konflikt-/Rollenprüfung.
+Die normale Artenansicht und das Grunddatenformular sind im Quellstand über die bewusste Auswahl
+**Artbestand → Auf diesem PC / Gemeinsames Projekt** angeschlossen; getrennte Ladewege und der
+Schutz vor veralteten Antworten sind geprüft. Regulärer Windowsstart, lesender NAS-Abruf und
+Rückkehr zum lokalen Bestand sind sichtbar bestätigt; eine künstliche Browserprobe bestätigt
+Speichern und ausdrücklichen Abgleich über den echten Testdienst. Eine lesende vollständige
+Quellenvorbereitung und kontrollierte Importkette samt Sicherungsprüfung sind ergänzt und mit eigenen
+Quellen/HTTP-Diensten geprüft. Der feste Quellenleser ist zusätzlich am gesamten tatsächlichen
+Artbestand lesend bestätigt. Die Konfliktbedienung vergleicht alle erhaltenen lokalen Fassungen und
+den aktuellen Serverwert; jede abweichende Feldentscheidung benötigt Vorschau und Bestätigung.
+Die sichtbare künstliche Probe bestätigt die kombinierte Übernahme ohne interne Freigabe oder
+Websiteveröffentlichung. Der Kopfbutton führt im gemeinsamen Bestand trotz lokaler Änderungen
+zu den Einstellungen; aktive Statusmeldungen bleiben erreichbar.
+Die interne Freigabe ist anschließend an die normale Artansicht angeschlossen: Eine gebundene
+Vorschau zeigt die tatsächliche Katalogfassung, der ausdrückliche Freigabeklick bestätigt nur diese
+Revision. Rollen-/Fassungswechsel und parallele lokale Entwürfe sind mit echten Testdiensten und
+getrennten Cachebesitzern geprüft. Eine isolierte sichtbare Probe bestätigt zusätzlich Moduswechsel,
+vollständige Lesetextvorschau, ausdrückliche Freigabe und korrekten Abschlussstatus am eigenen Testdienst.
+Umschaltung des regulären Desktopimports, produktive Anfangsübernahme und die übrigen Fachwege sind noch offen;
+deutsche/wissenschaftliche Umbenennungen benötigen weiter den gekoppelten Pfadadapter.
+Quellpaket **0.1.3** ist als eigenständiges Übertragungspaket mit exakt kopierten Laufzeitmodulen
+gebunden und isoliert importgeprüft; auf dem NAS läuft weiterhin
+der unten nachgewiesene Stand **0.1.2**. Keine automatische Datenübernahme oder Typkonvertierung.
+
+Die breite Integrationsprüfung hat einen zeitabhängigen PowerShell-7-Fehler beim vollständigen
+Sicherungsmanifestvergleich aufgedeckt und gezielt reproduziert. Die Korrektur erhält ISO-Zeitangaben
+unverändert; deterministische Gegenproben in PowerShell 5.1 und 7 einschließlich der Ablehnung
+manipulierter Zeitangaben bestehen. Der tatsächliche Hauptskriptweg ist mit eigenen Testarchiven
+geprüft; eine neue produktive NAS-Sicherung wurde dafür nicht gestartet. Nach zwei aktualisierten
+statischen Oberflächentestannahmen sind sämtliche 58 lokalen Testgruppen geprüft: **3.525 bestanden,
+kein Fehler, zwei unter Windows nicht erzeugbare Dateisymbolverknüpfungen ausgelassen**. Die zuvor
+bestandenen 49 Gruppen bleiben bei unverändertem Programmcode gebunden; die letzten neun Gruppen
+und alle Abschlussprüfungen sind anschließend erfolgreich durchgelaufen. Dokumentationsverweise,
+Stil, Syntax, Schema, Medien, Größenbudget und Projektstatus sind geprüft. Commit/Push und der
+anschließende GitHub-Pages-Lauf werden getrennt nachgewiesen.
+
 Das [NAS-Paket](../nas/README.md) und konsistente DB-Sicherung/Restorekopie sind vorbereitet und lokal
-geprüft; auf dem NAS wurde nichts installiert. Felix' eigene Alttextbearbeitung hat während der
+geprüft. Die am 1. November reproduzierte unvollständige Container-Kopierliste ist korrigiert;
+18 NAS-Fälle einschließlich isoliertem Quellpaketstart und echtem geschütztem Loopbackkatalog bestehen.
+Das erste Übertragungspaket mit 19 Laufzeitmodulen bleibt gebunden erhalten; der persönliche
+Einrichtungshelfer ergänzt das aktuelle Image auf 20 Module, mit **27/27** lokalen NAS-/Helferfällen.
+Container Manager **24.0.2-1706** auf Volume 1 ist direkt in DSM bestätigt. Das tatsächliche Image
+**0.1.2** mit Node **24.22.1** läuft im NAS-Projekt **arten-explorer** als **In Ordnung**;
+die Gesundheitsprüfung belegt die Datenbank unter der geprüften Dienstkennung **1032:100**,
+401 ohne Anmeldung und 421 bei fremdem Hostnamen. CPU-/Prozesslimit- und Programmleserechtefehler
+sind am NAS reproduziert und korrigiert. Port 4317 bleibt ausschließlich NAS-intern.
+Die von Felix gewählte Freigabe **Projekte** wurde auf seinen Bedienauftrag am 1. November erstellt.
+`/volume1/Projekte/Arten-Explorer` ist in DSM geprüft und enthält `app`, `config` und `data`;
+Felix hat KI-Zugang selbst berechtigt, der Container bindet nur seine beiden eigenen Daten-/Konfigurationsordner.
+Der persönliche Helfer ist im tatsächlichen Image enthalten; Felix hat beide Administrationskonten
+persönlich eingerichtet. Reguläre Containerneustarts mit erneuter Gesundheitsbestätigung,
+HTTPS über die genau bestätigte TCP-55431-Freigabe mit gültigem Zertifikat und Anmeldesperre
+sowie konsistente Sicherung und getrennte Restorekopie des Anfangsbestands sind tatsächlich geprüft.
+Felix' persönliche Exploreranmeldung bleibt nach regulärem Neustart erhalten und ein frischer
+Serverabruf bestätigt Administration. Die Erstimportvorschau ist vorbereitet, noch nicht angewendet.
+Zugriff aus fremdem Netz, NAS-Neustart, unabhängige Sicherung
+und Mehrgeräteabgleich bleiben als Betriebsprüfungen offen; IPv6 ist noch nicht durchgehend belegt.
+Felix' eigene Alttextbearbeitung hat während der
 Hintergrundentwicklung Vorrang. Prüfstand, Betriebsgrenzen und tatsächliche Paketrevisionen stehen
 in den jeweiligen Fach-/Modulverträgen, nicht in einer zweiten Auditdatei.
 

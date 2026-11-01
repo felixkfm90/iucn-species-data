@@ -1,6 +1,6 @@
 # Phase 11 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
-Stand: 2026-10-31
+Stand: 2026-11-01
 
 ## Ziel
 
@@ -33,7 +33,7 @@ Eine konkrete neue Benutzer- oder Synchronisationsarchitektur ist damit noch nic
 | Gemeinsame Inhalte | Ein gemeinsames Projekt von FN Wildlife & Travel mit gemeinsamen fachlichen Daten, Katalogbezügen und Auswertungen. Keine getrennten fachlichen Bestände nach Person vorgesehen. Technisch persönliche Anmeldungen und geräteabhängige Pfade bleiben zu berücksichtigen. |
 | Gleichzeitigkeit | Gleichzeitige Arbeit am gemeinsamen Projekt an unterschiedlichen Arten oder Seiten soll möglich sein. Ein einziger projektweiter Bearbeitungsmodus genügt diesem Ziel nicht. |
 | Verschiedene Orte und Verfügbarkeit | Zusammenarbeit muss von verschiedenen Orten aus und ohne laufenden PC von Felix oder seinem Bruder funktionieren. Ein dauerhaft erreichbarer gemeinsamer Dienst gehört damit zum Ziel. Das vorhandene NAS ist als Betriebsort zu prüfen, keine bereits gewählte Lösung. Zusätzliche kostenpflichtige Dienste sind ausgeschlossen. |
-| Vorhandenes NAS | Nutzerbelegte Synology DS923+, DSM 7.4.1-90080 Update 1, AMD Ryzen R1600 mit zwei Kernen und 32 GB RAM. Grundsätzlich 24/7 in Betrieb; Updates und Stromausfall können unterbrechen, eine USV überbrückt kurze Stromausfälle. Genügend freier Speicher ist von Felix bestätigt. Container Manager ist für dieses Modell offiziell unterstützt; Installation und tatsächlicher Dienstbetrieb sind noch zu prüfen. |
+| Vorhandenes NAS | Nutzerbelegte Synology DS923+, DSM 7.4.1-90080 Update 1, AMD Ryzen R1600 mit zwei Kernen und 32 GB RAM. Grundsätzlich 24/7 in Betrieb; Updates und Stromausfall können unterbrechen, eine USV überbrückt kurze Stromausfälle. Genügend freier Speicher ist von Felix bestätigt. Container Manager 24.0.2-1706, gesunder Dienststart einschließlich regulärem Containerneustart, zwei persönlich angelegte Administrationskonten, HTTPS mit Anmeldesperre und Felix' Exploreranmeldung einschließlich regulärem Neustart sind am 1. November tatsächlich bestätigt. Durchgehender Fachanschluss und Mehrgerätebetrieb stehen noch aus. |
 | Offline | Beide Gerätearten sollen geladene Inhalte ohne Verbindung verwenden können. Am PC sind zusätzlich Änderungen an bestehenden Arten und Seiten möglich; neue Arten/Seiten werden im ersten Offlineumfang nicht angelegt. Am Handy bleibt es beim Nachschlagen/Lesen. Zusatzdownloads sind optional und nach Inhalten auswählbar, ausdrücklich auch alle Informationen ohne die auf der Website verwendeten Fotos. Änderungen werden bei Wiederverbindung abgeglichen; widersprüchliche Bearbeitungen bleiben erhalten und sichtbar zur Entscheidung. |
 | Vorschläge und Kostenrahmen | Alternativtextvorschläge, gewünschte Fachtextergänzungen und Vorprüfungen sollen direkt im Explorer ohne diesen Chat möglich sein. Keine kostenpflichtigen Dienste verwenden. Eine geeignete lokale Lösung ist erst zu untersuchen; Qualität, Geschwindigkeit und Hardwareeignung sind noch nicht nachgewiesen. |
 | Lightroom | Beide verwenden einen gemeinsamen Lightroom-Katalog mit gemeinsamen Auswertungen. Dieser kann nacheinander auf verschiedenen Rechnern oder Laptops genutzt werden; gleichzeitige Nutzung desselben Katalogs ist nicht vorgesehen. Gerätewechsel, Katalogzuordnung und Nutzungsnachweise müssen diese Übergabe berücksichtigen. Die technische Übergabe und Zuordnung des gemeinsamen Katalog-/Fotobestands bleibt zu klären. |
@@ -114,9 +114,20 @@ Anmeldeschlüssel und verschlüsselte Anmeldedateien gehören nicht zum Sicherun
 auch nach Wiederöffnung unsichtbar und werden nicht zu fachlichen Offlineänderungen erklärt.
 Der Explorer wartet beim Schließen auf den Sicherungsbesitzer, bevor er Cache und Tempablage schließt.
 
+Seit der Wiederaufnahme am **1. November** ist die seitenweise Bildtextbrücke im normalen Desktopstart
+an denselben persönlichen Projektclient angeschlossen. **Website-Bildtexte → Seitenaktionen →
+Bildtexte gemeinsam abgleichen** öffnet den Vergleich. Das persönliche Journal
+`personal-project/website-alt-sync.sqlite` ergänzt Gerätekennung, Projektcache und Erstimportjournal
+als vierte feste Sicherungsdatei; seine Schema-1-Prüfung und frühere Projektbindungen werden vor dem
+konsistenten Snapshot kontrolliert. Ein beschädigtes Journal bleibt erhalten, die lokale Bedienung
+startet weiter, die gemeinsame Funktion meldet den Fehler und eine vollständige persönliche Sicherung
+wird abgewiesen. Der normale Desktopserver reicht das persönliche Sicherungsprofil jetzt durchgängig
+weiter. Beim Beenden schließt die Bildtextbrücke nach dem Sicherungsbesitzer und vor dem gemeinsamen Client.
+
 Die echte Paket-/WAL-/Restorekopieprüfung verwendet ausschließlich eigene kleine Testbestände. Eine
-neue NAS-Gesamtsicherung ist nicht ausgeführt. Neue Bildtext-/Artseitenjournale und bereitgestellte
-Artseitenmedien werden erst nach ihrer konkreten Schema-/Medieneinbindung als enthalten ausgewiesen.
+neue NAS-Gesamtsicherung ist nicht ausgeführt. Die bewusste persönliche Erstverknüpfung und ein echter
+Mehrgeräte-/NAS-Abgleich stehen aus. Artseitenjournale und bereitgestellte Artseitenmedien werden erst
+nach ihrer konkreten Schema-/Medieneinbindung als enthalten ausgewiesen.
 Direkte ältere PowerShell-/npm-Aufrufe ohne persönlichen Snapshot melden diesen eingeschränkten
 Umfang ausdrücklich; aus ihnen entsteht kein vollständiger Mehrgeräte-Sicherungsnachweis. Es wurde
 kein zusätzlicher Timer oder Sicherungslauf an Datenbank-Abschlussaktionen angehängt. Die tatsächliche
@@ -126,18 +137,202 @@ werden; ein Betriebssystem-Zeitplan wird daher nicht aus vorhandenem Skriptcode 
 Das [NAS-Paket](../nas/README.md) enthält eine begrenzte Containerdefinition mit gebundenem offiziellem
 Node-24-Image und ausdrücklich zu liefernden Volume-/Benutzerwerten. Der Hostport ist nur lokal am
 NAS vorgesehen. Konsistente Sicherung über die SQLite-Backupfunktion und getrennte Wiederherstellung
-in neue Dateien sind mit echten WAL-Daten isoliert geprüft. Dies ist keine neue NAS-Einrichtung,
+in neue Dateien sind mit echten WAL-Daten isoliert geprüft. Diese Sicherungsfälle sind keine
 Sicherung des realen Dienstbestands, Reverseproxy-/TLS- oder Fernzugriffsabnahme. Bootstrapzugänge
 werden erst bei der tatsächlichen persönlichen Einrichtung festgelegt.
+
+Der Quellpaketnachlauf vom 1. November ergänzt alle 19 tatsächlichen Laufzeitabhängigkeiten, nachdem
+die alte Kopierliste im isolierten Start gescheitert war. Die strikte Kontextliste bleibt erhalten.
+Die damaligen 18 NAS-Fälle einschließlich synthetischer Einrichtung und wirklichem geschütztem Loopbackkatalog
+bestehen. Der ergänzte persönliche Terminalhelfer erhöht den aktuellen Umfang auf 20 Module und
+27 bestandene NAS-/Helferfälle. Ein kleines privates Übertragungspaket ist hashgebunden vorbereitet. Felix hat die genaue
+DSM-Verwaltungsadresse mitgeteilt und Container Manager anschließend am 1. November als installiert
+bestätigt. Die Einrichtungsanzeige enthielt `172.17.0.1/16`. Das ist eine Nutzerbestätigung der
+Paketinstallation. Die anschließend tatsächlich ausgeführte Einrichtung ist nachfolgend getrennt belegt.
+
+Felix legt anschließend die gemeinsame NAS-Ablage **Projekte** als verständlichen Einstieg für mehrere
+Vorhaben fest. Der Arten-Explorer erhält darunter **Arten-Explorer/app**, **Arten-Explorer/config** und
+**Arten-Explorer/data**. Andere Vorhaben wie Numis-Katalog und ein späterer Kaufberater/Checker bekommen
+eigene Projektordner; ihre Einrichtung wird damit nicht mit ausgeführt. Der Synology-Standardordner
+`docker` bleibt getrennt. Die Containerdefinition bindet konfigurierbare absolute Pfade und benötigt
+keinen Ordner dieses Namens. Bei der lesenden DSM-Prüfung sind Container Manager **24.0.2-1706** auf
+Volume 1 sowie der noch leere Standardordner `/volume1/docker` bestätigt. Auf Felix' ausdrücklichen
+Bedienauftrag wurde die Freigabe **Projekte** am 1. November in DSM erstellt. Der in den Eigenschaften
+geprüfte Projektpfad ist `/volume1/Projekte/Arten-Explorer`; `app`, `config` und `data` sind vorhanden.
+Der Papierkorb bleibt aktiviert und auf Administratoren beschränkt. Felix hat anschließend selbst
+dem vorhandenen KI-Zugang Lese-/Schreibrechte auf `Projekte` gegeben. Die Linux-Bindung **1032:100**
+ist anhand einer in DSM diesem Benutzer zugewiesenen eigenen Prüfdatei und ihrer vom Container
+gelesenen Kennungen festgestellt. Es wurde kein zusätzlicher NAS-Benutzer angelegt.
+Ordnerverschlüsselung, Daten-Prüfsumme und Kontingent bleiben bei den ausgeschalteten Assistentenstandards.
+
+Das tatsächliche Projekt **arten-explorer** verwendet den Baukontext `Arten-Explorer/app` und nur
+die eigenen Mounts `data:/project:rw` und `config:/configuration:ro`. Image **0.1.2** mit Node
+**24.22.1**, Linux/x64, läuft als **In Ordnung**; der reguläre Containerneustart mit anschließender
+erneuter Gesundheitsbestätigung ist tatsächlich beobachtet. Seine Gesundheitsprüfung
+bestätigt die reguläre Datenbankdatei unter dem Dienstbenutzer, **401** ohne Anmeldung und **421**
+bei fremdem Hostnamen. Der Hostport bleibt ausschließlich `127.0.0.1:4317`; der anschließende
+HTTPS-Zugang wird unten getrennt beschrieben. Keine bisherigen PC-/Website-/Lightroom-Daten wurden importiert.
+Nicht unterstützte CPU-/Prozesslimits und die unpassenden Programmleserechte im Image sind anhand
+echter NAS-Fehler korrigiert. Der NAS-Standard zeigt die Containerprotokolle an; globale
+Protokolleinstellungen bleiben unverändert. Einzelheiten führt die [NAS-Anleitung](../nas/README.md).
+Der persönliche Helfer ist im gebauten Image enthalten. Felix hat nach einer abgebrochenen
+Ersteingabe beide Administrationskonten persönlich im verbundenen bash-Terminal angelegt;
+Erfolgsmeldung und zwei Benutzer im konsistenten Snapshot sind bestätigt. Während seiner
+Eingaben erfolgten keine automatischen Bildschirmaufnahmen oder Eingaben.
+Die gesondert bestätigte HTTPS-Adresse `https://kfmtettaums40.synology.me:55431` und genau die
+TCP-55431-Freigabe am NAS sind in DSM und FRITZ!Box 7590 AX eingerichtet. Nach regulärem
+Dienstneustart liefern LAN-Gegenprobe und normale DNS-Verbindung mit gültigem Zertifikat ohne
+Anmeldung 401. Kein IPv6-Ende-zu-Ende-Nachweis: Der gesonderte Abruf scheitert schon an der DNS-Auflösung.
+Der reale Anfangsbestand mit zwei Konten und noch ohne Fachinhalte ist über SQLite-Backup
+konsistent gesichert und in eine neue getrennte NAS-Datei hash-/inhaltsgeprüft zurückgelesen;
+keine aktive Datenbank ersetzt. Details und Grenzen führt die [NAS-Anleitung](../nas/README.md).
+Felix hat die persönliche Explorerverbindung anschließend selbst hergestellt. Die native Ansicht
+bestätigt **Mit dem gemeinsamen Projekt verbunden**, **Administration**, keine lokale Änderung
+und keinen Konflikt. Nach regulärem Explorerneustart bleibt die Anmeldung erhalten; ein frischer
+Serverabruf bestätigt dieselbe Verbindung ohne neue Passworteingabe. Bei diesem ersten Prüfschritt war
+zunächst der eigene Projektbereich verbunden; der anschließende Anschluss der normalen Artenansicht
+ist unten getrennt belegt. Anmeldung allein ist keine vollständige Mehrbenutzerabnahme.
+Die Randabstände dieses Projektfensters folgen jetzt der vorhandenen Formularregel mit 18 Pixeln,
+auf schmalen Fenstern 14 Pixeln; Importbereich und Schließen-Button liegen innerhalb desselben Abstands.
+Die tatsächliche Ansicht nach Neustart und erneutem Laden bestätigt diese Abstände einschließlich
+Importauswahl, Checkbox und getrennten Buttons. Ein nachgestellter Fehler beim Wiederverbinden ist
+korrigiert: Der Importbereich erhält den tatsächlichen Verbindungs-/Rechtestand sofort, entfernt
+einen überholten Anmeldehinweis und sperrt sich bei Rechteverlust. Auch ein überlappender
+Projektabruf darf die Fortschrittsnachfrage eines laufenden Imports nicht beenden; der Fehler
+ist vor der Korrektur nachgestellt. **28/28 Panel-/Servicefälle** bestehen.
+Die ausschließlich vorbereitete native Erstübernahme zeigt **63 anzulegende, 0 angelegte und
+0 intern freigegebene Arten**. Leserfreigabe ist nicht gewählt, der Start wurde nicht bestätigt.
+Zugriff aus fremdem Netz, NAS-Neustart, unabhängige Sicherung und tatsächlicher Mehrgeräteabgleich
+stehen noch aus.
+
+Der nächste technische Anschluss verwendet einen vollständigen typisierten Art-Datensatz in
+derselben bestehenden Projektversionsverwaltung und Offlinewarteschlange. Die ursprüngliche
+manuelle Artzeile, erzeugte Fassung, Taxonomie-/Assessmentbindungen, geschützte Assetzuordnungen,
+Metadaten und redaktionelle Abschnitte bleiben unterscheidbar erhalten. Ein normaler Grunddaten-
+Speichervorgang darf ausschließlich die bekannten manuellen Eingabefelder ändern. Gemeinsame
+Objektkennung und tatsächliche Assetkennung bleiben dabei stabil; der gekoppelte lokale Pfad-/URL-
+Umbau ist eine gesonderte kontrollierte Aktion. Der Android-Katalog bleibt eine lesende Projektion
+der ausdrücklich freigegebenen Fassung und erhält keine privaten Quellregister oder Prompts.
+Bereits vorhandene schmalere Katalogobjekte werden nicht aus Allgemeintext zurückgerechnet oder
+automatisch ersetzt. Quellstand, lokale Prozess-/Clientgegenprobe und tatsächlicher NAS-Betrieb
+dieses Anschlusses sind getrennt nachzuweisen; die laufende NAS-Version wird nicht dadurch geändert.
+Der vorbereitete Backendweg verwendet kurzlebige, an Person/Projekt/Fassung gebundene Vorschauen
+und dieselbe bestehende Warteschlange. **14/14 fokussierte Editor-/Routenfälle** prüfen unter anderem
+zwei tatsächliche HTTP-Clients, Offlineänderung, Konflikterhalt, Rollenverlust und Personenwechsel.
+Der anschließende Quellstand schließt die normale Hauptansicht und ihr Grunddatenformular über die
+bewusste Auswahl **Artbestand → Auf diesem PC / Gemeinsames Projekt** an. Die Quellen bleiben getrennt,
+die Wahl wird auf diesem Gerät gespeichert. Cachelesen startet keinen Netzabgleich. Offene Formulare,
+verspätete Antworten und bekannter Zugangsverlust sind berücksichtigt; es gibt keinen stillen lokalen
+Rückfall. Fachabschnitte und Galerien sind lesbar, öffentliche Medienverweise werden ausdrücklich
+nicht als lokal geprüft ausgegeben. Der bestehende schmalere Projekteditor verweist dorthin und
+reduziert vollständige Datensätze nicht auf seine frühere Form. Die lesende Quellenvorbereitung bindet
+Originalfelder und tatsächliche Assetbytes; ihre kontrollierte Anfangsübernahme, gekoppelte
+Namens-/Medien-/Taxonomiewege und die Mehrgeräte-Gesamtbedienung sind noch offen.
+Quellpaket 0.1.3 ist noch nicht auf dem NAS gebaut; keine produktive Bestandsumstellung.
+
+Die anschließende **native Bedienprobe am 1. November** bestätigt den regulären Neustart über die
+Desktopverknüpfung, den ausdrücklichen Quellenwechsel und den lesenden NAS-Abruf mit erhaltener
+Anmeldung. Der noch leere gemeinsame Bestand wird ohne lokale Ersatzarten angezeigt; anschließend
+ist der bisherige lokale Bestand im Lesemodus wiederhergestellt. Eine getrennte Browserprobe mit
+künstlicher Testart und eigenem Loopback-Projektdienst bestätigt Vorschau, Speichern, regulären
+Dialogabschluss und ausdrücklichen Abgleich: Vor dem Abgleich bleibt die Serverfassung unverändert,
+danach sind Warteschlange und Konfliktzähler leer; zusätzliche Quellfelder bleiben erhalten.
+Nachladeantworten dürfen inzwischen geöffnete Formulare nicht ersetzen. Quellen-/Personenwechsel
+entwerten alte Anfragen; verspätete Speicherantworten verwerfen keine neueren Eingaben. **39/39**
+gezielte Oberflächenfälle bestehen. Private Bild-/Ergebnisbelege liegen im bestehenden Prüfbereich
+`data/website/checks/nas-implementation-20261101/deployment/`. Dies ist keine produktive Erstübernahme,
+kein NAS-Versionswechsel und keine Zwei-PC-, Android- oder öffentliche Websiteabnahme.
+
+Der anschließende feldweise **Artkonfliktvergleich** ist im bestehenden gemeinsamen Projektbereich
+ergänzt. Aktuelle Serverwerte, Ausgangswerte und alle erhaltenen lokalen Fassungen sind vergleichbar.
+Abweichende englische Namen, Größe, Gewicht und Lebenserwartung benötigen eine ausdrückliche
+Feldwahl, Vorschau und abschließende Bestätigung. Originalregister, übrige Quellfelder, Texte und
+Assetbindungen bleiben in der Serverfassung erhalten; deutsche und wissenschaftliche Umbenennungen
+bleiben gesperrt. Die Entscheidung bindet Person, Projekt, Rolle, Serverfassung und sämtliche lokalen
+Fassungen. Ein parallel entstandener weiterer lokaler Entwurf wird auch nach einer bereits am Server
+ausgeführten Entscheidung nicht still verworfen. Unklare Antworten werden nicht automatisch wiederholt;
+**Serverstand lesen** aktualisiert bekannte Konflikte ausschließlich lesend, danach wird erneut geprüft.
+Wurde ein Konflikt bereits andernorts entschieden, entsteht gegebenenfalls nur eine lokale Vormerkung
+für den eigenen geprüften Zielinhalt; ein späterer Abgleich bleibt ausdrücklich erforderlich.
+
+Die isolierte sichtbare Probe am 1. November verwendet ausschließlich künstliche Daten und einen
+eigenen HTTP-Testdienst: Aus zwei lokalen Fassungen wurde ein Feld mit dem aktuellen Serverwert
+kombiniert. Der vollständige Zielinhalt stimmt mit der gewählten Kombination überein, Warteschlange
+und Konfliktzähler sind danach leer; der interne Entwurf ist weiterhin nicht freigegeben. Der eigene
+Testtab und Testserver sind beendet, Computer Use ist an Numis zurückgegeben. Die reguläre Explorer-
+Sitzung und produktive Daten sind unverändert. Ergebnis und Bilder liegen im oben genannten privaten
+Prüfbereich. Eine dabei reproduzierte Menüzugangsregression ist korrigiert: Im gemeinsamen Bestand
+öffnet der Kopfbutton die Einstellungen statt einer lokalen Übertragungsvorschau. Aktive Statuswege
+bleiben erhalten. Diese Prüfung ersetzt weiterhin keine produktive NAS-/Mehrgeräteabnahme.
+
+Die **interne Artfreigabe** ist anschließend an die normale gemeinsame Artansicht angeschlossen.
+Sie erlaubt Administration und Redaktion mit Freigabe eine bewusst bestätigte Freigabe für
+Projektleser und das Nachschlagewerk. Eine neue Vorschau bindet die vollständige aktuelle Fassung,
+Metadaten, Person, Projekt, Rolle und effektive Rechte; sie zeigt zusätzlich exakt die öffentliche
+Katalogprojektion einschließlich Texten, Taxonomie und Medien. Private Quellregister und Prompts
+bleiben ausgeschlossen. Vorschau allein bewirkt keine Freigabe. Unabgeglichene Änderungen oder
+Konflikte dieser Art sperren den Abschluss; offene Arbeiten an anderen Objekten werden nicht mitgesendet.
+
+Der Client prüft vollständigen Inhaltshash, Revision und lokale Warteschlange nach der Anmeldung
+und nach einem frischen Unterstützungsnachweis unmittelbar vor dem Schreiben erneut. Projekt,
+Person und Rolle werden zusätzlich innerhalb der serverseitigen Freigabetransaktion geprüft.
+Eine später entstandene lokale Fassung bleibt erhalten und wird nicht als mitfreigegeben ausgegeben.
+Verlorene oder widersprüchliche Antworten lösen keine automatische Wiederholung aus; **Serverstand
+lesen** ermöglicht die bewusste Nachprüfung. Ein abgelaufener oder verbrauchter Vorschautoken muss
+neu erstellt werden. Der alte allgemeine Redaktionseditor bleibt für vollständige Artdatensätze
+gesperrt. Die integrierte Explorer-/HTTP-Probe bestätigt den Weg vom lokalen Entwurf über ausdrücklichen
+Abgleich, Vorschau und Freigabe bis zur tatsächlichen Reader-Katalogausgabe bei unveränderten lokalen
+Originaldateien. Oberflächenfälle prüfen Moduswechsel, verspätete Antworten, vollständige Anzeige und
+Medienfreigabe beim Schließen. Die anschließende isolierte sichtbare Probe bestätigt den vorhandenen
+Freigabebutton nach Wechsel vom Lesen zur Bearbeitung, die Lesetextvorschau einschließlich bewusster
+Leerstelle und die ausdrückliche Freigabe. Der eigene Testdienst bestätigt unveränderten vollständigen
+Record, leere Warteschlange, freigegebene Readerfassung und ausgeschlossene private Originalfelder;
+danach verschwindet die erneute Freigabeaktion. Die Testart besitzt keine Medien: tatsächliche Bild- und
+Tonabrufe sind damit nicht nativ abgenommen. Eigener Tab und Server sind regulär geschlossen; die
+Originalsitzung und der NAS-Bestand bleiben unverändert. Bild-/Ergebnisbelege liegen im bestehenden
+privaten Prüfbereich. Tatsächlicher NAS-/Zielgerätebetrieb bleibt davon getrennt.
+
+Die zusammenhängende Quellprüfung vom **1. November** umfasst alle **58 Testgruppen** mit
+**3.525 bestandenen Tests, keinem Fehler und zwei unter Windows nicht erzeugbaren symbolischen
+Dateiverknüpfungsfixtures**. Der vollständige Lauf deckte zunächst den unten beschriebenen
+PowerShell-Zeitstempelfehler auf. Nach dessen Korrektur blieben 49 bestandene Gruppen gebunden;
+zwei veraltete statische Oberflächenannahmen wurden anschließend durch tatsächliche lokale und
+gemeinsame Rendergegenproben ersetzt. Bei unverändertem Programmcode bestehen die letzten neun
+Gruppen und alle zehn Abschlussprüfungen. Syntax, Stil, Verweise, Schema, Audio-/Bildprüfung,
+Größenbudget, Projekt- und Seitenstatus sind eingeschlossen. Die beiden Datei-Linkfälle bleiben
+als Windows-Prüfgrenze ausgewiesen; Verzeichnisverknüpfungen und übrige Integritätsfälle bestehen.
+Diese Quellprüfung ersetzt weder den vollständigen Linux-CI-Lauf noch produktive Betriebsabnahmen.
+
+Der lesende Quellenadapter ist anschließend an dieselbe Importsteuerung angeschlossen und mit
+künstlichen Originalquellen sowie tatsächlichen HTTP-Diensten geprüft. Journalversion 2 unterscheidet
+Quellenart, Artidentitäten, Zielinhalte und Dateibindungen; der persönliche Sicherungsvalidator führt
+diese Bindungen einschließlich Schreibabsichten und Quittungen mit. Vor jedem betroffenen Schreibschritt
+werden Quellen und Person/Projekt erneut geprüft. Der Server muss die Unterstützung ausdrücklich
+bestätigen; Administration und Projekt-/Personenbindung werden in der Schreibtransaktion geprüft.
+Ein ersetzter Plan bleibt gesperrt; ein noch unbegonnener Plan kann nach ausdrücklicher Bestätigung
+auf dem aktuellen Bestand neu vorbereitet werden. Bestehende schmale Katalogobjekte bleiben erhalten.
+Der feste lokale Quellenleser ist am tatsächlichen Originalbestand vollständig lesend und je Art erneut
+geprüft; die Quelldateien bleiben unverändert. Er ist über eine feste Node-Option am Explorer-Server
+anschließbar. Der normale Desktop nutzt weiterhin die öffentliche Erstquelle. Seine Umschaltung,
+NAS-Upgrade, Übernahmefreigabe, Medienbereitstellung und ein eigener atomar geprüfter Typwechsel mit
+erhaltener Versions-/Freigabehistorie stehen noch aus; der vorbereitete Anfangsplan bleibt erhalten.
+
+Das lesende Android-Paket **0.1.2+3** ist seit 1. November mit optionaler Offlinegalerie tatsächlich
+gebaut. Analyzer und **89 Tests** bestehen; APK-Signatur, gebundener Anfangskatalog und beide
+Logoressourcen sind geprüft. Öffentliche Websitefotos bleiben optional und werden als die auf dem
+Gerät beobachtete Fassung behandelt. Die SDK-Downloadsperre ist erneut praktisch belegt, die
+Komponentenmetadaten bleiben unverändert und der Werkzeugabschnitt wurde an Numis zurückgegeben.
+Die tatsächliche S24-/S25-, Anmelde- und NAS-Betriebsprüfung steht weiterhin aus; Paketpfad und
+Prüfgrenzen stehen im [mobilen Modulvertrag](../mobile/README.md).
 
 Der [Windows-Installer](../installer/README.md) ist als privates Prüfpaket tatsächlich gebaut;
 Dateiinstallation, Update, Reparatur, Rücknahme und datenerhaltende Deinstallation sind an isolierten
 Beständen geprüft. Node, Electron, Git sowie FFmpeg/FFprobe werden gebunden bereitgestellt; Lightroom
 bleibt eine vorhandene Adobe-Installation. Plug-in-Quellstand .43 erkennt das mitgelieferte Node;
 der installierte Korrekturrückweg prüft die Bindung und verwendet den nativen Appstarter. Die letzte
-reguläre native Lightroom-Ladeprüfung betrifft .42. Nach der laufenden Integration ist das Paket
-erneut zu bauen; Erstinstallation auf einem frischen vorgesehenen PC und Auslieferungsnachweise
-bleiben offen.
+reguläre native Lightroom-Ladeprüfung betrifft .42. Das integrierte private Windows-Prüfpaket ist am
+1. November erneut gebaut und mit 14 tatsächlichen Paketproben geprüft. Erstinstallation auf einem
+frischen vorgesehenen PC und Auslieferungsnachweise bleiben offen.
 
 ## Ergänzter Folgeauftrag: Installer und Mehrbenutzerunterstützung
 
@@ -667,6 +862,16 @@ Die gezielten Gegenproben bestehen in 5.1 und 7 einschließlich nachträglich ve
 der anschließend beauftragte vollständige NAS-Lauf vom 28. Oktober ist einschließlich Rücklese-,
 Quell- und Aufbewahrungsprüfung erfolgreich. Dieser tatsächliche Betriebsnachweis und seine Grenzen stehen im
 [Auditnachlauf](audit-auftrag-phase-10-5.md#1057-lightroom-nachprüfung-und-nas-sicherung--28-oktober).
+
+Die Integrationsprüfung vom **1. November** hat zusätzlich einen zeitabhängigen Fehler im vollständigen
+Manifestvergleich unter PowerShell **7.6.5** reproduziert: Die automatische JSON-Datumsumwandlung
+verkürzt Nachkommastellen mit Endnullen, etwa `.1200000+01:00` zu `.12+01:00`. Beim Archivlesen werden
+Datumszeichenfolgen deshalb mit `DateKind: String` erhalten, sofern die Laufzeit diesen Parameter anbietet;
+Windows PowerShell 5.1 erhält sie bereits als Zeichenfolgen. Der vollständige Manifesthash bleibt streng.
+Deterministische Gegenproben mit Endnullen, UTC und Offset bestehen in beiden Laufzeiten; ein nachträglich
+veränderter Zeitpunkt wird weiterhin abgewiesen. Auch der tatsächliche Hauptskriptablauf mit dieser festen
+Fixturezeit einschließlich geprüfter Wiederverwendung besteht. Dies sind eigene lokale Testarchive,
+kein neuer NAS-Sicherungslauf und keine Veränderung vorhandener Archive.
 
 Das Skript:
 

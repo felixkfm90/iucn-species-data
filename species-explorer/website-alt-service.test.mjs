@@ -11,7 +11,8 @@ function fixture(overrides = {}) {
     mergeScan: async (value) => calls.push(["merge", value]),
     draft: async (value) => calls.push(["draft", value]),
     approve: async (value) => calls.push(["approve", value]),
-    verify: async (value) => calls.push(["verify", value]), ...overrides.store };
+    verify: async (value) => calls.push(["verify", value]),
+    keepExisting: async (value) => calls.push(["keep-existing", value]), ...overrides.store };
   const discovery = { listPages: async () => ({ urls: [url], errors: [], complete: true, coverageNotes: ["Statisches HTML"] }),
     scan: async (options) => { calls.push(["fetch-scan", options]); return { pages: [page], complete: true, errors: [] }; },
     page: async (target) => { calls.push(["fetch-page", target]); return page; }, ...overrides.discovery };
@@ -31,6 +32,15 @@ test("Website-Bildtextstatus liest ohne Netzabruf oder Datenänderung", async ()
   assert.equal((await service.snapshot()).revision, "r1");
   assert.deepEqual(calls, []);
   await service.close();
+});
+
+test("Status weist Beibehalten nur bei tatsächlicher Unterstützung des laufenden Speichers aus", async () => {
+  for (const supported of [true, false]) {
+    const { service, calls } = fixture(supported ? {} : { store: { keepExisting: undefined } });
+    assert.equal((await service.snapshot()).capabilities.keepExisting, supported);
+    assert.deepEqual(calls, []);
+    await service.close();
+  }
 });
 
 test("Sitemap-Erkennung und Vollscan sind getrennt; gespeicherte Seiten dienen als zusätzliche Eingänge", async () => {
@@ -148,4 +158,80 @@ test("Schließen während der Vorablesung verhindert einen erst danach gestartet
   await assert.rejects(verifying, /geschlossen/);
   await closing;
   assert.deepEqual(calls, []);
+});
+
+function keepFixture(overrides = {}) {
+  const h = fixture(overrides);
+  Object.assign(h.saved.pages[0], { inventoryStatus: "current", images: [{ key: "key", status: "draft", observationHash: "o1", approval: null }] });
+  return { ...h, payload: { revision: "r1", pageUrl: url, imageKey: "key", observationHash: "o1", approvalRevision: null, decorative: false } };
+}
+
+test("Beibehalten prüft die aktuelle Bindung, liest die konkrete öffentliche Seite und übergibt erst danach den atomaren Storeauftrag", async () => {
+  const { service, calls, payload } = keepFixture();
+  const result = await service.keepExisting(payload);
+  assert.deepEqual(calls, [["fetch-page", url], ["keep-existing", { ...payload, observedPage: page }]]);
+  assert.equal(result.scan.running, false);
+  await service.close();
+});
+
+test("Fremde Revision, Beobachtung, Freigabe und nicht aktueller Bestand stoppen Beibehalten vor dem Netzabruf", async () => {
+  for (const mode of ["revision", "observation", "approval", "removed", "unavailable", "redirect"]) {
+    const { service, calls, saved, payload } = keepFixture();
+    if (mode === "revision") payload.revision = "other";
+    if (mode === "observation") payload.observationHash = "other";
+    if (mode === "approval") payload.approvalRevision = "other";
+    if (mode === "removed") saved.pages[0].images[0].status = "removed";
+    if (mode === "unavailable") saved.pages[0].inventoryStatus = "unavailable";
+    if (mode === "redirect") saved.pages[0].redirectUrl = "https://www.fnwildlifetravel.de/andere-seite";
+    await assert.rejects(service.keepExisting(payload), /geändert|nicht mehr aktuell/);
+    assert.deepEqual(calls, []);
+    await service.close();
+  }
+});
+
+test("Laufende Beibehaltungsprüfung sperrt doppelte Aufträge, Scans, Freigaben, öffentliche Gegenprüfung und gemeinsamen Import", async () => {
+  let finish, started;
+  const entered = new Promise((resolve) => { started = resolve; });
+  const { service, payload } = keepFixture({ discovery: { page: () => new Promise((resolve) => { finish = resolve; started(); }) } });
+  const keeping = service.keepExisting(payload); await entered;
+  assert.equal((await service.snapshot()).scan.running, true);
+  await assert.rejects(service.keepExisting(payload), /laufende/);
+  await assert.rejects(service.scan(), /laufende/);
+  await assert.rejects(service.approve({}), /laufende/);
+  await assert.rejects(service.verify({}), /laufende/);
+  assert.throws(() => service.createSharedSyncStoreAdapter().authorizeSharedPageImport({}), /laufende/);
+  finish(page); await keeping;
+  assert.equal((await service.snapshot()).scan.running, false);
+  await service.close();
+});
+
+test("Öffentlicher Abruffehler markiert die Seite offen und legt keine Freigabe oder erfolgreiche Beibehaltung an", async () => {
+  const { service, calls, payload } = keepFixture({ discovery: { page: async () => { throw new Error("Seite offline"); } } });
+  await assert.rejects(service.keepExisting(payload), /offline/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], "merge");
+  assert.deepEqual(calls[0][1].errors, [{ url, message: "Seite offline" }]);
+  assert.equal((await service.snapshot()).scan.running, false);
+  await service.close();
+});
+
+test("Serverabschluss bricht die frische Beibehaltungsprüfung ab und verhindert einen nachlaufenden Storeauftrag", async () => {
+  let entered;
+  const started = new Promise((resolve) => { entered = resolve; });
+  const { service, calls, payload } = keepFixture({ discovery: { page: (target, { signal }) => new Promise((resolve, reject) => {
+    signal.addEventListener("abort", () => reject(new Error("Abgebrochen")), { once: true }); entered();
+  }) } });
+  const keeping = service.keepExisting(payload); await started;
+  const closing = service.close();
+  await assert.rejects(keeping, /Abgebrochen/); await closing;
+  assert.deepEqual(calls, []);
+});
+
+test("Eine schon laufende Websiteprüfung verhindert Beibehalten ohne zweiten öffentlichen Abruf", async () => {
+  let finish;
+  const { service, calls, payload } = keepFixture({ discovery: { listPages: () => new Promise((resolve) => { finish = resolve; }) } });
+  await service.discover();
+  await assert.rejects(service.keepExisting(payload), /laufende/);
+  assert.deepEqual(calls, []);
+  finish({ urls: [url], complete: true }); await settled(service); await service.close();
 });

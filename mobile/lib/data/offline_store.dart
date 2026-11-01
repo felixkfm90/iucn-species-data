@@ -154,8 +154,11 @@ class OfflineStore {
 
   Future<bool> _matchesBinding(OfflineFileBinding binding) async {
     final file=_bindingFile(binding);
-    if(await FileSystemEntity.type(file.path,followLinks:false)!=FileSystemEntityType.file ||
-      await file.length()!=binding.bytes) return false;
+    if (await FileSystemEntity.type(file.path, followLinks: false) !=
+            FileSystemEntityType.file ||
+        await file.length() != binding.bytes) {
+      return false;
+    }
     return (await crypto.sha256.bind(file.openRead()).first).toString()==binding.sha256;
   }
 
@@ -372,7 +375,7 @@ class OfflineStore {
   Future<OfflineFileBinding> _downloadWebsitePhoto(MediaReference reference,{
     required bool Function() cancelled,required void Function(int) onBytes,
   }) async {
-    final downloader=transport;
+    final Object downloader = transport;
     if(downloader is! WebsitePhotoTransport) {
       throw const FormatException('Der sichere Download öffentlicher Websitefotos ist nicht verfügbar.');
     }

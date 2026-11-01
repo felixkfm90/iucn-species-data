@@ -24,6 +24,7 @@ import { invokeSharedProjectOperation } from "./project-feature-routes.mjs";
 import { startUpdateWithCompletion } from "./update-completion/start.mjs";
 import { createInitialProjectImport } from "./shared-project/initial-import.mjs";
 import { BUNDLED_SPECIES_SOURCE, readBundledSpeciesCatalog } from "./species-content/bundled.mjs";
+import { createLocalWorkingImportSource } from "./species-content/local-working-source.mjs";
 import { createExplorerRequestHandler } from "./request-router.mjs";
 import { createSpeciesCreateOperations } from "./species-create.mjs";
 import { speciesCreationAvailability } from "./species-creation-availability.mjs";
@@ -154,9 +155,13 @@ export async function createExplorerServer({
   }
   let initialProjectImport = null, initialProjectImportFailed = false;
   if (sharedProject && sharedProjectImportOptions) {
-    try { initialProjectImport = createInitialProjectImport({ ...sharedProjectImportOptions, service: sharedProject,
-      readCatalog: () => readBundledSpeciesCatalog(repoRoot), expectedSha256: BUNDLED_SPECIES_SOURCE.sha256,
-      expectedSpeciesCount: BUNDLED_SPECIES_SOURCE.speciesCount }); }
+    try {
+      if (sharedProjectImportOptions.sourceKind !== undefined && !["public-catalog", "working-records"].includes(sharedProjectImportOptions.sourceKind)) throw new Error("Unbekannte feste Importquelle.");
+      const sourceAdapter = sharedProjectImportOptions.sourceAdapter || (sharedProjectImportOptions.sourceKind === "working-records"
+        ? createLocalWorkingImportSource({ repoRoot, readCatalog: sharedProjectImportOptions.readWorkingCatalog }) : null);
+      initialProjectImport = createInitialProjectImport({ ...sharedProjectImportOptions, service: sharedProject, sourceAdapter,
+        ...(sourceAdapter ? {} : { readCatalog: () => readBundledSpeciesCatalog(repoRoot),
+          expectedSha256: BUNDLED_SPECIES_SOURCE.sha256, expectedSpeciesCount: BUNDLED_SPECIES_SOURCE.speciesCount }) }); }
     catch { initialProjectImportFailed = true; }
   }
   let application;
@@ -318,7 +323,8 @@ export async function createExplorerServer({
     isPipelineActive,
     isAssetWriteActive: () => assetWriteActive || creationMutationActive,
     deviceBackupProvider: deviceBackupProvider || (deviceBackupProfile ? createExplorerDeviceBackupProvider({
-      ...deviceBackupProfile, sharedProject, initialProjectImport, tempSession,
+      ...deviceBackupProfile, sharedProject, initialProjectImport, websiteAltSync,
+      websiteAltSyncConfigured: Boolean(websiteAltSyncOptions || websiteAltSyncService), tempSession,
     }) : null),
   });
   const {
@@ -946,7 +952,10 @@ export async function createExplorerServer({
               message: initialProjectImportFailed ? "Das persönliche Importjournal konnte nicht geöffnet werden. Vorhandene Dateien bleiben erhalten." : "Erstbestand in der Desktop-App mit eingerichtetem Projekt vorbereiten." };
             throw Object.assign(new Error("Der Erstbestandsimport ist auf diesem Gerät nicht verfügbar."), { statusCode: 409 });
           }
-          if (operation.action === "import-status") return { ...initialProjectImport.status(), available: true, source: BUNDLED_SPECIES_SOURCE };
+          if (operation.action === "import-status") {
+            const status = initialProjectImport.status();
+            return { ...status, available: true, source: { ...(status.source?.kind === "public-catalog" ? BUNDLED_SPECIES_SOURCE : {}), ...status.source } };
+          }
           if (operation.action === "import-prepare") return initialProjectImport.prepare(operation.payload);
           if (operation.action === "import-start") return initialProjectImport.start(operation.payload);
           if (operation.action === "import-receipts") {

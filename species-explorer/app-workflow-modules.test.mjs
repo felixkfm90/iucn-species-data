@@ -197,6 +197,13 @@ test("Weitere Aktionen sind beim Wiederöffnen geschlossen; Navigation bleibt sc
   assert.equal(dialog.open, true);
   assert.equal(elements.pipelineMessage.hidden, true);
   assert.ok(calls.every(({ url }) => !url.endsWith("/start")));
+  previewFails = false; state.databaseNeedsUpdate = true;
+  close.click(); elements.pipelineMenuButton.click();
+  for (let turn = 0; turn < 8; turn += 1) await Promise.resolve();
+  assert.equal(elements.pipelineDialogTitle.textContent, "Änderungen übertragen", "Der lokale Artbestand behält seine ausdrückliche Transfervorschau");
+  assert.equal(JSON.parse(calls.at(-1).options.body).mode, "transfer");
+  assert.equal(elements.pipelinePreview.hidden, false);
+  assert.ok(calls.every(({ url }) => !url.endsWith("/start")), "Eine Vorschau startet weiterhin keine Übertragung");
 });
 
 function workflowStatusFixture({ backup = [{ status: "idle" }], pipeline = [{ status: "idle" }], reloadError } = {}) {
@@ -676,4 +683,37 @@ test("Statusdialog: Backup und Pipeline fordern hidden, der ausdrückliche Aktio
   await chooser.settle(); chooser.elements.pipelineMenuButton.click(); await chooser.settle();
   assert.equal(chooser.elements.pipelineDialog.open, true);
   assert.equal(chooser.elements.pipelineModeChoice.hidden, false, "Die ausdrückliche Aktionsauswahl bleibt sichtbar");
+});
+
+test("Gemeinsamer Artbestand öffnet Einstellungen trotz lokaler Änderungen ohne eine lokale Übertragung vorzubereiten", async () => {
+  for (const editMode of [true, false]) {
+    const f = workflowStatusFixture(); await f.settle();
+    Object.assign(f.state, { workspace: "shared-project", databaseNeedsUpdate: true, editMode });
+    f.elements.pipelineMenuButton.click(); await f.settle();
+    assert.equal(f.elements.pipelineDialogTitle.textContent, "Datenbank-Aktionen");
+    assert.equal(f.elements.pipelineDialog.open, true);
+    assert.equal(f.elements.pipelineModeChoice.hidden, false, "Weitere Aktionen mit den Projekteinstellungen bleiben erreichbar");
+    assert.equal(f.elements.pipelineStartButton.hidden, true);
+    assert.equal(f.elements.pipelineStartButton.disabled, true);
+    assert.ok(f.calls.every(({ url, options }) => /\/status$/.test(url) && !options), "Der Kopfbutton darf keine lokale Transfervorschau anfordern");
+  }
+});
+
+test("Gemeinsamer Artbestand erhält laufende Statusfenster und den Abschlusszugang vor dem Einstellungsmenü", async () => {
+  for (const [kind, status] of [["pipeline", "running"], ["pipeline", "awaiting-review"], ["backup", "running"]]) {
+    const f = workflowStatusFixture({ [kind]: [{ status }] }); await f.settle();
+    Object.assign(f.state, { workspace: "shared-project", databaseNeedsUpdate: true });
+    f.elements.pipelineMenuButton.click(); await f.settle();
+    assert.equal(f.elements.pipelineDialogTitle.textContent, `${kind === "pipeline" ? "Pipeline" : "Backup"} ${status}`);
+    assert.equal(f.elements.pipelineModeChoice.hidden, true);
+    assert.equal(f.elements.pipelineStartButton.hidden, true);
+    f.queues[kind].push({ status: "completed" }); await f.fire(kind);
+    f.elements.pipelineRunNoticeOpen.click(); await f.settle();
+    assert.equal(f.elements.pipelineDialogTitle.textContent, `${kind === "pipeline" ? "Pipeline" : "Backup"} completed`);
+    assert.equal(f.elements.pipelineModeChoice.hidden, true, "Der separate Statushinweis bleibt nach Abschluss verfügbar");
+    f.elements.pipelineMenuButton.click(); await f.settle();
+    assert.equal(f.elements.pipelineDialogTitle.textContent, "Datenbank-Aktionen");
+    assert.equal(f.elements.pipelineModeChoice.hidden, false);
+    assert.ok(f.calls.every(({ options }) => !options), "Auch nach einem Lauf keine Übertragung aus dem Kopfbutton starten");
+  }
 });

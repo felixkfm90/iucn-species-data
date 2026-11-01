@@ -1,6 +1,6 @@
 # Gemeinsamer Projektdienst: Modulvertrag
 
-Stand: 2026-10-31. Diese isolierte Node-24-Basis liest keine bestehenden Repo-, Taxonomie-,
+Stand: 2026-11-01. Diese isolierte Node-24-Basis liest keine bestehenden Repo-, Taxonomie-,
 Lightroom- oder Websitebestände. Sie verändert und veröffentlicht keine Squarespace-Inhalte.
 Die fachlichen Betriebsentscheidungen und die NAS-Abnahme führt `docs/multi-device-backup-plan.md`.
 
@@ -195,6 +195,186 @@ Desktop-/Mehrgeräteabnahme bleiben nach dieser Quell- und DOM-Prüfung offen.
 
 Integrations- und DOM-Tests: `node --no-warnings --test --test-isolation=none --test-concurrency=1 species-explorer/shared-project/explorer-service.test.mjs`.
 
+## Vollständiger Art-Arbeitsdatensatz und normaler Grunddatenweg
+
+Der ergänzte Typ `fn-species-record`, Schema 1, verwendet dieselbe `kind:species`-Kennung,
+Versionsverwaltung, Rollenprüfung und persönliche Offlinewarteschlange. Er bewahrt die vollständige
+manuelle Originalzeile `input`, die davon getrennte erzeugte Fassung `generated`, Taxonomie- und
+Assessmentbindungen, stabile Assetkennung, Dateimetadaten/-hashes, Schutzentscheidungen sowie
+redaktionelle Abschnitte und Galerie. Unbekannte Originalfelder bleiben erhalten. Der strenge
+mobile Katalogvalidator bleibt unverändert; `validateSharedSpecies` nimmt beide bestehenden
+Datenformen an. Ein stiller Typwechsel oder eine automatische Bestandskonvertierung ist unzulässig.
+
+Der tatsächliche Store prüft Übergänge innerhalb der Schreib-/Konflikttransaktion: Normale
+Grunddatenänderungen dürfen nur `german`, `english`, `genus`, `species`, `size`, `weight` und
+`life_expectancy` in `input` ändern. Geschützte Originalquellen, übrige Eingabeschlüssel, Medien und
+Zuordnungen bleiben unverändert. `projectSpeciesRecordToCatalog` erzeugt ausschließlich aus der
+freigegebenen Fassung das bisherige mobile Schema 1. Private Originalregister und Prompts werden
+nicht übernommen. Ein nachgewiesen gebundener früherer Allgemeinblock wird deterministisch erneuert;
+redaktioneller Allgemeintext bleibt erhalten. Hashmetadaten behaupten keine zweite bereitgestellte Datei.
+
+`explorer-species-editor.mjs` hängt als `speciesEditor` an derselben serialisierten Explorerfassade.
+Die neuen lokalen Routen sind GET `/api/shared-project/species`, GET `/species/:id` und POST
+`/species/:id/preview` beziehungsweise `/save`, jeweils unter `/api/shared-project`. Leseaktionen
+verwenden ausschließlich den Cache. Die Vorschau bindet Person, Dienstadresse, Projektkennung,
+angezeigte lokale Fassung und Zielwerte. Speichern verbraucht diese kurzlebige Vorschau und merkt nur
+die geprüfte Änderung in derselben Queue vor. Es startet weder Netzabgleich noch Freigabe oder lokale
+JSON-/Assetmaterialisierung. Ein zwischenzeitlicher Personen-/Projektwechsel oder eine andere
+lokale Fassung stoppt den Auftrag. Der Vorschautoken ist keine dauerhafte fachliche Eigenschaft.
+
+Der Grunddatenadapter blockiert deutsche und wissenschaftliche Umbenennungen, solange der gekoppelte
+gemeinsame URL-/Assetpfadadapter noch fehlt. Vorhandene schmalere Katalogobjekte bleiben lesbar und
+werden nicht aus ihrem Allgemeintext zurückgerechnet. Die normale Hauptansicht und ihr Grunddatenformular
+verwenden im ergänzten Quellstand die bewusst gewählte Quelle **Artbestand → Auf diesem PC / Gemeinsames
+Projekt**. Die Wahl bleibt lokal auf dem Gerät gespeichert. Beide Bestände bleiben getrennt; ein Fehler
+des gemeinsamen Zugangs weicht nicht auf lokale Originaldaten aus. Verspätete Antworten eines zuvor
+gewählten Bestands werden verworfen; bei bekanntem Zugangsverlust verschwinden zuvor angezeigte Arten.
+Das ist noch keine vollständige Mehrbenutzer- oder NAS-Betriebsabnahme. Der laufende NAS-Dienst 0.1.2 enthält diesen
+neuen Recordtyp noch nicht. Das vorbereitete Containerquellpaket 0.1.3 und seine explizite Kopierliste
+sind von diesem tatsächlich laufenden Stand getrennt.
+
+`species-workspace.mjs` stellt hinter derselben serialisierten Fassade GET
+`/api/shared-project/species/workspace` und `/workspace/revision` bereit. Beide lesen ausschließlich
+den vorhandenen persönlichen Cache. Der Snapshot enthält normale Ansichtsmodelle, Status und
+personengebundene Editorfassungen; Originalregister und Prompts werden nicht im Browser ausgegeben.
+Einzelobjektstamps werden inkrementell gebunden. Auch Änderungen an Rolle, Verbindung oder Warteschlange
+verändern den sichtbaren Revisionsstand. Reader erhalten weiterhin ausschließlich die freigegebene Fassung.
+Vorhandene schmale Katalogobjekte werden als noch nicht vollständig eingerichteter Bestand gezählt.
+
+**Serverstand lesen** und **Änderungen abgleichen** sind bewusste getrennte Aktionen. Die normale
+Grunddatenbearbeitung verwendet dieselben Vorschau-/Speicherrouten und meldet eine lokale Vormerkung,
+keinen JSON-Backup- oder Veröffentlichungsabschluss. Offene Formulare verhindern den Bestandswechsel.
+Neue Eingaben während einer laufenden Vorschau machen den alten Vorschautoken unbrauchbar.
+Medien-/Taxonomie-/Lösch-/Rücknahmeaktionen sind für diesen gemeinsamen Anschluss noch nicht freigeschaltet;
+sie werden weder als lokale Artaktion angeboten noch still an lokale Schreibendpunkte weitergeleitet.
+Redaktionelle Fachabschnitte und geordnete Galerien sind lesbar; bewusste Leerstellen bleiben sichtbar.
+Ein öffentlicher Medienverweis ist keine heruntergeladene oder hashgeprüfte lokale Datei.
+
+### Feldweise Entscheidung vollständiger Artkonflikte
+
+`explorer-species-conflicts.mjs` verwendet dieselbe serialisierte Fassade, denselben persönlichen
+Cache und die bestehende Warteschlange. Die lokalen Routen sind GET `/species/conflicts`, GET
+`/species/conflicts/:id` sowie POST `/species/conflicts/:id/preview` und `/resolve`, jeweils unter
+`/api/shared-project`. Leseaktionen nutzen ausschließlich den Cache. Schreibaktionen benötigen die
+normale lokale Sitzung und passende Herkunft; fachliche Sperren werden mit ihrem tatsächlichen
+HTTP-Status zurückgegeben. Reader und reine Lesesitzungen können keine Konfliktentscheidung ausführen.
+
+`public/app-species-conflicts.js` liefert den eigenen Vergleich unter **Gemeinsames Projekt →
+Grunddaten vergleichen**. Er zeigt aktuelle Serverwerte, Ausgangswerte und jede erhaltene lokale
+Fassung für englischen Namen, Größe, Gewicht und Lebenserwartung. Jede Abweichung benötigt eine
+bewusste Auswahl; möglich sind Server, eine eindeutig zugeordnete lokale Fassung oder eigener Text.
+**Serverfassung beibehalten** bereitet nur die entsprechende Vorschau vor. Abweichende deutsche oder
+wissenschaftliche Namen bleiben lesbar, werden über diesen Weg aber nicht übernommen. Geschützte
+Originalquellen, übrige Eingabefelder, Texte und Assetbindungen bleiben exakt in der aktuellen
+Serverfassung. Die Vergleichsantwort enthält keine vollständigen privaten Quellregister.
+
+Die Vorschau bindet Dienst, Projekt, Person, Rolle/Berechtigung, vollständige Serverfassung,
+Konfliktgeschichte und sämtliche lokalen Folgeentwürfe. Hashes werden je vollständigem Record
+inkrementell gebildet. Eine Vorschau ist kurzlebig und nur einmal verwendbar; Feld-, Personen-,
+Rollen- oder Fassungsänderungen entwerten sie. Vor dem Senden werden Anmeldung und lokale
+Fassungsliste erneut geprüft. Die lokale Abschlusstransaktion gleicht dieselbe vollständige Liste
+aus Kennung, Zustand und Recordhash ab, bevor sie einen Entwurf ersetzt. Ein weiterer Cachebesitzer
+kann dadurch keinen ungeprüften Folgeentwurf verlieren, auch wenn der Server die Entscheidung
+bereits übernommen hat. Historische Fassungen bleiben erhalten; unklare Antworten werden nie
+automatisch wiederholt. **Serverstand lesen** liest zusätzlich ausschließlich bereits bekannte
+offene Konfliktkennungen und aktualisiert deren Status mit einer lokalen Versionsprüfung. Es sendet
+keine Warteschlange und kann keinen bereits lokal abgeschlossenen Konflikt wieder eröffnen.
+
+Bei einem bereits andernorts abgeschlossenen Konflikt wird der geprüfte Zielinhalt gegebenenfalls
+nur lokal vorgemerkt. Oberfläche und Ergebnis unterscheiden dies von einer bestätigten Serverlösung;
+ein anschließender Netzabgleich bleibt bewusst auszulösen. Interne Freigabe, Websiteübernahme,
+Umbenennung und lokale JSON-/Assetmaterialisierung sind keine Folge der Konfliktentscheidung.
+Die isolierte Browserprobe bestätigt zwei erhaltene lokale Fassungen, gemischte Feldauswahl,
+Vorschau und Bestätigung mit exakt erhaltenem Gesamtinhalt am eigenen Testdienst. Regulärer
+Explorer, Originaldateien und NAS-Betrieb werden dadurch nicht umgestellt.
+
+Die gebundene Konfliktentscheidung verlangt zusätzlich den frischen authentifizierten Nachweis
+`boundConflictReview:1`. Projekt, Person und Rolle werden als vollständige Bindung in derselben
+Servertransaktion geprüft. Damit stoppt auch ein späterer Wechsel in eine andere weiterhin
+schreibberechtigte Rolle. Ältere Server können diese Bindung nicht still ignorieren.
+
+### Interne Freigabe aus der normalen Artansicht
+
+`explorer-species-approval.mjs` hängt als `speciesApproval` an derselben Fassade. POST
+`/api/shared-project/species/:id/approval/preview` prüft `sourceScope`, `expectedEditRevision` und
+`expectedRevision`; POST `/approval/approve` an demselben Artpfad verbraucht ausschließlich den
+zugehörigen Token. Beide nutzen die normale lokale Sitzungs-/Herkunftsbarriere. Administration und
+Publisher benötigen eine volle Online-Anmeldung; lokale Änderungen oder Konflikte dieser Art
+sperren die Freigabe. Andere wartende Objekte bleiben ungesendet.
+
+Die Vorschau bindet vollständigen Objektinhalt und Metadaten, Dienst, Projekt, Person, Rolle und
+effektive Berechtigung. Sie enthält den kuratierten normalen Artdatensatz sowie `readerSpecies`,
+die exakt aus derselben Version erzeugte Katalogprojektion. Damit sieht die menschliche Prüfung
+die tatsächlichen Texte, Taxonomie und Medien für Projektleser und das Nachschlagewerk. Original-
+register und Prompts erscheinen in keinem der beiden Ansichtsmodelle. Eine fehlgeschlagene
+Darstellung hinterlässt keinen aktiven Freigabetoken. Ton startet nicht automatisch, beim Schließen
+werden die Vorschau-Medien freigegeben. Der Wechsel vom Lese- in den Bearbeitungsmodus aktualisiert
+die Aktionssperren derselben Detailansicht.
+
+Der Client erhält `expectedDataHash` des vollständigen Records und `requiredBinding` einschließlich
+Rolle. Er prüft Revision, Inhaltshash und offene lokale Arbeit nach frischer Identitätsprüfung und
+erneut nach dem authentifizierten Nachweis `boundSpeciesApproval:1` unmittelbar vor dem POST.
+Das zusätzliche `expectedReview:{projectId,userId,role}` wird strikt und innerhalb der bestehenden
+Freigabetransaktion geprüft; der administrative Erstimport bleibt kompatibel. Der Server validiert
+die Katalogprojektion, bevor er die erwartete Revision freigibt. Es gibt keine neue Warteschlange
+und keinen automatischen Abgleich.
+
+Die Antwort unterscheidet `reviewedRevision`, `approvedRevision` und `hasNewerLocalChanges`.
+Ihr Artinhalt ist ausschließlich die bestätigte Serverfassung, ein späterer lokaler Entwurf bleibt
+ungeprüft im Cache erhalten. `internalOnly:true` und `externalPublication:"not-performed"` grenzen
+die Aktion von Artseiten-Endfreigabe und CMS-Übernahme ab. Fehler, verlorene Antworten, abgelaufene
+oder verwendete Token erfordern eine neue ausdrückliche Prüfung. **Serverstand lesen** kann eine
+bereits erfolgte interne Freigabe nach einer verlorenen Antwort feststellen. Die alte allgemeine
+Redaktionsmaske speichert und bestätigt vollständige Arbeitsdatensätze weiterhin nicht.
+
+Die isolierte sichtbare Probe verwendet eine eigene künstliche Art mit Fachtext und bewusster
+Leerstelle, aber ohne Medien. Sie bestätigt Lese-/Bearbeitungswechsel, vollständige Lesetextvorschau,
+explizite Freigabe, Schlussmeldung und verschwindende erneute Freigabeaktion. Der eigene Testdienst
+belegt unveränderten Vollrecord, freigegebene Lesefassung ohne Originalregister und leere Warteschlange.
+Das ist keine produktive Bestandsübernahme und keine native Medien-/NAS-/Android-Abnahme.
+
+Die ausschließlich lesende Quellenvorbereitung `species-content/working-records.mjs` benötigt explizite
+vollständige Eingabestrukturen, Arteindeutigkeit und Assetbindungen. Sie bindet tatsächliche Dateiidentität,
+Größe und SHA-256 und übernimmt eine öffentliche Adresse nur bei passender belegter Katalogfassung.
+Unvollständige oder mehrdeutige Quellen blockieren den betroffenen Vorschlag. Ein alter erzeugter
+Allgemeinblock benötigt eine ausdrückliche exakte Quell-/Suffixbindung. Die Ausgabe bleibt vorgeschlagen;
+sie importiert, konvertiert, veröffentlicht und verändert keine Dateien.
+
+`species-content/working-import-source.mjs` verbindet diese Vorbereitung quellseitig mit derselben
+`initial-import.mjs`-Steuerung. Ausschließlich der Hauptprozess gibt Leser und Assetordner vor.
+Der Quellenhash bindet die sieben Originalregister, Assetwurzel, Artidentitäten, vollständigen
+Zielrecords und Dateibelege. Vor jeder Anlage beziehungsweise internen Freigabe werden die globalen
+Register und nur die Dateien der betroffenen Art erneut geprüft. Ein unvollständiger Bestand wird
+nicht zum Importplan; der Renderer liefert weder Pfade noch eigene Quellenhashes.
+
+Der feste Leser `local-working-source.mjs` liest die fünf bisherigen Rootregister als stabilen Block,
+verwendet den gebundenen öffentlichen Katalog und erkennt dessen erzeugten Allgemeinblock ausschließlich
+über den bestehenden Exporter und exakten Vergleich. Alle übrigen Fachtexte bleiben erhalten. Die
+Node-Option `sharedProjectImportOptions.sourceKind: "working-records"` schließt diesen Leser an den
+normalen Explorer-Server an; Browseranfragen können die Quelle nicht wechseln. Der tatsächliche lokale
+Bestand ist zusätzlich vollständig lesend vorbereitet und je Art erneut geprüft, ohne Dateiänderung,
+NAS-Schreiben oder Veröffentlichung. Der private Prüfnachweis liegt im bestehenden Deployment-Prüfbereich.
+
+Das persönliche Importjournal verwendet dafür Schema 2 mit einer Quellenbindung je Plan; vorhandene
+Version 1 wird unter Ausschluss eines lebenden Importbesitzers additiv übernommen. Die bisherige
+öffentliche Quelle bleibt unterstützt. Ein ausdrücklich benannter unbegonnener Plan kann nach einer
+Bestandsänderung erneut vorbereitet werden; ein ersetzter Plan ist nicht mehr startbar und ein
+begonnener Plan behält seine Quelle. Die Sicherung liest Version 1 weiterhin und prüft bei Version 2
+auch Quellen-/Record-/Dateibelege sowie die Absichten und Quittungen aller Schreibzustände.
+
+Vollständige Importe erfordern den authentifizierten Servernachweis GET `/api/v1/capabilities` mit
+Recordversion 1 und administrativ gebundenem Import. Der alte NAS-Dienst wird vor einem Schreibschritt
+abgewiesen. Jede Clientaktion bindet Dienstadresse, Projekt und Person; der Store prüft Administration,
+Projekt und Person erneut innerhalb der Schreibtransaktion. Unter einer anderen Kennung vorhandene
+strukturierte Artidentitäten blockieren die Neuanlage auch bei einer Änderung nach der Vorprüfung.
+Vorhandene schmale oder abweichende vollständige Objekte werden weder überschrieben noch freigegeben.
+Datensätze bleiben auf 256 KiB begrenzt; ihre Transportumhüllung passt in die bestehende HTTP-Grenze.
+
+Diese Kette ist mit künstlichen Quellen, eigenen Dateien und tatsächlichen HTTP-Diensten geprüft.
+Der normale Desktop verwendet weiterhin die gebundene öffentliche Erstquelle. Umschaltung des regulären
+Desktopstarts auf die vollständige Quelle, NAS-Upgrade, konkrete Übernahmefreigabe und ein späterer bestehender Typwechsel
+sind noch offen. Mediendateien werden durch diesen Datensatzimport nicht auf andere Geräte kopiert.
+
 ## Begrenzter, konsistenter Bestandsabruf
 
 Für die kontrollierte Gerätesicherung liefern Fassade und Client über die ausschließlich Node-interne
@@ -262,8 +442,34 @@ Gesamt- sowie Seitenrevision. Nur ein nicht serialisierbares Node-intern ausgest
 berechtigt diesen Import; ein JSON-Feld wie `serverValidated:true` genügt nicht. Historien bleiben erhalten,
 ältere Scans oder ungeprüft zurückkehrende entfernte Bilder stoppen. Änderungen einer anderen Seite werden
 erneut gegen deren unveränderte Zielseitenbindung eingelesen. Der bisherige lokale Arbeitsablauf bleibt
-ohne diese optionale Brücke verfügbar. Die produktive UI-/Lebenszyklusverdrahtung, die bewusste erste
-Verknüpfung vorhandener persönlicher Bestände und die echte Zwei-Personen-/NAS-Abnahme bleiben gesondert.
+ohne diese optionale Brücke verfügbar. Die bewusste erste Verknüpfung vorhandener persönlicher Bestände
+und die echte Zwei-Personen-/NAS-Abnahme bleiben gesondert.
+
+Seit 1. November übergibt der Desktopstart das feste Journal
+`<Electron-userData>/personal-project/website-alt-sync.sqlite` an denselben persönlichen Projektdienst.
+Der verwaltete Serverstart reicht auch die bereits vorgesehenen persönlichen Sicherungsoptionen weiter.
+Die konfigurierte Gerätesicherung enthält damit Gerätekennung, Projektcache, Erstimportjournal und
+Bildtextjournal; dessen exakter Schema-/Inhaltsvalidator prüft auch frühere Projektbindungen. Ein defektes
+konfiguriertes Journal bleibt erhalten und verhindert eine vermeintlich vollständige Sicherung. Der
+lokale Explorer startet dennoch; gemeinsame Bildtexte zeigen den fehlenden persönlichen Anschluss an.
+Ohne redaktionelle Anmeldung werden keine fremden Journalentwürfe angezeigt.
+Der allgemeine Projekteditor erkennt `website-alt-page` als Bildtextdatensatz und verweist auch bei
+Konflikten auf den eigenen Vergleich unter Website-Bildtexte. Sein allgemeines Seitenformular speichert
+oder genehmigt solche Fachdaten nicht; beide zunächst fehlschlagenden UI-Regressionsfälle sind geprüft.
+
+Schließen wartet zuerst den Sicherungsbesitzer ab, schließt danach die Bildtextbrücke und zuletzt den
+gemeinsamen Client. Der vorhandene Abschlusswächter berücksichtigt bereits laufende, unbekannte oder
+wartende Bildtextabgleiche. Start, Statuslesen und Sicherung lösen keine Seitenverknüpfung, Anmeldung,
+Synchronisierung oder Squarespace-Veröffentlichung aus. Gezielte Tests starten den wirklichen verwalteten
+Loopbackserver, prüfen einen konsistenten persönlichen Snapshot mit vier festen Dateien sowie Erhalt und
+Abweisung eines beschädigten Journals. Sie ersetzen keine native Mehrgeräte-/NAS-Betriebsabnahme.
+
+Die normale Bestandsauswahl ist zusätzlich am regulär gestarteten Windows-Explorer lesend geprüft:
+gemeinsamer NAS-Abruf mit bestehender Anmeldung, klare leere gemeinsame Ansicht und Rückkehr zum
+lokalen Bestand. Eine eigene künstliche Art bestätigt im Browser die echte Vorschau-/Speicherkette,
+lokale Vormerkung und erst danach den ausdrücklich gestarteten Abgleich. Ein inzwischen geöffneter
+Dialog bleibt bei späten Ladeantworten erhalten; Quellen-/Personenwechsel entwerten frühere Anfragen.
+Diese Teilprobe ersetzt weder die kontrollierte Erstübernahme noch die Zwei-PC-/NAS-Versionsabnahme.
 
 `fn-species-page` verwendet separat den Fachguard aus `page-authoring/shared.mjs`. Die eigene Serverquittung
 bindet echte Projektmedien, Person, Rolle, UUID-Objektversion und numerischen Versionszähler. Eine generische

@@ -553,6 +553,10 @@
           openChooser();
           return;
         }
+        if (state.workspace === "shared-project") {
+          openChooser();
+          return;
+        }
         if (state.databaseNeedsUpdate) {
           void openPreview("transfer", { transfer: true });
           return;

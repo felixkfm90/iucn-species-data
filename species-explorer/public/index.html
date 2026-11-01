@@ -6,7 +6,9 @@
     <title>Arten-Explorer</title>
     <link rel="stylesheet" href="/app.css">
     <link rel="stylesheet" href="/website-alt-texts.css">
+    <link rel="stylesheet" href="/website-alt-sync.css">
     <link rel="stylesheet" href="/shared-project.css">
+    <link rel="stylesheet" href="/workspace.css">
     <link rel="stylesheet" href="/local-ai.css">
   </head>
   <body>
@@ -61,6 +63,13 @@
       </section>
 
       <section class="validation-dashboard" aria-labelledby="validation-title">
+        <div class="species-workspace" role="group" aria-label="Artbestand">
+          <label for="species-workspace">Artbestand</label>
+          <select id="species-workspace"><option value="local">Auf diesem PC</option><option value="shared-project">Gemeinsames Projekt</option></select>
+          <span id="species-workspace-status" role="status">Lokaler Bestand auf diesem PC</span>
+          <button id="species-workspace-refresh" type="button" hidden>Serverstand lesen</button>
+          <button id="species-workspace-sync" class="edit-only" type="button" hidden>Änderungen abgleichen</button>
+        </div>
         <div class="validation-heading">
           <div>
             <h2 id="validation-title">Validierung und Status</h2>
@@ -69,17 +78,17 @@
         </div>
         <div class="validation-grid">
           <article id="validation-data-card" class="validation-card">
-            <span>Eingabe ↔ Pipeline</span>
+            <span id="validation-data-label">Eingabe ↔ Pipeline</span>
             <strong id="validation-data">–</strong>
             <small id="validation-data-detail">Wird geprüft</small>
           </article>
           <article id="validation-assets-card" class="validation-card">
-            <span>Assetstruktur</span>
+            <span id="validation-assets-label">Assetstruktur</span>
             <strong id="validation-assets">–</strong>
             <small id="validation-assets-detail">Wird geprüft</small>
           </article>
           <article id="validation-report-card" class="validation-card">
-            <span>Report-Abgleich</span>
+            <span id="validation-report-label">Report-Abgleich</span>
             <strong id="validation-report">–</strong>
             <small id="validation-report-detail">Wird geprüft</small>
           </article>
@@ -934,7 +943,9 @@
     <script src="/app-detail-media.js" defer></script>
     <script src="/app-website-pages.js" defer></script>
     <script src="/app-website-alt-texts.js" defer></script>
+    <script src="/app-website-alt-sync.js" defer></script>
     <script src="/app-local-ai.js" defer></script>
+    <script src="/app-species-conflicts.js" defer></script>
     <script src="/app-shared-project.js" defer></script>
     <script src="/app-shared-import.js" defer></script>
     <script src="/app-detail-view.js" defer></script>
@@ -955,6 +966,7 @@
     <script src="/filter.js" defer></script>
     <script src="/app-dashboard.js" defer></script>
     <script src="/app-lifecycle.js" defer></script>
+    <script src="/app-workspace.js" defer></script>
     <script src="/app-species-actions.js" defer></script>
     <script src="/app-asset-maintenance.js" defer></script>
     <script src="/app.js" defer></script>

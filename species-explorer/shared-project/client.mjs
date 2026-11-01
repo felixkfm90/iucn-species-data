@@ -1,5 +1,5 @@
 import { createSharedProjectClientStore } from "./client-store.mjs";
-import { validateCatalogSpecies } from "./catalog.mjs";
+import { SPECIES_RECORD_TYPE, validateSpeciesRecord, validateSharedSpecies, guardSpeciesRecordTransition } from "./species-record.mjs";
 import { canonicalJson, objectJson, transportJson, digest } from "./security.mjs";
 import { validateWebsiteAltObject, WEBSITE_ALT_TYPE } from "./website-alt-sync.mjs";
 import { PAGE_AUTHORING_TYPE, validatePageAuthoringServerEvidence } from "../page-authoring/shared.mjs";
@@ -23,7 +23,7 @@ function objectData(value) {
   check(value && ["species", "page"].includes(value.kind) && typeof value.id === "string"
     && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.id) && typeof value.revision === "string" && value.data,
   502, "invalid_response", "Der Dienst hat keinen gültigen Objektstand geliefert.");
-  if (value.kind === "species") validateCatalogSpecies(value.data, value.id);
+  if (value.kind === "species") validateSharedSpecies(value.data, value.id);
   objectJson(value.data);
   if (value.data.type === WEBSITE_ALT_TYPE) validateWebsiteAltObject(value.data, value.id);
   const result = { kind: value.kind, id: value.id, revision: value.revision, ordinal: value.ordinal,
@@ -42,7 +42,10 @@ function conflictData(value) {
   check(value && typeof value.id === "string" && ["species", "page"].includes(value.kind)
     && typeof value.objectId === "string" && value.base && value.current && value.proposed,
   502, "invalid_response", "Der Dienst hat keinen vollständigen Konflikt geliefert.");
-  for (const field of ["base", "current", "proposed"]) objectJson(value[field]);
+  for (const field of ["base", "current", "proposed"]) {
+    objectJson(value[field]);
+    if (value.kind === "species") validateSharedSpecies(value[field], value.objectId);
+  }
   return Object.fromEntries(["id", "kind", "objectId", "authorId", "baseRevision", "currentRevision", "base", "current", "proposed",
     "createdAt", "resolvedAt", "resolvedBy", "resolution", "resultingRevision"].map((key) => [key, value[key] ?? null]));
 }
@@ -202,6 +205,21 @@ export function createSharedProjectClient({ filename, localStorageConfirmed = fa
       store.finishPull(pullId, { snapshot, totalCount }); pullId = null;
     } finally { if (pullId) store.cancelPull(pullId); }
   }
+  async function pullKnownConflicts() {
+    if (readOnly() || !["admin", "publisher", "contributor"].includes(active.user.role)) return;
+    const bindingId = active.id, staged = [];
+    for (const row of store.pending(bindingId).filter((entry) => entry.state === "conflict")) {
+      const expectedStamp = store.conflictStamp(bindingId, row.conflict_id);
+      const response = await authenticated(`conflicts/${row.conflict_id}`);
+      if (response.status !== 200) throw responseError(response.status);
+      const value = conflictData(response.value);
+      check(value.id === row.conflict_id && value.kind === row.kind && value.objectId === row.object_id,
+        502, "invalid_response", "Der geladene Konflikt gehört nicht zur angefragten lokalen Fassung.");
+      staged.push({ row, value, expectedStamp });
+    }
+    check(active.id === bindingId && !readOnly(), 409, "conflict_review_changed", "Die Anmeldung wurde während des lesenden Konfliktabrufs geändert.");
+    for (const { row, value, expectedStamp } of staged) store.refreshConflict(bindingId, row.change_id, value, expectedStamp);
+  }
   function safeStatus() {
     return { connection, baseUrl: active?.baseUrl ?? null, projectId: active?.projectId ?? null,
       user: active?.user ?? null, readOnlySession: credentials ? credentials.scope !== "full" : true,
@@ -218,16 +236,34 @@ export function createSharedProjectClient({ filename, localStorageConfirmed = fa
   function actionError(result) {
     const messages = { last_admin: "Die letzte aktive Administration muss erhalten bleiben.", user_changed: "Die Benutzerangaben wurden inzwischen geändert. Bitte neu laden.",
       object_exists: "Diese Art oder Seite ist bereits vorhanden. Bitte den aktuellen Stand laden.", duplicate_user: "Dieser Benutzername ist bereits vergeben.",
-      object_changed: "Die Objektversion wurde inzwischen geändert. Bitte vor der Freigabe erneut prüfen." };
+      species_identity_exists: "Diese strukturierte Artidentität besteht bereits unter einer anderen Kennung. Bitte zuerst die Zuordnung prüfen.",
+      object_changed: "Die Objektversion wurde inzwischen geändert. Bitte vor der Freigabe erneut prüfen.",
+      conflict_review_changed: "Projekt, Person oder Rolle wurden während der Konfliktentscheidung geändert. Bitte neu vergleichen; alle Fassungen bleiben erhalten.",
+      approval_review_changed: "Artfassung, Projekt, Person oder Rolle wurden seit der Freigabevorschau geändert. Bitte neu prüfen; alle Entwürfe bleiben erhalten." };
     const code = result.value?.error?.code;
     return messages[code] ? new ProjectError(result.status, code, messages[code]) : responseError(result.status);
   }
-  async function onlineAction(pathname, options, roles = ["admin", "publisher", "contributor"]) {
-    await identity();
+  function assertActionBinding(requiredBinding, code = "import_project_changed") {
+    if (requiredBinding !== undefined) check(requiredBinding && requiredBinding.baseUrl === active.baseUrl && requiredBinding.projectId === active.projectId
+      && requiredBinding.userId === active.user.id && (requiredBinding.role === undefined || requiredBinding.role === active.user.role),
+    409, code, "Projekt, angemeldete Person oder Berechtigung wurden während der Prüfung gewechselt. Der Schreibschritt wurde angehalten.");
+  }
+  async function onlineAction(pathname, options, roles = ["admin", "publisher", "contributor"], requiredBinding) {
+    await identity(); assertActionBinding(requiredBinding);
     check(credentials.scope === "full" && roles.includes(active.user.role), 403, "forbidden", "Für diese Aktion fehlt eine volle berechtigte Anmeldung.");
     const result = await authenticated(pathname, options);
     if (![200, 201].includes(result.status)) throw actionError(result);
     return result.value;
+  }
+  function reviewedSpeciesApproval(id, expectedRevision, expectedDataHash, requiredBinding) {
+    assertActionBinding(requiredBinding, "approval_review_changed");
+    const cached = store.get(active?.id, "species", id, { serverOnly: true });
+    check(!cached.localPending && !cached.localConflict && !store.conflicts(active.id).some((entry) => entry.kind === "species" && entry.objectId === id),
+      409, "pending_review", "Bitte lokale Artentwürfe und Konflikte zuerst abgleichen und anschließend die aktuelle Fassung prüfen.");
+    check(cached.data?.type === SPECIES_RECORD_TYPE && cached.revision === expectedRevision
+      && digest(objectJson(validateSpeciesRecord(cached.data, id))) === expectedDataHash,
+    409, "approval_review_changed", "Die vollständige Artfassung wurde seit der Freigabevorschau geändert. Bitte neu prüfen; alle Entwürfe bleiben erhalten.");
+    return cached;
   }
   const client = {
     connect(input) { return run(async () => {
@@ -266,6 +302,18 @@ export function createSharedProjectClient({ filename, localStorageConfirmed = fa
       return { ...safeStatus(), remoteLogoutConfirmed };
     }); },
     status() { return run(() => safeStatus()); },
+    capabilities() { return run(async () => {
+      try {
+        await identity(); const result = await authenticated("capabilities", { method: "GET" });
+        check(result.status !== 404, 409, "species_record_server_required", "Der Projektdienst benötigt zuerst die Unterstützung vollständiger Artdatensätze.");
+        if (result.status !== 200) throw actionError(result);
+        const value = result.value;
+        check(value?.schemaVersion === 1 && value.projectId === active.projectId && value.user?.id === active.user.id
+          && value.user.role === active.user.role && value.speciesRecordVersion === 1 && value.adminBoundImport === true,
+        502, "invalid_response", "Die Fähigkeiten des Projektdiensts sind nicht eindeutig bestätigt.");
+        return { schemaVersion: 1, projectId: value.projectId, user: { id: value.user.id, role: value.user.role }, speciesRecordVersion: 1, adminBoundImport: true };
+      } catch (error) { throw record(error); }
+    }); },
     backupProjectIds() { return run(() => store.projectIds()); },
     listObjects() { return run(() => active && credentials ? store.list(active.id, { readOnly: readOnly() }) : []); },
     getObject(kind, id, { serverOnly = false } = {}) { return run(() => {
@@ -275,9 +323,10 @@ export function createSharedProjectClient({ filename, localStorageConfirmed = fa
     editExistingObject(kind, id, data, { baseRevision, expectedDataHash } = {}) { return run(() => {
       check(active && credentials && !readOnly() && ["admin", "publisher", "contributor"].includes(active.user.role),
         403, "forbidden", "Für diese lokale Bearbeitung fehlt eine passende Anmeldung.");
-      if (kind === "species") validateCatalogSpecies(data, id);
+      if (kind === "species") validateSharedSpecies(data, id);
       else check(typeof data?.title === "string" && data.title.trim() && data.title.length <= 500, 400, "invalid_data", "Ein gültiger Seitentitel ist erforderlich.");
       const current = store.get(active.id, kind, id);
+      if (kind === "species") guardSpeciesRecordTransition({ objectId: id, before: current.data, next: data });
       check(expectedDataHash === undefined || expectedDataHash === digest(objectJson(current.data)), 409, "local_object_changed", "Der lokale gemeinsame Seitenstand wurde inzwischen geändert.");
       check(baseRevision === undefined || typeof baseRevision === "string" && baseRevision.length <= 80, 400, "invalid_revision", "Ungültige belegte Ausgangsversion.");
       return store.edit(active.id, kind, id, data, { baseRevision });
@@ -314,25 +363,66 @@ export function createSharedProjectClient({ filename, localStorageConfirmed = fa
       } catch (error) { throw record(error); }
     }); },
     refresh() { return run(async () => {
-      try { await identity(); await pull(); lastError = null; return safeStatus(); }
+      try { await identity(); await pull(); await pullKnownConflicts(); lastError = null; return safeStatus(); }
       catch (error) { throw record(error); }
     }); },
     createObject(input) { return run(async () => {
       try {
-        if (input.kind === "species") validateCatalogSpecies(input.data, input.id);
-        const value = objectData(await onlineAction("objects", { method: "POST", data: input }));
+        if (input.kind === "species") validateSharedSpecies(input.data, input.id);
+        const { requiredBinding, ...request } = input;
+        if (input.requireAdmin === true) {
+          check(requiredBinding && typeof requiredBinding.projectId === "string" && typeof requiredBinding.userId === "string", 400, "invalid_import_binding", "Der administrative Import benötigt seine geprüfte Projekt- und Personenbindung.");
+          request.expectedProjectId = requiredBinding.projectId; request.expectedUserId = requiredBinding.userId;
+        }
+        const value = objectData(await onlineAction("objects", { method: "POST", data: request }, input.requireAdmin === true ? ["admin"] : undefined, requiredBinding));
         await pull(); return value;
       } catch (error) { throw record(error); }
     }); },
-    approveObject(kind, id, { expectedRevision } = {}) { return run(async () => {
+    approveObject(kind, id, { expectedRevision, requireAdmin = false, requiredBinding, expectedDataHash } = {}) {
+      const binding = requiredBinding && { ...requiredBinding };
+      return run(async () => {
       try {
         const cached = store.get(active?.id, kind, id);
-        check(!cached.localPending && !cached.localConflict && cached.revision === expectedRevision, 409, "pending_review",
-          "Bitte lokale Änderungen zuerst abgleichen und die aktuelle Fassung prüfen.");
-        const value = await onlineAction(`objects/${kind}/${id}/approve`, { method: "POST", data: { expectedRevision } }, ["admin", "publisher"]);
-        await pull(); return { ...objectData(value), externalPublication: "not-performed" };
+        const reviewed = expectedDataHash !== undefined || !requireAdmin && kind === "species" && cached.data?.type === SPECIES_RECORD_TYPE;
+        if (requireAdmin) check(binding && typeof binding.projectId === "string" && typeof binding.userId === "string", 400, "invalid_import_binding", "Die administrative Freigabe benötigt ihre geprüfte Projekt- und Personenbindung.");
+        let value;
+        const request = { expectedRevision, ...(requireAdmin ? { requireAdmin: true, expectedProjectId: binding.projectId, expectedUserId: binding.userId } : {}) };
+        if (reviewed) {
+          check(kind === "species" && typeof expectedDataHash === "string" && /^[a-f0-9]{64}$/.test(expectedDataHash)
+            && binding && ["baseUrl", "projectId", "userId", "role"].every((key) => typeof binding[key] === "string" && binding[key].length > 0),
+          409, "approval_review_changed", "Die interne Artfreigabe benötigt ihre vollständig geprüfte Inhalts-, Projekt-, Personen- und Rollenbindung.");
+          reviewedSpeciesApproval(id, expectedRevision, expectedDataHash, binding);
+          await identity(); assertActionBinding(binding, "approval_review_changed");
+          check(!readOnly() && (requireAdmin ? ["admin"] : ["admin", "publisher"]).includes(active.user.role), 403, "forbidden", "Für die interne Freigabe fehlt eine volle berechtigte Anmeldung.");
+          reviewedSpeciesApproval(id, expectedRevision, expectedDataHash, binding);
+          const support = await authenticated("capabilities", { method: "GET" });
+          check(support.status !== 404, 409, "approval_binding_server_required", "Der Projektdienst benötigt zuerst die gebundene interne Artfreigabe. Es wurde nichts freigegeben.");
+          if (support.status !== 200) throw actionError(support);
+          check(support.value?.schemaVersion === 1 && support.value.boundSpeciesApproval === 1, 409, "approval_binding_server_required", "Der Projektdienst bestätigt die gebundene interne Artfreigabe noch nicht. Es wurde nichts freigegeben.");
+          check(support.value.projectId === binding.projectId && support.value.user?.id === binding.userId && support.value.user.role === binding.role,
+            409, "approval_review_changed", "Projekt, Person oder Rolle wurden seit der Freigabevorschau geändert. Bitte neu prüfen.");
+          reviewedSpeciesApproval(id, expectedRevision, expectedDataHash, binding);
+          request.expectedReview = { projectId: binding.projectId, userId: binding.userId, role: binding.role };
+          const result = await authenticated(`objects/${kind}/${id}/approve`, { method: "POST", data: request });
+          if (result.status !== 200) {
+            if (result.status === 409 && result.value?.error?.code === "object_changed") throw new ProjectError(409, "approval_review_changed", "Die Serverfassung wurde seit der Freigabevorschau geändert. Bitte neu prüfen.");
+            throw actionError(result);
+          }
+          value = objectData(result.value);
+          check(value.kind === kind && value.id === id && value.revision === expectedRevision && value.approvedRevision === expectedRevision
+            && value.approval === "approved" && digest(objectJson(value.data)) === expectedDataHash,
+          502, "invalid_approval_response", "Die interne Freigabe wurde nicht für die exakt geprüfte Artfassung bestätigt. Bitte den Serverstand lesen.");
+        } else {
+          check(!cached.localPending && !cached.localConflict && cached.revision === expectedRevision, 409, "pending_review",
+            "Bitte lokale Änderungen zuerst abgleichen und die aktuelle Fassung prüfen.");
+          value = objectData(await onlineAction(`objects/${kind}/${id}/approve`, { method: "POST", data: request }, requireAdmin ? ["admin"] : ["admin", "publisher"], binding));
+        }
+        await pull();
+        const current = store.get(active.id, kind, id, { readOnly: readOnly(), serverOnly: true });
+        return { ...value, localPending: Boolean(current.localPending), localConflict: Boolean(current.localConflict), internalOnly: true, externalPublication: "not-performed" };
       } catch (error) { throw record(error); }
-    }); },
+      });
+    },
     listUsers() { return run(async () => {
       try {
         const value = await onlineAction("users", { method: "GET" }, ["admin"]);
@@ -385,16 +475,27 @@ export function createSharedProjectClient({ filename, localStorageConfirmed = fa
       check(!readOnly() && ["admin", "publisher", "contributor"].includes(active.user.role), 403, "forbidden", "Die Konflikte benötigen eine passende redaktionelle Anmeldung.");
       return store.conflicts(active.id);
     }); },
-    resolveConflict(id, { strategy, data, expectedRevision } = {}) { return run(async () => {
+    resolveConflict(id, { strategy, data, expectedRevision, requiredBinding, expectedLocalVersions } = {}) { return run(async () => {
       try {
-        await identity();
+        await identity(); assertActionBinding(requiredBinding, "conflict_review_changed");
         check(!readOnly() && ["admin", "publisher", "contributor"].includes(active.user.role), 403, "forbidden", "Die Konfliktentscheidung benötigt eine passende redaktionelle Anmeldung.");
+        if (requiredBinding) {
+          const support = await authenticated("capabilities", { method: "GET" });
+          check(support.status !== 404, 409, "conflict_binding_server_required", "Der Projektdienst benötigt zuerst die gebundene Artkonfliktprüfung. Es wurde nichts übertragen.");
+          if (support.status !== 200) throw actionError(support);
+          check(support.value?.schemaVersion === 1 && support.value.boundConflictReview === 1, 409, "conflict_binding_server_required",
+            "Der Projektdienst bestätigt die gebundene Artkonfliktprüfung noch nicht. Es wurde nichts übertragen.");
+          check(support.value.projectId === requiredBinding.projectId && support.value.user?.id === requiredBinding.userId
+            && support.value.user.role === (requiredBinding.role ?? active.user.role), 409, "conflict_review_changed",
+          "Projekt, Person oder Rolle wurden seit der Konfliktvorschau geändert. Bitte neu vergleichen; alle Fassungen bleiben erhalten.");
+        }
+        store.assertConflictVersions(active.id, id, expectedLocalVersions);
         const conflict = store.conflicts(active.id).find((entry) => entry.id === id);
         check(conflict, 404, "conflict_not_found", "Dieser Konflikt ist lokal nicht vorhanden.");
         check(["current", "proposed", "merged"].includes(strategy) && (strategy !== "merged" || data && typeof data === "object"),
           400, "invalid_resolution", "Bitte eine vollständige Konfliktentscheidung angeben.");
         if (strategy === "merged") {
-          if (conflict.kind === "species") validateCatalogSpecies(data, conflict.objectId);
+          if (conflict.kind === "species") validateSharedSpecies(data, conflict.objectId);
           else check(typeof data.title === "string" && data.title.trim() && data.title.length <= 500, 400, "invalid_data", "Ein gültiger Seitentitel ist erforderlich.");
           objectJson(data);
         }
@@ -402,17 +503,22 @@ export function createSharedProjectClient({ filename, localStorageConfirmed = fa
           409, "followup_decision_required", "Weitere lokale Fassungen sind erhalten. Bitte einen gemeinsamen Zieltext ausdrücklich festlegen.");
         const current = await authenticated(`objects/${conflict.kind}/${conflict.objectId}`);
         if (current.status !== 200) throw responseError(current.status);
+        if (conflict.kind === "species" && strategy !== "current") guardSpeciesRecordTransition({ objectId: conflict.objectId,
+          before: current.value.data, next: strategy === "proposed" ? conflict.proposed : data });
         check(expectedRevision === undefined || current.value.revision === expectedRevision, 409, "object_changed",
           "Die Serverfassung wurde seit der Anzeige geändert. Bitte erneut laden und vergleichen.");
         if (conflict.resolvedAt) {
           check(["current", "proposed", "merged"].includes(strategy), 400, "invalid_resolution", "Eine ausdrückliche Konfliktentscheidung ist erforderlich.");
           const chosen = strategy === "current" ? undefined : strategy === "proposed" ? conflict.proposed : data;
-          return store.rebaseResolvedConflict(active.id, id, objectData(current.value), chosen);
+          return store.rebaseResolvedConflict(active.id, id, objectData(current.value), chosen, { expectedLocalVersions });
         }
+        store.assertConflictVersions(active.id, id, expectedLocalVersions);
         const result = await authenticated(`conflicts/${id}/resolve`, { method: "POST", data: {
-          expectedRevision: current.value.revision, strategy, ...(data === undefined ? {} : { data }) } });
-        if (result.status !== 200) throw responseError(result.status);
-        store.resolve(active.id, id, { conflict: conflictData(result.value.conflict), object: objectData(result.value.object) }); lastError = null;
+          expectedRevision: current.value.revision, strategy, ...(data === undefined ? {} : { data }),
+          ...(requiredBinding ? { expectedProjectId: requiredBinding.projectId, expectedUserId: requiredBinding.userId,
+            expectedRole: requiredBinding.role ?? active.user.role } : {}) } });
+        if (result.status !== 200) throw actionError(result);
+        store.resolve(active.id, id, { conflict: conflictData(result.value.conflict), object: objectData(result.value.object) }, { expectedLocalVersions }); lastError = null;
         return store.get(active.id, conflict.kind, conflict.objectId);
       } catch (error) { throw record(error); }
     }); },

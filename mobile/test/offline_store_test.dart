@@ -5,11 +5,28 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arten_explorer/data/offline_store.dart';
+import 'package:arten_explorer/data/project_api.dart';
 import 'package:arten_explorer/domain/catalog.dart';
 import 'package:arten_explorer/data/website_photo.dart';
 import 'package:crypto/crypto.dart' as crypto;
 
 import 'support.dart';
+
+class _TransportWithoutPhotos implements ProjectTransport {
+  @override
+  Future<Map<String, dynamic>> json(
+    Uri uri, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+    String? bearer,
+  }) => throw StateError('This fixture must not request project data.');
+  @override
+  Stream<List<int>> media(Uri uri) => throw StateError(
+    'This fixture must not fall back to an unchecked photo stream.',
+  );
+  @override
+  void close() {}
+}
 
 void main() {
   late Directory directory;
@@ -279,6 +296,21 @@ void main() {
     test('fehlender Hash außerhalb Galerie oder fremder Galeriehost bleibt vor Abruf gesperrt',()async{
       final input=observedCatalogFixture();input['species'][0]['media']['gallery'][0]['url']='https://other.invalid/photo.jpg';
       await expectLater(observed(input:Catalog.fromJson(input)),throwsFormatException);expect(transport.photoRequests,isEmpty);
+    });
+    test('fehlender sicherer Fototransport erhält das vorhandene Offlinepaket ohne allgemeinen Medienrückfall', () async {
+      await download();
+      final package = File('${directory.path}/package.json');
+      final before = await package.readAsBytes();
+      final legacy = OfflineStore(directory, _TransportWithoutPhotos());
+      await expectLater(
+        legacy.download(
+          Catalog.fromJson(observedCatalogFixture()), galleryOnly,
+          onProgress: (_) {}, cancelled: () => false,
+        ),
+        throwsFormatException,
+      );
+      expect(await package.readAsBytes(), before);
+      expect(await directory.list().where((entry) => entry.path.endsWith('.partial')).length, 0);
     });
     test('neue Websiteantwort darf Größe ändern, aber nicht einen mitgelieferten erwarteten Hash ersetzen',()async{
       final input=observedCatalogFixture();input['species'][0]['media']['gallery'][0]['sha256']='a'*64;

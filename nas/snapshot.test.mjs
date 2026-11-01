@@ -71,8 +71,31 @@ test("unbekannte Versionen, unpassende Tabellen und veränderte Spalten ergeben 
     "DROP TABLE page_authoring_receipts", "CREATE TABLE unexpected(value TEXT)", "ALTER TABLE website_alt_receipts ADD COLUMN unexpected TEXT", "PRAGMA user_version=1"]) {
     await t.test(sql, async (t) => {
       const f = await fixture(t), destination = path.join(f.root, "snapshot"); f.writer.exec(sql);
+      const requestedVersion = /^PRAGMA user_version=(\d+)$/.exec(sql)?.[1];
+      if (requestedVersion !== undefined) assert.equal(f.writer.prepare("PRAGMA user_version").get().user_version,
+        Number(requestedVersion), "Die negative Probe muss ihre abweichende Quellversion tatsächlich gesetzt haben.");
       const before = await fs.readFile(f.filename);
-      await assert.rejects(createSharedProjectSnapshot({ filename: f.filename, destination, localStorageConfirmed: true }), /unbekanntes Format|unterstützten Format/);
+      let unexpectedManifest;
+      try {
+        await assert.rejects(async () => {
+          unexpectedManifest = await createSharedProjectSnapshot({ filename: f.filename, destination, localStorageConfirmed: true });
+        }, /unbekanntes Format|unterstützten Format/);
+      } catch (error) {
+        if (unexpectedManifest) {
+          let sourceProbe, copyProbe;
+          try {
+            sourceProbe = new DatabaseSync(f.filename, { readOnly: true });
+            copyProbe = new DatabaseSync(path.join(destination, "project.sqlite"), { readOnly: true });
+            error.message += ` · Synthetische Diagnose: ${JSON.stringify({ sql,
+              writerVersion: f.writer.prepare("PRAGMA user_version").get().user_version,
+              freshSourceVersion: sourceProbe.prepare("PRAGMA user_version").get().user_version,
+              copyVersion: copyProbe.prepare("PRAGMA user_version").get().user_version,
+              manifestVersion: unexpectedManifest.databaseSchema })}`;
+          } catch { error.message += " · Zusätzliche synthetische Versionsdiagnose nicht verfügbar."; }
+          finally { sourceProbe?.close(); copyProbe?.close(); }
+        }
+        throw error;
+      }
       assert.deepEqual(await fs.readFile(f.filename), before);
       await assert.rejects(fs.stat(destination), { code: "ENOENT" });
     });

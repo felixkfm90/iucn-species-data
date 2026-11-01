@@ -39,6 +39,7 @@ function harness(options = {}) {
   const documentRef = { body, createElement: tag => new Element(tag) }, context = vm.createContext({ URL, AbortController, setTimeout, clearTimeout });
   vm.runInContext(source, context);
   const controller = context.SpeciesExplorerWebsiteAltSync.createWebsiteAltSyncController({ documentRef,
+    canEdit: options.canEdit,
     setTimeoutImpl(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeoutImpl(id) { timers.delete(id); },
     safeImageUrl(value) { try { const url = new URL(value); return url.protocol === "https:" && url.hostname === "images.squarespace-cdn.com" && !url.username && !url.password ? url.href : ""; } catch { return ""; } },
     createDialogController(config) { dialogConfig = config; return { open() { config.dialog.open = true; return true; }, isOpen: () => config.dialog.open,
@@ -79,6 +80,27 @@ test("construction is quiet; opening reads only local API and shows pictures wit
   assert.ok(h.body.textContent.includes("Squarespace bleibt ein eigener Schritt"));
   const preview = all(h.body).find(node => node.tag === "img"); assert.equal(preview.src, PREVIEW); assert.equal(preview.crossOrigin, "anonymous"); assert.equal(preview.referrerPolicy, "no-referrer");
   assert.equal(h.controller.hasUnsavedChanges(), false); assert.equal(await h.controller.dispose(), true); assert.equal(h.body.children.length, 0);
+});
+
+test("Lesemodus öffnet keinen gemeinsamen Vergleich; Moduswechsel während der Bestätigung stoppt alle Schreibschritte", async () => {
+  let editing = false;
+  const h = harness({ canEdit: () => editing }); assert.equal(await h.open(), false); assert.equal(h.calls.length, 0);
+  editing = true; await h.open(); h.setConfirm(() => { editing = false; return true; });
+  await h.click("Meine gespeicherten Änderungen senden"); assert.equal(h.posts().length, 0);
+});
+
+test("Entladen beendet die Ansicht und verhindert weitere Aufträge nach einer noch offenen Bestätigung", async () => {
+  const h = harness(), held = deferred(); await h.open(); h.setConfirm(() => held.promise);
+  const pending = h.button("Meine gespeicherten Änderungen senden").emit("click"); await flush();
+  h.controller.stop(); held.resolve(true); await pending; await flush();
+  assert.equal(h.posts().length, 0); assert.equal(h.body.children.length, 0); assert.equal(h.controller.hasUnsavedChanges(), false);
+  assert.equal(await h.open(), false);
+});
+
+test("reguläres Schließen meldet den Abschluss genau einmal an die Hauptansicht", async () => {
+  let closed = 0; const h = harness(); await h.open({ onClosed: () => { closed++; } });
+  assert.equal(h.controller.close(), true); assert.equal(closed, 1);
+  assert.equal(h.controller.close(), false); assert.equal(closed, 1);
 });
 
 test("first link requires separate confirmation and privileged explicit approval adoption", async () => {

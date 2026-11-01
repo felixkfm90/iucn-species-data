@@ -1,6 +1,6 @@
 # Windows-11-Paketierung
 
-Stand: 31. Oktober 2026. Implementierter lokaler Paketbau und geprüfte Dateieinrichtung,
+Stand: 1. November 2026. Implementierter lokaler Paketbau und geprüfte Dateieinrichtung,
 noch keine Abnahme auf einem frisch eingerichteten Windows-PC.
 
 Der Setupstarter und der Appstarter sind native x64-Windows-Programme mit dem angenommenen
@@ -151,3 +151,19 @@ Die bisherigen privaten Build-/Prüfberichte stehen unter
 `data/website/checks/installer-implementation-20261031*`. Sie enthalten ausdrücklich die jeweils
 eingepackten Quellhashes und während des parallelen Entwicklungsbaus festgestellten Änderungen.
 Ein älteres Prüfpaket wird durch spätere Quelländerungen nicht still zum aktuellen Release erklärt.
+
+Der abschließende Nachlauf vom **1. November** liegt unter
+`data/website/checks/installer-implementation-20261101/package-final/`.
+Das tatsächlich gebaute private Prüfpaket `0.1.0-40a766a41acd-preview` enthält den veröffentlichten
+Ausgangsstand plus die sichtbaren Arbeitsänderungen des neuen Bildtext-/Sicherungsanschlusses.
+Alle **1603 Paketdateien** sind manifestgebunden; während des Baus änderte sich keine gebundene Quelle.
+Das EXE umfasst **536.290.816 Bytes**, SHA-256
+`0552bab637d49a2ad328e1383a0fbcaa3808b08437790d4b476dde1fa4791081`.
+Alle **14 tatsächlichen Paketproben** bestehen, einschließlich beider vollständiger Iconressourcen,
+Start der Laufzeiten, eigenständiger Git-Prüfung, Unicode-/Leerzeichenpfad, Reparatur, Update und
+datenerhaltender Deinstallation. Eigene Prüffiles und Sitzung sind regulär entfernt.
+Spätere Dokumentationsänderungen sind keine nachträgliche Änderung dieses gebundenen Pakets.
+Auch die danach ergänzte gemeinsame Artenansicht mit Grunddaten-, Konflikt- und internem
+Freigabeweg ist in diesem früheren Prüfpaket noch nicht enthalten. Ihre Quellen und lokale
+Integration sind getrennt geprüft; ein neuer gebundener Paketbau und Gerätebetrieb bleiben nötig.
+Es bleibt ein privates Prüfpaket ohne native Benutzerregistrierung oder frische Windows-Geräteabnahme.

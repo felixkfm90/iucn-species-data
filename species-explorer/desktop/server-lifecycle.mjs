@@ -68,6 +68,8 @@ export async function startManagedExplorerServer({
   websiteAltTransferAdapterFactory = null,
   sharedProjectOptions = null,
   sharedProjectImportOptions = null,
+  websiteAltSyncOptions = null,
+  deviceBackupProfile = null,
   localAiOptions = null,
   updateCompletionFactory = null,
 } = {}) {
@@ -78,7 +80,7 @@ export async function startManagedExplorerServer({
   for (const port of candidates) {
     const transferAdapter = websiteAltTransferAdapterFactory ? websiteAltTransferAdapterFactory() : websiteAltTransferAdapter;
     const server = await createExplorerServer({ repoRoot, host, port, websiteAltTransferAdapter: transferAdapter,
-      sharedProjectOptions, sharedProjectImportOptions, localAiOptions, updateCompletionFactory });
+      sharedProjectOptions, sharedProjectImportOptions, websiteAltSyncOptions, deviceBackupProfile, localAiOptions, updateCompletionFactory });
     try {
       const address = await server.listen();
       const baseUrl = addressToBaseUrl(address, host);

@@ -337,7 +337,6 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /class="audio-credits" open/);
   assert.match(modularAppSource, /Keine Karte vorhanden/);
   assert.doesNotMatch(appSource, /Keine bisherige Karte vorhanden/);
-  assert.match(modularAppSource, /assetStatusText\(species\.assets\.map\)/);
   assert.match(appDashboardSource, /Portraits fehlen/);
   assert.match(appDashboardSource, /Artporträts: \$\{missingPortraitCount\} von/);
   assert.match(appDashboardSource, /Karte, Sound, Credits, Spektrogramm und Artporträt vorhanden/);
@@ -711,7 +710,6 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(appAssetMaintenanceSource, /\/assets\/\$\{assetType\}\/delete/);
   assert.match(cssSource, /\.inline-restore-open/);
   assert.match(modularAppSource, /inlineEditButton\("manual"\)/);
-  assert.match(modularAppSource, /species\.inInput \? "map" : ""/);
   assert.match(modularAppSource, /sectionActions\([\s\S]*"sound"[\s\S]*"Soundpaket löschen"/);
   assert.match(appMediaSource, /sectionActions\([\s\S]*species\.inInput \? "portrait" : ""/);
   assert.match(modularAppSource, /Bisheriges Artporträt beibehalten/);

@@ -192,10 +192,10 @@ void main() {
       await tester.tap(find.text('Alles ohne Websitefotos auswählen'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.textContaining('fehlt noch eine Prüfsumme'),
+        find.textContaining('fehlt eine Katalogprüfsumme'),
         200,
       );
-      expect(find.textContaining('fehlt noch eine Prüfsumme'), findsOneWidget);
+      expect(find.textContaining('fehlt eine Katalogprüfsumme'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('Auswahl laden und prüfen'),
         100,

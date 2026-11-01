@@ -35,7 +35,7 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
   const state = store || createWebsiteAltStore({ dataRoot: storageRoot, now });
   const controllers = new Set();
   const pendingOperations = new Set();
-  let currentJob = null, jobKind = "", closed = false, runtime = null, transferRuntime = null, connectRuntime = null, closing = null;
+  let currentJob = null, jobKind = "", closed = false, runtime = null, transferRuntime = null, connectRuntime = null, closing = null, keepingExisting = false;
   let connection = websiteAltTransferConnection(transferAdapter);
   const transferring = () => Boolean(currentJob && ["transfer", "connect-transfer"].includes(jobKind));
   const requireOpen = () => { if (closed) throw blocked("Die Website-Bildtextprüfung ist geschlossen."); };
@@ -79,7 +79,8 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
     });
     if (staleResult) outcome = { ...outcome, results, status: outcome.status === "completed" ? "partial" : outcome.status,
       message: "Eine frühere Übernahme ist für die aktuelle Freigabe nicht mehr bestätigt. Bitte die offenen Bildtexte erneut prüfen." };
-    return { ...saved, scan: { ...saved.scan, ...runtime, running: Boolean(currentJob && !transferring()) },
+    return { ...saved, capabilities: { keepExisting: typeof state.keepExisting === "function" },
+      scan: { ...saved.scan, ...runtime, running: keepingExisting || Boolean(currentJob && !transferring()) },
       transfer: { ...connectionState, ...outcome, available: connected.available, connected: connected.connected,
         loginRequired, windowOpen: connected.windowOpen, running: transferring(),
         connectionStatus: connectionState.status, connectionMessage: connectionState.message, results } };
@@ -87,10 +88,12 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
 
   async function start(kind, operation) {
     if (closed) throw blocked("Die Website-Bildtextprüfung ist geschlossen.");
+    if (keepingExisting) throw blocked("Bitte die laufende öffentliche Bildtextprüfung abwarten.");
     if (transferring()) throw blocked("Die Squarespace-Übernahme läuft. Bitte ihren Abschluss abwarten.");
     if (currentJob) return snapshot();
     await state.snapshot(); // Reject corrupt state before issuing any request.
     if (closed) throw blocked("Die Website-Bildtextprüfung ist geschlossen.");
+    if (keepingExisting) throw blocked("Bitte die laufende öffentliche Bildtextprüfung abwarten.");
     if (transferring()) throw blocked("Die Squarespace-Übernahme läuft. Bitte ihren Abschluss abwarten.");
     if (currentJob) return snapshot();
     const controller = new AbortController();
@@ -141,6 +144,7 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
 
   async function edit(action, payload) {
     if (closed) throw blocked("Die Website-Bildtextprüfung ist geschlossen.");
+    if (keepingExisting) throw blocked("Bitte die laufende öffentliche Bildtextprüfung abwarten.");
     if (transferring()) throw blocked("Während der Squarespace-Übernahme bitte keine Bildfreigaben ändern.");
     await state[action](payload);
     return snapshot();
@@ -156,6 +160,7 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
 
   async function verify(payload) {
     if (closed) throw blocked("Die Website-Bildtextprüfung ist geschlossen.");
+    if (keepingExisting) throw blocked("Bitte die laufende öffentliche Bildtextprüfung abwarten.");
     if (transferring()) throw blocked("Die öffentliche Ausgabe wird gerade im Übernahmelauf geprüft.");
     const saved = await state.snapshot();
     if (closed) throw blocked("Die Website-Bildtextprüfung ist geschlossen.");
@@ -181,12 +186,41 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
     } finally { controllers.delete(controller); }
   }
 
+  async function keepExisting(payload) {
+    requireOpen();
+    if (currentJob || keepingExisting || pendingOperations.size > 1) throw blocked("Bitte laufende Websiteprüfungen und Bildtextaktionen zuerst abschließen.");
+    keepingExisting = true;
+    const controller = new AbortController();
+    controllers.add(controller);
+    try {
+      const saved = await state.snapshot();
+      requireOpen();
+      if (payload?.revision !== saved.revision) throw blocked("Die Bildtextliste hat sich geändert. Bitte neu laden.");
+      const pageUrl = normalizeWebsitePageUrl(payload.pageUrl);
+      const page = saved.pages.find((entry) => entry.url === pageUrl), image = page?.images.find((entry) => entry.key === payload.imageKey);
+      if (!image || image.status === "removed" || !page.checkedAt || page.error || page.redirectUrl || page.inventoryStatus !== "current"
+          || image.observationHash !== payload.observationHash || payload.approvalRevision !== (image.approval?.revision ?? null)) {
+        throw blocked("Die angezeigte Bildgrundlage oder Freigabe ist nicht mehr aktuell. Bitte erneut prüfen.");
+      }
+      let observedPage;
+      try { observedPage = await discovery.page(pageUrl, { signal: controller.signal }); }
+      catch (error) {
+        if (!closed) await state.mergeScan({ pages: [], discoveredUrls: [], errors: [{ url: pageUrl, message: error.message }],
+          scope: "page", complete: false, completedAt: now().toISOString() });
+        throw error;
+      }
+      requireOpen();
+      await state.keepExisting({ ...payload, pageUrl, observedPage });
+    } finally { keepingExisting = false; controllers.delete(controller); }
+    return snapshot();
+  }
+
   async function startTransferJob(kind, operation, pageUrl = "") {
     requireOpen(); requireAdapter();
-    if (currentJob) throw blocked("Es läuft bereits eine Websiteprüfung oder Squarespace-Übernahme.");
+    if (currentJob || keepingExisting) throw blocked("Es läuft bereits eine Websiteprüfung oder Squarespace-Übernahme.");
     await state.snapshot();
     requireOpen();
-    if (currentJob) throw blocked("Es läuft bereits eine Websiteprüfung oder Squarespace-Übernahme.");
+    if (currentJob || keepingExisting) throw blocked("Es läuft bereits eine Websiteprüfung oder Squarespace-Übernahme.");
     const controller = new AbortController();
     controllers.add(controller);
     const timer = setTimeout(() => controller.abort(new Error("Das Zeitlimit der Squarespace-Übernahme ist erreicht. Es wird nicht weitergeschrieben.")),
@@ -287,6 +321,7 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
     draft: (payload) => accepted(() => edit("draft", payload)),
     approve: (payload) => accepted(() => edit("approve", payload)),
     verify: (payload) => accepted(() => verify(payload)),
+    keepExisting: (payload) => accepted(() => keepExisting(payload)),
     connectTransfer: () => accepted(() => connectTransfer()),
     transfer: (payload) => accepted(() => transfer(payload)),
     close() {

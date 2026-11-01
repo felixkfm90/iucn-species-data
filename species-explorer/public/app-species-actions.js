@@ -56,6 +56,8 @@
     backupRetentionText,
     releaseDetailMedia,
     loadData,
+    documentRef = global.document,
+    releaseMediaWithin = () => {},
     delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
   } = {}) {
     if (!state || !elements?.detailPanel) {
@@ -75,6 +77,7 @@
         throw new TypeError(`Artaktionen benötigen die Funktion ${name}.`);
       }
     }
+    let renderApprovalState = () => {};
 
     function setupSpeciesRefresh(species) {
       const openButton = elements.detailPanel.querySelector(".refresh-species-open");
@@ -225,7 +228,105 @@
       });
     }
 
-    return Object.freeze({ setupSpeciesRefresh, setupSpeciesDelete });
+    function setupSpeciesApproval(species) {
+      renderApprovalState = () => {};
+      const dialog = elements.detailPanel.querySelector(".species-approval-dialog"), openButton = elements.detailPanel.querySelector(".species-approval-open");
+      if (!dialog || !openButton || species.source !== "shared-project" || !species.canApprove) return null;
+      const content = dialog.querySelector(".species-approval-content"), message = dialog.querySelector(".species-approval-message");
+      const prepare = dialog.querySelector(".species-approval-preview"), apply = dialog.querySelector(".species-approval-confirm");
+      const closes = [...dialog.querySelectorAll(".species-approval-close")];
+      const sourceEpoch = state.workspaceEpoch || 0, base = `/api/shared-project/species/${encodeURIComponent(species.id)}`;
+      let token = "", reviewedRevision = "", busy = false, generation = 0;
+      const sameSource = () => state.workspace === "shared-project" && (state.workspaceEpoch || 0) === sourceEpoch
+        && state.selectedId === species.id && state.workspaceStatus?.sourceScope === species.sourceScope;
+      const permitted = () => sameSource() && state.editMode && state.workspaceStatus?.connection === "online"
+        && state.workspaceStatus?.permissions?.canApprove === true;
+      const controller = createDialogController({ dialog, closeButtons: closes, beforeClose: () => !busy,
+        afterClose: () => { generation++; token = ""; reviewedRevision = ""; releaseMediaWithin(content); } });
+      function controls() {
+        openButton.disabled = busy || !permitted(); prepare.disabled = busy || !permitted(); apply.disabled = busy || !permitted() || !token;
+        for (const button of closes) button.disabled = busy;
+      }
+      const create = (tag, text) => { const element = documentRef.createElement(tag); element.textContent = String(text ?? ""); return element; };
+      function renderPreview(value) {
+        const shown = value.species, reader = value.readerSpecies, data = create("dl");
+        releaseMediaWithin(content);
+        content.replaceChildren(create("h3", shown.germanName), create("p", `${shown.scientificName} · Fassung ${shown.ordinal}`));
+        for (const [label, text] of [["Englischer Name", shown.englishName], ["Größe", shown.manual?.size], ["Gewicht", shown.manual?.weight], ["Lebenserwartung", shown.manual?.lifeExpectancy]]) {
+          data.append(create("dt", label), create("dd", text || "Nicht erfasst"));
+        }
+        content.append(data);
+        const taxonomy = create("details"), taxa = create("dl"); taxonomy.append(create("summary", "Taxonomie im Nachschlagewerk"), taxa);
+        const ranks = { kingdom: "Reich", phylum: "Stamm", subphylum: "Unterstamm", class: "Klasse", order: "Ordnung", family: "Familie", genus: "Gattung", species: "Art" };
+        for (const taxon of reader.taxonomy) taxa.append(create("dt", ranks[String(taxon.rank).toLowerCase()] || taxon.rank), create("dd", taxon.name));
+        content.append(taxonomy);
+        const sections = create("details"); sections.append(create("summary", "Texte im Nachschlagewerk"));
+        for (const section of reader.sections) {
+          const text = create("p", section.intentionallyEmpty ? "Bewusst leer gelassen" : section.text || "Kein Text erfasst"); text.className = "shared-project-text";
+          sections.append(create("h4", section.title), text);
+        }
+        content.append(sections);
+        const media = create("details"); media.append(create("summary", "Bilder und Ton im Nachschlagewerk"));
+        const mediaUrl = (url) => typeof url === "string" && /^https:\/\/[^/@\s]+(?:\/|$)/.test(url) ? url : "";
+        function image(file, title) {
+          const url = mediaUrl(file?.url); if (!url) return;
+          const figure = create("figure"), img = create("img"); img.src = url; img.alt = file.alt || title; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+          figure.append(img, create("figcaption", file.caption || title));
+          if (file.attribution) figure.append(create("p", file.attribution)); media.append(figure);
+        }
+        image(reader.media.portrait, "Artporträt"); image(reader.media.map, "Verbreitungskarte");
+        for (const file of reader.media.gallery) image(file, file.alt || "Galeriebild");
+        for (const file of reader.media.sounds) {
+          const url = mediaUrl(file.url); if (!url) continue;
+          const audio = create("audio"); audio.src = url; audio.controls = true; audio.preload = "none";
+          media.append(create("p", file.attribution || "Tierstimme"), audio);
+        }
+        if (media.children.length === 1) media.append(create("p", "Für diese Fassung sind keine Bilder oder Tonquellen gebunden."));
+        content.append(media);
+        const hints = [...(value.warnings || []), ...(shown.dataIssues || []), ...(shown.assetIssues || [])];
+        if (hints.length) {
+          const details = create("details"), list = create("ul"); details.append(create("summary", `Prüfhinweise (${hints.length})`), list);
+          for (const hint of hints) list.append(create("li", hint)); content.append(details);
+        }
+      }
+      async function previewApproval() {
+        if (busy || !permitted()) return;
+        const request = ++generation; token = ""; reviewedRevision = ""; busy = true; controls(); message.textContent = "Die angezeigte Fassung wird geprüft…";
+        try {
+          const result = await fetchJson(`${base}/approval/preview`, { method: "POST", body: JSON.stringify({ sourceScope: species.sourceScope,
+            expectedEditRevision: species.editRevision, expectedRevision: species.revision }) });
+          if (request !== generation || !permitted()) { message.textContent = "Artbestand oder Berechtigung wurde geändert. Bitte die Ansicht schließen und die Art erneut öffnen."; return; }
+          if (typeof result?.token !== "string" || !result.token || result.sourceScope !== species.sourceScope || result.species?.id !== species.id
+            || result.species.revision !== species.revision || result.readerSpecies?.id !== species.id || !Array.isArray(result.readerSpecies.sections)
+            || !Array.isArray(result.readerSpecies.taxonomy) || !Array.isArray(result.readerSpecies.media?.gallery)
+            || !Array.isArray(result.readerSpecies.media?.sounds)) throw new Error("Die geprüfte Artfassung ist nicht eindeutig bestätigt.");
+          renderPreview(result); token = result.token; reviewedRevision = result.species.revision;
+          message.textContent = "Bitte die Fassung prüfen und die interne Freigabe bestätigen.";
+        } catch (error) { token = ""; reviewedRevision = ""; if (request === generation) message.textContent = `${error.message} Bitte bei geändertem Serverstand zuerst „Serverstand lesen“ verwenden und die Art erneut öffnen.`; }
+        finally { busy = false; controls(); }
+      }
+      async function approve() {
+        if (busy || !token || !permitted()) return;
+        const reviewedToken = token, revision = reviewedRevision, request = generation; token = ""; busy = true; controls();
+        message.textContent = "Die geprüfte Fassung wird intern freigegeben…";
+        try {
+          const result = await fetchJson(`${base}/approval/approve`, { method: "POST", body: JSON.stringify({ token: reviewedToken }) });
+          if (request !== generation || !permitted()) { message.textContent = "Artbestand oder Berechtigung wurde geändert. Bitte den aktuellen Stand bewusst neu laden."; return; }
+          if (result?.approved !== true || result.serverConfirmed !== true || result.reviewedRevision !== revision || result.approvedRevision !== revision
+            || result.sourceScope !== species.sourceScope || result.externalPublication !== "not-performed"
+            || typeof result.hasNewerLocalChanges !== "boolean") throw new Error("Die interne Freigabe wurde nicht eindeutig bestätigt.");
+          state.notice = result.hasNewerLocalChanges ? "Die geprüfte Fassung ist intern freigegeben. Neuere lokale Änderungen bleiben ungeprüft erhalten."
+            : "Die geprüfte Artfassung ist für Projektleser und das Nachschlagewerk intern freigegeben.";
+          busy = false; controls(); controller.close("approved"); await loadData();
+        } catch (error) { if (request === generation) message.textContent = `${error.message} Keine automatische Wiederholung. Bitte den Serverstand lesen und die Fassung erneut prüfen.`; }
+        finally { busy = false; controls(); }
+      }
+      openButton.addEventListener("click", () => { if (!busy && permitted()) { content.replaceChildren(); controller.open(); void previewApproval(); } });
+      prepare.addEventListener("click", () => { void previewApproval(); }); apply.addEventListener("click", () => { void approve(); });
+      renderApprovalState = controls; controls(); return Object.freeze({ openButton, previewApproval, approve });
+    }
+
+    return Object.freeze({ setupSpeciesRefresh, setupSpeciesDelete, setupSpeciesApproval, renderSpeciesActions: () => renderApprovalState() });
   }
 
   global.SpeciesExplorerSpeciesActions = Object.freeze({

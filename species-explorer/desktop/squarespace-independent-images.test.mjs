@@ -23,17 +23,19 @@ function fixture(options = {}) {
   const controls = {
     driftPreview() { activePreview = { stale: true }; },
     driftTop() { activeTop = { stale: true }; },
+    dirtyPage() { saveDisabled = false; },
   };
   async function execute(script) {
     const payload = JSON.parse(script.slice(script.lastIndexOf(")(") + 2, -1)), operation = payload.operation;
+    if (payload.sourceUrl) current = records.find(record => record.image.sourceUrl === payload.sourceUrl) || current;
     log("dom", { operation });
     if (operation === "alt-field") current.altReads += 1;
     if (Object.hasOwn(current.bindingReads, operation)) current.bindingReads[operation] += 1;
-    const override = options.onOperation?.({ operation, payload, record: current, controls, events });
+    const override = options.onOperation?.({ operation, payload, record: current, records, controls, events });
     if (override !== undefined) return override;
     if (["bind-block", "bind-section"].includes(operation)) {
       const matches = current.type === "both" || current.type === (operation === "bind-block" ? "block" : "auto");
-      return matches ? { blockId: "block-synthetic", sectionId: "section-synthetic", itemTitle: current.fields.title,
+      return matches ? { blockId: `block-${current.image.imageKey}`, sectionId: "section-synthetic", itemTitle: current.fields.title,
         alt: current.fields.alt, caption: current.fields.caption, point: { x: 200, y: 200 }, viewport: { width: 1000, height: 800 } } : null;
     }
     if (["edit-block-control", "content-control", "content-tab", "select-item"].includes(operation)) return { action: operation };
@@ -66,10 +68,13 @@ function fixture(options = {}) {
     },
     mainFrame: () => activeTop,
     previewFrame: (_contents, url) => { assert.equal(url, pageUrl); return activePreview; },
-    async previewState() { log("state"); return { mode: "editing", saveDisabled, dialogOpen }; },
+    async previewState() {
+      log("state"); options.onState?.({ record: current, records, controls, events });
+      return { mode: "editing", saveDisabled, dialogOpen };
+    },
     async performPage(_frame, payload) {
       log("page", { operation: payload.operation });
-      const override = options.onPage?.({payload,record:current,events});
+      const override = options.onPage?.({payload,record:current,records,controls,events});
       if (override !== undefined) return override;
       if (["map-gallery-hover", "dismiss-image-editor", "save-page"].includes(payload.operation)) return { action: payload.operation };
       throw new Error(`Unexpected page operation: ${payload.operation}`);
@@ -93,19 +98,24 @@ function fixture(options = {}) {
       }
       throw new Error(message);
     },
-    async exitSavedPage(_contents, url, signal) { signal?.throwIfAborted(); assert.equal(url, pageUrl); log("exit"); },
+    async exitSavedPage(_contents, url, signal) {
+      signal?.throwIfAborted(); assert.equal(url, pageUrl); log("exit");
+      await options.onExit?.({ records, controls, events });
+      if (options.exitFailure) throw new Error("Seitenabschluss unklar");
+    },
   };
   async function assertCurrent(imageKey, revision) {
     approvals += 1; events.push({ event: "approval", imageKey, revision });
     const record = records.find(entry => entry.image.imageKey === imageKey);
     assert.equal(revision, record.image.approvalRevision);
+    options.onApproval?.({ imageKey, revision, record, records, controls, events });
     if (options.rejectApproval === approvals) throw new Error("Freigabe wurde geändert");
   }
   const driver = createSquarespaceIndependentImageTransfer(helpers);
   return { records, plan, events, controls, run: (signal) => driver.transfer(webContents, plan, { assertCurrent, signal }) };
 }
 
-test("normaler Bildblock und Auto Layout schreiben nur das Alttextfeld und erhalten Titel, Caption und Beschreibung", async () => {
+test("Bildblock und Auto Layout schreiben nur Alttexte und verwenden einen gemeinsamen Seitenabschluss", async () => {
   const f = fixture({ types: ["block", "auto"] }), beforePlan = structuredClone(f.plan);
   assert.deepEqual((await f.run()).results.map(result => result.status), ["written", "written"]);
   for (const record of f.records) {
@@ -113,15 +123,19 @@ test("normaler Bildblock und Auto Layout schreiben nur das Alttextfeld und erhal
     for (const name of ["caption", "title", "description", "sourceUrl"]) assert.equal(record.fields[name], record.initial[name]);
     const events = f.events.filter(event => event.imageKey === record.image.imageKey);
     assert.equal(events.filter(event => event.event === "insertText").length, 1);
-    assert.equal(events.filter(event => event.event === "approval").length, 3);
     const approvalIndexes = events.flatMap((event, index) => event.event === "approval" ? [index] : []);
-    const inputIndex = events.findIndex(event => event.event === "key"), saveIndex = events.findIndex(event => event.event === "click" && event.action === "save-page");
-    assert.ok(approvalIndexes[0] < events.findIndex(event => event.event === "open"));
+    const inputIndex = events.findIndex(event => event.event === "key");
+    assert.ok(approvalIndexes[0] < events.findIndex(event => event.operation === "bind-block"));
     assert.ok(approvalIndexes[1] < inputIndex && approvalIndexes[1] > events.findIndex(event => event.operation === "alt-field"));
-    assert.ok(approvalIndexes[2] > inputIndex && approvalIndexes[2] < saveIndex);
+    assert.ok(approvalIndexes.at(-1) > inputIndex);
     assert.ok(textInputs(events).every(event => event.focused === "alt"));
-    assert.equal(saves(events).length, 1);
+    const lastApproval = f.events.findLastIndex(event => event.event === "approval" && event.imageKey === record.image.imageKey);
+    assert.ok(lastApproval < f.events.findIndex(event => event.event === "click" && event.action === "save-page"));
   }
+  assert.equal(f.events.filter(event => event.event === "open").length, 1);
+  assert.equal(f.events.filter(event => event.event === "exit").length, 1);
+  assert.equal(saves(f.events).length, 1);
+  assert.ok(f.events.findLastIndex(event => event.event === "insertText") < f.events.findIndex(event => event.action === "save-page"));
   assert.deepEqual(f.plan, beforePlan);
 });
 
@@ -140,7 +154,7 @@ test("späte Bildblock- und Kachelzuordnung nach ein oder zwei leeren Durchgäng
       if (Object.hasOwn(record.bindingReads, operation) && record.bindingReads[operation] <= emptyRounds) return null;
     } });
     assert.equal((await f.run()).results[0].status, "written");
-    assert.deepEqual(f.records[0].bindingReads, { "bind-block": emptyRounds + (type === "block" ? 2 : 1), "bind-section": emptyRounds + (type === "auto" ? 2 : 1) });
+    assert.deepEqual(f.records[0].bindingReads, { "bind-block": emptyRounds + (type === "block" ? 4 : 1), "bind-section": emptyRounds + (type === "auto" ? 4 : 1) });
     const firstInput = f.events.findIndex(event => event.event === "key");
     const beforeInput = f.events.slice(0, firstInput);
     assert.equal(beforeInput.filter(event => event.operation === "bind-block").length, emptyRounds + (type === "block" ? 2 : 1));
@@ -167,7 +181,7 @@ test("eine noch wechselnde Vorschaugröße wird mit frischer Bildbindung begrenz
     const result=await f.run();
     assert.equal(result.results[0].status,permanent?"failed":"written");
     assert.equal(f.events.filter(event=>event.event==="insertText").length,permanent?0:1);
-    assert.equal(f.records[0].bindingReads["bind-block"],4);
+    assert.equal(f.records[0].bindingReads["bind-block"],permanent?4:6);
   }
 });
 
@@ -227,8 +241,8 @@ test("Framewechsel während des asynchronen Fokussierens verhindert jede nachfol
   assert.deepEqual(textInputs(f.events), []); assert.deepEqual(saves(f.events), []);
 });
 
-test("erneute Freigabeprüfung blockiert veraltete Freigabe direkt vor Eingabe und direkt vor Save", async () => {
-  for (const rejectApproval of [2, 3]) {
+test("erneute Freigabeprüfung blockiert veraltete Freigabe vor Eingabe oder vor dem nächsten Bild", async () => {
+  for (const rejectApproval of [2, 4]) {
     const f = fixture({ types: ["auto", "block"], rejectApproval });
     assert.deepEqual((await f.run()).results.map(result => result.status), ["failed", "failed"]);
     assert.equal(f.events.filter(event => event.event === "open").length, 1);
@@ -251,6 +265,8 @@ test("unveränderte Bildtexte benötigen weder Eingabe noch Seitenspeicherung", 
   const f = fixture({ types: ["block", "auto"], unchanged: true });
   assert.deepEqual((await f.run()).results.map(result => result.status), ["unchanged", "unchanged"]);
   assert.deepEqual(textInputs(f.events), []); assert.deepEqual(saves(f.events), []);
+  assert.equal(f.events.filter(event => event.event === "open").length, 1);
+  assert.equal(f.events.filter(event => event.event === "exit").length, 1);
 });
 
 test("bereits automatisch gespeicherter eigener Alttext wird ohne unnötigen Save regulär abgeschlossen", async () => {
@@ -273,13 +289,143 @@ test("Abbruch vor Start und nach erster Eingabe speichert nichts und beginnt kei
   assert.deepEqual(saves(second.events), []);
 });
 
-test("fehlgeschlagener Save oder ausbleibende Speicherbestätigung meldet keinen Erfolg und stoppt die Folge", async () => {
+test("fehlgeschlagener gemeinsamer Save oder ausbleibende Speicherbestätigung quittiert kein vorbereitetes Bild", async () => {
   for (const saveFailure of ["click", "confirmation"]) {
     const f = fixture({ types: ["block", "auto"], saveFailure }), result = await f.run();
     assert.deepEqual(result.results.map(entry => entry.status), ["failed", "failed"]);
-    assert.equal(f.events.filter(event => event.event === "insertText").length, 1);
+    assert.equal(f.events.filter(event => event.event === "insertText").length, 2);
     assert.equal(f.events.filter(event => event.event === "open").length, 1);
     assert.equal(saves(f.events).length, 1);
     assert.equal(f.events.some(event => event.event === "exit"), false);
   }
+});
+
+test("mehrere Kacheln und Bildblöcke bleiben bis zu einem einzigen Seiten-Save in derselben Bearbeitung", async () => {
+  const f = fixture({ types: ["auto", "auto", "block"] });
+  assert.deepEqual((await f.run()).results.map(entry => entry.status), ["written", "written", "written"]);
+  assert.equal(f.events.filter(event => event.event === "open").length, 1);
+  assert.equal(f.events.filter(event => event.event === "insertText").length, 3);
+  assert.equal(f.events.filter(event => event.action === "dismiss-image-editor").length, 3);
+  assert.equal(saves(f.events).length, 1);
+  assert.equal(f.events.filter(event => event.event === "exit").length, 1);
+});
+
+test("ein nicht unterstütztes Bild erzwingt keinen vorzeitigen Abschluss eigener vorbereiteter Änderungen", async () => {
+  const f = fixture({ types: ["block", "both", "auto"] });
+  assert.deepEqual((await f.run()).results.map(entry => entry.status), ["written", "unsupported", "written"]);
+  assert.equal(f.events.filter(event => event.event === "open").length, 1);
+  assert.equal(saves(f.events).length, 1);
+  assert.equal(f.events.filter(event => event.event === "exit").length, 1);
+});
+
+test("fremder Dirty-Zustand nach einem unveränderten Bild wird nicht als eigener Bearbeitungsstand übernommen", async () => {
+  const f = fixture({ types: ["block", "auto"], unchanged: true, onOperation({ operation, controls }) {
+    if (operation === "dialog-closed") controls.dirtyPage();
+  } });
+  assert.deepEqual((await f.run()).results.map(entry => entry.status), ["failed", "failed"]);
+  assert.deepEqual(textInputs(f.events), []); assert.deepEqual(saves(f.events), []);
+  assert.equal(f.events.some(event => event.event === "exit"), false);
+});
+
+test("späterer Alttext- oder Captiondrift eines früher vorbereiteten Bilds verhindert den gemeinsamen Save", async () => {
+  for (const field of ["alt", "caption"]) {
+    const f = fixture({ types: ["block", "auto"], onPage({ payload, record, records }) {
+      if (payload.operation === "dismiss-image-editor" && record === records[1]) records[0].fields[field] = "Fremde spätere Änderung";
+    } });
+    const result = await f.run();
+    assert.deepEqual(result.results.map(entry => entry.status), ["failed", "failed"]);
+    assert.match(result.results[0].error, /automatisch gespeichert/);
+    assert.equal(f.events.filter(event => event.event === "insertText").length, 2);
+    assert.deepEqual(saves(f.events), []);
+    assert.equal(f.events.some(event => event.event === "exit"), false);
+  }
+});
+
+test("verlorene Quellenbindung oder geänderte Blockkennung vor Endsave bleibt ungeklärt ohne Speicherung", async () => {
+  for (const drift of ["missing", "blockId"]) {
+    const f = fixture({ types: ["block", "auto"], onOperation({ operation, record, records, events }) {
+      if (operation !== "bind-block" || record !== records[0] || events.filter(event => event.event === "insertText").length !== 2) return;
+      return drift === "missing" ? null : { blockId: "block-foreign", alt: record.image.text, caption: record.image.expectedCaption };
+    } });
+    assert.deepEqual((await f.run()).results.map(entry => entry.status), ["failed", "failed"]);
+    assert.deepEqual(saves(f.events), []);
+    assert.equal(f.events.some(event => event.event === "exit"), false);
+  }
+});
+
+test("Seiten- oder Topframewechsel beim gemeinsamen Speicherabschluss speichert keine vorbereiteten Bilder", async () => {
+  for (const drift of ["driftPreview", "driftTop"]) {
+    const f = fixture({ types: ["auto", "block"], onState({ controls, events }) {
+      if (events.filter(event => event.event === "insertText").length === 2) controls[drift]();
+    } });
+    assert.deepEqual((await f.run()).results.map(entry => entry.status), ["failed", "failed"]);
+    assert.deepEqual(saves(f.events), []);
+    assert.equal(f.events.some(event => event.event === "exit"), false);
+  }
+});
+
+test("alle vorbereiteten Freigaben werden auch nach Bereitschaft des Endsave erneut gebunden", async () => {
+  for (const rejectKey of ["image-1", "image-2"]) {
+    const f = fixture({ types: ["auto", "block"], onApproval({ imageKey, events }) {
+      if (imageKey === rejectKey && events.some(event => event.event === "page" && event.operation === "save-page")) {
+        throw new Error("Freigabe vor Endsave geändert");
+      }
+    } });
+    assert.deepEqual((await f.run()).results.map(entry => entry.status), ["failed", "failed"]);
+    assert.equal(f.events.filter(event => event.event === "insertText").length, 2);
+    assert.deepEqual(saves(f.events), []);
+    assert.equal(f.events.some(event => event.event === "exit"), false);
+  }
+});
+
+test("Feldwechsel während Save-Bereitschaft stoppt vor dem einzigen Speicherklick", async () => {
+  const f = fixture({ types: ["block", "auto"], onPage({ payload, records }) {
+    if (payload.operation === "save-page") records[0].fields.alt = "Späte fremde Änderung";
+  } });
+  assert.deepEqual((await f.run()).results.map(entry => entry.status), ["failed", "failed"]);
+  assert.deepEqual(saves(f.events), []);
+  assert.equal(f.events.some(event => event.event === "exit"), false);
+});
+
+test("Teilfehler nach schon automatisch gespeicherter Eingabe speichert und verwirft keine offenen Änderungen", async () => {
+  const f = fixture({ types: ["auto", "block", "auto"], autoSaved: true, onOperation({ operation, record, records }) {
+    if (operation === "alt-field" && record === records[1]) record.fields.alt = "Fremder Bildtext";
+  } });
+  const result = await f.run();
+  assert.deepEqual(result.results.map(entry => entry.status), ["failed", "failed", "failed"]);
+  assert.match(result.results[0].error, /bereits automatisch gespeichert/);
+  assert.equal(f.records[0].fields.alt, f.records[0].image.text);
+  assert.equal(f.events.filter(event => event.event === "insertText").length, 1);
+  assert.deepEqual(saves(f.events), []);
+  assert.equal(f.events.some(event => event.event === "exit"), false);
+});
+
+test("mehrere automatisch gespeicherte Alttexte erhalten nur einen Abschluss ohne zusätzlichen Save", async () => {
+  const f = fixture({ types: ["auto", "block"], autoSaved: true });
+  assert.deepEqual((await f.run()).results.map(entry => entry.status), ["written", "written"]);
+  assert.deepEqual(saves(f.events), []);
+  assert.equal(f.events.filter(event => event.event === "open").length, 1);
+  assert.equal(f.events.filter(event => event.event === "exit").length, 1);
+});
+
+test("unklarer letzter Seitenabschluss quittiert trotz erfolgreichem Save kein Bild als written", async () => {
+  const f = fixture({ types: ["auto", "block"], exitFailure: true });
+  const result = await f.run();
+  assert.deepEqual(result.results.map(entry => entry.status), ["failed", "failed"]);
+  assert.ok(result.results.every(entry => /Seitenabschluss/.test(entry.error)));
+  assert.equal(saves(f.events).length, 1);
+});
+
+test("die Übernahmerückmeldung wartet bis der gemeinsame Seitenabschluss tatsächlich bestätigt ist", async () => {
+  let entered, release;
+  const enteredExit = new Promise(resolve => { entered = resolve; });
+  const confirmedExit = new Promise(resolve => { release = resolve; });
+  const f = fixture({ types: ["block", "auto"], async onExit() { entered(); await confirmedExit; } });
+  let finished = false;
+  const result = f.run().then(value => { finished = true; return value; });
+  await enteredExit;
+  assert.equal(finished, false);
+  assert.equal(saves(f.events).length, 1);
+  release();
+  assert.deepEqual((await result).results.map(entry => entry.status), ["written", "written"]);
 });

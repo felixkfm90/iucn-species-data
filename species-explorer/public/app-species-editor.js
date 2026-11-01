@@ -19,7 +19,7 @@
       hasOpenDialog,
       loadData,
       createAssetMaintenanceController,
-      fetchJson,
+      fetchJson: fetchJsonImpl,
       releaseAllAudioElements,
       fileToBase64,
       waitForAudioMetadata,
@@ -36,6 +36,16 @@
     } = dependencies;
 
     function setupSpeciesEditor(species) {
+      const source = species.source === "shared-project" ? "shared-project" : "local", sourceEpoch = state.workspaceEpoch || 0;
+      const fetchJson = (url, options) => {
+        if ((state.workspace || "local") !== source || (state.workspaceEpoch || 0) !== sourceEpoch) {
+          return Promise.reject(new Error("Der Artbestand oder die Projektanmeldung wurde gewechselt. Bitte die Art erneut öffnen."));
+        }
+        if (species.source === "shared-project" && String(url).startsWith("/api/species/")) {
+          return Promise.reject(new Error("Diese Aktion ist für den gemeinsamen Artbestand noch nicht angeschlossen. Die lokalen Originaldaten bleiben erhalten."));
+        }
+        return fetchJsonImpl(url, options);
+      };
       const dialog = elements.detailPanel.querySelector(".edit-dialog");
       const openButtons = [...elements.detailPanel.querySelectorAll(".edit-species-open")];
       const closeButtons = [...elements.detailPanel.querySelectorAll(".edit-cancel")];
@@ -340,7 +350,7 @@
         dialog,
         closeButtons,
         beforeClose: () => {
-          if (mapEditorController.isBusy()) return false;
+          if (mapEditorController.isBusy() || generalEditorController.isBusy?.()) return false;
           mapEditorController.resetSelection();
           stopSoundPreviewAudio();
           return true;

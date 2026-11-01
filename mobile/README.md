@@ -1,9 +1,9 @@
 # Arten-Explorer für Android
 
-Quellstand **0.1.2+3** mit vorbereiteter optionaler Offlinegalerie. Dieser neue Quellstand ist bis zum
-abgestimmten Prüffenster noch nicht mit Analyzer, Fluttertests oder einem neuen APK bestätigt.
-Das zuletzt tatsächlich gebaute und geprüfte APK bleibt **0.1.1+2**; dessen Nachweise gelten für den
-damaligen Stand mit 66 erfolgreichen Tests. Lesendes Nachschlagewerk mit mitgeliefertem öffentlichen Anfangsbestand und
+Das private ARM64-Debug-APK **0.1.2+3** ist am **1. November 2026** tatsächlich gebaut und geprüft:
+Analyzer ohne Befund, **89/89 Tests**, bestätigte Debugsignatur, korrektes App-/Startsymbol und
+gebundener öffentlicher Anfangskatalog. Die optionale Offlinegalerie ist in diesem Paket enthalten.
+Lesendes Nachschlagewerk mit mitgeliefertem öffentlichen Anfangsbestand und
 getrenntem angemeldeten Zugriff auf die im gemeinsamen Projekt freigegebenen Arten.
 Erste Zielgeräte sind Samsung Galaxy S24 Ultra und S25 Ultra. Die App ist ein eigenständiges
 Flutter-Android-Projekt; Bearbeitung, Lightroom und die globale Referenzdatenbank bleiben am PC.
@@ -129,6 +129,19 @@ konsistent auf API 36/Buildtools 36.0.0 gesetzt. Die negative AGP-Probe und ein 
 installierten Komponentenmetadaten binden die Nachlaufgrenze. Der erste Lauf belegt keine unveränderte SDK-Installation.
 
 ## Inhalt und Abnahmegrenzen
+
+Aktuelles Prüfpaket: `artifacts/arten-explorer-0.1.2-debug-arm64.apk`, **95.975.328 Bytes**, SHA-256
+`154042ff1186b0dc2d0a13de073cd7bfed8ec2276f5eb05ebaa1c818e2f55fc4`.
+`build-evidence/artifact.json` bindet APK, Katalog, Symbole und den geprüften Quellstand.
+Die anschließend aktualisierte Bedienungsdokumentation ändert dessen gebundene Programmdateien nicht.
+
+Der erste Nachlauf fand einen Compilerfehler im neuen optionalen Fototransport und einen veralteten
+Widgettext. Die Transportfähigkeit wird jetzt vor jedem Fotoabruf ausdrücklich geprüft. Ein Transport
+ohne sicheren Fotoanschluss stoppt ohne allgemeinen Medienrückfall und erhält das vorhandene Paket;
+die zusätzliche Gegenprobe ist in den 89 Fällen enthalten. Die fehlgeschlagenen Vorherläufe bleiben
+getrennt unter `build-evidence/*before*20261101.log` erhalten. Die erneute negative AGP-Probe gegen die
+absichtlich fehlende Plattform 999 stoppt ohne Installation; Komponentenmetadaten des gemeinsam
+verwendeten SDK sind vor/nach unverändert. Der SDKabschnitt wurde danach ausdrücklich an Numis zurückgegeben.
 
 Der [mobile Katalogvertrag](CATALOG.md) übernimmt den bestehenden gemeinsamen Dienstvertrag. Die App
 enthält den gebundenen öffentlichen Anfangskatalog aus dem vollständigen Export vom 31. Oktober 2026.

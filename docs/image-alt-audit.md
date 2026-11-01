@@ -1,5 +1,112 @@
 # Image Alt Text Audit
 
+## Vorhandenen Text beibehalten und Listenposition vom 1. November 2026
+
+Felix beauftragt die kurze Bildaktion **Vorhandenen Text beibehalten**. Sie verwendet den zuvor
+angezeigten Website-Text und liest die öffentliche Seite frisch. Bildquelle, Text, Varianten und
+bei gekoppelten Reisefotos die sichtbare Beschriftung müssen weiterhin genau passen. Erst danach
+werden Freigabe und öffentlicher HTML-Nachweis gemeinsam gespeichert; es erfolgt keine Eingabe
+oder Veröffentlichung in Squarespace. Passende bestehende Freigaben behalten ihre Revision.
+Abweichende gespeicherte Entwürfe und Freigaben bleiben im Verlauf erhalten. Zusätzliche Bestätigung
+ist nur für abweichende ungespeicherte Eingaben oder bewusst leere dekorative Texte nötig.
+Dateinamenartige oder ungeklärte fehlende Texte werden nicht als ausreichend bestätigt.
+
+Lesemodus, offene gemeinsame Abgleiche, laufende Aufträge, eine geänderte Grundlage und fehlende
+Bildvorschau sperren die Aktion. Eine fremde Speicherung während des tatsächlichen öffentlichen
+Serviceabrufs ist mit zwei Storeinstanzen geprüft: Sie bleibt erhalten und verhindert die
+Beibehaltung. Eine neue Oberfläche aktiviert den Button nur, wenn der laufende Dienst die Funktion
+ausweist; bei älterem Dienst erscheint ein verständlicher Neustarthinweis.
+
+Die linke Seitenliste erhält ihre Scrollposition nach einem Seitenklick und Statusaktualisierungen
+zurück. Eine geänderte Suche oder Filterauswahl beginnt die neue Ergebnisliste oben. Der fehlschlagende
+Positions-/Aktivierungsnachweis ist vor der Korrektur erfasst. Die gemeinsame Gegenprobe umfasst
+**238 Fälle: 237 bestanden, ein Verzeichnislinkfall im begrenzten Kontext übersprungen**.
+Der anschließende Windows-Lauf der **54 Speicherfälle** führt auch diesen Schutztest erfolgreich
+aus, ohne Fehler oder Skips. Syntax, Stil und Dokumentationsverweise bestehen. Nach regulärem
+Explorerneustart und erneutem Laden ist die tatsächliche Bedienung zusätzlich geprüft: Die linke
+Liste bleibt beim Wechsel zur Griechenland-Übersicht und nach Status-/Erfassungsaktualisierung
+an derselben Stelle. Rechts scrollen die Bildkarten bei weiterhin erreichbarem Seitenkopf.
+Der neue Button ist sichtbar und bestätigt den bereits vereinbarten FN-Linktext frisch öffentlich,
+ohne Squarespace-Eingabe. Das ist eine native Beibehaltungsprobe mit unverändertem Text; das
+bewusste Ersetzen eines abweichenden menschlichen Entwurfs bleibt Felix' redaktionelle Entscheidung.
+Bildschirmbelege liegen in der unten genannten privaten Ablage.
+
+## Feste Seitenauswahl und Übernahmeablauf vom 1. November 2026
+
+Felix hat die getrennten Scrollbereiche beauftragt: In der zweispaltigen Desktopansicht bleiben
+Suche, Filter und linke Seitenauswahl stehen, während rechts die Bildkarten scrollen. Die lange
+Seitenliste ist separat scrollbar. Rechts bleiben Seitentitel, Übernahmebutton und Seitenaktionen
+als gemeinsamer Kopf erreichbar. Lange Hilfe-/Kopfbereiche erhalten bei geringer Fensterhöhe einen
+eigenen begrenzten Scrollbereich; die schmale Einspaltenansicht behält ihre bisherige Bedienung.
+Die vorhandenen **134 Alttext-/Abgleich-/KI-Verhaltenstests** bestehen. Die wirkliche Chrome-Darstellung
+ist zusätzlich mit nativen Scrollgesten an einer isolierten Nachbildung der Dialogstruktur und den
+tatsächlichen Explorer-Stylesheets geprüft: Rechts bewegen sich die Karten, während linke Suche,
+Filter und Seitenkopf stehen bleiben; die linke Liste scrollt unabhängig. Kleine Fensterhöhe mit
+aufgeklappter Hilfe und die schmale Einspaltenansicht sind ebenfalls geprüft. Messwerte, Quellbindung
+und Bildschirmbelege liegen privat unter `data/website/checks/nas-implementation-20261101/deployment/`.
+Der produktive Explorer wurde dafür weder neu geladen noch vollständig bedient. Keine echte
+Bildtexteingabe oder Veröffentlichung ist Teil dieser Layoutkorrektur.
+
+Die anschließend gemeldete Costa-Rica-Beobachtung ist im Quellstand erklärt: Der Bildblock-/Kacheladapter
+öffnete, speicherte und verließ die Seite bisher pro Bild. Das war seine bisherige Schutzgrenze, keine
+belegte allgemeine Squarespace-Pflicht. Der Quellstand bündelt normale Bildblöcke und Kachelfelder
+jetzt in einer einzigen anfangs sauberen Seitensitzung. Die einzelnen Bilddialoge werden regulär
+geschlossen; vor weiteren Bildern und dem gemeinsamen äußeren Speicherabschluss werden alle
+vorbereiteten Bildquellen, Texte, unveränderten Beschriftungen und Freigaben erneut geprüft.
+Erst der bestätigte Seitenabschluss liefert Schreibquittungen. Bei Fehlern bleiben vorbereitete
+Ergebnisse ungeklärt; Eingaben werden nicht automatisch verworfen oder erneut übertragen.
+Die gemeinsame Gegenprobe von Adapter, Galerie-Driver, Browser und Bildblock-/Kachelzuordnung
+besteht mit **186/186 Fällen** ohne Skips.
+Die öffentliche Einzelbestätigung bleibt ein eigener Schritt. Galerieabläufe wurden nicht geändert.
+Squarespace kann einzelne Änderungen bereits automatisch speichern; der gemeinsame Abschluss
+ist keine atomare Rücknahmegrenze. Ein vollständiges Journal fremder Seitenänderungen besteht
+dadurch ebenfalls nicht. Ob die echte CMS-Vorschau die neuen Texte schon vor dem äußeren Speichern
+anzeigt, muss mit einer passenden freigegebenen Übernahme praktisch geprüft werden; ein fehlender
+Abgleich stoppt den Auftrag. Die genaue Costa-Rica-Variante und die neue Schreibfolge sind noch
+nicht nativ geprüft. Ein laufender Explorer wurde nicht neu gestartet und keine Websiteänderung
+für diesen Quellnachlauf vorgenommen.
+
+## Gemeinsame Bildtexte: Explorer-Anschluss vom 1. November 2026
+
+Felix hat die Entwicklungspause aufgehoben; gemeldete Fehler behalten Vorrang. Die bereits isoliert
+vorbereitete seitenweise Bildtextbrücke ist jetzt im normalen Explorer angeschlossen. Unter
+**Website-Bildtexte → Seitenaktionen → Bildtexte gemeinsam abgleichen** öffnet sich der Vergleich
+der gespeicherten lokalen und gemeinsamen Fassung mit Bildvorschauen. Die persönliche Projektanmeldung
+erfolgt weiterhin unter **Datenbank-Aktionen → Weitere Aktionen → Backup und Einstellungen → Gemeinsames Projekt**.
+
+Die erste Verknüpfung, das Senden gespeicherter Änderungen und die lokale Übernahme einer geladenen
+Fassung sind ausdrückliche Schritte. Bestehende Freigaben brauchen bei der ersten gemeinsamen
+Verwendung die angezeigte zusätzliche Bestätigung mit Freigaberecht. Ungespeicherte lokale Eingaben,
+eine laufende Erfassung/Übernahme und der Lesemodus sperren den Anschluss. Solange der Vergleich
+geöffnet ist, startet der Hauptdialog keine konkurrierenden Speicher-, Freigabe- oder CMS-Aufträge.
+Nachlaufende eigene Texteingaben werden bei einer gemeinsamen Übernahme erhalten. Nur eine quittierte
+lokale Übernahme lädt die Hauptansicht neu; danach bleibt Squarespace ein eigener Schritt.
+Im allgemeinen Projektbereich werden diese Datensätze als **Bildtexte** mit Seitentitel bezeichnet.
+Bearbeitung und Konfliktentscheidung verweisen dort auf den eigenen Vergleich mit Bildvorschauen;
+das allgemeine Seitenformular bietet für Bildtextdatensätze keine Speicherung oder interne Freigabe an.
+Die beiden zunächst fehlschlagenden Integrationsfälle und alle **20 Projektservice-/Bedienfälle** bestehen.
+
+Der Desktop verwendet das persönliche Journal `personal-project/website-alt-sync.sqlite` unter seinem
+Appprofil. Das bestehende Sicherungsverfahren nimmt es als eigenen geprüften SQLite-Snapshot auf;
+Start und Sicherung senden keine Bildtexte. Beschädigte Journale bleiben erhalten und blockieren
+die Behauptung eines vollständigen persönlichen Sicherungsstands. Schließreihenfolge, persönliche
+Bindung und Prüfgrenzen führt der [Mehrgerätevertrag](multi-device-backup-plan.md).
+
+**218/218 Oberflächenfälle**, **218/218 Desktopfälle**, **42/42 persönliche Sicherungs-/Journalfälle**
+und **19/19 gezielte UI-/API-/Abschlussfälle** bestehen ohne Fehler oder übersprungene Fälle.
+Der vollständige gemeinsame Kern besteht mit 124 erfolgreichen Fällen und einem im begrenzten
+Windows-Kontext übersprungenen Junctionfall; die zusätzliche persönliche 42-Fälle-Prüfung führt
+diesen Fall mit den erforderlichen Rechten erfolgreich aus. Syntax, Stil und lokale Verweise sind geprüft.
+
+Der reguläre Desktopstart ist nativ geprüft: Einstieg auf der bestehenden FN-Seite, korrekt gestalteter
+Vergleich, verständlicher Anmeldehinweis und gesperrtes Schreiben ohne redaktionelle Anmeldung.
+Die Sichtprüfung deckte zusätzlich den fehlenden Stylesheetanschluss auf; nach Korrektur ist die
+Darstellung erneut gesichtet. Beide Dialoge wurden ohne Bildtexteingabe geschlossen und der Explorer
+in den Lesemodus zurückgestellt. Computer Use wurde anschließend zurückgesetzt und Numis informiert.
+Dies ersetzt keine tatsächliche persönliche Erstverknüpfung, Zweitgeräte-/NAS-Abnahme oder neue
+Squarespace-Veröffentlichung. Die datierten früheren Fehlerbelege und Capri-Ergebnisse unten bleiben
+historische Nachweise.
+
 ## Capri: vollständige Textauswahl vom 31. Oktober 2026
 
 Nach einer erfolgreichen Bildübernahme wird beim nächsten Capri-Bild der neue Text im offenen

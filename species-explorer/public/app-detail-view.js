@@ -38,6 +38,7 @@
       setupSpeciesEditor,
       setupSpeciesRefresh,
       setupSpeciesDelete,
+      setupSpeciesApproval = () => {},
       renderWebsiteStatus = () => "",
       renderWebsiteHint = () => "",
     } = dependencies;
@@ -46,6 +47,11 @@
     const MANUAL_AGE_UNITS = ageUnits;
 
     function renderDetail(species) {
+      const shared = species.source === "shared-project";
+      const manualEditable = species.inInput && (!shared || species.sourcePermissions?.canEditManual === true);
+      const mediaEditable = species.inInput && (!shared || species.sourcePermissions?.canEditMedia === true);
+      const viewAssetStatus = (asset) => shared ? asset.availableOnline ? "Online verfügbar · noch nicht auf diesem Gerät geprüft"
+        : asset.metadataAvailable ? "Angaben im gemeinsamen Datensatz vorhanden" : "Noch kein Medienverweis bereitgestellt" : assetStatusText(asset);
       const browserMapUrl = iucnDistributionMapUrl(species);
       const editableSize = parseManualMeasurement(
         species.manual.size,
@@ -95,7 +101,7 @@
           : "",
         species.assetIssues.length
           ? `<span class="status-pill error">${species.assetIssues.length} Assetproblem(e)</span>`
-          : `<span class="status-pill ok">Assets vollständig</span>`,
+          : `<span class="status-pill ok">${shared ? "Medienverweise vorhanden" : "Assets vollständig"}</span>`,
         species.dataIssues.length
           ? `<span class="status-pill error">${species.dataIssues.length} Datenhinweis(e)</span>`
           : "",
@@ -165,6 +171,8 @@
           </div>
         ` : ""}
 
+        ${shared ? `<div class="shared-species-notice" role="status">Gemeinsamer Artbestand · ${species.localConflict ? "Konflikt prüfen" : species.localPending ? "Änderung lokal vorgemerkt" : species.approval === "approved" && species.approvedRevision === species.revision ? "Aktuelle Fassung intern freigegeben" : "Entwurf · noch nicht intern freigegeben"}. Medien werden bei Bedarf über ihre öffentliche Adresse geladen.</div>` : ""}
+
         <header class="detail-header">
           <div>
             <div class="detail-title-row">
@@ -180,7 +188,8 @@
               : ""}
           </div>
           <div class="detail-meta">
-            ${species.inInput ? `
+            ${shared && species.canApprove ? `<div class="section-actions detail-actions edit-only" aria-label="Artaktionen"><button class="species-approval-open" type="button">Aktuelle Fassung intern freigeben</button></div>` : ""}
+            ${species.inInput && !shared ? `
               <div class="section-actions detail-actions edit-only" aria-label="Artaktionen">
                 <button type="button" data-backup-history-open="${escapeHtml(species.id)}">Bearbeitungsstände</button>
                 <button class="refresh-species-open" type="button">Art aktualisieren</button>
@@ -197,19 +206,19 @@
           ${mapPanel(
             species.assets.map,
             `Verbreitungskarte ${species.germanName}`,
-            species.inInput ? "map" : "",
+            mediaEditable ? "map" : "",
           )}
 
           <section class="audio-section">
             <div class="section-heading">
               <h3 class="section-title">Tierstimme${species.assets.sound.exists ? ` · ${formatBytes(species.assets.sound.bytes)}` : ""}</h3>
               ${sectionActions(
-                species.inInput ? "sound" : "",
-                species.inInput && (species.assets.sound.exists || species.assets.credits.exists || species.assets.spectrogram.exists)
+                mediaEditable ? "sound" : "",
+                mediaEditable && (species.assets.sound.exists || species.assets.credits.exists || species.assets.spectrogram.exists)
                   ? "sound"
                   : "",
                 "Soundpaket löschen",
-                species.inInput ? "sound" : "",
+                mediaEditable ? "sound" : "",
                 species.assets.sound.backup,
               )}
             </div>
@@ -229,14 +238,14 @@
             </div>
           </section>
 
-          ${speciesImagePanel(species)}
+          ${speciesImagePanel(shared ? { ...species, inInput: mediaEditable } : species)}
         </div>
 
         <div class="data-grid">
           <section class="data-section">
             <div class="section-heading">
               <h3 class="section-title">Manuelle Daten</h3>
-              ${species.inInput ? inlineEditButton("manual") : ""}
+              ${manualEditable ? inlineEditButton("manual") : ""}
             </div>
             <dl class="data-list">
               ${dataRows([
@@ -266,7 +275,7 @@
           <section class="data-section">
             <div class="section-heading">
               <h3 class="section-title">Taxonomie</h3>
-              ${species.inGenerated ? inlineEditButton("taxonomy") : ""}
+              ${species.inGenerated && (!shared || species.sourcePermissions?.canEditTaxonomy === true) ? inlineEditButton("taxonomy") : ""}
             </div>
             <dl class="data-list">
               ${dataRows([
@@ -288,18 +297,18 @@
             <h3 class="section-title">Assetstatus</h3>
             <dl class="data-list">
               ${dataRows([
-                ["Karte", assetStatusText(species.assets.map)],
+                ["Karte", viewAssetStatus(species.assets.map)],
                 ["Sound", species.soundMissingKnown
                   ? "Keine automatische Tonquelle gefunden · Hinweis S"
-                  : assetStatusText(species.assets.sound)],
+                  : viewAssetStatus(species.assets.sound)],
                 ["Credits", species.soundMissingKnown
                   ? "Ohne Sound nicht erforderlich"
-                  : assetStatusText(species.assets.credits)],
+                  : viewAssetStatus(species.assets.credits)],
                 ["Spektrogramm", species.soundMissingKnown
                   ? "Ohne Sound nicht erforderlich"
-                  : assetStatusText(species.assets.spectrogram)],
+                  : viewAssetStatus(species.assets.spectrogram)],
                 ["Artporträt", species.assets.portrait.exists
-                  ? `Vorhanden${species.assets.portrait.hashVerified ? " · Hash geprüft" : ""}`
+                  ? shared ? viewAssetStatus(species.assets.portrait) : `Vorhanden${species.assets.portrait.hashVerified ? " · Hash geprüft" : ""}`
                   : "Optional · nicht vorhanden"],
                 ["Soundlizenz", species.isNcSound ? "NC · intern prüfen" : "Frei/nicht als NC markiert"],
               ])}
@@ -307,6 +316,10 @@
           </section>
         </div>
 
+        ${shared ? `<section class="shared-species-sections"><h3>Informationen</h3>${(species.editorial?.sections || []).map((section) =>
+          `<section><h4>${escapeHtml(section.title)}</h4><p>${section.intentionallyEmpty ? "Bewusst leer gelassen" : escapeHtml(section.text)}</p></section>`).join("")}
+          <div class="shared-species-gallery">${(species.editorial?.gallery || []).map((image) =>
+            `<figure><img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.alt)}" loading="lazy" referrerpolicy="no-referrer"><figcaption>${escapeHtml(image.caption)}</figcaption></figure>`).join("")}</div></section>` : ""}
         ${issues}
         <section class="issues-section website-hint" data-species-website-hint="${escapeHtml(species.id)}"
           ${renderWebsiteHint(species.id, state.websitePagesSnapshot, { escapeHtml }) ? "" : "hidden"}>
@@ -327,14 +340,14 @@
               <header>
                 <div>
                   <h4>Allgemeine Daten bearbeiten</h4>
-                  <p>Deutscher, englischer und wissenschaftlicher Name sowie Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert.</p>
+                  <p>${shared ? "Änderungen werden lokal für das gemeinsame Projekt vorgemerkt. Namensänderungen mit gekoppelten Medien- und Websitepfaden sind noch nicht angeschlossen." : "Deutscher, englischer und wissenschaftlicher Name sowie Größe, Gewicht und Lebenserwartung werden in der manuellen Artenliste gespeichert."}</p>
                 </div>
               </header>
 
               <div class="edit-fields new-species-fields manual-species-fields">
                 <label data-field="germanName">
                   <span>Deutscher Name</span>
-                  <input name="germanName" maxlength="160" value="${escapeHtml(species.germanName)}">
+                  <input name="germanName" maxlength="160" value="${escapeHtml(species.germanName)}"${shared ? " readonly" : ""}>
                 </label>
                 <label data-field="englishName">
                   <span>Englischer Name</span>
@@ -356,6 +369,7 @@
                       type="button"
                       title="Wissenschaftlichen Namen entsperren"
                       aria-label="Wissenschaftlichen Namen entsperren"
+                      ${shared ? "disabled" : ""}
                     >🔒</button>
                   </div>
                   <small class="scientific-name-warning" hidden>
@@ -405,7 +419,8 @@
                   </table>
                 </div>
                 <p class="edit-warning">
-                  Speichern merkt die Änderung lokal vor. Veröffentlichung erfolgt anschließend über „Änderungen übertragen“.
+                  ${shared ? "Speichern merkt die Änderung lokal für „Änderungen abgleichen“ vor. Freigabe und Websiteübernahme bleiben eigene Schritte."
+                    : "Speichern merkt die Änderung lokal vor. Veröffentlichung erfolgt anschließend über „Änderungen übertragen“."}
                 </p>
               </section>
             </section>
@@ -872,6 +887,16 @@
           </dialog>
         ` : ""}
 
+        ${shared ? `<dialog class="edit-dialog species-approval-dialog" aria-label="Art intern freigeben">
+          <header><h2>Art intern freigeben</h2><button class="species-approval-close" type="button" aria-label="Freigabeansicht schließen">×</button></header>
+          <p>Die geprüfte Fassung wird für Projektleser und das Nachschlagewerk freigegeben.</p>
+          <p>Artseiten-Endfreigabe und Übernahme in Squarespace bleiben eigene Schritte.</p>
+          <p class="species-approval-message" role="status"></p><div class="species-approval-content"></div>
+          <div class="dialog-actions"><button class="species-approval-close" type="button">Abbrechen</button>
+          <button class="species-approval-preview" type="button">Erneut prüfen</button>
+          <button class="species-approval-confirm" type="button" disabled>Geprüfte Fassung intern freigeben</button></div>
+        </dialog>` : ""}
+
         ${species.assets.map.exists ? `
           <dialog class="map-lightbox" aria-label="Vergrößerte Verbreitungskarte ${escapeHtml(species.germanName)}">
             <button class="map-lightbox-close" type="button" aria-label="Vergrößerte Karte schließen">×</button>
@@ -894,8 +919,8 @@
       setupMapZoom();
       setupPortraitZoom();
       setupSpeciesEditor(species);
-      setupSpeciesRefresh(species);
-      setupSpeciesDelete(species);
+      setupSpeciesApproval(species);
+      if (!shared) { setupSpeciesRefresh(species); setupSpeciesDelete(species); }
     }
 
     return renderDetail;

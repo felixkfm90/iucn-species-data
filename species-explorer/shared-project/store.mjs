@@ -3,7 +3,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { canonicalJson, objectJson, transportJson, digest, hashPassword, newToken, tokenHash, verifyPassword } from "./security.mjs";
-import { buildCatalog, validateCatalogSpecies } from "./catalog.mjs";
+import { buildCatalog } from "./catalog.mjs";
+import { validateSharedSpecies, guardSpeciesRecordTransition, projectSpeciesRecordToCatalog, sharedSpeciesScientificIdentity } from "./species-record.mjs";
 import { check, fail } from "./errors.mjs";
 import { WEBSITE_ALT_TYPE, guardWebsiteAltTransition, websiteAltServerEvidence } from "./website-alt-sync.mjs";
 import { PAGE_AUTHORING_TYPE, guardPageAuthoringTransition, pageAuthoringServerEvidence } from "../page-authoring/shared.mjs";
@@ -30,7 +31,7 @@ function identifier(kind, id) {
 }
 function payload(kind, id, data) {
   check(data && typeof data === "object" && !Array.isArray(data), 400, "invalid_data", "Ein Datensatz muss ein Objekt sein.");
-  if (kind === "species") return canonicalJson(validateCatalogSpecies(data, id));
+  if (kind === "species") return canonicalJson(validateSharedSpecies(data, id));
   short(data.title, 500, "Seitentitel");
   return objectJson(data);
 }
@@ -396,11 +397,21 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
       }, { readOnly: true });
     },
     getObject(token, kind, id) { return objectFor(actor(token), objectRow(kind, id)); },
-    createObject(token, { kind, id, data } = {}) {
+    createObject(token, { kind, id, data, requireAdmin = false, expectedProjectId, expectedUserId } = {}) {
+      check(typeof requireAdmin === "boolean", 400, "invalid_input", "Die Importberechtigung muss ausdrücklich angegeben sein.");
       identifier(kind, id); const serialized = payload(kind, id, data);
       return transaction(() => {
-        const user = actor(token, writers, { write: true });
+        const user = actor(token, requireAdmin ? ["admin"] : writers, { write: true });
+        if (requireAdmin) check(expectedUserId === user.id && expectedProjectId === db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value,
+          409, "import_project_changed", "Die Projekt- und Personenbindung des Imports stimmt nicht mehr überein.");
         check(!db.prepare("SELECT id FROM objects WHERE kind=? AND id=?").get(kind, id), 409, "object_exists", "Das Objekt ist bereits vorhanden.");
+        if (requireAdmin && kind === "species" && data.type === "fn-species-record") {
+          const identity = sharedSpeciesScientificIdentity(data);
+          for (const row of db.prepare("SELECT o.id,v.data FROM objects o JOIN versions v ON v.revision=o.current_revision WHERE o.kind='species'").iterate()) {
+            check(sharedSpeciesScientificIdentity(JSON.parse(row.data)) !== identity, 409, "species_identity_exists", "Diese strukturierte Artidentität besteht bereits unter einer anderen Kennung.");
+          }
+        }
+        if (kind === "species") guardSpeciesRecordTransition({ objectId: id, before: null, next: JSON.parse(serialized) });
         const evidence = kind === "page" ? altGuard(user, id, null, JSON.parse(serialized)) : [];
         const row = { kind, id, current_revision: null }, revision = insertVersion(user, row, serialized);
         db.prepare("INSERT INTO objects VALUES (?,?,?,NULL)").run(kind, id, revision);
@@ -424,6 +435,7 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         // Offline changes deliberately cannot create an absent object.
         const row = objectRow(kind, id);
         const base = version(kind, id, baseRevision);
+        if (kind === "species") guardSpeciesRecordTransition({ objectId: id, before: base.data, next: JSON.parse(serialized) });
         const evidence = kind === "page" ? altGuard(user, id, base.data, JSON.parse(serialized)) : [];
         let result;
         if (row.current_revision !== baseRevision) {
@@ -443,11 +455,22 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         return result;
       });
     },
-    approveObject(token, kind, id, { expectedRevision } = {}) {
+    approveObject(token, kind, id, { expectedRevision, requireAdmin = false, expectedProjectId, expectedUserId, expectedReview } = {}) {
+      check(typeof requireAdmin === "boolean", 400, "invalid_input", "Die Importberechtigung muss ausdrücklich angegeben sein.");
+      check(expectedReview === undefined || expectedReview && typeof expectedReview === "object" && !Array.isArray(expectedReview)
+        && Object.keys(expectedReview).sort().join(",") === "projectId,role,userId"
+        && [expectedReview.projectId, expectedReview.userId, expectedReview.role].every((value) => typeof value === "string" && value.length > 0)
+        && releasers.includes(expectedReview.role), 400, "invalid_approval_binding", "Die interne Freigabe benötigt eine vollständige Projekt-, Personen- und Rollenbindung.");
       return transaction(() => {
-        const user = actor(token, releasers, { write: true }), row = objectRow(kind, id);
+        const user = actor(token, requireAdmin ? ["admin"] : releasers, { write: true }), row = objectRow(kind, id);
+        if (expectedReview) check(expectedReview.projectId === db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value
+          && expectedReview.userId === user.id && expectedReview.role === user.role, 409, "approval_review_changed",
+        "Projekt, Person oder Rolle stimmen nicht mehr mit der geprüften internen Freigabe überein. Alle Entwürfe bleiben erhalten.");
+        if (requireAdmin) check(expectedUserId === user.id && expectedProjectId === db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value,
+          409, "import_project_changed", "Die Projekt- und Personenbindung der internen Freigabe stimmt nicht mehr überein.");
         check(row.current_revision === expectedRevision, 409, "object_changed", "Vor der Freigabe bitte die neue Version prüfen.");
         const current = version(kind, id, row.current_revision);
+        if (kind === "species") projectSpeciesRecordToCatalog(current.data);
         if (current.data.type === WEBSITE_ALT_TYPE) check(current.websiteAltEvidence?.trusted === true, 409, "website_alt_adoption_required", "Unverknüpfte Bildtextfreigaben müssen vor einer internen Lesefreigabe ausdrücklich übernommen werden.");
         if (current.data.type === PAGE_AUTHORING_TYPE) check(current.data.approval && current.pageAuthoringEvidence?.trusted === true,
           409, "page_approval_required", "Ein Artseitenentwurf benötigt seine aktive serverbelegte fachliche Endfreigabe.");
@@ -456,7 +479,7 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
           if (kind === "species") db.prepare("UPDATE meta SET value=CAST(value AS INTEGER)+1 WHERE key='catalog_revision'").run();
           audit(user, "object-approved", `${kind}/${id}`);
         }
-        return { ...objectFor(user, objectRow(kind, id)), externalPublication: "not-performed" };
+        return { ...objectFor(user, objectRow(kind, id)), internalOnly: true, externalPublication: "not-performed" };
       });
     },
     listConflicts(token) {
@@ -469,10 +492,16 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
       check(row, 404, "conflict_not_found", "Der Konflikt ist nicht vorhanden.");
       return conflictData(row);
     },
-    resolveConflict(token, id, { expectedRevision, strategy, data } = {}) {
+    resolveConflict(token, id, { expectedRevision, strategy, data, expectedProjectId, expectedUserId, expectedRole } = {}) {
       check(["current", "proposed", "merged"].includes(strategy), 400, "invalid_resolution", "Bitte eine Konfliktentscheidung wählen.");
+      const decisionBound = [expectedProjectId, expectedUserId, expectedRole].some((value) => value !== undefined);
+      check(!decisionBound || [expectedProjectId, expectedUserId, expectedRole].every((value) => typeof value === "string" && value.length > 0)
+        && writers.includes(expectedRole), 400, "invalid_conflict_binding", "Die Konfliktentscheidung benötigt eine vollständige Projekt-, Personen- und Rollenbindung.");
       return transaction(() => {
         const user = actor(token, writers, { write: true }), conflict = db.prepare("SELECT * FROM conflicts WHERE id=?").get(id);
+        if (decisionBound) check(expectedProjectId === db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value
+          && expectedUserId === user.id && expectedRole === user.role, 409, "conflict_review_changed",
+        "Projekt, Person oder Rolle stimmen nicht mehr mit der geprüften Konfliktentscheidung überein. Alle Fassungen bleiben erhalten.");
         check(conflict, 404, "conflict_not_found", "Der Konflikt ist nicht vorhanden.");
         check(!conflict.resolved_at, 409, "conflict_resolved", "Der Konflikt ist bereits entschieden.");
         const row = objectRow(conflict.kind, conflict.object_id);
@@ -480,6 +509,8 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         let revision = row.current_revision;
         if (strategy !== "current") {
           const serialized = strategy === "proposed" ? conflict.proposed_data : payload(row.kind, row.id, data);
+          if (row.kind === "species") guardSpeciesRecordTransition({ objectId: row.id,
+            before: version(row.kind, row.id, row.current_revision).data, next: JSON.parse(serialized) });
           const evidence = row.kind === "page" ? altGuard(user, row.id, version(row.kind, row.id, row.current_revision).data, JSON.parse(serialized)) : [];
           revision = insertVersion(user, row, serialized);
           db.prepare("UPDATE objects SET current_revision=? WHERE kind=? AND id=?").run(revision, row.kind, row.id);
@@ -495,7 +526,7 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
       return transaction(() => {
         actor(token);
         const species = db.prepare(`SELECT v.data FROM objects o JOIN versions v ON v.revision=o.approved_revision
-          WHERE o.kind='species' ORDER BY o.id`).all().map((row) => JSON.parse(row.data));
+          WHERE o.kind='species' ORDER BY o.id`).all().map((row) => projectSpeciesRecordToCatalog(JSON.parse(row.data)));
         return buildCatalog({ revision: db.prepare("SELECT value FROM meta WHERE key='catalog_revision'").get().value, generatedAt: iso(), species });
       }, { readOnly: true });
     },

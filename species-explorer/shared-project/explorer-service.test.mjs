@@ -141,7 +141,7 @@ test("snapshot immediately reports live activity/queued work; close aborts and n
 
 // Small DOM used for full renderer behavior, without HTML parsing or a browser.
 class Element {
-  constructor(tag) { this.tagName = tag.toUpperCase(); this.children = []; this.handlers = new Map(); this.attributes = new Map(); this.value = ""; this.disabled = false;
+  constructor(tag) { this.tagName = tag.toUpperCase(); this.children = []; this.handlers = new Map(); this.attributes = new Map(); this.value = ""; this.disabled = false; this.checked = false;
     this._text = ""; this.classList = { add: (...names) => { this.className = `${this.className || ""} ${names.join(" ")}`.trim(); } }; }
   set textContent(value) { this._text = String(value); this.children = []; }
   get textContent() { return this._text + this.children.map((child) => child.textContent).join(""); }
@@ -154,11 +154,12 @@ class Element {
   async emit(key) { for (const fn of this.handlers.get(key) || []) await fn({ target: this, preventDefault() {} }); }
 }
 function all(root) { return root.children.flatMap((child) => [child, ...all(child)]); }
-async function renderer(seed) {
+async function renderer(seed, { speciesReviewFactory = null } = {}) {
   const root = new Element("div"), calls = [], confirmations = [];
   let stored = structuredClone(seed);
   const document = { createElement: (tag) => new Element(tag) }, context = { document, URL, Date, console, setTimeout, clearTimeout };
   context.window = context;
+  if (speciesReviewFactory) context.SpeciesExplorerSpeciesConflicts = { createSpeciesConflictReview: speciesReviewFactory };
   vm.runInNewContext(await fs.readFile(fileURLToPath(new URL("../public/app-shared-project.js", import.meta.url)), "utf8"), context);
   const api = { snapshot: async () => structuredClone(stored), connect: async (input) => { calls.push(["connect", input]); return structuredClone(stored); },
     editExisting: async (...args) => { calls.push(["edit", ...args]); const object = stored.objects.find((item) => item.kind === args[0] && item.id === args[1]); object.data = structuredClone(args[2].data); object.localPending = true; return structuredClone(object); },
@@ -167,6 +168,7 @@ async function renderer(seed) {
     refresh: async (input) => { calls.push(["refresh", input]); return structuredClone(stored); }, disconnect: async () => structuredClone(stored),
     resolve: async (...args) => { calls.push(["resolve", ...args]); return stored.objects[0]; } };
   const controller = context.SpeciesExplorerSharedProject.createSharedProjectController({ elements: { sharedProjectRoot: root }, documentImpl: document, api,
+    ...(speciesReviewFactory ? { fetchJson: async () => ({}) } : {}),
     confirmAction: async (input) => { confirmations.push(input); return true; } });
   await controller.open();
   const findButton = (text) => all(root).find((node) => node.tagName === "BUTTON" && node.textContent === text);
@@ -180,6 +182,63 @@ function rendererSeed({ role = "admin" } = {}) {
       data: { ...species(), commonName: "<script>foreign text</script>", media: { sounds: [], gallery: [{ id: "photo", url: "https://images.squarespace-cdn.com/content/fixture.jpg", alt: "Original alt", caption: "Original caption", order: 0 }] } } }], conflicts: [], users: [], devices: [] };
 }
 async function settled() { for (let i = 0; i < 8; i++) await new Promise((resolve) => setImmediate(resolve)); }
+
+test("gemeinsame Website-Bildtexte führen zum eigenen Bildtextbereich statt in ein unpassendes Seitenformular", async () => {
+  const seed = rendererSeed();
+  seed.objects = [{ kind: "page", id: "website-alt-fixture", revision: "remote-version", editRevision: "local-version", ordinal: 1,
+    data: { type: "website-alt-page", pageUrl: "https://www.fnwildlifetravel.de/reisen/athen", page: { title: "Athen", images: [] } } }];
+  const h = await renderer(seed); await h.controller.select("page", "website-alt-fixture");
+  assert.match(h.root.textContent, /Bildtexte · Athen/);
+  assert.match(h.root.textContent, /Website-Bildtexte → Seitenaktionen → Bildtexte gemeinsam abgleichen/);
+  assert.equal(h.findInput("Seitentitel"), undefined);
+  assert.equal(h.findButton("Entwurf lokal speichern"), undefined);
+  assert.equal(h.findButton("Aktuelle Version intern freigeben"), undefined);
+  assert.deepEqual(h.calls, []);
+});
+
+test("Bildtextkonflikte erhalten ihren eigenen Vergleich und werden nicht im allgemeinen Projektformular entschieden", async () => {
+  const seed = rendererSeed(), data = { type: "website-alt-page", page: { title: "Athen", images: [] } };
+  seed.conflicts = [{ id: "alt-conflict", kind: "page", objectId: "website-alt-fixture", base: data, current: data, proposed: data }];
+  const h = await renderer(seed);
+  assert.match(h.root.textContent, /Website-Bildtexte → Seitenaktionen → Bildtexte gemeinsam abgleichen/);
+  for (const label of ["Serverfassung wählen", "Eigenen Vorschlag wählen", "Fassungen zusammenführen"]) assert.equal(h.findButton(label), undefined);
+  assert.deepEqual(h.calls, []);
+});
+
+test("vollständige Art-Arbeitsdatensätze und ihre Konflikte werden nicht durch das schmalere Katalogformular reduziert", async () => {
+  const seed = rendererSeed(), data = { type: "fn-species-record", input: { german: "Testkauz", genus: "Strix", species: "fixture" },
+    assets: { overrides: { map: { protectedFromPipeline: true } } } };
+  seed.objects[0].data = data;
+  seed.conflicts = [{ id: "record-conflict", kind: "species", objectId: "fixture-owl", base: data, current: data, proposed: data }];
+  const h = await renderer(seed); await h.controller.select("species", "fixture-owl");
+  assert.match(h.root.textContent, /Art · Testkauz/); assert.match(h.root.textContent, /Strix fixture/);
+  assert.match(h.root.textContent, /Artbestand → Gemeinsames Projekt in der normalen Artenansicht/);
+  for (const label of ["Entwurf lokal speichern", "Aktuelle Version intern freigeben", "Serverfassung wählen", "Fassungen zusammenführen"]) {
+    assert.equal(h.findButton(label), undefined);
+  }
+  assert.equal(h.findInput("Fachtext"), undefined); assert.equal(h.controller.hasUnsavedChanges(), false);
+  assert.deepEqual(h.calls, []); assert.equal(data.assets.overrides.map.protectedFromPipeline, true);
+});
+
+test("the project panel opens typed conflicts in their own review and preserves it across harmless refreshes", async () => {
+  const seed = rendererSeed(), data = { type: "fn-species-record", input: { german: "Testkauz", genus: "Strix", species: "fixture" } };
+  seed.conflicts = [{ id: "typed-conflict-id", objectId: "fixture-owl", kind: "species", base: data, current: data, proposed: data }];
+  let options, dirty = false, busy = false, resets = 0, destroyed = 0; const opened = [], projectStates = [];
+  const h = await renderer(seed, { speciesReviewFactory: (value) => { options = value; return {
+    open: async (id) => { opened.push(id); value.root.textContent = "Preserved conflict choices"; },
+    setProjectState: (state) => projectStates.push(state.status.user.id), hasUnsavedChanges: () => dirty, get busy() { return busy; },
+    reset: () => { if (busy) return false; dirty = false; resets++; return true; }, destroy: () => { destroyed++; },
+  }; } });
+  await h.findButton("Grunddaten vergleichen").emit("click"); assert.deepEqual(opened, ["typed-conflict-id"]);
+  dirty = true; options.onDirtyChange(true); assert.equal(h.controller.hasUnsavedChanges(), true);
+  await h.controller.refresh(); assert.equal(options.root.textContent, "Preserved conflict choices"); assert.equal(resets, 0);
+  busy = true; options.onDirtyChange(true); assert.equal(h.controller.getState().busy, true);
+  assert.equal(await h.controller.beforeClose(), false); assert.equal(h.findButton("Serverstand lesen").disabled, true);
+  await h.findButton("Serverstand lesen").emit("click"); assert.equal(h.calls.filter(([action]) => action === "refresh").length, 0);
+  busy = false; options.onDirtyChange(true); assert.equal(await h.controller.beforeClose(), true); assert.equal(resets, 1);
+  assert.ok(projectStates.length >= 2); assert.equal(h.calls.filter(([action]) => action === "resolve").length, 0);
+  h.controller.destroy(); assert.equal(destroyed, 1);
+});
 
 test("shared-project setup preserves edit-mode gating, dialog busy guard, importer drafts and teardown", async () => {
   const nodes = new Map(["root", "dialog", "close", "import-root", "open"].map((id) => [`#shared-project-${id}`, new Element("div")]));
@@ -215,6 +274,225 @@ test("shared-project setup preserves edit-mode gating, dialog busy guard, import
   assert.equal(refreshedText.value, "Unsent private form input"); assert.equal(controller.hasUnsavedChanges(), true);
   windowHandlers.get("pagehide")();
   assert.equal(destroyed, 1); assert.equal(controller.getState().stopped, true);
+});
+
+async function importPanel(initial, { initialImportDelay = null, timers = { setTimeout, clearTimeout }, confirmImport = async () => true, prepareError = null } = {}) {
+  const nodes = new Map(["root", "dialog", "close", "import-root", "open"].map((id) => [`#shared-project-${id}`, new Element("div")]));
+  let stored = structuredClone(initial), importState = { available: true, busy: false, plan: null }, delayed = initialImportDelay;
+  const calls = [], confirmations = [], handlers = new Map(), root = nodes.get("#shared-project-root"), importRoot = nodes.get("#shared-project-import-root");
+  const document = { createElement: (tag) => new Element(tag), querySelector: (selector) => nodes.get(selector) };
+  const context = { document, URL, Date, console, ...timers, addEventListener: (name, callback) => handlers.set(name, callback) };
+  context.window = context;
+  for (const file of ["app-shared-import.js", "app-shared-project.js"]) vm.runInNewContext(await fs.readFile(fileURLToPath(new URL(`../public/${file}`, import.meta.url)), "utf8"), context);
+  const fetchJson = async (url, options) => {
+    calls.push([url, options?.method || "GET", options?.body ? JSON.parse(options.body) : undefined]);
+    if (url === "/api/shared-project/import") {
+      if (delayed) return delayed();
+      return structuredClone(importState);
+    }
+    if (url === "/api/shared-project/import/prepare") { if (prepareError) throw prepareError; return structuredClone(importState.plan); }
+    if (url === "/api/shared-project/refresh" || url === "/api/shared-project/connect") {
+      stored.status.connection = "online"; stored.permissions.canManageUsers = stored.status.user?.role === "admin";
+    }
+    return structuredClone(stored);
+  };
+  const wired = context.SpeciesExplorerSharedProject.setupSharedProject({ fetchJson, confirmAction: async (input) => { confirmations.push(input); return confirmImport(input); },
+    canEdit: () => true, documentImpl: document, createDialogController: () => ({ open: () => true }) });
+  await nodes.get("#shared-project-open").emit("click"); await settled();
+  return { ...wired, calls, confirmations, root, importRoot,
+    findButton: (text) => all(root).find((node) => node.tagName === "BUTTON" && node.textContent === text),
+    findImportButton: (text) => all(importRoot).find((node) => node.tagName === "BUTTON" && node.textContent === text),
+    replace: (value) => { stored = structuredClone(value); },
+    importState: (value) => { importState = structuredClone(value); },
+    delayImport: (value) => { delayed = value; }, close: () => handlers.get("pagehide")(),
+  };
+}
+
+test("actual project panel updates import availability after cached offline state becomes online without losing dirty text", async () => {
+  const seed = rendererSeed(); seed.status.connection = "offline"; seed.permissions.canManageUsers = false;
+  const h = await importPanel(seed);
+  try {
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, true);
+    assert.match(h.importRoot.textContent, /bitte online mit Administration anmelden/);
+    await h.controller.select("species", "fixture-owl");
+    const text = all(h.root).find((node) => node.tagName === "LABEL" && node._text === "Fachtext").children[0];
+    text.value = "Preserved ordinary private input"; await text.emit("input");
+    await h.findButton("Serverstand lesen").emit("click"); await settled();
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, false);
+    assert.doesNotMatch(h.importRoot.textContent, /bitte online mit Administration anmelden/);
+    assert.equal(h.controller.hasUnsavedChanges(), true);
+    assert.equal(all(h.root).find((node) => node.tagName === "LABEL" && node._text === "Fachtext").children[0].value, "Preserved ordinary private input");
+    await h.findImportButton("Übernahme zuerst prüfen").emit("click"); await settled();
+    assert.match(h.importRoot.textContent, /zuerst deine Formulareingaben speichern/);
+    await h.controller.refresh();
+    assert.match(h.importRoot.textContent, /zuerst deine Formulareingaben speichern/, "an unrelated permission refresh preserves the actual form warning");
+    assert.equal(h.calls.filter(([url, method]) => url.startsWith("/api/shared-project/import/") && method === "POST").length, 0);
+  } finally { h.close(); }
+});
+
+function importPlan(seed, state = "planned") {
+  return { projectId: seed.status.projectId, baseUrl: seed.status.baseUrl, planId: "fixture-plan", state, releaseForReaders: false, canApply: state !== "complete",
+    counts: { willCreate: 1, skippedExisting: 0, created: 0, approved: 0 }, items: [] };
+}
+
+test("actual project panel enables import after first login in the already open panel", async () => {
+  const offline = rendererSeed(); offline.status.connection = "disconnected"; offline.status.user = null;
+  offline.permissions = Object.fromEntries(Object.keys(offline.permissions).map((key) => [key, false]));
+  const h = await importPanel(offline);
+  try {
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, true);
+    const online = rendererSeed(); online.permissions.canManageUsers = true; h.replace(online);
+    await h.findButton("Verbinden").parentElement.emit("submit"); await settled();
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, false);
+    assert.doesNotMatch(h.importRoot.textContent, /bitte online mit Administration anmelden/);
+    assert.equal(h.calls.filter(([url]) => url.startsWith("/api/shared-project/import/")).length, 0);
+  } finally { h.close(); }
+});
+
+test("import controls revoke rights immediately and discard a plan after person or authorization changes", async () => {
+  const admin = rendererSeed(); admin.status.baseUrl = "https://fixture.example.org"; admin.permissions.canManageUsers = true;
+  const h = await importPanel(admin), state = { available: true, busy: false, plan: importPlan(admin) };
+  try {
+    h.importState(state); await h.importer.refresh();
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, false);
+    const reader = rendererSeed({ role: "reader" }); reader.status.baseUrl = admin.status.baseUrl;
+    h.replace(reader); await h.controller.refresh();
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, true);
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true);
+    await h.findImportButton("Übernahme zuerst prüfen").emit("click"); await settled();
+    assert.equal(h.calls.filter(([url]) => url.startsWith("/api/shared-project/import/")).length, 0);
+    h.replace(admin); await h.controller.refresh();
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, false);
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true, "restored rights do not reactivate the earlier displayed plan");
+    assert.doesNotMatch(h.importRoot.textContent, /bitte online mit Administration anmelden/);
+    await h.importer.refresh();
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, false);
+    const other = structuredClone(admin); other.status.user.id = "another-admin";
+    h.replace(other); await h.controller.refresh();
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true, "another person must inspect the plan again");
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, false);
+    other.status.connection = "offline";
+    h.replace(other); await h.controller.refresh();
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, true, "cached administrator permission never permits an offline import");
+  } finally { h.close(); }
+});
+
+test("completed import refreshes the project once without a feedback loop or implicit import", async () => {
+  const admin = rendererSeed(); admin.status.baseUrl = "https://fixture.example.org"; admin.permissions.canManageUsers = true;
+  const h = await importPanel(admin);
+  try {
+    h.importState({ available: true, busy: false, plan: importPlan(admin, "complete") });
+    const before = h.calls.length;
+    await h.importer.refresh(); await settled();
+    assert.equal(h.calls.length - before, 3, "two status reads plus one controller snapshot; no recursive importer refresh");
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true);
+    assert.match(h.importRoot.textContent, /Übernahme abgeschlossen/);
+    assert.equal(h.calls.filter(([url]) => url.startsWith("/api/shared-project/import/")).length, 0);
+  } finally { h.close(); }
+});
+
+test("late import status cannot re-enable a newer revoked project identity", async () => {
+  const admin = rendererSeed(); admin.status.baseUrl = "https://fixture.example.org"; admin.permissions.canManageUsers = true;
+  const h = await importPanel(admin);
+  try {
+    let release;
+    h.delayImport(() => new Promise((resolve) => { release = resolve; }));
+    const pending = h.importer.refresh();
+    const reader = rendererSeed({ role: "reader" }); reader.status.baseUrl = admin.status.baseUrl;
+    h.replace(reader); await h.controller.refresh();
+    release({ available: true, busy: false, plan: importPlan(admin) }); await pending;
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, true);
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true);
+    assert.match(h.importRoot.textContent, /bitte online mit Administration anmelden/);
+  } finally { h.close(); }
+});
+
+test("initial import availability arriving after reconnect keeps the newer admin identity", async () => {
+  const seed = rendererSeed(); seed.status.connection = "offline"; seed.permissions.canManageUsers = false;
+  let release;
+  const h = await importPanel(seed, { initialImportDelay: () => new Promise((resolve) => { release = resolve; }) });
+  try {
+    await h.findButton("Serverstand lesen").emit("click"); await settled();
+    release({ available: true, busy: false, plan: null }); await settled();
+    assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, false);
+    assert.doesNotMatch(h.importRoot.textContent, /bitte online mit Administration anmelden/);
+  } finally { h.close(); }
+});
+
+test("import polling survives a newer project snapshot without reviving stale rights or losing completion", async () => {
+  const admin = rendererSeed(); admin.status.baseUrl = "https://fixture.example.org"; admin.permissions.canManageUsers = true;
+  const timers = new Map(); let timerId = 0;
+  const h = await importPanel(admin, { timers: {
+    setTimeout(callback) { timers.set(++timerId, callback); return timerId; }, clearTimeout(id) { timers.delete(id); },
+  } });
+  const tick = async () => {
+    assert.equal(timers.size, 1, "exactly one follow-up status read remains scheduled");
+    const [id, callback] = timers.entries().next().value; timers.delete(id); callback(); await settled();
+  };
+  try {
+    h.importState({ available: true, busy: true, plan: importPlan(admin, "running") }); await h.importer.refresh();
+    let release;
+    h.delayImport(() => new Promise((resolve) => { release = resolve; }));
+    await tick();
+    await h.controller.refresh();
+    release({ available: true, busy: true, plan: importPlan(admin, "running") }); await settled();
+    assert.equal(timers.size, 1, "an unrelated newer project snapshot must not strand the running import");
+    h.delayImport(null); h.importState({ available: true, busy: false, plan: importPlan(admin, "complete") });
+    await tick();
+    assert.equal(h.importer.busy, false); assert.match(h.importRoot.textContent, /Übernahme abgeschlossen/);
+    assert.equal(timers.size, 0, "completion stops polling without creating a feedback loop");
+    assert.equal(h.calls.filter(([url, method]) => url.startsWith("/api/shared-project/import/") && method === "POST").length, 0);
+  } finally { h.close(); }
+});
+
+test("full import clearly identifies its source and requires confirmation to replace an unstarted public plan", async () => {
+  const admin = rendererSeed(); admin.status.baseUrl = "https://fixture.example.org"; admin.permissions.canManageUsers = true;
+  const h = await importPanel(admin);
+  try {
+    const plan = { ...importPlan(admin), canReplace: true, source: { kind: "public-catalog", version: 1 } };
+    h.importState({ available: true, busy: false, source: { kind: "working-records", version: 1 }, plan }); await h.importer.refresh();
+    assert.match(h.importRoot.textContent, /Vollständige Art-Datensätze übernehmen/);
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true);
+    await h.findImportButton("Übernahme zuerst prüfen").emit("click"); await settled();
+    assert.equal(h.confirmations.length, 1); assert.equal(h.confirmations[0].title, "Vorbereitung erneuern?");
+    const request = h.calls.find(([url]) => url === "/api/shared-project/import/prepare");
+    assert.equal(request[2].replaceUnstartedPlanId, plan.planId);
+    assert.equal(h.calls.filter(([url]) => url === "/api/shared-project/import/start").length, 0);
+  } finally { h.close(); }
+});
+
+test("cancelled replan preserves the previous plan without sending a replacement", async () => {
+  const admin = rendererSeed(); admin.permissions.canManageUsers = true;
+  const h = await importPanel(admin, { confirmImport: async () => false });
+  try {
+    h.importState({ available: true, busy: false, plan: { ...importPlan(admin), canReplace: true, canApply: false, drift: [{ reason: "changed" }] } }); await h.importer.refresh();
+    await h.findImportButton("Übernahme zuerst prüfen").emit("click"); await settled();
+    assert.equal(h.confirmations.length, 1); assert.equal(h.calls.filter(([url, method]) => url.includes("/import/") && method === "POST").length, 0);
+  } finally { h.close(); }
+});
+
+test("an authorization change during replacement confirmation cannot send the stale plan decision", async () => {
+  const admin = rendererSeed(); admin.permissions.canManageUsers = true; let release;
+  const h = await importPanel(admin, { confirmImport: () => new Promise((resolve) => { release = resolve; }) });
+  try {
+    h.importState({ available: true, busy: false, plan: { ...importPlan(admin), canReplace: true, canApply: false, drift: [{ reason: "changed" }] } }); await h.importer.refresh();
+    await h.findImportButton("Übernahme zuerst prüfen").emit("click"); await settled();
+    const reader = rendererSeed({ role: "reader" }); h.replace(reader); await h.controller.refresh(); release(true); await settled();
+    assert.equal(h.calls.filter(([url, method]) => url.includes("/import/") && method === "POST").length, 0);
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true);
+  } finally { h.close(); }
+});
+
+test("a missing server capability explains the required update without displaying an arbitrary service error", async () => {
+  const admin = rendererSeed(); admin.permissions.canManageUsers = true;
+  const error = Object.assign(new Error("Do not echo private remote details"), { code: "species_record_server_required" });
+  const h = await importPanel(admin, { prepareError: error });
+  try {
+    await h.findImportButton("Übernahme zuerst prüfen").emit("click"); await settled();
+    assert.match(h.importRoot.textContent, /Dienst muss.*aktualisiert werden/);
+    assert.doesNotMatch(h.importRoot.textContent, /private remote details/);
+    assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true);
+  } finally { h.close(); }
 });
 
 test("renderer uses DOM for hostile content and public image previews without auth attributes", async () => {

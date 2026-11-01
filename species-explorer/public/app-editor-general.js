@@ -32,10 +32,16 @@
       loadData,
     } = dependencies;
 
-    let previewToken = "";
+    let previewToken = "", editGeneration = 0, generalBusy = false, currentEditRevision = species.editRevision;
+    const fieldLocks = new Map(), sourceEpoch = state.workspaceEpoch || 0;
+    const shared = species.source === "shared-project";
+    const source = shared ? "shared-project" : "local";
+    const sameSource = () => (state.workspace || "local") === source && (state.workspaceEpoch || 0) === sourceEpoch;
+    const editBase = shared ? `/api/shared-project/species/${encodeURIComponent(species.id)}` : `/api/species/${encodeURIComponent(species.id)}`;
     const setMessage = createMessageSetter(message);
 
     const resetPreview = () => {
+      editGeneration++;
       previewToken = "";
       preview.hidden = true;
       previewRows.replaceChildren();
@@ -66,6 +72,13 @@
     });
 
     const setBusy = (busy) => {
+      generalBusy = busy;
+      if (busy) {
+        for (const input of form.querySelectorAll?.("input,select,textarea") || []) {
+          if (!fieldLocks.has(input)) fieldLocks.set(input, input.disabled);
+          input.disabled = true;
+        }
+      } else { for (const [input, disabled] of fieldLocks) input.disabled = disabled; fieldLocks.clear(); }
       previewButton.disabled = busy;
       saveButton.disabled = busy || !previewToken;
       for (const button of closeButtons) button.disabled = busy;
@@ -107,6 +120,7 @@
     };
 
     scientificNameUnlockButton?.addEventListener("click", async () => {
+      if (shared) { setMessage("Gemeinsame Namensänderungen benötigen noch den gekoppelten Umbenennungsweg. Die vorhandene Zuordnung bleibt erhalten.", "info"); return; }
       const alreadyUnlocked = scientificNameInput?.dataset.unlocked === "true";
       if (alreadyUnlocked) {
         setScientificNameUnlocked(false);
@@ -137,8 +151,8 @@
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (generalBusy) return;
       resetPreview();
-      setBusy(true);
       setMessage("Änderungen werden geprüft…", "info");
       const fieldErrors = validateEditableFields();
       if (Object.keys(fieldErrors).length) {
@@ -149,14 +163,18 @@
       }
       clearFieldErrors();
       try {
+        if (!sameSource()) throw new Error("Der Artbestand wurde gewechselt. Bitte die Art im gewünschten Bestand erneut öffnen.");
+        const generation = editGeneration, values = editableValues();
+        setBusy(true);
         const result = await fetchJson(
-          `/api/species/${encodeURIComponent(species.id)}/preview`,
+          `${editBase}/preview`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ values: editableValues() }),
+            body: JSON.stringify({ values, ...(shared ? { sourceScope: species.sourceScope, expectedEditRevision: currentEditRevision } : {}) }),
           },
         );
+        if (!sameSource() || generation !== editGeneration) throw new Error("Die Eingaben oder der Artbestand wurden während der Prüfung geändert. Bitte eine neue Vorschau erstellen.");
         previewToken = result.token;
         for (const change of result.changes) {
           const row = document.createElement("tr");
@@ -170,7 +188,8 @@
         preview.hidden = false;
         saveButton.disabled = false;
         setMessage(
-          "Vorschau erstellt. Beim Speichern wird zuerst eine lokale Sicherung angelegt.",
+          shared ? "Vorschau erstellt. Speichern merkt die Änderung für den gemeinsamen Abgleich vor."
+            : "Vorschau erstellt. Beim Speichern wird zuerst eine lokale Sicherung angelegt.",
           "success",
         );
       } catch (error) {
@@ -181,31 +200,41 @@
     });
 
     saveButton.addEventListener("click", async () => {
-      if (!previewToken) return;
+      if (!previewToken || generalBusy) return;
+      const generation = editGeneration;
       setBusy(true);
-      setMessage("Änderungen werden lokal gesichert und gespeichert…", "info");
+      setMessage(shared ? "Änderungen werden lokal für den gemeinsamen Abgleich gespeichert…" : "Änderungen werden lokal gesichert und gespeichert…", "info");
       try {
+        if (!sameSource()) throw new Error("Der Artbestand wurde gewechselt. Bitte die Art im gewünschten Bestand erneut öffnen.");
         const result = await fetchJson(
-          `/api/species/${encodeURIComponent(species.id)}/save`,
+          `${editBase}/save`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: previewToken }),
           },
         );
-        state.notice =
-          `Gespeichert. Sicherung: ${result.backup}. `
+        previewToken = "";
+        if (!sameSource()) { resetPreview(); return; }
+        if (shared && result.species?.id === species.id && result.species?.sourceScope === species.sourceScope && typeof result.species?.editRevision === "string") {
+          currentEditRevision = result.species.editRevision;
+        }
+        if (generation !== editGeneration) {
+          resetPreview(); setMessage("Die vorherige Eingabe wurde gespeichert. Deine neue Eingabe bleibt offen; bitte eine neue Vorschau erstellen.", "info"); return;
+        }
+        state.notice = shared ? "Lokal vorgemerkt. Mit „Änderungen abgleichen“ an das gemeinsame Projekt senden; interne Freigabe und Websiteübernahme bleiben eigene Schritte."
+          : `Gespeichert. Sicherung: ${result.backup}. `
           + backupRetentionText(result)
           + " "
           + "Die Änderung ist lokal vorgemerkt und wird mit „Änderungen übertragen“ veröffentlicht."
           + `${result.backupCleanupWarning ? ` ${result.backupCleanupWarning}` : ""}`;
         if (result.species?.id) state.selectedId = result.species.id;
+        setBusy(false);
         closeEditDialog();
         await loadData({ reload: true });
       } catch (error) {
         setMessage([error.message, ...(error.details || [])].join(" · "), "error");
-        setBusy(false);
-      }
+      } finally { setBusy(false); }
     });
 
     return Object.freeze({
@@ -213,6 +242,7 @@
       resetForOpen,
       resetPreview,
       setMessage,
+      isBusy: () => generalBusy,
     });
   }
 

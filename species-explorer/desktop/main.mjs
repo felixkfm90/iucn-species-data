@@ -184,6 +184,9 @@ async function restartServerAndLoad() {
       sharedProjectImportOptions: personalProjectProfile ? {
         filename: join(personalProjectProfile.directory, "initial-import.sqlite"), localStorageConfirmed: true,
       } : null,
+      websiteAltSyncOptions: personalProjectProfile ? {
+        filename: join(personalProjectProfile.directory, "website-alt-sync.sqlite"), localStorageConfirmed: true,
+      } : null,
       localAiOptions: personalProjectProfile ? {
         cacheRoot: join(personalProjectProfile.directory, "local-ai"), deviceId: personalProjectProfile.device.id,
       } : null,

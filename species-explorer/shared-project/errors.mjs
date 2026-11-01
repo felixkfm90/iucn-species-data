@@ -3,6 +3,7 @@ export class ProjectError extends Error {
     super(message);
     this.name = "ProjectError";
     this.status = status;
+    this.statusCode = status;
     this.code = code;
     if (details !== undefined) this.details = details;
   }

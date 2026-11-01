@@ -22,6 +22,20 @@ export function matchProjectFeatureRoute(method, pathname) {
   if (completion && method === "POST") return { name: "update-completion", action: completion[1] };
   if (!pathname.startsWith("/api/shared-project")) return null;
   const tail = pathname.slice("/api/shared-project".length);
+  if (tail === "/species/conflicts" && read) return { name: "shared-project", action: "species-conflicts-list" };
+  const speciesApproval = tail.match(/^\/species\/([a-z0-9]+(?:-[a-z0-9]+)*)\/approval\/(preview|approve)$/);
+  if (speciesApproval && method === "POST") return { name: "shared-project", action: `species-approval-${speciesApproval[2]}`, id: speciesApproval[1] };
+  const speciesConflict = tail.match(/^\/species\/conflicts\/([a-f0-9-]{36})(?:\/(preview|resolve))?$/);
+  if (speciesConflict && (read && !speciesConflict[2] || method === "POST" && speciesConflict[2])) {
+    return { name: "shared-project", action: `species-conflicts-${speciesConflict[2] || "get"}`, id: speciesConflict[1] };
+  }
+  if (tail === "/species/workspace" && read) return { name: "shared-project", action: "species-workspace" };
+  if (tail === "/species/workspace/revision" && read) return { name: "shared-project", action: "species-workspace-revision" };
+  if (tail === "/species" && read) return { name: "shared-project", action: "species-list" };
+  const speciesEditor = tail.match(/^\/species\/([a-z0-9]+(?:-[a-z0-9]+)*)(?:\/(preview|save))?$/);
+  if (speciesEditor && (read && !speciesEditor[2] || method === "POST" && speciesEditor[2])) {
+    return { name: "shared-project", action: `species-${speciesEditor[2] || "get"}`, id: speciesEditor[1] };
+  }
   const exact = (read ? readActions : method === "POST" ? writeActions : new Map()).get(tail);
   if (exact) return { name: "shared-project", action: exact };
   const object = tail.match(/^\/objects\/(species|page)\/([a-z0-9]+(?:-[a-z0-9]+)*)(\/approve)?$/);
@@ -49,6 +63,18 @@ export async function invokeSharedProjectOperation(service, { action, kind, id, 
     throw Object.assign(new Error("Das gemeinsame Projekt ist auf diesem Gerät noch nicht eingerichtet."), { statusCode: 503 });
   }
   switch (action) {
+    case "species-approval-preview": return service.speciesApproval.preview(id, payload);
+    case "species-approval-approve": return service.speciesApproval.approve(id, payload);
+    case "species-conflicts-list": return service.speciesConflicts.list();
+    case "species-conflicts-get": return service.speciesConflicts.get(id);
+    case "species-conflicts-preview": return service.speciesConflicts.preview(id, payload);
+    case "species-conflicts-resolve": return service.speciesConflicts.resolve(id, payload);
+    case "species-workspace": return service.speciesWorkspace.read();
+    case "species-workspace-revision": return service.speciesWorkspace.revision();
+    case "species-list": return service.speciesEditor.list();
+    case "species-get": return service.speciesEditor.get(id);
+    case "species-preview": return service.speciesEditor.preview(id, payload);
+    case "species-save": return service.speciesEditor.save(id, payload);
     case "snapshot": return service.snapshot();
     case "connect": return service.connect(payload);
     case "disconnect": return service.disconnect();

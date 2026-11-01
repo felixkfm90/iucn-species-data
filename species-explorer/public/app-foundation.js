@@ -49,6 +49,9 @@
       sessionToken: "",
       websitePagesSnapshot: null,
       websitePagesChecking: false,
+      workspace: "local",
+      workspaceStatus: null,
+      workspaceEpoch: 0,
     };
   }
 
@@ -57,6 +60,8 @@
     HeadersImpl = global.Headers,
     getSessionToken = () => "",
     setSessionToken = () => {},
+    getWorkspace = () => "local",
+    getWorkspaceEpoch = () => 0,
   } = {}) {
     if (typeof fetchImpl !== "function") {
       throw new TypeError("Für die Explorer-API wird eine Fetch-Funktion benötigt.");
@@ -105,6 +110,13 @@
       reload = false,
       failureMessage = "Lokale Daten konnten nicht geladen werden.",
     } = {}) {
+      const workspace = getWorkspace(), epoch = getWorkspaceEpoch();
+      if (!["local", "shared-project"].includes(workspace)) throw new Error("Unbekannter Artbestand. Bitte den gewünschten Bestand erneut auswählen.");
+      if (workspace === "shared-project") {
+        const result = await fetchJson("/api/shared-project/species/workspace");
+        if (workspace !== getWorkspace() || epoch !== getWorkspaceEpoch()) throw new Error("Der Artbestand oder die Projektanmeldung wurde während des Ladens gewechselt.");
+        return result;
+      }
       if (reload) {
         await fetchImpl("/api/reload", { credentials: "same-origin" });
       }
@@ -118,12 +130,16 @@
       }
 
       const payloads = await Promise.all(responses.map((response) => response.json()));
+      if (workspace !== getWorkspace() || epoch !== getWorkspaceEpoch()) throw new Error("Der Artbestand oder die Projektanmeldung wurde während des Ladens gewechselt.");
       return Object.fromEntries(entries.map(([key], index) => [key, payloads[index]]));
     }
 
     async function fetchRevision() {
-      const response = await fetchImpl(SNAPSHOT_ENDPOINTS.revision, { credentials: "same-origin" });
-      if (!response.ok) return null;
+      const workspace = getWorkspace(), epoch = getWorkspaceEpoch();
+      const response = await fetchImpl(workspace === "shared-project" ? "/api/shared-project/species/workspace/revision" : SNAPSHOT_ENDPOINTS.revision,
+        { credentials: "same-origin" });
+      if (workspace !== getWorkspace() || epoch !== getWorkspaceEpoch()) return null;
+      if (!response.ok) return workspace === "shared-project" ? { revision: "shared-project-unavailable" } : null;
       return response.json();
     }
 

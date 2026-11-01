@@ -15,7 +15,7 @@
     catch { return ""; }
   }
   function createWebsiteAltSyncController({ fetchJson, createDialogController, confirmAction, documentRef = global.document,
-    safeImageUrl = global.SpeciesExplorerWebsiteAltTexts?.safeImageUrl, requestTimeoutMs = 30000,
+    safeImageUrl = global.SpeciesExplorerWebsiteAltTexts?.safeImageUrl, canEdit = () => true, requestTimeoutMs = 30000,
     setTimeoutImpl = global.setTimeout.bind(global), clearTimeoutImpl = global.clearTimeout.bind(global), apiPrefix = BASE } = {}) {
     if (typeof fetchJson !== "function" || typeof createDialogController !== "function" || typeof safeImageUrl !== "function"
       || !documentRef?.createElement || !documentRef.body || apiPrefix !== BASE) throw new TypeError("Gemeinsame Bildtexte benötigen den vorhandenen Dialog-, Vorschau- und API-Anschluss.");
@@ -100,17 +100,17 @@
     }
     function render() {
       const unavailable = snapshot?.available === false, linked = Boolean(record?.linked), comparing = ["conflict", "unrelated", "pulled"].includes(record?.state);
-      const canAct = !busy && !uncertain && !unavailable && permission("canEdit") && Boolean(record?.pageRevision) && !snapshot?.busy;
+      const canAct = canEdit() && !busy && !uncertain && !unavailable && permission("canEdit") && Boolean(record?.pageRevision) && !snapshot?.busy;
       heading.textContent = selection?.title ? `${selection.title} · gemeinsame Bildtexte` : "Gemeinsame Bildtexte";
       status.textContent = message;
-      summary.textContent = unavailable ? "Gemeinsames Projekt in der Desktop-App einrichten." : snapshot && !permission("canEdit") ? "Bitte im gemeinsamen Projekt mit redaktionellen Rechten anmelden."
+      summary.textContent = unavailable ? "Gemeinsames Projekt in der Desktop-App einrichten." : snapshot && !permission("canEdit") ? "Zuerst unter Datenbank-Aktionen → Weitere Aktionen → Backup und Einstellungen → Gemeinsames Projekt anmelden."
         : record ? `${STATES[record.state] || (linked ? "Seitenstand geladen" : "Nur auf diesem PC · noch nicht verknüpft")}${record.pageRevision ? ` · lokal ${record.pageRevision.slice(0, 8)}` : ""}${remoteRevision() ? ` · gemeinsam ${remoteRevision().slice(0, 8)}` : ""}` : "";
       const activeApprovals = record?.page?.images?.some(image => image.approval);
       adoptLabel.hidden = !permission("canApprove") || !activeApprovals; adopt.disabled = !canAct; adopt.checked = adoption;
       buttons.refresh.disabled = busy || unavailable; closeButton.disabled = busy;
       buttons.link.hidden = linked; buttons.link.disabled = !canAct || snapshot?.permissions?.canCreate === false;
       buttons.send.hidden = !linked || comparing; buttons.send.disabled = !canAct;
-      buttons.pull.hidden = !linked; buttons.pull.disabled = busy || uncertain || unavailable || !permission("canRead") || !record?.pageRevision || ["queued", "conflict"].includes(record?.state);
+      buttons.pull.hidden = !linked; buttons.pull.disabled = !canEdit() || busy || uncertain || unavailable || !permission("canRead") || !record?.pageRevision || ["queued", "conflict"].includes(record?.state);
       buttons.import.hidden = record?.state !== "pulled"; buttons.import.disabled = !canAct;
       buttons.current.hidden = !comparing; buttons.local.hidden = !comparing;
       buttons.current.disabled = !canAct || !remoteRevision(); buttons.local.disabled = !canAct || !remoteRevision();
@@ -124,7 +124,7 @@
       finally { clearTimeoutImpl(timer); requests.delete(controller); }
     }
     async function eligible() {
-      try { return Boolean(selection) && await selection.isCurrent({ pageUrl: selection.pageUrl, pageRevision: record?.pageRevision }) === true
+      try { return canEdit() && Boolean(selection) && await selection.isCurrent({ pageUrl: selection.pageUrl, pageRevision: record?.pageRevision }) === true
         && await selection.hasUnsavedChanges() === false; } catch { return false; }
     }
     async function load(ticket) {
@@ -155,7 +155,7 @@
       return typeof confirmAction === "function" ? await confirmAction({ title, message: text, confirmLabel: "Bestätigen" }) === true : global.confirm?.(`${title}\n\n${text}`) === true;
     }
     async function mutation(action, strategy) {
-      if (disposed || busy || uncertain || !record || snapshot?.busy || snapshot?.available === false || !permission(action === "pull" ? "canRead" : "canEdit")
+      if (!canEdit() || disposed || busy || uncertain || !record || snapshot?.busy || snapshot?.available === false || !permission(action === "pull" ? "canRead" : "canEdit")
         || action === "link" && snapshot?.permissions?.canCreate === false) return false;
       busy = true; const ticket = epoch, shown = revisionBinding(), expectedPageRevision = record.pageRevision, expectedRemoteRevision = remoteRevision(), conflict = selectedConflict(), adoptApproved = adoption && permission("canApprove"); render();
       try {
@@ -188,8 +188,8 @@
         if (!alive(ticket)) return false;
         if (!result || action === "link" && result.linked !== true || action === "import" && result.imported !== true
           || action === "send" && typeof result.synced !== "boolean" || ["pull", "resolve"].includes(action) && result.requiresExplicitImport !== true) throw new Error("action not acknowledged");
-        const mainStillCurrent = await eligible();
-        if (action === "import" && mainStillCurrent) await selection.onImported?.({ pageUrl: selection.pageUrl, pageRevision: result.pageRevision, localRevision: result.localRevision });
+        let mainStillCurrent = await eligible();
+        if (action === "import" && mainStillCurrent && await selection.onImported?.({ pageUrl: selection.pageUrl, pageRevision: result.pageRevision, localRevision: result.localRevision }) === false) mainStillCurrent = false;
         if (!alive(ticket)) return false;
         adoption = false; await load(ticket); uncertain = false;
         say(action === "import" && !mainStillCurrent ? "Die gemeinsame Fassung wurde gespeichert. Deine inzwischen geänderten Eingaben bleiben offen; bitte im Hauptfenster gezielt neu laden." : action === "send" ? result.conflict ? "Beide Fassungen bleiben erhalten. Bitte den Konflikt vergleichen." : result.synced ? "Diese Seite ist mit dem gemeinsamen Projekt abgeglichen. Squarespace wurde nicht verändert." : "Der Abgleich ist noch offen. Bitte den aktuellen Stand vergleichen."
@@ -209,29 +209,37 @@
     const controls = createDialogController({ dialog, closeButtons: [closeButton], beforeClose: () => !busy,
       afterClose: () => {
         if (busy && !disposed) { controls.open(); say("Die begonnene Aktion läuft noch. Bitte ihren Abschluss abwarten."); return; }
+        const onClosed = selection?.onClosed;
         epoch++; selection = null; record = null; snapshot = null; conflicts = []; uncertain = false; comparisons.replaceChildren();
+        onClosed?.();
       } });
     for (const id of ["link", "send", "pull", "import"]) listen(buttons[id], "click", () => mutation(id));
     listen(buttons.current, "click", () => mutation("resolve", "current")); listen(buttons.local, "click", () => mutation("resolve", "local"));
     listen(buttons.refresh, "click", read); listen(adopt, "change", () => { adoption = adopt.checked === true; });
+    function stop() {
+      if (disposed) return;
+      disposed = true; epoch++; for (const controller of requests) controller.abort(); for (const remove of listeners) remove();
+      selection = null; record = null; snapshot = null; conflicts = []; uncertain = false; controls.destroy(); dialog.remove();
+    }
     render();
     return {
       async openForPage(input = {}) {
-        if (disposed || busy || !pageUrl(input.pageUrl) || typeof input.isCurrent !== "function" || typeof input.hasUnsavedChanges !== "function") return false;
+        if (!canEdit() || disposed || busy || !pageUrl(input.pageUrl) || typeof input.isCurrent !== "function" || typeof input.hasUnsavedChanges !== "function") return false;
         if (isOpen() && !controls.close("page-change")) return false;
         selection = { pageUrl: pageUrl(input.pageUrl), title: String(input.title || "").slice(0, 160), isCurrent: input.isCurrent,
-          hasUnsavedChanges: input.hasUnsavedChanges, onImported: input.onImported };
+          hasUnsavedChanges: input.hasUnsavedChanges, onImported: input.onImported, onClosed: input.onClosed };
         snapshot = null; record = null; conflicts = []; adoption = false; uncertain = false; epoch++; say("Gespeicherte Bildtexte werden zum Vergleich gelesen …"); controls.open();
         return read();
       },
       refresh: read,
       close() { return !disposed && controls.close("button"); },
-      hasUnsavedChanges: () => busy || uncertain,
+      hasUnsavedChanges: () => !disposed && (busy || uncertain),
       getState: () => ({ open: isOpen(), busy, uncertain, disposed, pageUrl: selection?.pageUrl || null, pageRevision: record?.pageRevision || null, remoteRevision: remoteRevision(), message }),
       async dispose() {
         if (disposed) return true; if (busy || isOpen() && !controls.close("dispose")) return false;
-        disposed = true; epoch++; for (const controller of requests) controller.abort(); for (const remove of listeners) remove(); controls.destroy(); dialog.remove(); return true;
-      }
+        stop(); return true;
+      },
+      stop,
     };
   }
   global.SpeciesExplorerWebsiteAltSync = Object.freeze({ createWebsiteAltSyncController });

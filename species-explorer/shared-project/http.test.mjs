@@ -165,6 +165,36 @@ test("actual service process restart preserves existing session, object and appr
   } finally { await stop(); f.cleanup(); }
 });
 
+test("HTTP species approval advertises and atomically enforces a complete review binding while retaining import and legacy compatibility", () => scoped(async ({ address, a, b, store }) => {
+  const data = { type: "fn-species-record", schemaVersion: 1, id: "bound-approval-owl",
+    input: { german: "Freigabekauz", genus: "Strix", species: "approval" }, generated: null, taxonomyOverride: null, assessmentBinding: null,
+    assets: { assetName: "Freigabekauz", files: {}, overrides: {}, credits: null, portraitMetadata: null },
+    editorial: { websiteUrl: null, sections: [], gallery: [], generalSectionId: null, embeddedGeneralText: null } };
+  const created = store.createObject(a.token, { kind: "species", id: data.id, data }), identity = store.me(a.token);
+  const support = await api(address, "capabilities", { token: a.token });
+  assert.equal(support.status, 200); assert.equal(support.data.boundSpeciesApproval, 1); assert.equal(support.data.user.id, a.user.id);
+  const review = { projectId: identity.projectId, userId: a.user.id, role: "admin" }, endpoint = `objects/species/${data.id}/approve`;
+  const invalid = [null, {}, { projectId: review.projectId }, { projectId: review.projectId, userId: review.userId },
+    { userId: review.userId, role: review.role }, { ...review, extra: "unbound" }, { ...review, role: "reader" }];
+  for (const expectedReview of invalid) {
+    const response = await api(address, endpoint, { method: "POST", token: a.token, data: { expectedRevision: created.revision, expectedReview } });
+    assert.equal(response.status, 400); assert.equal(response.data.error.code, "invalid_approval_binding");
+    assert.equal(store.getObject(a.token, "species", data.id).approval, "draft");
+  }
+  for (const expectedReview of [{ ...review, projectId: "wrong-project" }, { ...review, userId: b.user.id }, { ...review, role: "publisher" }]) {
+    const response = await api(address, endpoint, { method: "POST", token: a.token, data: { expectedRevision: created.revision, expectedReview } });
+    assert.equal(response.status, 409); assert.equal(response.data.error.code, "approval_review_changed");
+    assert.equal(store.getObject(a.token, "species", data.id).approval, "draft");
+  }
+  const approved = await api(address, endpoint, { method: "POST", token: a.token, data: { expectedRevision: created.revision, expectedReview: review,
+    requireAdmin: true, expectedProjectId: review.projectId, expectedUserId: review.userId } });
+  assert.equal(approved.status, 200); assert.equal(approved.data.approvedRevision, created.revision); assert.equal(approved.data.internalOnly, true);
+  assert.equal(approved.data.externalPublication, "not-performed");
+  const revision = store.catalog(a.token).revision;
+  const legacy = await api(address, endpoint, { method: "POST", token: a.token, data: { expectedRevision: created.revision } });
+  assert.equal(legacy.status, 200); assert.equal(store.catalog(a.token).revision, revision, "Idempotente bestehende Freigabe erzeugt keinen neuen Katalogstand");
+}));
+
 test("actual CLI bootstrap needs explicit flags/stdin, emits no credentials, and cannot run twice", async () => {
   const f = fixture(), executable = fileURLToPath(new URL("cli.mjs", import.meta.url));
   async function invoke(args, input) {

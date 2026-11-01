@@ -4,6 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 
 const source = await readFile(new URL("./public/app-website-alt-texts.js", import.meta.url), "utf8");
+const syncSource = await readFile(new URL("./public/app-website-alt-sync.js", import.meta.url), "utf8");
 const pageUrl = "https://www.fnwildlifetravel.de/wildlife/island/fraterculaarctica";
 const imageUrl = "https://images.squarespace-cdn.com/content/v1/site/bird.jpg";
 const imageKey = "image-a";
@@ -14,9 +15,9 @@ const escapeHtml = (value) => String(value).replaceAll("&", "&amp;").replaceAll(
 const copy = (value) => JSON.parse(JSON.stringify(value));
 function deferred() { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 function seed() {
-  return { revision: "revision-1", pages: [{ url: pageUrl, title: "Papageientaucher", checkedAt: "2026-10-28T10:00:00Z", inventoryStatus: "current",
+  return { revision: "revision-1", capabilities: { keepExisting: true }, pages: [{ url: pageUrl, title: "Papageientaucher", checkedAt: "2026-10-28T10:00:00Z", inventoryStatus: "current",
     images: [{ key: imageKey, src: imageUrl, previewSrc: `${imageUrl}?format=750w`, alt: "Papageientaucher auf einem Felsen", caption: "", context: "content",
-      kind: "image", status: "unreviewed", draftText: "", draftDecorative: false, observationHash: "observation-1", approval: null }] }],
+      kind: "image", altPresent: true, status: "unreviewed", draftText: "", draftDecorative: false, observationHash: "observation-1", approval: null }] }],
   scan: { running: false, coverageNotes: ["Öffentliches HTML; dynamische Bilder gesondert prüfen."] },
   summary: { pages: 1, images: 1, missing: 0, unreviewed: 1, approved: 0, verified: 0 } };
 }
@@ -69,7 +70,10 @@ function headerLogoSeed() {
 function element() {
   const handlers = new Map();
   return { innerHTML: "", textContent: "", className: "", hidden: false, disabled: false, value: "", checked: false,
-    dataset: {}, open: false, attributes: {}, classList: { add() {} },
+    dataset: {}, open: false, attributes: {}, children: [], classList: { add() {} },
+    append(...children) { for (const child of children) { child.parent = this; this.children.push(child); } },
+    replaceChildren(...children) { this.children = []; this.append(...children); },
+    remove() { if (this.parent) this.parent.children = this.parent.children.filter((item) => item !== this); },
     addEventListener(type, fn) { handlers.set(type, [...(handlers.get(type) || []), fn]); },
     removeEventListener(type, fn) { handlers.set(type, (handlers.get(type) || []).filter((handler) => handler !== fn)); },
     emit(type, fields = {}) { const event = { type, target: this, ...fields }; for (const fn of handlers.get(type) || []) fn(event); },
@@ -77,25 +81,28 @@ function element() {
     querySelectorAll() { return []; }, contains() { return true; }, focus() { this.focused = true; },
   };
 }
-function harness({ initial = seed(), fetch, confirm = true, now, bootstrap = false, openImageSuggestion, canEdit } = {}) {
+function harness({ initial = seed(), fetch, confirm = true, now, bootstrap = false, openImageSuggestion, canEdit, sharedTextsController, sharedFactory, actualShared = false } = {}) {
   let stored = copy(initial), version = 1;
   const dialog = element(), openButton = element(), nodes = new Map(), timers = new Map(), calls = [], confirmations = [];
   let nextTimer = 0, dialogOptions, confirmPending;
   for (const name of ["message", "summary", "coverage", "pages", "page", "search", "filter", "connection", "transfer", "counts", "scan-status", "transfer-details", "transfer-summary"]) nodes.set(`[data-alt-${name}]`, element());
   dialog.querySelector = (selector) => nodes.get(selector);
   const windowHandlers = new Map();
-  const context = vm.createContext({ URL, document: { querySelector: (selector) => selector === "#website-alt-texts-dialog" ? dialog : openButton },
+  const body = element();
+  const context = vm.createContext({ URL, AbortController, document: { body, createElement: () => element(), querySelector: (selector) => selector === "#website-alt-texts-dialog" ? dialog : openButton },
+    SpeciesExplorerWebsiteAltSync: sharedFactory ? { createWebsiteAltSyncController: sharedFactory } : undefined,
     addEventListener: (name, handler) => windowHandlers.set(name, handler),
     setTimeout: (fn, delay) => { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; }, clearTimeout: (id) => timers.delete(id) });
   new vm.Script(source).runInContext(context);
+  if (actualShared) new vm.Script(syncSource).runInContext(context);
   const api = context.SpeciesExplorerWebsiteAltTexts;
   const controller = (bootstrap ? api.setupWebsiteAltTexts : api.createWebsiteAltTextsController)({ dialog, openButton, escapeHtml,
     ...(now ? { now } : {}),
-    openImageSuggestion, canEdit,
+    openImageSuggestion, canEdit, sharedTextsController,
     createDialogController(options) {
       dialogOptions = options;
-      return { open() { dialog.open = true; }, isOpen() { return dialog.open; },
-        close() { if (options.beforeClose?.() === false) return false; dialog.open = false; options.afterClose?.(); return true; }, destroy() {} };
+      return { open() { options.dialog.open = true; }, isOpen() { return options.dialog.open; },
+        close() { if (options.beforeClose?.() === false) return false; options.dialog.open = false; options.afterClose?.(); return true; }, destroy() {} };
     },
     confirmAction: async (options) => { confirmations.push(options); return confirmPending ? confirmPending.promise : confirm; },
     fetchJson: async (url, options) => {
@@ -112,6 +119,12 @@ function harness({ initial = seed(), fetch, confirm = true, now, bootstrap = fal
           stored.summary.approved = 1;
         }
         if (url.endsWith("/verify")) { image.status = "verified"; image.verification = { checkedAt: "2026-10-28T10:02:00Z" }; stored.summary.verified = 1; stored.summary.approved = 0; }
+        if (url.endsWith("/keep-existing")) {
+          image.draftText = image.alt; image.draftDecorative = call.body.decorative; image.status = "verified";
+          image.approval = { revision: "kept-approval", text: image.alt, decorative: call.body.decorative };
+          image.verification = { checkedAt: "2026-11-01T10:02:00Z", method: "public-html", approvalRevision: image.approval.revision, observationHash: image.observationHash };
+          stored.summary.verified = 1; stored.summary.approved = 0;
+        }
         stored.revision = `revision-${++version}`;
       }
       return copy(stored);
@@ -120,7 +133,7 @@ function harness({ initial = seed(), fetch, confirm = true, now, bootstrap = fal
   function decorate(checked = true) { dialog.emit("change", { target: { dataset: { altDecorative: imageKey }, checked } }); }
   function imageEvent(type = "load", src = `${imageUrl}?format=750w`) { dialog.emit(type, { target: { dataset: { altPreview: imageKey }, getAttribute: () => src } }); }
   function click(action, key) { dialog.emit("click", { target: { closest: (selector) => selector === "[data-alt-action]" ? { dataset: { altAction: action, altKey: key } } : null } }); }
-  return { api, controller, dialog, openButton, nodes, timers, calls, confirmations, input, decorate, imageEvent, click, windowHandlers,
+  return { api, controller, dialog, body, openButton, nodes, timers, calls, confirmations, input, decorate, imageEvent, click, windowHandlers,
     replace(value) { stored = copy(value); }, nativeClose() { dialog.open = false; dialogOptions.afterClose(); },
     requestClose() { return dialogOptions.beforeClose(); }, setConfirmPending(value) { confirmPending = value; } };
 }
@@ -137,6 +150,132 @@ test("composition bootstrap binds the real dialog entry and releases its timers 
   h.openButton.emit("click");
   await h.controller.refresh();
   assert.equal(h.calls.length, calls);
+});
+
+function sharedTextsFixture() {
+  const state = { open: false, busy: false, stopped: false, input: null, opens: 0 };
+  const controller = {
+    getState: () => state, hasUnsavedChanges: () => state.busy,
+    async openForPage(input) { state.input = input; state.opens++; state.open = true; return true; },
+    close() { if (state.busy) return false; state.open = false; state.input?.onClosed?.(); return true; },
+    stop() { state.open = false; state.stopped = true; },
+  };
+  return { state, controller };
+}
+
+test("gemeinsamer Bildtextvergleich öffnet die konkrete gespeicherte Seite ohne Schreibauftrag oder CMS-Übernahme", async () => {
+  const shared = sharedTextsFixture(), h = harness({ sharedTextsController: shared.controller }); await h.controller.open();
+  const before = h.calls.length;
+  assert.match(h.nodes.get("[data-alt-page]").innerHTML, /Bildtexte gemeinsam abgleichen/);
+  assert.equal(await h.controller.openSharedTexts(), true);
+  assert.equal(shared.state.input.pageUrl, pageUrl); assert.equal(shared.state.input.title, "Papageientaucher");
+  assert.equal(shared.state.input.isCurrent({ pageUrl }), true);
+  assert.equal(shared.state.input.isCurrent({ pageUrl: `${pageUrl}/andere` }), false);
+  assert.equal(shared.state.input.hasUnsavedChanges(), false); assert.equal(h.calls.length, before);
+  assert.equal(h.controller.hasUnsavedDrafts(), false);
+});
+
+test("gemeinsamer Vergleich verlangt gespeicherte Eingaben, aktuelle Bildgrundlage und Bearbeitungsmodus", async () => {
+  for (const blocked of ["dirty", "read-mode", "scan", "transfer", "redirect", "old-inventory", "unscanned", "error"]) {
+    const shared = sharedTextsFixture(), initial = seed(); let editing = true;
+    const h = harness({ initial, canEdit: () => editing, sharedTextsController: shared.controller }); await h.controller.open();
+    if (blocked === "dirty") h.input("Menschliche offene Änderung");
+    else if (blocked === "read-mode") editing = false;
+    else {
+      const next = copy(h.controller.snapshot());
+      if (blocked === "scan") next.scan.running = true;
+      if (blocked === "transfer") next.transfer = { running: true };
+      if (blocked === "redirect") next.pages[0].redirectUrl = `${pageUrl}/ziel`;
+      if (blocked === "old-inventory") next.pages[0].inventoryStatus = "stale";
+      if (blocked === "unscanned") next.pages[0].checkedAt = null;
+      if (blocked === "error") next.pages[0].error = "Nicht erreichbar";
+      h.replace(next); await h.controller.refresh();
+    }
+    assert.equal(await h.controller.openSharedTexts(), false, blocked); assert.equal(shared.state.opens, 0, blocked);
+    if (blocked === "dirty") assert.equal(h.controller.hasUnsavedDrafts(), true);
+  }
+});
+
+test("gemeinsamer Vergleich sperrt konkurrierende lokale Schreibschritte und wird beim Schließen berücksichtigt", async () => {
+  const shared = sharedTextsFixture(), h = harness({ initial: transferSeed(), sharedTextsController: shared.controller });
+  await h.controller.open(); h.imageEvent(); await h.controller.openSharedTexts(); const before = h.calls.length;
+  await h.controller.saveDraft(imageKey); await h.controller.approve(imageKey); await h.controller.verify(imageKey);
+  await h.controller.transfer(); await h.controller.scan(pageUrl); await h.controller.discover(); await h.controller.connectTransfer();
+  assert.equal(h.calls.length, before);
+  shared.state.busy = true;
+  assert.equal(h.controller.hasUnsavedDrafts(), true); assert.equal(h.requestClose(), false);
+  shared.state.busy = false; assert.equal(h.requestClose(), true); assert.equal(shared.state.open, false);
+  assert.doesNotMatch(h.nodes.get("[data-alt-page]").innerHTML, /data-alt-action="transfer" disabled/);
+});
+
+test("erst bestätigte gemeinsame Übernahme lädt die lokale Anzeige; nachlaufende eigene Eingaben bleiben erhalten", async () => {
+  const shared = sharedTextsFixture(), h = harness({ sharedTextsController: shared.controller }); await h.controller.open(); await h.controller.openSharedTexts();
+  const imported = copy(h.controller.snapshot()); imported.revision = "imported-revision";
+  imported.pages[0].images[0].draftText = "Gemeinsam übernommener Text"; imported.pages[0].images[0].status = "draft";
+  h.replace(imported); assert.equal(await shared.state.input.onImported({ pageUrl, localRevision: "imported-revision" }), true);
+  assert.match(h.nodes.get("[data-alt-page]").innerHTML, /Gemeinsam übernommener Text/);
+  assert.equal(h.calls.at(-1).method, "GET"); assert.equal(shared.state.input.isCurrent(), true, "Die quittierte lokale Fassung ist jetzt die neue Vergleichsgrundlage");
+  shared.controller.close(); await h.controller.openSharedTexts(); h.input("Meine inzwischen offene Fassung"); const before = h.calls.length;
+  assert.equal(await shared.state.input.onImported({ pageUrl }), false); assert.equal(h.calls.length, before);
+  assert.equal(h.controller.hasUnsavedDrafts(), true); await h.controller.refresh();
+  assert.match(h.nodes.get("[data-alt-page]").innerHTML, /Meine inzwischen offene Fassung/);
+});
+
+test("andere Seiten entwerten den Vergleich nicht; neue gewählte Seitenfassung und Lesemodus stoppen ihn", async () => {
+  const shared = sharedTextsFixture(); let editing = true;
+  const h = harness({ canEdit: () => editing, sharedTextsController: shared.controller }); await h.controller.open(); await h.controller.openSharedTexts();
+  const next = copy(h.controller.snapshot()); next.revision = "unrelated-global-version";
+  next.pages.push({ ...copy(next.pages[0]), url: `${pageUrl}/andere`, title: "Andere Seite" }); h.replace(next); await h.controller.refresh();
+  assert.equal(shared.state.input.isCurrent(), true);
+  editing = false; assert.equal(shared.state.input.isCurrent(), false); editing = true;
+  next.pages[0].images[0].alt = "Neue Beobachtung"; h.replace(next); await h.controller.refresh(); assert.equal(shared.state.input.isCurrent(), false);
+});
+
+test("normaler Bootstrap verdrahtet Vergleich, Lesemodus und Entladeabschluss ohne größere Kompositionswurzel", async () => {
+  const shared = sharedTextsFixture(); let factoryOptions, editing = true;
+  const h = harness({ bootstrap: true, canEdit: () => editing, sharedFactory: (options) => { factoryOptions = options; return shared.controller; } });
+  assert.equal(factoryOptions.canEdit(), true); editing = false; assert.equal(factoryOptions.canEdit(), false); editing = true;
+  assert.equal(factoryOptions.safeImageUrl(imageUrl), imageUrl);
+  await h.controller.open(); await h.controller.openSharedTexts(); h.windowHandlers.get("pagehide")();
+  assert.equal(shared.state.stopped, true); assert.equal(shared.state.input.isCurrent(), false); assert.equal(h.timers.size, 0);
+});
+
+test("echter Haupt- und Vergleichscontroller übernehmen eine quittierte Fassung und halten Squarespace getrennt", async () => {
+  const base = "/api/website/alt-texts/shared", initial = seed();
+  const remotePage = copy(initial.pages[0]); Object.assign(remotePage.images[0], { status: "draft", draftText: "Gemeinsamer freigegebener Entwurf" });
+  const permissions = { canRead: true, canEdit: true, canApprove: true, canCreate: true };
+  let imported = false;
+  const h = harness({ initial, bootstrap: true, actualShared: true, fetch(call, store) {
+    if (!call.url.startsWith(base)) return;
+    if (call.url === base) return { available: true, busy: false, permissions, binding: { origin: "https://project.example.org", projectId: "fixture-project", userId: "fixture-user" } };
+    if (call.url.startsWith(`${base}/page?`)) return { pageUrl, pageRevision: imported ? "b".repeat(64) : "a".repeat(64), linked: true,
+      page: copy(store.stored.pages[0]), state: imported ? "linked" : "pulled", permissions,
+      remote: { id: "fixture-page", revision: "server-revision", data: { page: copy(remotePage) } } };
+    if (call.url.startsWith(`${base}/conflicts?`)) return { conflicts: [] };
+    if (call.url === `${base}/import`) {
+      const next = copy(store.stored); next.revision = "confirmed-local-import"; next.pages[0] = copy(remotePage); store.setStored(next); imported = true;
+      return { imported: true, pageRevision: "b".repeat(64), localRevision: next.revision };
+    }
+    throw new Error(`Unexpected shared route: ${call.url}`);
+  } });
+  await h.controller.open(); const baseline = h.calls.length;
+  assert.equal(await h.controller.openSharedTexts(), true);
+  assert.ok(h.calls.slice(baseline).every((call) => call.method === "GET"));
+  const descendants = (node) => [node, ...node.children.flatMap(descendants)];
+  const take = descendants(h.body).find((node) => node.textContent === "Geladene Fassung auf diesem PC übernehmen");
+  assert.ok(take); take.emit("click");
+  for (let i = 0; i < 12; i++) await new Promise(setImmediate);
+  assert.equal(imported, true); assert.equal(h.controller.snapshot().revision, "confirmed-local-import");
+  assert.match(h.nodes.get("[data-alt-page]").innerHTML, /Gemeinsamer freigegebener Entwurf/);
+  assert.deepEqual(h.calls.slice(baseline).filter((call) => call.method === "POST").map((call) => call.url), [`${base}/import`]);
+  assert.equal(h.controller.hasUnsavedDrafts(), false); h.controller.stop(); assert.equal(h.body.children.length, 0);
+});
+
+test("Desktop-HTML lädt den gemeinsamen Vergleich vor der Kompositionswurzel", async () => {
+  const html = await readFile(new URL("./public/index.html", import.meta.url), "utf8");
+  assert.match(html, /<link rel="stylesheet" href="\/website-alt-sync\.css">/);
+  assert.ok(html.indexOf('src="/app-website-alt-texts.js"') < html.indexOf('src="/app-website-alt-sync.js"'));
+  assert.ok(html.indexOf('src="/app-website-alt-sync.js"') < html.indexOf('src="/app.js"'));
 });
 
 test("remote preview accepts only the known image hosts and the own Pages subtree", () => {
@@ -1152,4 +1291,156 @@ test("Prüfhinweise verwenden den gewünschten unpersönlichen Satz ohne Bildtex
   assert.doesNotMatch(html, /mit Felix prüfen/);
   assert.match(html, /Felix und Niko fotografieren/);
   assert.deepEqual(image, before);
+});
+
+test("Vorhandenen Text beibehalten nutzt einen gebundenen öffentlichen Prüfauftrag ohne CMS- oder separate Freigabeanfrage", async () => {
+  const initial = seed(), image = initial.pages[0].images[0];
+  Object.assign(image, { status: "draft", draftText: "Vorbereiteter anderer Text", draftSavedAt: "2026-11-01T10:00:00Z" });
+  const h = harness({ initial }); await h.controller.open(); h.imageEvent();
+  assert.match(h.nodes.get("[data-alt-page]").innerHTML, /data-alt-action="keep-existing"[^>]*>Vorhandenen Text beibehalten<\/button>/);
+  const before = h.calls.length, revision = h.controller.snapshot().revision;
+  assert.equal(await h.controller.keepExisting(imageKey), true);
+  assert.equal(h.confirmations.length, 0, "Die bewusste Auswahl reicht bei gespeicherten reversiblen Alternativen.");
+  assert.deepEqual(h.calls.slice(before), [{ url: "/api/website/alt-texts/keep-existing", method: "POST", body: {
+    revision, pageUrl, imageKey, observationHash: "observation-1", approvalRevision: null, decorative: false } }]);
+  assert.equal(h.controller.snapshot().pages[0].images[0].approval.text, image.alt);
+  assert.match(h.nodes.get("[data-alt-message]").textContent, /frischen öffentlichen Seitenabruf bestätigt/);
+  assert.equal(h.controller.hasUnsavedDrafts(), false);
+});
+
+test("Abweichende ungespeicherte Eingabe braucht ausdrückliche Bestätigung und bleibt bei Ablehnung oder Prüfabweichung erhalten", async () => {
+  for (const failure of ["decline", "public-mismatch", "unconfirmed-response"]) {
+    const h = harness({ confirm: failure !== "decline", fetch(call, { stored }) {
+      if (!call.url.endsWith("/keep-existing")) return;
+      if (failure === "public-mismatch") throw new Error("Bildunterschrift öffentlich abweichend");
+      if (failure === "unconfirmed-response") return copy(stored);
+    } });
+    await h.controller.open(); h.imageEvent(); h.input("Ungespeicherter eigener Text");
+    const before = h.calls.length;
+    assert.equal(await h.controller.keepExisting(imageKey), false);
+    assert.match(h.confirmations[0].message, /abweichende ungespeicherte Eingabe.*nach erfolgreicher Prüfung verworfen/);
+    assert.equal(h.controller.hasUnsavedDrafts(), true);
+    assert.match(h.nodes.get("[data-alt-page]").innerHTML, /Ungespeicherter eigener Text/);
+    assert.equal(h.controller.snapshot().pages[0].images[0].approval, null);
+    if (failure === "decline") assert.equal(h.calls.length, before);
+  }
+});
+
+test("Bestätigtes Beibehalten verwirft nur die ausdrücklich bestätigte Eingabe; neue Eingaben während der Anfrage bleiben erhalten", async () => {
+  for (const lateInput of [false, true]) {
+    const h = harness({ fetch(call) { if (lateInput && call.url.endsWith("/keep-existing")) h.input("Während der Prüfung neu eingegeben"); } });
+    await h.controller.open(); h.imageEvent(); h.input("Ausdrücklich verworfener Entwurf");
+    assert.equal(await h.controller.keepExisting(imageKey), true);
+    assert.equal(h.controller.hasUnsavedDrafts(), lateInput);
+    if (lateInput) assert.match(h.nodes.get("[data-alt-page]").innerHTML, /Während der Prüfung neu eingegeben/);
+    else assert.doesNotMatch(h.nodes.get("[data-alt-page]").innerHTML, /Ausdrücklich verworfener Entwurf/);
+  }
+});
+
+test("Lesemodus, laufende Prüfung, entfernte oder mehrdeutige Bilder und fehlende Vorschau verhindern Beibehalten vor jeder Anfrage", async () => {
+  for (const mode of ["read", "scan", "transfer", "removed", "ambiguous", "missing-preview", "changed-observation", "filename", "empty"]) {
+    const initial = seed(), image = initial.pages[0].images[0];
+    if (mode === "scan") initial.scan.running = true;
+    if (mode === "transfer") initial.transfer = { running: true };
+    if (mode === "removed") image.status = "removed";
+    if (mode === "ambiguous") image.altVariants = [image.alt, "Andere Verwendung"];
+    if (mode === "filename") image.alt = "bird.jpg";
+    if (mode === "empty") image.alt = "";
+    let editing = true;
+    const h = harness({ initial, canEdit: () => editing }); await h.controller.open();
+    if (mode !== "missing-preview") h.imageEvent();
+    if (mode === "read") editing = false;
+    if (mode === "changed-observation") {
+      h.input("Eigener Text auf alter Grundlage");
+      const changed = copy(initial); changed.revision = "new-revision"; changed.pages[0].images[0].observationHash = "new-observation";
+      h.replace(changed); await h.controller.refresh();
+    }
+    const before = h.calls.length;
+    assert.equal(await h.controller.keepExisting(imageKey), false, mode);
+    assert.equal(h.calls.length, before, mode);
+  }
+});
+
+test("Dekorativer leerer Website-Text braucht eine bewusste Einordnung und bestätigt diese vor der öffentlichen Prüfung", async () => {
+  const initial = seed(); initial.pages[0].images[0].alt = "";
+  const h = harness({ initial }); await h.controller.open(); h.imageEvent();
+  assert.equal(await h.controller.keepExisting(imageKey), false);
+  h.decorate();
+  assert.equal(await h.controller.keepExisting(imageKey), true);
+  assert.match(h.confirmations[0].message, /leere Website-Text.*bewusst als dekorativ/);
+  assert.equal(h.calls.at(-1).body.decorative, true);
+});
+
+test("Geänderte Seite, Revision, Freigabe, Eingabe oder Bedienmodus während der Bestätigung stoppt Beibehalten", async () => {
+  for (const drift of ["page", "revision", "approval", "input", "mode", "close"]) {
+    let editing = true;
+    const h = harness({ canEdit: () => editing }), confirmation = deferred();
+    await h.controller.open(); h.imageEvent(); h.input("Abweichender eigener Entwurf"); h.setConfirmPending(confirmation);
+    const pending = h.controller.keepExisting(imageKey); await Promise.resolve();
+    if (drift === "mode") editing = false;
+    else if (drift === "input") h.input("Nach dem Klick neuer eigener Text");
+    else if (drift === "close") h.nativeClose();
+    else {
+      const changed = seed();
+      if (drift === "page") { changed.pages.push({ ...copy(changed.pages[0]), url: `${pageUrl}-andere` }); h.replace(changed); await h.controller.refresh(); await h.controller.selectPage(`${pageUrl}-andere`); }
+      else { changed.revision = "new-revision"; if (drift === "approval") changed.pages[0].images[0].approval = { revision: "new-approval", text: "Anderer Text" }; h.replace(changed); await h.controller.refresh(); }
+    }
+    const before = h.calls.length; confirmation.resolve(true);
+    assert.equal(await pending, false, drift);
+    assert.equal(h.calls.length, before, drift);
+    assert.equal(h.controller.hasUnsavedDrafts(), true, drift);
+  }
+});
+
+test("Doppelklick während der Bestätigung startet keine zweite Bestätigung und keinen zweiten Prüfauftrag", async () => {
+  const h = harness(), confirmation = deferred(); await h.controller.open(); h.imageEvent(); h.input("Entwurf zur Entscheidung"); h.setConfirmPending(confirmation);
+  const first = h.controller.keepExisting(imageKey); await Promise.resolve();
+  assert.equal(await h.controller.keepExisting(imageKey), false);
+  assert.equal(h.confirmations.length, 1);
+  assert.equal(h.requestClose(), false);
+  confirmation.resolve(true); assert.equal(await first, true);
+  assert.equal(h.calls.filter((call) => call.url.endsWith("/keep-existing")).length, 1);
+});
+
+test("Ein älterer laufender Programmdienst aktiviert Beibehalten erst nach ausgewiesener Unterstützung", async () => {
+  for (const capability of [undefined, false]) {
+    const initial = seed();
+    if (capability === undefined) delete initial.capabilities;
+    else initial.capabilities.keepExisting = capability;
+    const h = harness({ initial }); await h.controller.open(); h.imageEvent();
+    const before = h.calls.length;
+    assert.match(h.nodes.get("[data-alt-page]").innerHTML, /data-alt-action="keep-existing"[^>]* disabled/);
+    assert.match(h.nodes.get("[data-alt-page]").innerHTML, /Explorer.*neu starten/);
+    assert.equal(await h.controller.keepExisting(imageKey), false);
+    assert.equal(h.calls.length, before);
+  }
+});
+
+test("Linke Seitenliste behält ihre Position bei Auswahlwechsel und frischem Status trotz Inhaltsneuaufbau", async () => {
+  const initial = seed(), second = copy(initial.pages[0]);
+  second.url = `${pageUrl}-zweiteseite`; second.title = "Zweite Seite"; initial.pages.push(second);
+  const h = harness({ initial, now: () => Date.parse(initial.pages[0].checkedAt) + 1000 });
+  const list = h.nodes.get("[data-alt-pages]");
+  let markup = "";
+  Object.defineProperty(list, "innerHTML", { get: () => markup, set(value) { markup = value; list.scrollTop = 0; } });
+  await h.controller.open();
+  list.scrollTop = 428;
+  await h.controller.selectPage(second.url);
+  assert.equal(list.scrollTop, 428);
+  assert.match(h.nodes.get("[data-alt-page]").innerHTML, /Zweite Seite/);
+  const updated = copy(initial); updated.revision = "updated-list-status"; h.replace(updated);
+  await h.controller.refresh();
+  assert.equal(list.scrollTop, 428);
+  h.controller.stop();
+});
+
+test("Neue Such- und Filterauswahl beginnt die linke Liste oben; weitere Aktualisierung erhält deren neue Position", async () => {
+  const h = harness(); await h.controller.open();
+  const list = h.nodes.get("[data-alt-pages]"), search = h.nodes.get("[data-alt-search]"), filter = h.nodes.get("[data-alt-filter]");
+  list.scrollTop = 428; search.value = "Papagei"; h.dialog.emit("input", { target: search });
+  assert.equal(list.scrollTop, 0);
+  list.scrollTop = 82; await h.controller.refresh(); assert.equal(list.scrollTop, 82);
+  filter.value = "open"; h.dialog.emit("change", { target: filter });
+  assert.equal(list.scrollTop, 0);
+  h.controller.stop();
 });

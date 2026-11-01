@@ -288,16 +288,17 @@ mobile Architektur ausgewählt. Die begrenzte Projektmeldung ist privat in
 
 ## Phasenfolge
 
-### Android-Umsetzungsstand vom 31. Oktober
+### Android-Umsetzungsstand vom 1. November
 
 Die bestätigte lesende App wird unter [mobile](../mobile/README.md) mit Flutter umgesetzt. Die
-ARM64-Debug-APK **0.1.1+2** ist tatsächlich gebaut und enthält den vollständigen gebundenen öffentlichen
-Anfangskatalog. Analyzer und **66 Domain-/Offline-/Widgetfälle** sind für diesen Paketstand bestanden;
+ARM64-Debug-APK **0.1.2+3** ist tatsächlich gebaut und enthält den vollständigen gebundenen öffentlichen
+Anfangskatalog. Analyzer und **89 Domain-/Offline-/Widgetfälle** sind für diesen Paketstand bestanden;
 `mobile/build-evidence/artifact.json` bindet dessen Quellen, Werkzeuge und tatsächliche APK-Bytes.
-Der anschließende Quellstand **0.1.2+3** ergänzt die wählbare Offlineübernahme der öffentlichen
-Galeriefotos mit eigener Beobachtungsbindung. Formatierung, Analyse, neue Tests und Paketbau dieses
-Folgestands stehen noch aus; die alte APK wird dadurch nicht zum neuen Paket erklärt. Die App lädt
-keine Lightroom-/Referenzdatenbanken.
+Das Paket ergänzt die wählbare Offlineübernahme der öffentlichen Galeriefotos mit eigener
+Beobachtungsbindung. Ein Compilerfehler im optionalen Fototransport sowie ein veralteter Widgettext
+sind nach fehlgeschlagenen Vorherläufen korrigiert; die erneute Prüfung ist bestanden. Das tatsächlich
+gebaute APK ist einschließlich Debugsignatur und beider angenommenen Logoressourcen geprüft.
+Die App lädt keine Lightroom-/Referenzdatenbanken.
 
 Öffentlicher Anfangsbestand und persönlich angemeldeter Projektbereich werden getrennt gehalten.
 Der Anfangsbestand enthält öffentliche Fachinhalte und Medienverweise; Bild-/Tonbytes werden nicht
@@ -310,7 +311,9 @@ Revision 2 in der bereits gemeinsam verwendeten SDK-Ablage eingerichtet. Dieser 
 und mit Numis abgestimmt; es wurde nichts zurückgelöscht. Ein anschließender eigener Bau ist mit
 unverändertem SDK-Inventar nachgewiesen. Automatische SDK-Nachinstallation ist inzwischen gesperrt;
 alle Teilprojekte sind auf den vorhandenen Stand abgestimmt. Weitere schwere Bauten werden mit Numis
-abgestimmt. Eine echte S24-/S25-, NAS-/HTTPS-/Fernzugriffs- oder Android-Betriebssystemschlüssel-Abnahme ist
+abgestimmt. Die erneute Negativprobe vom 1. November stoppt an der absichtlich fehlenden Plattform 999;
+der SDK-Komponenten-/Metadatenvergleich bleibt unverändert. Der eigene Runner und die APK-Prüfung sind
+beendet und der Werkzeugabschnitt ist an Numis zurückgegeben. Eine echte S24-/S25-, NAS-/HTTPS-/Fernzugriffs- oder Android-Betriebssystemschlüssel-Abnahme ist
 aus lokalen Tests und dem APK-Bau nicht abgeleitet.
 
 Die lokale Explorer-Abschlussprüfung vom 26. Oktober ist im

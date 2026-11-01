@@ -37,10 +37,12 @@
   }
 
   function setupSharedProject({ fetchJson, confirmAction, createDialogController, canEdit,
+    onProjectState = () => {},
     documentImpl = global.document } = {}) {
     const controller = createSharedProjectController({
       elements: { sharedProjectRoot: documentImpl.querySelector("#shared-project-root") },
       fetchJson, confirmAction, documentImpl,
+      onProjectState: (state) => { importer.setProjectState?.(state); onProjectState(state); },
     });
     const dialog = createDialogController({ dialog: documentImpl.querySelector("#shared-project-dialog"),
       closeButtons: [documentImpl.querySelector("#shared-project-close")],
@@ -59,13 +61,13 @@
     return { controller, importer };
   }
 
-  function createSharedProjectController({ elements, api, fetchJson, setStatus = () => {}, confirmAction,
+  function createSharedProjectController({ elements, api, fetchJson, setStatus = () => {}, confirmAction, onProjectState = () => {},
     documentImpl = global.document } = {}) {
     const root = elements?.sharedProjectRoot || elements?.root;
     if (!root || !documentImpl?.createElement || !api && typeof fetchJson !== "function") throw new TypeError("Gemeinsames Projekt benötigt einen Bereich und die lokale Explorer-API.");
     const remote = api || createSharedProjectApi(fetchJson);
-    let snapshot = null, selected = null, draft = null, editRevision = "", dirty = false, busy = false, stopped = false, epoch = 0, counter = 0, merge = null, suspended = null, confirming = false;
-    const nodes = {};
+    let snapshot = null, selected = null, draft = null, editRevision = "", dirty = false, busy = false, stopped = false, epoch = 0, counter = 0, merge = null, suspended = null, confirming = false, speciesReview = null;
+    const nodes = {}, speciesConflictButtons = [];
     const create = (tag, text, className) => { const node = documentImpl.createElement(tag); if (text !== undefined) node.textContent = String(text); if (className) node.className = className; return node; };
     function button(text, action, disabled = false) { const node = create("button", text); node.type = "button"; node.disabled = disabled; node.addEventListener("click", action); return node; }
     function field(parent, title, value, update, { multiline = false, type = "text", required = false, maxLength = 100000, disabled = false } = {}) {
@@ -92,15 +94,17 @@
       } finally { confirming = false; }
     }
     async function discard() {
-      if (!dirty && !suspended) return true;
+      if (speciesReview?.busy) return false;
+      if (!dirty && !suspended && !speciesReview?.hasUnsavedChanges()) return true;
       if (!await confirm("Ungespeicherte Eingaben", "Sollen die Eingaben im Formular verworfen werden? Gespeicherte lokale Entwürfe bleiben erhalten.")) return false;
+      if (speciesReview && !speciesReview.reset()) return false;
       suspended = null;
       return true;
     }
     function changed() { dirty = true; if (nodes.save) nodes.save.disabled = busy || !snapshot?.permissions?.canEdit && !selected?.isNew; if (nodes.approve) nodes.approve.disabled = true; }
-    function permission(key) { return !busy && Boolean(snapshot?.permissions?.[key]); }
+    function permission(key) { return !busy && !speciesReview?.busy && Boolean(snapshot?.permissions?.[key]); }
     async function action(fn, success) {
-      if (busy || stopped) return null;
+      if (busy || speciesReview?.busy || stopped) return null;
       busy = true; const ticket = epoch;
       for (const node of root.querySelectorAll("input, textarea, select, button")) { node.sharedPreviousDisabled = node.disabled; node.disabled = true; }
       renderToolbar();
@@ -130,10 +134,12 @@
       nodes.loginDetails.hidden = unavailable;
     }
     function renderToolbar() {
-      nodes.sync.disabled = !snapshot?.permissions?.canRead || busy;
-      nodes.refresh.disabled = !snapshot?.permissions?.canRead || busy;
+      const blocked = busy || speciesReview?.busy;
+      for (const button of speciesConflictButtons) button.disabled = Boolean(blocked);
+      nodes.sync.disabled = !snapshot?.permissions?.canRead || blocked;
+      nodes.refresh.disabled = !snapshot?.permissions?.canRead || blocked;
       nodes.newSpecies.disabled = !permission("canCreate"); nodes.newPage.disabled = !permission("canCreate");
-      nodes.disconnect.disabled = !snapshot?.permissions?.canRead || busy; nodes.login.disabled = busy || snapshot?.available === false;
+      nodes.disconnect.disabled = !snapshot?.permissions?.canRead || blocked; nodes.login.disabled = blocked || snapshot?.available === false;
       if (nodes.save) nodes.save.disabled = busy || !(selected?.isNew ? snapshot?.permissions?.canCreate : snapshot?.permissions?.canEdit);
       if (nodes.approve) nodes.approve.disabled = busy || dirty || !snapshot?.permissions?.canApprove || selected?.localPending || selected?.localConflict;
     }
@@ -141,9 +147,10 @@
       nodes.list.replaceChildren();
       const search = nodes.search.value.toLocaleLowerCase("de");
       for (const item of snapshot?.objects || []) {
-        const title = item.data.commonName || item.data.title || item.id;
+        const title = item.data.commonName || item.data.title || (item.data.type === "fn-species-record" ? item.data.input?.german : "")
+          || (item.data.type === "website-alt-page" ? item.data.page?.title : "") || item.id;
         if (search && !`${title} ${item.id} ${item.data.scientificName || ""}`.toLocaleLowerCase("de").includes(search)) continue;
-        const choose = button(`${item.kind === "species" ? "Art" : "Seite"} · ${title}${item.localConflict ? " · Konflikt" : item.localPending ? " · lokal geändert" : item.approval === "approved" ? " · freigegeben" : " · Entwurf"}`, () => selectObject(item));
+        const choose = button(`${item.data.type === "website-alt-page" ? "Bildtexte" : item.kind === "species" ? "Art" : "Seite"} · ${title}${item.localConflict ? " · Konflikt" : item.localPending ? " · lokal geändert" : item.approval === "approved" ? " · freigegeben" : " · Entwurf"}`, () => selectObject(item));
         choose.className = "shared-project-list-item"; if (selected?.kind === item.kind && selected?.id === item.id) choose.setAttribute("aria-current", "true"); nodes.list.append(choose);
       }
       if (!nodes.list.children.length) nodes.list.append(create("p", "Noch keine passenden gemeinsamen Inhalte geladen."));
@@ -185,9 +192,20 @@
       }));
       for (const sound of media.sounds || []) if (sound.attribution) section.append(create("p", `Aufnahmequelle: ${sound.attribution}`, "shared-project-source"));
     }
+    function imageTextLocation() {
+      return create("p", "Diese Bildtexte und ihre Konflikte unter Website-Bildtexte → Seitenaktionen → Bildtexte gemeinsam abgleichen mit den Bildvorschauen prüfen.", "shared-project-note");
+    }
+    function speciesRecordLocation() {
+      return create("p", "Diese Art unter Artbestand → Gemeinsames Projekt in der normalen Artenansicht öffnen. Dort stehen die Grunddaten entsprechend deiner Berechtigung zur Bearbeitung bereit. Vorhandene Texte und Medien bleiben erhalten.", "shared-project-note");
+    }
     function renderEditor() {
       nodes.editor.replaceChildren(); nodes.save = null; nodes.approve = null;
       if (!draft || !selected) { nodes.editor.append(create("p", "Art oder Seite auswählen. Neue Inhalte werden zunächst als Entwurf angelegt.")); return; }
+      if (draft.type === "website-alt-page") { nodes.editor.append(create("h3", `Bildtexte · ${draft.page?.title || selected.id}`), imageTextLocation()); return; }
+      if (draft.type === "fn-species-record") {
+        nodes.editor.append(create("h3", `Art · ${draft.input?.german || selected.id}`),
+          create("p", `${draft.input?.genus || ""} ${draft.input?.species || ""}`.trim()), speciesRecordLocation()); return;
+      }
       const canEdit = Boolean(selected.isNew ? snapshot?.permissions?.canCreate : snapshot?.permissions?.canEdit);
       nodes.editor.append(create("h3", merge ? "Konflikt zusammenführen" : selected.isNew ? "Neuen Entwurf vorbereiten" : "Inhalt bearbeiten"));
       nodes.editor.append(create("p", selected.isNew ? "Online-Anlage · noch keine Freigabe" : `Version ${selected.ordinal || "?"} · ${selected.localPending ? "lokal gespeichert, Abgleich offen" : selected.approval === "approved" ? "intern freigegeben" : "Entwurf"}`));
@@ -240,11 +258,23 @@
       }
     }
     function renderConflicts() {
+      speciesConflictButtons.length = 0;
       nodes.conflicts.replaceChildren(); const conflicts = snapshot?.conflicts || [];
       if (!conflicts.length) return;
       nodes.conflicts.append(create("h3", `${conflicts.length} Konflikt(e) zur Entscheidung`));
       for (const conflict of conflicts) {
         const card = create("article"); card.append(create("h4", conflict.objectId));
+        if ([conflict.base, conflict.current, conflict.proposed, conflict.latestServer?.data].some((data) => data?.type === "website-alt-page")) {
+          card.append(imageTextLocation()); nodes.conflicts.append(card); continue;
+        }
+        if ([conflict.base, conflict.current, conflict.proposed, conflict.latestServer?.data].some((data) => data?.type === "fn-species-record")) {
+          if (speciesReview) {
+            const open = button("Grunddaten vergleichen", async () => { if (await discard()) await speciesReview.open(conflict.id); }, busy || speciesReview.busy);
+            speciesConflictButtons.push(open); card.append(open);
+          }
+          else card.append(speciesRecordLocation());
+          nodes.conflicts.append(card); continue;
+        }
         if (conflict.changedSinceConflict || conflict.resolvedAt) card.append(create("p", "Die Serverfassung wurde inzwischen weiterbearbeitet. Der aktuelle Stand ist zusätzlich angezeigt; lokale Fassungen bleiben erhalten."));
         readOnlyContent(details(card, "Ausgangsfassung"), conflict.base);
         readOnlyContent(details(card, "Serverfassung beim Konflikt"), conflict.current);
@@ -324,6 +354,7 @@
         dirty = false; merge = null; draft = null; selected = null;
       }
       snapshot = received;
+      speciesReview?.setProjectState(snapshot);
       const owner = `${snapshot.status.projectId}/${snapshot.status.user?.id}`;
       if (suspended && suspended.owner === owner && snapshot.permissions.canEdit) {
         ({ selected, draft, editRevision, merge } = suspended); dirty = true; suspended = null;
@@ -333,6 +364,7 @@
         if (current) { selected = current; draft = copy(current.data); editRevision = current.editRevision; } else { selected = null; draft = null; }
       }
       renderStatus(); renderList(); renderConflicts(); renderManagement(); renderEditor(); renderToolbar();
+      onProjectState({ status: snapshot.status, permissions: snapshot.permissions });
     }
     async function selectObject(item) {
       if (busy || !await discard()) return;
@@ -345,7 +377,7 @@
       merge = null; dirty = true; renderEditor();
     }
     async function saveDraft() {
-      if (!selected || busy) return;
+      if (!selected || busy || ["website-alt-page", "fn-species-record"].includes(draft?.type)) return;
       const target = { ...selected }, data = copy(draft), revision = editRevision, resolution = merge ? { ...merge } : null;
       if (resolution && !await confirm("Zusammengeführten Zieltext bestätigen", "Soll diese Fassung den Konflikt ausdrücklich entscheiden? Es erfolgt keine Websiteveröffentlichung.")) return;
       await action(async () => {
@@ -357,7 +389,7 @@
       }, resolution ? "Konfliktentscheidung gespeichert. Websiteübernahme bleibt ein eigener Schritt." : target.isNew ? "Online als Entwurf angelegt. Noch nicht freigegeben." : "Entwurf lokal gespeichert. „Abgleichen“ sendet ihn an den gemeinsamen Dienst.");
     }
     async function approveDraft() {
-      if (!selected || dirty || !permission("canApprove") || selected.localPending || selected.localConflict) return;
+      if (!selected || ["website-alt-page", "fn-species-record"].includes(draft?.type) || dirty || !permission("canApprove") || selected.localPending || selected.localConflict) return;
       if (!await confirm("Aktuelle Version intern freigeben", "Soll die angezeigte bestätigte Fassung für Projektleser freigegeben werden? Eine Übernahme in Squarespace ist damit nicht verbunden.")) return;
       if (dirty) { message("Die Formulareingaben wurden geändert. Bitte zuerst speichern und abgleichen.", true); return; }
       await action(async () => { await remote.approve(selected.kind, selected.id, { expectedRevision: selected.revision }); await loadSnapshot(); }, "Intern freigegeben. Eine Websiteveröffentlichung ist nicht erfolgt.");
@@ -384,13 +416,18 @@
     toolbar.append(nodes.sync, nodes.refresh, nodes.newSpecies, nodes.newPage, nodes.disconnect); root.append(toolbar);
     const workspace = create("div", undefined, "shared-project-workspace"), navigation = create("nav"); navigation.setAttribute("aria-label", "Gemeinsame Arten und Seiten");
     nodes.search = field(navigation, "Art oder Seite suchen", "", renderList, { type: "search", maxLength: 300 }); nodes.list = create("div"); navigation.append(nodes.list);
-    nodes.editor = create("section"); workspace.append(navigation, nodes.editor); nodes.conflicts = create("section", undefined, "shared-project-conflicts"); nodes.management = create("section"); root.append(workspace, nodes.conflicts, nodes.management);
+    nodes.editor = create("section"); workspace.append(navigation, nodes.editor); nodes.conflicts = create("section", undefined, "shared-project-conflicts"); nodes.speciesReview = create("section"); nodes.management = create("section"); root.append(workspace, nodes.conflicts, nodes.speciesReview, nodes.management);
+    if (global.SpeciesExplorerSpeciesConflicts?.createSpeciesConflictReview && typeof fetchJson === "function") {
+      speciesReview = global.SpeciesExplorerSpeciesConflicts.createSpeciesConflictReview({ root: nodes.speciesReview, fetchJson,
+        confirmAction: (options) => confirm(options.title, options.message), documentRef: documentImpl,
+        onDirtyChange: () => renderToolbar(), onResolved: () => loadSnapshot() });
+    }
     renderStatus(); renderList(); renderEditor(); renderToolbar();
     return { open: () => action(() => loadSnapshot()), refresh: () => action(() => loadSnapshot()),
       select: (kind, id) => { const item = snapshot?.objects.find((entry) => entry.kind === kind && entry.id === id); return item ? selectObject(item) : null; },
-      beforeClose: discard, hasUnsavedChanges: () => dirty || Boolean(suspended),
-      getState: () => ({ busy, dirty, selected: selected ? { kind: selected.kind, id: selected.id } : null, merging: Boolean(merge), stopped }),
-      destroy() { stopped = true; epoch++; nodes.password.value = ""; suspended = null; draft = null; merge = null; }, safeImageUrl };
+      beforeClose: discard, hasUnsavedChanges: () => dirty || Boolean(suspended) || Boolean(speciesReview?.hasUnsavedChanges()),
+      getState: () => ({ busy: busy || Boolean(speciesReview?.busy), dirty: dirty || Boolean(speciesReview?.hasUnsavedChanges()), selected: selected ? { kind: selected.kind, id: selected.id } : null, merging: Boolean(merge), stopped }),
+      destroy() { stopped = true; epoch++; speciesReview?.destroy(); nodes.password.value = ""; suspended = null; draft = null; merge = null; }, safeImageUrl };
   }
   global.SpeciesExplorerSharedProject = Object.freeze({ setupSharedProject, createSharedProjectController, createSharedProjectApi, safeImageUrl, ROLE_LABELS, CONNECTION_LABELS });
 })(window);

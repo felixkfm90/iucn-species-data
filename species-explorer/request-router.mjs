@@ -37,6 +37,7 @@ const POST_ROUTES = new Map([
   ["/api/website/alt-texts/draft", { name: "website-alt-texts", action: "draft" }],
   ["/api/website/alt-texts/approve", { name: "website-alt-texts", action: "approve" }],
   ["/api/website/alt-texts/verify", { name: "website-alt-texts", action: "verify" }],
+  ["/api/website/alt-texts/keep-existing", { name: "website-alt-texts", action: "keepExisting" }],
   ["/api/website/alt-texts/connect-transfer", { name: "website-alt-texts", action: "connectTransfer" }],
   ["/api/website/alt-texts/transfer", { name: "website-alt-texts", action: "transfer" }],
   ["/api/pipeline/preview", { name: "pipeline", action: "preview" }],

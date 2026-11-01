@@ -58,6 +58,6 @@ export function objectJson(value) {
   return canonicalJson(value, ["website-alt-page", "fn-species-page"].includes(value?.type) ? { maxBytes: 2 * 1024 * 1024, maxNodes: 250000 } : {});
 }
 export function transportJson(value) {
-  return canonicalJson(value, ["website-alt-page", "fn-species-page"].includes(value?.data?.type) || ["website-alt-page", "fn-species-page"].includes(value?.object?.data?.type)
+  return canonicalJson(value, ["website-alt-page", "fn-species-page", "fn-species-record"].includes(value?.data?.type) || ["website-alt-page", "fn-species-page", "fn-species-record"].includes(value?.object?.data?.type)
     ? { maxBytes: 8 * 1024 * 1024, maxNodes: 300000 } : {});
 }

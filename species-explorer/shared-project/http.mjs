@@ -104,7 +104,11 @@ export function createSharedProjectHttp({ store, host = "127.0.0.1", port = 0,
       } else {
         const token = bearer(request);
         if (["POST", "PUT"].includes(method) && objectWritePath.test(pathname)) store.assertWriteAccess(token);
-        if (pathname === "/api/v1/auth/me" && method === "GET") result = store.me(token);
+        if (pathname === "/api/v1/capabilities" && method === "GET") {
+          const current = store.me(token);
+          result = { schemaVersion: 1, projectId: current.projectId, user: { id: current.id, role: current.role }, speciesRecordVersion: 1, adminBoundImport: true,
+            boundConflictReview: 1, boundSpeciesApproval: 1 };
+        } else if (pathname === "/api/v1/auth/me" && method === "GET") result = store.me(token);
         else if (pathname === "/api/v1/auth/logout" && method === "POST") result = store.logout(token, await body(request));
         else if (pathname === "/api/v1/auth/password" && method === "POST") result = await store.changePassword(token, await body(request));
         else if (pathname === "/api/v1/auth/devices" && method === "GET") result = { devices: store.devices(token) };

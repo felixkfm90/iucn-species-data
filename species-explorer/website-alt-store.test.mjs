@@ -6,6 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { tmpdir, assertTestTempPath } from "../scripts/test-temp.mjs";
 import { createWebsiteAltStore } from "./website-alt-store.mjs";
+import { createWebsiteAltTextsService } from "./website-alt-service.mjs";
 import { normalizeWebsiteAltProposalText } from "./website-alt-policy.mjs";
 
 const pageUrl = "https://www.fnwildlifetravel.de/wildlife/island/fraterculaarctica";
@@ -693,4 +694,123 @@ test("Verknüpfter Datenpfad wird nicht beschrieben", (t) => fixture(async (_sto
   const store = createWebsiteAltStore({ dataRoot: linked, now });
   await assert.rejects(store.discover({ urls: [pageUrl] }), /Verzeichnislink/);
   assert.deepEqual(await fs.readdir(actual), []);
+}));
+
+function keepPayload(snapshot, observedPage, values = {}) {
+  const current = snapshot.pages[0].images[0];
+  return { revision: snapshot.revision, pageUrl: snapshot.pages[0].url, imageKey: current.key,
+    observationHash: current.observationHash, approvalRevision: current.approval?.revision ?? null,
+    decorative: current.alt === "", observedPage, ...values };
+}
+
+test("Vorhandenen Website-Text atomar bestätigen erhält den vorbereiteten Entwurf und frühere Freigabe im Verlauf", () => fixture(async (store) => {
+  const observed = page([image({ alt: "Vorhandener vollständiger Bildtext" })]);
+  let current = await store.mergeScan(scan([observed]));
+  current = await store.approve(payload(current, { text: "Andere frühere Freigabe" }));
+  const oldApproval = structuredClone(current.pages[0].images[0].approval);
+  current = await store.draft(payload(current, { text: "Vorbereiteter abweichender Entwurf" }));
+  const approved = await store.keepExisting(keepPayload(current, observed));
+  const kept = approved.pages[0].images[0];
+  assert.equal(kept.alt, observed.images[0].alt);
+  assert.equal(kept.caption, "");
+  assert.equal(kept.draftText, observed.images[0].alt);
+  assert.equal(kept.approval.text, observed.images[0].alt);
+  assert.equal(kept.status, "verified");
+  assert.equal(kept.verification.method, "public-html");
+  assert.equal(kept.verification.approvalRevision, kept.approval.revision);
+  assert.equal(kept.verification.observationHash, kept.observationHash);
+  assert.ok(kept.history.some((entry) => entry.draftText === "Vorbereiteter abweichender Entwurf"));
+  assert.ok(kept.history.some((entry) => entry.approval?.revision === oldApproval.revision));
+  const { suggestedDecorative, textCoupled, ...record } = kept;
+  assert.deepEqual((await store.exportPage({ pageUrl })).page.images[0], record);
+}));
+
+test("Passende bestehende Freigabe behält ihre Revision und erhält nur einen frischen öffentlichen Nachweis", () => fixture(async (store) => {
+  const observed = page([image({ alt: "Vorhandener Text" })]);
+  let current = await store.mergeScan(scan([observed]));
+  current = await store.approve(payload(current, { text: "Vorhandener Text" }));
+  const approval = structuredClone(current.pages[0].images[0].approval);
+  const freshPage = { ...observed, checkedAt: "2026-11-01T12:00:00.000Z" };
+  const result = await store.keepExisting(keepPayload(current, freshPage));
+  assert.deepEqual(result.pages[0].images[0].approval, approval);
+  assert.equal(result.pages[0].images[0].verification.checkedAt, freshPage.checkedAt);
+  assert.equal(result.pages[0].images[0].verification.method, "public-html");
+}));
+
+test("Vorhandener Reisefototext braucht weiterhin die exakt passende sichtbare Beschriftung", () => fixture(async (store) => {
+  const matched = page([image({ alt: "Reisefoto mit vorhandenem Text", caption: "Reisefoto mit vorhandenem Text" })], { url: secondUrl });
+  let current = await store.mergeScan(scan([matched]));
+  assert.equal((await store.keepExisting(keepPayload(current, matched))).pages[0].images[0].status, "verified");
+  const different = page([image({ alt: "Anderer vorhandener Alttext", caption: "Bewusst andere Bildunterschrift" })], { url: secondUrl });
+  current = await store.mergeScan(scan([different]));
+  current = await store.draft(payload(current, { pageUrl: secondUrl, text: "Vorbereiteter Entwurf bleibt" }));
+  await assert.rejects(store.keepExisting(keepPayload(current, different)), /Bildunterschrift.*nicht.*bestätigt/);
+  const result = await store.snapshot();
+  assert.notEqual(result.pages[0].images[0].status, "verified");
+  assert.equal(result.pages[0].images[0].draftText, "Vorbereiteter Entwurf bleibt");
+  assert.equal(result.pages[0].images[0].approval, null);
+}));
+
+test("Fremde Revision oder Freigabe stoppt das Beibehalten ohne einen Entwurf zu ersetzen", () => fixture(async (store) => {
+  const observed = page([image({ alt: "Vorhandener Text" })]);
+  let current = await store.mergeScan(scan([observed]));
+  const stale = keepPayload(current, observed);
+  current = await store.draft(payload(current, { text: "Zwischenzeitlicher anderer Entwurf" }));
+  await assert.rejects(store.keepExisting(stale), /geändert/);
+  await assert.rejects(store.keepExisting(keepPayload(current, observed, { approvalRevision: "fremd" })), /Freigabe/);
+  await assert.rejects(store.keepExisting(keepPayload(current, observed, { observationHash: "f".repeat(64) })), /Bildgrundlage/);
+  assert.deepEqual(await store.snapshot(), current);
+}));
+
+test("Frische Text-, Caption-, Quellen- oder Variantenabweichung bestätigt keinen früher beobachteten Website-Text", () => fixture(async (store) => {
+  for (const changed of [image({ alt: "Geänderter Text" }), image({ alt: "Vorhandener Text", caption: "Neue Beschriftung" }),
+    image({ src: "https://images.squarespace-cdn.com/content/v1/abc/other.jpg", alt: "Vorhandener Text" }),
+    image({ alt: "Vorhandener Text", altVariants: ["Vorhandener Text", "Andere Verwendung"] })]) {
+    const observed = page([image({ alt: "Vorhandener Text" })]);
+    let current = await store.mergeScan(scan([observed]));
+    current = await store.draft(payload(current, { text: "Persönlicher Entwurf bleibt erhalten" }));
+    await assert.rejects(store.keepExisting(keepPayload(current, page([changed]))), /nicht mehr eindeutig bestätigt/);
+    const result = await store.snapshot(), kept = result.pages[0].images.find((entry) => entry.key === current.pages[0].images[0].key);
+    assert.notEqual(kept.status, "verified");
+    assert.equal(kept.draftText, "Persönlicher Entwurf bleibt erhalten");
+    assert.equal(kept.approval, null);
+  }
+}));
+
+test("Leere, fehlende und dateinamenartige Website-Texte werden nur bei ausdrücklich passender Dekorativentscheidung bestätigt", () => fixture(async (store) => {
+  for (const alt of ["photo.JPG", "IMG_1074.jpg", "  "]) {
+    const observed = page([image({ alt })]);
+    const current = await store.mergeScan(scan([observed]));
+    await assert.rejects(store.keepExisting(keepPayload(current, observed, { decorative: false })), /Dateiname|fehlend|dekorativ/);
+    assert.deepEqual(await store.snapshot(), current);
+  }
+  const empty = page([image({ alt: "" })]);
+  let current = await store.mergeScan(scan([empty]));
+  await assert.rejects(store.keepExisting(keepPayload(current, empty, { decorative: false })), /dekorativ/);
+  current = await store.keepExisting(keepPayload(current, empty, { decorative: true }));
+  assert.equal(current.pages[0].images[0].status, "verified");
+  assert.equal(current.pages[0].images[0].approval.decorative, true);
+  const missingAttribute = page([image({ alt: "", altPresent: false })]);
+  current = await store.mergeScan(scan([missingAttribute]));
+  await assert.rejects(store.keepExisting(keepPayload(current, missingAttribute, { decorative: true })), /nicht mehr eindeutig bestätigt/);
+  assert.equal((await store.snapshot()).pages[0].images[0].verification, null);
+}));
+
+test("Fremder gespeicherter Entwurf während des tatsächlichen öffentlichen Serviceabrufs bleibt erhalten und verhindert Beibehalten", () => fixture(async (store, root) => {
+  const observed = page([image({ alt: "Vorhandener Website-Text" })]);
+  const current = await store.mergeScan(scan([observed]));
+  let started, release;
+  const entered = new Promise((resolve) => { started = resolve; });
+  const service = createWebsiteAltTextsService({ store, now, discovery: { page: () => new Promise((resolve) => { release = resolve; started(); }) } });
+  try {
+    const pending = service.keepExisting(keepPayload(current, observed));
+    await entered;
+    const other = createWebsiteAltStore({ dataRoot: root, now });
+    const foreign = await other.draft(payload(current, { text: "Zwischenzeitlicher eigener Text in einer anderen Instanz" }));
+    release(observed);
+    await assert.rejects(pending, /geändert/);
+    assert.deepEqual(await store.snapshot(), foreign);
+    assert.equal(foreign.pages[0].images[0].approval, null);
+    assert.notEqual(foreign.pages[0].images[0].status, "verified");
+  } finally { await service.close(); }
 }));

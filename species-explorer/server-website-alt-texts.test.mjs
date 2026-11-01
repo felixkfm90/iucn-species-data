@@ -7,7 +7,7 @@ import { createEditableFixture, registerFixtureCleanup, serverFixtureStoragePath
 test("Bildtext-API schützt Freigaben und konkrete Übernahmeaufträge mit lokaler Sitzung", async (context) => {
   const root = await createEditableFixture(), register = registerFixtureCleanup(context, root), calls = [];
   const snapshot = { revision: "r1", pages: [], scan: { running: false }, summary: { pages: 0, images: 0 } };
-  const service = Object.fromEntries(["snapshot", "discover", "scan", "draft", "approve", "verify", "connectTransfer", "transfer", "close"].map((action) =>
+  const service = Object.fromEntries(["snapshot", "discover", "scan", "draft", "approve", "verify", "keepExisting", "connectTransfer", "transfer", "close"].map((action) =>
     [action, async (payload) => { calls.push({ action, payload }); return snapshot; }]));
   const server = await withServerFixtureStorageEnvironment(root, () => createExplorerServer({ repoRoot: root,
     ...serverFixtureStoragePaths(root), port: 0, websiteAltTextsService: service }));
@@ -22,13 +22,15 @@ test("Bildtext-API schützt Freigaben und konkrete Übernahmeaufträge mit lokal
   const post = (action, headers = {}) => fetch(`${base}/api/website/alt-texts/${action}`, { method: "POST",
     headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify({ revision: "r1", text: "Bildtext" }) });
   assert.equal((await post("approve")).status, 403);
+  assert.equal((await post("keep-existing")).status, 403);
   assert.equal((await post("transfer")).status, 403);
   assert.equal((await post("connect-transfer")).status, 403);
   assert.equal((await post("approve", { "X-Species-Explorer-Session": token, Origin: "https://foreign.invalid" })).status, 403);
-  for (const action of ["discover", "scan", "draft", "approve", "verify", "connect-transfer", "transfer"]) {
+  assert.equal((await post("keep-existing", { "X-Species-Explorer-Session": token, Origin: "https://foreign.invalid" })).status, 403);
+  for (const action of ["discover", "scan", "draft", "approve", "verify", "keep-existing", "connect-transfer", "transfer"]) {
     assert.equal((await post(action, { "X-Species-Explorer-Session": token })).status, 200);
   }
-  assert.deepEqual(calls.map((call) => call.action), ["snapshot", "discover", "scan", "draft", "approve", "verify", "connectTransfer", "transfer"]);
+  assert.deepEqual(calls.map((call) => call.action), ["snapshot", "discover", "scan", "draft", "approve", "verify", "keepExisting", "connectTransfer", "transfer"]);
   assert.equal((await post("publish", { "X-Species-Explorer-Session": token })).status, 405);
   const index = await (await fetch(base)).text();
   assert.match(index, /id="website-alt-texts-open"/);

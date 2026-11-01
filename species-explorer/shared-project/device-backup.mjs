@@ -5,6 +5,9 @@ import { createHash, randomUUID } from "node:crypto";
 import { backup, DatabaseSync } from "node:sqlite";
 import { assertNoTempLinks } from "../temp-session.mjs";
 import { canonicalJson, objectJson } from "./security.mjs";
+import { validateCatalogSpecies } from "./catalog.mjs";
+import { validateWorkingImportEvidence } from "../species-content/working-import-source.mjs";
+import { assertImportItemIntegrity } from "./initial-import-integrity.mjs";
 
 const HASH = /^[a-f0-9]{64}$/;
 const ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/;
@@ -64,6 +67,55 @@ function descriptor(input) {
   check(Number.isSafeInteger(maxBytes) && maxBytes > 0 && maxBytes <= 1024 * 1024 * 1024, "Ungültige Größenbegrenzung der Gerätesicherung.");
   return { ...input, sqlite, maxBytes, required: input.required === true };
 }
+function inspectImportSchema(db, tables, version) {
+  const expected = ["items", "lease", "plans", "receipts", ...(version === 2 ? ["source_bindings"] : [])];
+  check(same(tables, expected), "Unbekanntes persönliches Importjournalformat.");
+  if (version === 1) return;
+  const columns = {
+    plans: [["id", "TEXT", 0, 1], ["project_id", "TEXT", 1, 0], ["base_url", "TEXT", 1, 0], ["source_hash", "TEXT", 1, 0],
+      ["release_readers", "INTEGER", 1, 0], ["state", "TEXT", 1, 0], ["created_at", "TEXT", 1, 0], ["last_error", "TEXT", 0, 0]],
+    items: [["plan_id", "TEXT", 1, 1], ["id", "TEXT", 1, 2], ["name", "TEXT", 1, 0], ["target_json", "TEXT", 1, 0],
+      ["target_hash", "TEXT", 1, 0], ["state", "TEXT", 1, 0], ["expected_revision", "TEXT", 0, 0], ["expected_approval", "TEXT", 0, 0], ["intent_actor", "TEXT", 0, 0]],
+    receipts: [["sequence", "INTEGER", 0, 1], ["plan_id", "TEXT", 1, 0], ["object_id", "TEXT", 0, 0], ["operation", "TEXT", 1, 0],
+      ["phase", "TEXT", 1, 0], ["revision", "TEXT", 0, 0], ["actor_id", "TEXT", 0, 0], ["created_at", "TEXT", 1, 0]],
+    lease: [["id", "INTEGER", 0, 1], ["owner", "TEXT", 1, 0], ["pid", "INTEGER", 1, 0]],
+    source_bindings: [["plan_id", "TEXT", 0, 1], ["kind", "TEXT", 1, 0], ["version", "INTEGER", 1, 0], ["evidence_json", "TEXT", 1, 0]],
+  };
+  check(db.prepare("SELECT name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND type<>'table'").all().length === 0,
+    "Das persönliche Importjournal enthält unbekannte Schemaobjekte.");
+  for (const [table, expectedColumns] of Object.entries(columns)) {
+    const actual = db.prepare(`PRAGMA table_xinfo("${table}")`).all();
+    check(same(actual.map((column) => [column.name, column.type, column.notnull, column.pk]), expectedColumns)
+      && actual.every((column) => column.dflt_value === null && column.hidden === 0), "Unbekannte persönliche Importjournalspalten.");
+    const expectedRefs = ["items", "receipts", "source_bindings"].includes(table)
+      ? [["plans", "plan_id", "id", "NO ACTION", "NO ACTION", "NONE"]] : [];
+    const refs = db.prepare(`PRAGMA foreign_key_list("${table}")`).all();
+    check(same(refs.map((ref) => [ref.table, ref.from, ref.to, ref.on_update, ref.on_delete, ref.match]), expectedRefs),
+      "Die persönlichen Importplanbezüge sind unvollständig.");
+  }
+  check(db.prepare("SELECT count(*) AS n FROM source_bindings").get().n === db.prepare("SELECT count(*) AS n FROM plans").get().n,
+    "Das persönliche Importjournal besitzt fehlende oder überzählige Quellenbindungen.");
+}
+function inspectImportBinding(db, plan, rows) {
+  const bindings = db.prepare("SELECT * FROM source_bindings WHERE plan_id=?").all(plan.id);
+  check(bindings.length === 1 && bindings[0].version === 1 && ["public-catalog", "working-records"].includes(bindings[0].kind),
+    "Der persönliche Importplan besitzt keine bekannte eindeutige Quellenbindung.");
+  const binding = bindings[0];
+  check(Number.isInteger(plan.release_readers) && [0, 1].includes(plan.release_readers)
+    && rows.length > 0 && rows.length <= 10000, "Der persönliche Importplan besitzt keinen gültigen Artumfang.");
+  const targets = rows.map((row) => JSON.parse(row.target_json));
+  if (binding.kind === "working-records") {
+    validateWorkingImportEvidence(JSON.parse(binding.evidence_json), targets, plan.source_hash);
+  } else {
+    check(binding.evidence_json === "{}", "Die öffentliche Importquelle enthält unbekannte Belegfelder.");
+    for (const [index, target] of targets.entries()) validateCatalogSpecies(target, rows[index].id);
+  }
+  for (const [index, target] of targets.entries()) {
+    check(target.id === rows[index].id && rows[index].name === (binding.kind === "working-records" ? target.input.german : target.commonName),
+      "Eine persönliche Importart ist nicht eindeutig an ihre Quelle gebunden.");
+  }
+  assertImportItemIntegrity({ plan, items: rows, receipts: db.prepare("SELECT * FROM receipts WHERE plan_id=? ORDER BY sequence").all(plan.id) });
+}
 function inspectSqlite(db, spec, context) {
   db.exec("PRAGMA trusted_schema=OFF; PRAGMA query_only=ON;");
   check(db.prepare("PRAGMA quick_check").all().every((row) => row.quick_check === "ok")
@@ -81,7 +133,7 @@ function inspectSqlite(db, spec, context) {
   }
   if (spec.kind === "sqlite") return spec.validate(db, context);
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  check(spec.kind === "client-cache" ? [1, 2].includes(version) : version === 1, "Unbekannte persönliche SQLite-Version.");
+  check([1, 2].includes(version), "Unbekannte persönliche SQLite-Version.");
   let projects, pending = 0;
   if (spec.kind === "client-cache") {
     const expectedTables = version === 1 ? ["bindings", "cache", "conflicts", "queue", "state"]
@@ -132,10 +184,14 @@ function inspectSqlite(db, spec, context) {
       check(!DENIED_KEY.test(row.key.replace(/[_-]/g, "")), "Der Cache enthält unzulässige Anmeldewerte.");
     }
   } else {
-    check(same(tables, ["items", "lease", "plans", "receipts"]), "Unbekanntes persönliches Importjournalformat.");
+    inspectImportSchema(db, tables, version);
     projects = db.prepare("SELECT DISTINCT project_id AS id FROM plans ORDER BY id").all().map((row) => row.id);
-    for (const row of db.prepare("SELECT * FROM plans").iterate()) check(HASH.test(row.source_hash)
-      && ["planned", "running", "stopped", "complete", "superseded"].includes(row.state), "Der persönliche Importplan ist beschädigt.");
+    for (const row of db.prepare("SELECT * FROM plans").iterate()) {
+      abortIfNeeded(context.signal, context.deadline);
+      check(HASH.test(row.source_hash)
+        && ["planned", "running", "stopped", "complete", "superseded"].includes(row.state), "Der persönliche Importplan ist beschädigt.");
+      if (version === 2) inspectImportBinding(db, row, db.prepare("SELECT * FROM items WHERE plan_id=? ORDER BY id").all(row.id));
+    }
     for (const row of db.prepare("SELECT items.*,plans.state AS plan_state FROM items JOIN plans ON plans.id=items.plan_id").iterate()) {
       const target = JSON.parse(row.target_json);
       check(["pending", "skipped", "create-intent", "created", "approve-intent", "approved"].includes(row.state)

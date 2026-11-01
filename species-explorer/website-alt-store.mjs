@@ -589,6 +589,45 @@ export function createWebsiteAltStore({ dataRoot, now = () => new Date() } = {})
         image.status = "approved";
       });
     },
+    async keepExisting(payload = {}) {
+      return mutate(payload.revision, (document, at) => {
+        const { page, image } = findImage(document, payload);
+        if (page.error || !page.checkedAt || page.redirectUrl || payload.observationHash !== image.observationHash
+            || payload.approvalRevision !== (image.approval?.revision ?? null)) {
+          throw problem("Die angezeigte Bildgrundlage oder Freigabe hat sich geändert. Bitte erneut prüfen.", 409);
+        }
+        const text = boundedText(image.alt, "Vorhandener Alternativtext", 2000);
+        if (text && initialStatus(image) === "missing") throw problem("Ein Dateiname oder fehlender Bildtext kann nicht als ausreichender Alternativtext bestätigt werden.", 409);
+        if (typeof payload.decorative !== "boolean" || (text ? payload.decorative : !payload.decorative)
+            || !text.trim() && text !== "") throw problem("Ein leerer Website-Text benötigt eine bewusste dekorative Einordnung.", 409);
+        if (normalizeWebsitePageUrl(payload.observedPage?.url) !== page.url) throw problem("Öffentliche Prüfung gehört zu einer anderen Seite.", 409);
+        mergePage(document, payload.observedPage, at);
+        const fresh = page.images.find((entry) => entry.key === image.key);
+        const candidate = { text, decorative: payload.decorative };
+        if (!fresh || fresh.status === "removed" || fresh.observationHash !== payload.observationHash
+            || fresh.altVariants.length !== 1 || fresh.altVariants[0] !== text || !captionMatchesApproval(page.url, fresh, candidate)
+            || fresh.kind === "image" && !fresh.altPresent) {
+          return { error: problem("Der vorhandene Text oder seine Bildunterschrift ist öffentlich nicht mehr eindeutig bestätigt. Bitte die aktuelle Bildgrundlage prüfen.", 409) };
+        }
+        if (!fresh.approval || fresh.approval.text !== text || fresh.approval.decorative !== candidate.decorative) {
+          fresh.history.push({ at, reason: "Vorhandenen Website-Text bewusst beibehalten und öffentlich geprüft",
+            status: fresh.status, draftText: fresh.draftText, draftDecorative: fresh.draftDecorative,
+            draftSavedAt: fresh.draftSavedAt, draftNote: fresh.draftNote || "", approval: clone(fresh.approval), verification: clone(fresh.verification) });
+          const approval = { ...candidate, approvedAt: at, observationHash: fresh.observationHash };
+          fresh.approval = { ...approval, revision: digest(approval) };
+        } else if (fresh.draftText !== text || fresh.draftDecorative !== candidate.decorative) {
+          fresh.history.push({ at, reason: "Abweichenden Entwurf beim Beibehalten des Website-Texts erhalten",
+            status: fresh.status, draftText: fresh.draftText, draftDecorative: fresh.draftDecorative,
+            draftSavedAt: fresh.draftSavedAt, draftNote: fresh.draftNote || "", approval: null, verification: null });
+        }
+        fresh.draftText = text;
+        fresh.draftDecorative = candidate.decorative;
+        fresh.draftSavedAt = at;
+        fresh.verification = { checkedAt: timestamp(payload.observedPage.checkedAt || at), method: "public-html",
+          approvalRevision: fresh.approval.revision, observationHash: fresh.observationHash };
+        fresh.status = "verified";
+      });
+    },
     async verify(payload = {}) {
       return mutate(payload.revision, (document, at) => {
         const { page, image } = findImage(document, payload);

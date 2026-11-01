@@ -74,10 +74,8 @@ const explorerLifecycle = window.SpeciesExplorerLifecycle;
 if (!explorerLifecycle) throw new Error("Explorer-Lebenszyklus konnte nicht geladen werden.");
 const state = explorerFoundation.createInitialExplorerState();
 const explorerApi = explorerFoundation.createExplorerApiClient({
-  getSessionToken: () => state.sessionToken,
-  setSessionToken: (token) => {
-    state.sessionToken = token;
-  },
+  getSessionToken: () => state.sessionToken, getWorkspace: () => state.workspace, getWorkspaceEpoch: () => state.workspaceEpoch,
+  setSessionToken: (token) => { state.sessionToken = token; },
 });
 const { ensureSessionToken, fetchJson, loadExplorerSnapshot, fetchRevision } = explorerApi;
 const {
@@ -320,8 +318,8 @@ const renderDetail = explorerDetailView.createDetailViewRenderer({
   setupMapZoom: (...args) => setupMapZoom(...args),
   setupPortraitZoom: (...args) => setupPortraitZoom(...args),
   setupSpeciesEditor: (...args) => setupSpeciesEditor(...args),
-  setupSpeciesRefresh: (...args) => setupSpeciesRefresh(...args),
-  setupSpeciesDelete: (...args) => setupSpeciesDelete(...args),
+  setupSpeciesRefresh: (...args) => setupSpeciesRefresh(...args), setupSpeciesDelete: (...args) => setupSpeciesDelete(...args),
+  setupSpeciesApproval: (...args) => setupSpeciesApproval(...args),
   renderWebsiteStatus: explorerWebsitePages.renderWebsiteStatus, renderWebsiteHint: explorerWebsitePages.renderWebsiteHint,
 });
 
@@ -366,8 +364,9 @@ const localAiController = window.SpeciesExplorerLocalAi.createLocalAiController(
 const websiteAltTextsController = window.SpeciesExplorerWebsiteAltTexts.setupWebsiteAltTexts({ fetchJson, escapeHtml, createDialogController,
   canEdit: () => state.editMode, confirmAction: showQuickConfirm, openImageSuggestion: (input) => localAiController.openForImage(input) });
 const { controller: sharedProjectController, importer: sharedProjectImporter } = window.SpeciesExplorerSharedProject.setupSharedProject({
-  fetchJson, confirmAction: showQuickConfirm, createDialogController, canEdit: () => state.editMode,
+  fetchJson, confirmAction: showQuickConfirm, createDialogController, canEdit: () => state.editMode, onProjectState: (project) => workspaceController.projectChanged(project),
 });
+const workspaceController = window.SpeciesExplorerWorkspace.setupSpeciesWorkspace({ state, fetchJson, hasOpenDialog, loadData: (...args) => loadData(...args) });
 window.addEventListener("pagehide", () => {
   void localAiController.dispose({ discard: true }).catch(() => {});
 }, { once: true });
@@ -390,6 +389,7 @@ const {
   ensureSessionToken,
   loadExplorerSnapshot,
   fetchRevision,
+  onWorkspaceState: () => { workspaceController.render(); renderSpeciesActions(); },
   updateSummary: (summary) => { updateSummary(summary); websitePagesController.renderOverview(); },
   updateValidation,
   updatePendingChanges,
@@ -571,7 +571,7 @@ const { setupSpeciesEditor } = explorerSpeciesEditor.createSpeciesEditorControll
   backupRetentionText,
 });
 
-const { setupSpeciesRefresh, setupSpeciesDelete } = createSpeciesActionsController({
+const { setupSpeciesRefresh, setupSpeciesDelete, setupSpeciesApproval, renderSpeciesActions } = createSpeciesActionsController({
   state,
   elements,
   fetchJson,
@@ -579,7 +579,7 @@ const { setupSpeciesRefresh, setupSpeciesDelete } = createSpeciesActionsControll
   createDialogController,
   escapeHtml,
   backupRetentionText,
-  releaseDetailMedia,
+  releaseDetailMedia, releaseMediaWithin,
   loadData,
 });
 

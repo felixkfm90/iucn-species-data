@@ -135,3 +135,39 @@ test("API-Client erhält strukturierte Fehler und behandelt nicht erreichbare Re
     /Explorer-Daten unvollständig/,
   );
 });
+
+test("gemeinsamer Artbestand liest ausschließlich seinen Cache-Snapshot ohne lokale Umleitung oder impliziten Netzabgleich", async () => {
+  const calls = [], snapshot = { species: [{ id: "shared-owl" }], workspace: { source: "shared-project" } };
+  const client = createExplorerApiClient({ getWorkspace: () => "shared-project", HeadersImpl: Headers,
+    fetchImpl: async (url, options) => { calls.push([url, options.method || "GET"]); return jsonResponse(snapshot); } });
+  assert.equal(await client.loadExplorerSnapshot({ reload: true }), snapshot);
+  assert.deepEqual(calls, [["/api/shared-project/species/workspace", "GET"]]);
+  await client.fetchRevision();
+  assert.equal(calls[1][0], "/api/shared-project/species/workspace/revision");
+  const unavailable = createExplorerApiClient({ getWorkspace: () => "shared-project", HeadersImpl: Headers,
+    fetchImpl: async () => jsonResponse({ error: "Erneut anmelden" }, { ok: false, status: 403 }) });
+  await assert.rejects(unavailable.loadExplorerSnapshot(), /Erneut anmelden/);
+  assert.equal((await unavailable.fetchRevision()).revision, "shared-project-unavailable", "observed loss of access invalidates a previously displayed shared view");
+});
+
+test("ein Quellenwechsel während des Ladens verwirft verspätete Ergebnisse beider Bestände", async () => {
+  let workspace = "shared-project", release;
+  const client = createExplorerApiClient({ getWorkspace: () => workspace, HeadersImpl: Headers,
+    fetchImpl: async () => new Promise((resolve) => { release = () => resolve(jsonResponse({ species: [] })); }) });
+  const shared = client.loadExplorerSnapshot(); workspace = "local"; release();
+  await assert.rejects(shared, /während des Ladens gewechselt/);
+  const pending = [];
+  const localClient = createExplorerApiClient({ getWorkspace: () => workspace, HeadersImpl: Headers,
+    fetchImpl: async () => new Promise((resolve) => { pending.push(() => resolve(jsonResponse({}))); }) });
+  const local = localClient.loadExplorerSnapshot(); workspace = "shared-project";
+  for (const resolve of pending) resolve();
+  await assert.rejects(local, /während des Ladens gewechselt/);
+});
+
+test("ein bekannter Anmeldewechsel im selben gemeinsamen Modus verwirft die frühere Antwort", async () => {
+  let epoch = 0, release;
+  const client = createExplorerApiClient({ getWorkspace: () => "shared-project", getWorkspaceEpoch: () => epoch, HeadersImpl: Headers,
+    fetchImpl: () => new Promise((resolve) => { release = () => resolve(jsonResponse({ species: [{ id: "prior-person" }] })); }) });
+  const pending = client.loadExplorerSnapshot(); epoch++; release();
+  await assert.rejects(pending, /Projektanmeldung wurde während des Ladens gewechselt/);
+});

@@ -71,6 +71,14 @@
     return (image.altVariants?.length || 0) > 1 || (image.captionVariants || []).filter((value) => value.trim()).length > 1;
   }
 
+  function existingTextUsable(image, decorative) {
+    const text = String(image.alt ?? ""), trimmed = text.trim();
+    if (!text) return decorative === true && (image.altPresent === true || image.kind === "background");
+    let filename = "";
+    try { filename = decodeURIComponent(new URL(image.src).pathname.split("/").at(-1) || ""); } catch { return false; }
+    return Boolean(trimmed && trimmed !== filename && !/\.(?:jpe?g|png|webp|gif|avif|heic|tiff?|svg)(?:\s|$)/i.test(trimmed));
+  }
+
   function isAutomaticImage(image) {
     try {
       const url = new URL(safeImageUrl(image.src));
@@ -80,13 +88,14 @@
   }
 
   function renderAltImageCard(image, { escapeHtml, edit = initialEdit(image), busy = false, loaded = false, transferResult, detailOpen = false, actionsOpen = false,
-    suggestionAvailable = false, unsaved = false } = {}) {
+    suggestionAvailable = false, unsaved = false, keepExistingAllowed = true } = {}) {
     const e = (value) => escapeHtml(String(value ?? "")), src = safeImageUrl(image.previewSrc || image.src);
     const staleEdit = edit.observationHash !== (image.observationHash || "");
     const automatic = isAutomaticImage(image);
     const automaticallyVerified = image.status === "verified" && image.verification?.method === "public-html" && image.verification.automatic === true;
     const ambiguous = ambiguousImage(image);
     const unavailable = image.status === "removed" || image.pageUnavailable === true;
+    const existingUsable = existingTextUsable(image, edit.decorative);
     const canApprove = src && loaded && !busy && !unavailable && !staleEdit && !ambiguous
       && (edit.text.trim() || edit.decorative);
     const verified = image.status === "verified", coupledText = image.textCoupled && image.alt === image.caption;
@@ -110,9 +119,11 @@
         <p class="website-alt-preview-note" data-alt-preview-note="${e(image.key)}"${loaded ? " hidden" : ""}>${loaded ? "" : "Freigabe erst nach geladener Bildvorschau."}</p>
         <div class="website-alt-actions">
           <button type="button" data-alt-action="approve" data-alt-key="${e(image.key)}" title="Speichert den aktuellen Text und gibt ihn zur Übernahme frei."${canApprove ? "" : " disabled"}>Text freigeben</button>
+          <button type="button" data-alt-action="keep-existing" data-alt-key="${e(image.key)}" title="Behält den erfassten Website-Text und prüft ihn frisch öffentlich. Ändert keine Squarespace-Felder."${keepExistingAllowed && src && loaded && !busy && !unavailable && !staleEdit && !ambiguous && existingUsable ? "" : " disabled"}>Vorhandenen Text beibehalten</button>
           ${suggestionAvailable && image.context === "content" && image.kind === "image" && !automatic
     ? `<button type="button" data-alt-action="suggest" data-alt-key="${e(image.key)}"${busy || unavailable || staleEdit || ambiguous || !src || !loaded || edit.decorative ? " disabled" : ""}>Lokalen Textvorschlag erstellen</button>` : ""}
         </div>
+        <p class="website-alt-note" data-alt-existing-note="${e(image.key)}"${existingUsable ? " hidden" : ""}>Dateinamen und fehlende Bildtexte bleiben offen. Ein leerer Website-Text braucht eine bewusste dekorative Einordnung und eine passende öffentliche Ausgabe.</p>
         <details class="website-alt-details website-alt-secondary" data-alt-detail="${e(`${image.key}:actions`)}"${actionsOpen ? " open" : ""}><summary>Weitere Aktionen und Hinweise</summary>
         <div class="website-alt-actions">
           <button type="button" data-alt-action="draft" data-alt-key="${e(image.key)}"${busy || unavailable ? " disabled" : ""}>Entwurf speichern</button>
@@ -127,7 +138,7 @@
   }
 
   function createWebsiteAltTextsController({ dialog, openButton, fetchJson, escapeHtml, createDialogController,
-    confirmAction, openImageSuggestion, canEdit = () => true, setTimeoutImpl = global.setTimeout?.bind(global), clearTimeoutImpl = global.clearTimeout?.bind(global),
+    confirmAction, openImageSuggestion, sharedTextsController, canEdit = () => true, setTimeoutImpl = global.setTimeout?.bind(global), clearTimeoutImpl = global.clearTimeout?.bind(global),
     discoveryIntervalMs = 5 * 60 * 1000, pollIntervalMs = 1500, requestTimeoutMs = 15000, now = Date.now } = {}) {
     if (!dialog || typeof fetchJson !== "function" || typeof escapeHtml !== "function" || typeof createDialogController !== "function") {
       throw new TypeError("Dialog, Explorer-API und Anzeigehelfer sind für die Website-Bildtexte erforderlich.");
@@ -137,7 +148,7 @@
     dialog.innerHTML = `<div class="website-alt-shell"><header class="website-alt-header"><div><h2 id="website-alt-title">Website · Bildtexte</h2>
       <p class="website-alt-note" data-alt-counts></p></div>
       <button type="button" data-alt-action="close" aria-label="Bildtextübersicht schließen">Schließen</button></header>
-      <p class="edit-message" role="status" aria-live="polite" data-alt-message></p>
+      <div class="website-alt-overview"><p class="edit-message" role="status" aria-live="polite" data-alt-message></p>
       <details class="website-alt-details website-alt-management"><summary>Hilfe und Seitenbestand</summary>
       <p>Bild und Text prüfen. <strong>Text freigeben</strong> speichert den aktuellen Text und gibt ihn frei. Danach übernimmt <strong>In Squarespace übernehmen</strong> die freigegebenen Texte der ausgewählten Seite.</p>
       <p>Nur zwischenspeichern: <strong>Weitere Aktionen und Hinweise → Entwurf speichern</strong>.</p>
@@ -152,7 +163,7 @@
       <p class="website-alt-warning" role="status" aria-live="polite" data-alt-scan-status></p>
       <p class="website-alt-note" role="status" aria-live="polite" data-alt-connection></p>
       <details class="website-alt-details website-alt-transfer" data-alt-transfer-details><summary aria-live="polite" data-alt-transfer-summary></summary>
-      <p class="website-alt-note" data-alt-transfer></p></details>
+      <p class="website-alt-note" data-alt-transfer></p></details></div>
       <div class="website-alt-workspace"><nav class="website-alt-pages" aria-label="Websiteseiten"><label>Seite suchen<input type="search" data-alt-search></label>
         <label>Anzeige<select data-alt-filter><option value="all">Alle Seiten</option><option value="open">Offene Arbeit</option>
           <option value="draft">Entwürfe zur Abnahme</option><option value="notes">Mit Prüfhinweisen</option>
@@ -165,11 +176,12 @@
       scanStatus: node("[data-alt-scan-status]"), transferDetails: node("[data-alt-transfer-details]"), transferSummary: node("[data-alt-transfer-summary]") };
     const edits = new Map(), loadedSources = new Map(), activeRequests = new Set();
     const openDetails = new Set();
-    let snapshot = null, selectedPageUrl = "", search = "", filter = "all", generation = 0, readEpoch = 0, selection = 0;
-    let busy = false, stopped = false, discoveryTimer = null, pollTimer = null, pendingRead = null, transferConfirming = false, suggestionOpening = false, messageSource = "";
+    let snapshot = null, selectedPageUrl = "", search = "", filter = "all", generation = 0, readEpoch = 0, selection = 0, pageListView = "";
+    let busy = false, stopped = false, discoveryTimer = null, pollTimer = null, pendingRead = null, transferConfirming = false, suggestionOpening = false, sharedOpening = false, messageSource = "";
     const editKey = (url, key) => JSON.stringify([url, key]);
     const currentPage = () => snapshot?.pages?.find((page) => page.url === selectedPageUrl);
     const currentImage = (key) => currentPage()?.images?.find((image) => image.key === key);
+    const sharedOpen = () => sharedOpening || sharedTextsController?.getState().open === true;
     const alive = (ticket) => !stopped && ticket === generation && controller.isOpen();
     const e = (value) => escapeHtml(String(value ?? ""));
 
@@ -197,7 +209,7 @@
     const approvedCount = (page = currentPage()) => (page?.images || []).filter((image) => image.status === "approved" && image.approval?.revision).length;
     function canTransferPage() {
       const page = currentPage();
-      return canEdit() && snapshot?.transfer?.available === true && !busy && !transferRunning()
+      return canEdit() && !sharedOpen() && snapshot?.transfer?.available === true && !busy && !transferRunning()
         && !snapshot.scan?.running && !hasEdits() && page?.inventoryStatus === "current" && !page.error && !page.redirectUrl && approvedCount(page) > 0;
     }
     function closeSession() {
@@ -208,7 +220,8 @@
       openButton?.focus?.();
     }
     const controller = createDialogController({ dialog, beforeClose() {
-      if (transferRunning() || transferConfirming) { message("Bitte die laufende Squarespace-Verbindung oder Übernahme abwarten.", "warning"); return false; }
+      if (sharedOpening || sharedTextsController?.getState().open && !sharedTextsController.close()) { message("Bitte zuerst den gemeinsamen Bildtextabgleich abschließen.", "warning"); return false; }
+      if (transferRunning() || transferConfirming) { message("Bitte die laufende Bestätigung oder Squarespace-Übernahme abwarten.", "warning"); return false; }
       if (busy) { message("Bitte die laufende Anfrage abwarten."); return false; }
       if (hasEdits()) { message("Es gibt ungespeicherte Texte. Bitte speichern, zurücksetzen oder bewusst verwerfen.", "warning"); return false; }
       return true;
@@ -259,6 +272,8 @@
 
     function render() {
       const pages = snapshot?.pages || [], summary = snapshot?.summary || {};
+      const nextListView = JSON.stringify([search, filter]);
+      const listScrollTop = nextListView === pageListView ? nodes.pages.scrollTop || 0 : 0;
       const contentPages = summary.pages ?? pages.filter((page) => !page.redirectUrl).length;
       const redirects = summary.redirects ?? pages.filter((page) => page.redirectUrl).length;
       const focused = global.document?.activeElement, focusKey = focused?.dataset?.altText;
@@ -316,6 +331,8 @@
         return `<button type="button" data-alt-page-url="${e(page.url)}" class="website-alt-page-choice${page.url === selectedPageUrl ? " selected" : ""}" aria-current="${page.url === selectedPageUrl ? "page" : "false"}">
           <strong>${e(page.title || page.url)}</strong><small>${e(label)}${!page.checkedAt ? " · noch nicht erfasst" : ""}${page.error ? " · Prüfung nicht möglich" : ""}</small></button>`;
       }).join("") || "<p>Keine Seiten für diese Auswahl.</p>";
+      nodes.pages.scrollTop = listScrollTop;
+      pageListView = nextListView;
       const page = currentPage();
       if (!page) { nodes.page.innerHTML = "<p>Noch keine Seiten erfasst. Aktualisiere den Seitenbestand und starte anschließend die öffentliche Erfassung.</p>"; return; }
       const pageUrl = safePageUrl(page.url);
@@ -325,13 +342,15 @@
         ${pages.some((entry) => entry.url === redirect) ? `<button type="button" data-alt-page-url="${e(redirect)}">Zielseite auswählen</button>` : ""}`
         : "<p class=\"website-alt-warning\">Das Weiterleitungsziel konnte nicht sicher zugeordnet werden. Die Adresse bleibt zur Prüfung offen.</p>";
       const nextStep = pageNextStep(page);
-      nodes.page.innerHTML = `<header class="website-alt-page-header"><h3>${e(page.title || page.url)}</h3>
+      nodes.page.innerHTML = `<div class="website-alt-page-controls"><header class="website-alt-page-header"><h3>${e(page.title || page.url)}</h3>
         ${pageUrl ? `<a href="${e(pageUrl)}" target="_blank" rel="noopener noreferrer">Seite auf der Website öffnen ↗</a>` : ""}
         </header><div class="website-alt-page-actions"><button type="button" class="website-alt-primary" data-alt-action="transfer"${!canTransferPage() || transferConfirming ? " disabled" : ""}>In Squarespace übernehmen</button>
         <details class="website-alt-details" data-alt-detail="page-actions"${openDetails.has(editKey(page.url, "page-actions")) ? " open" : ""}><summary>Seitenaktionen</summary><div class="website-alt-actions">
         <button type="button" data-alt-action="scan-page"${busy || transferConfirming || transferRunning() || scan?.running ? " disabled" : ""}>Diese Seite abgleichen</button>
         <button type="button" data-alt-action="connect-transfer" title="${connected ? "Zeigt das eigene Squarespace-Fenster wieder an. Du kannst anschließend zum Explorer zurückkehren." : "Öffnet ein eigenes Browserfenster. Melde dich dort selbst bei Squarespace an."}"${!transfer.available || busy || transferConfirming || transferRunning() || scan?.running ? " disabled" : ""}>${connected ? "Squarespace öffnen" : "Squarespace verbinden"}</button>
-        </div></details></div>
+        ${sharedTextsController ? `<button type="button" data-alt-action="shared"${!canSharePage() ? " disabled" : ""}>Bildtexte gemeinsam abgleichen</button>` : ""}
+        </div></details></div></div>
+        ${snapshot?.capabilities?.keepExisting === true ? "" : "<p class=\"website-alt-note\">Für „Vorhandenen Text beibehalten“ den Explorer bitte neu starten.</p>"}
         ${nextStep.text ? `<p class="website-alt-next${nextStep.complete ? " website-alt-complete" : ""}" data-alt-next>${renderNextStep(nextStep)}</p>` : ""}
         ${page.error ? `<p class="website-alt-warning">${e(page.error)} Der letzte gespeicherte Stand bleibt sichtbar.</p>` : ""}
         ${page.unsupportedImageCount > 0 ? `<p class="website-alt-warning">${e(page.unsupportedImageCount)} Bildverwendung(en) konnten noch nicht sicher zugeordnet werden. Die Seite bleibt zur Prüfung offen.</p>` : ""}
@@ -343,6 +362,7 @@
           detailOpen: openDetails.has(editKey(page.url, image.key)),
           actionsOpen: openDetails.has(editKey(page.url, `${image.key}:actions`)),
           suggestionAvailable: typeof openImageSuggestion === "function",
+          keepExistingAllowed: canKeepExisting(image.key),
           unsaved: edits.has(editKey(page.url, image.key)),
         })).join("") || "<p>Für diese Seite sind noch keine Bildverwendungen erfasst. Das ist kein Nachweis einer vollständigen Prüfung.</p>"}`;
       if (focusKey) {
@@ -378,13 +398,21 @@
     }
 
     async function post(action, body = {}, { edit = null } = {}) {
-      if (!canEdit() || !controller.isOpen() || stopped || busy || transferConfirming || transferRunning()) return false;
+      if (!canEdit() || sharedOpen() || !controller.isOpen() || stopped || busy || transferConfirming || transferRunning()) return false;
       const ticket = generation;
       busy = true; readEpoch += 1; render();
       try {
         const result = await request(`${BASE}/${action}`, { method: "POST", body: JSON.stringify(body) });
         if (!alive(ticket)) return false;
         if (!result || typeof result.revision !== "string" || !Array.isArray(result.pages)) throw new Error("Ungültiger Bildtextstand.");
+        if (action === "keep-existing") {
+          const kept = result.pages.find((page) => page.url === body.pageUrl)?.images?.find((image) => image.key === body.imageKey);
+          if (kept?.status !== "verified" || !kept.approval?.revision || kept.approval.text !== kept.alt || kept.approval.decorative !== body.decorative
+              || kept.observationHash !== body.observationHash || kept.verification?.method !== "public-html"
+              || kept.verification.approvalRevision !== kept.approval.revision || kept.verification.observationHash !== kept.observationHash) {
+            throw new Error("Der vorhandene Text ist noch nicht öffentlich bestätigt.");
+          }
+        }
         if (edit && edits.get(edit.key) === edit.value) edits.delete(edit.key);
         bindSnapshot(result);
         if (action === "connect-transfer" && result.transfer?.available === true && result.transfer.connected === true) return true;
@@ -392,6 +420,7 @@
         message(["connect-transfer", "transfer"].includes(action) ? (action === "connect-transfer" && result.transfer?.connectionMessage) || result.transfer?.message
           || (action === "connect-transfer" ? "Squarespace-Verbindung angefragt. Melde dich im eigenen Browserfenster an." : "Übernahme angefragt. Der angezeigte Stand nennt das Ergebnis.")
           : action === "approve" ? "Text freigegeben und gespeichert. Die Übernahme in Squarespace ist noch offen."
+          : action === "keep-existing" ? "Vorhandener Text beibehalten und durch einen frischen öffentlichen Seitenabruf bestätigt."
           : action === "draft" ? "Entwurf gespeichert." : action === "verify" ? "Die öffentliche Ausgabe wurde neu geprüft. Der angezeigte Stand nennt das Ergebnis."
             : action === "discover" ? "Seitenbestand aktualisiert. Neue Seiten bleiben bis zur Bildprüfung offen." : "Öffentliche Erfassung gestartet.", "info", action === "connect-transfer" ? "connect-transfer" : "");
         return true;
@@ -406,7 +435,7 @@
     }
 
     async function changeImage(action, key) {
-      if (!canEdit() || busy || transferConfirming || transferRunning() || !controller.isOpen()) return false;
+      if (!canEdit() || sharedOpen() || busy || transferConfirming || transferRunning() || !controller.isOpen()) return false;
       const scope = { pageUrl: selectedPageUrl, generation, selection, key }, clickedImage = currentImage(key);
       if (!clickedImage) return false;
       const clickedValue = { ...(edits.get(editKey(scope.pageUrl, key)) || initialEdit(clickedImage)) };
@@ -440,6 +469,45 @@
     async function connectTransfer() {
       if (!snapshot?.transfer?.available || snapshot.scan?.running) return false;
       return post("connect-transfer");
+    }
+
+    function canKeepExisting(key) {
+      const page = currentPage(), image = currentImage(key), value = image && (edits.get(editKey(page?.url, key)) || initialEdit(image));
+      return Boolean(snapshot?.capabilities?.keepExisting === true && canEdit() && !sharedOpen() && controller.isOpen() && !stopped && !busy && !transferConfirming && !transferRunning()
+        && !snapshot?.scan?.running && page?.inventoryStatus === "current" && page.checkedAt && !page.error && !page.redirectUrl
+        && image && image.status !== "removed" && !ambiguousImage(image) && value.observationHash === image.observationHash
+        && safeImageUrl(image.previewSrc || image.src) && loadedSources.get(editKey(page.url, key)) === safeImageUrl(image.previewSrc || image.src)
+        && existingTextUsable(image, value.decorative));
+    }
+
+    async function keepExisting(key) {
+      if (!canKeepExisting(key)) return false;
+      const page = currentPage(), image = currentImage(key), localKey = editKey(page.url, key), value = edits.get(localKey) || initialEdit(image);
+      const scope = { generation, selection, revision: snapshot.revision, pageUrl: page.url, image: JSON.stringify(image), value: JSON.stringify(value) };
+      const unchanged = () => alive(scope.generation) && scope.selection === selection && selectedPageUrl === scope.pageUrl
+        && snapshot.revision === scope.revision && JSON.stringify(currentImage(key)) === scope.image && canKeepExisting(key)
+        && JSON.stringify(edits.get(localKey) || initialEdit(currentImage(key))) === scope.value;
+      if (pendingRead) await pendingRead;
+      if (!unchanged()) return false;
+      const decorative = image.alt === "";
+      const differs = (edit) => edit.text !== image.alt || edit.decorative !== decorative;
+      const replacesInput = edits.has(localKey) && differs(value);
+      if (decorative || replacesInput) {
+        if (!confirmAction) { message("Das Beibehalten benötigt die Bestätigung der abweichenden Texte oder dekorativen Einordnung.", "warning"); return false; }
+        let confirmed = false;
+        transferConfirming = true; render();
+        try {
+          const index = page.images.findIndex((entry) => entry.key === key) + 1;
+          confirmed = await confirmAction({ title: "Vorhandenen Text beibehalten?",
+            message: `Bild ${index} auf „${page.title || page.url}“: ${decorative ? "Der vorhandene leere Website-Text wird bewusst als dekorativ bestätigt." : `Der vorhandene Website-Text „${visibleImageText(image, image.alt)}“ wird unverändert beibehalten.`} Er wird frisch öffentlich geprüft; Squarespace wird nicht geändert. Abweichende gespeicherte Entwürfe und Freigaben bleiben im Verlauf erhalten.${replacesInput ? " Deine abweichende ungespeicherte Eingabe wird nach erfolgreicher Prüfung verworfen." : ""}`,
+            confirmLabel: "Vorhandenen Text beibehalten" });
+        } catch (error) { if (alive(scope.generation)) message(error.message || "Die Bestätigung konnte nicht geöffnet werden.", "error"); }
+        finally { if (alive(scope.generation)) { transferConfirming = false; render(); } }
+        if (!confirmed || !unchanged()) return false;
+      }
+      return post("keep-existing", { revision: scope.revision, pageUrl: page.url, imageKey: key,
+        observationHash: image.observationHash, approvalRevision: image.approval?.revision ?? null, decorative },
+      { edit: edits.has(localKey) ? { key: localKey, value: edits.get(localKey) } : null });
     }
 
     async function transferCurrentPage() {
@@ -492,7 +560,7 @@
     }
 
     async function selectPage(url) {
-      if (!snapshot?.pages.some((page) => page.url === url) || stopped) return;
+      if (sharedOpen() || !snapshot?.pages.some((page) => page.url === url) || stopped) return;
       if (selectedPageUrl !== url) selection += 1;
       selectedPageUrl = url; render();
       const checked = Date.parse(currentPage()?.checkedAt || ""), age = now() - checked;
@@ -583,6 +651,12 @@
       for (const button of dialog.querySelectorAll("[data-alt-action=suggest]")) {
         if (button.dataset.altKey === key) button.disabled = !canSuggestImage(key);
       }
+      for (const button of dialog.querySelectorAll("[data-alt-action=keep-existing]")) {
+        if (button.dataset.altKey === key) button.disabled = !canKeepExisting(key);
+      }
+      for (const note of dialog.querySelectorAll("[data-alt-existing-note]")) {
+        if (note.dataset.altExistingNote === key) note.hidden = existingTextUsable(image, value.decorative);
+      }
       for (const note of dialog.querySelectorAll("[data-alt-preview-note]")) {
         if (note.dataset.altPreviewNote === key) {
           note.hidden = loaded;
@@ -616,7 +690,7 @@
     }
     function canSuggestImage(key) {
       const page = currentPage(), image = currentImage(key);
-      if (!canEdit() || typeof openImageSuggestion !== "function" || !controller.isOpen() || stopped || busy || transferConfirming || transferRunning()
+      if (!canEdit() || sharedOpen() || typeof openImageSuggestion !== "function" || !controller.isOpen() || stopped || busy || transferConfirming || transferRunning()
           || snapshot?.scan?.running || !page?.checkedAt || page.error || page.redirectUrl || !image
           || image.context !== "content" || image.kind !== "image" || image.status === "removed" || isAutomaticImage(image) || ambiguousImage(image)) return false;
       const value = edits.get(editKey(page.url, key)) || initialEdit(image), src = safeImageUrl(image.previewSrc || image.src);
@@ -657,6 +731,37 @@
         return false;
       } finally { suggestionOpening = false; }
     }
+    function canSharePage() {
+      const page = currentPage();
+      return Boolean(sharedTextsController && canEdit() && !stopped && controller.isOpen() && !sharedOpen() && !busy && !transferConfirming
+        && !transferRunning() && !snapshot?.scan?.running && !hasEdits() && page?.checkedAt && page.inventoryStatus === "current"
+        && !page.error && !page.redirectUrl && safePageUrl(page.url));
+    }
+    async function openSharedTexts() {
+      if (!canSharePage()) return false;
+      const ticket = generation, chosen = selection;
+      if (pendingRead) await pendingRead;
+      if (!canSharePage() || !alive(ticket) || chosen !== selection) return false;
+      const page = currentPage(); let pageValue = JSON.stringify(page);
+      const isCurrent = (binding = {}) => canEdit() && alive(ticket) && chosen === selection && selectedPageUrl === page.url
+        && (!binding.pageUrl || binding.pageUrl === page.url) && JSON.stringify(currentPage()) === pageValue
+        && !busy && !transferConfirming && !transferRunning() && !snapshot?.scan?.running;
+      sharedOpening = true; render();
+      try {
+        return await sharedTextsController.openForPage({ pageUrl: page.url, title: page.title, isCurrent, hasUnsavedChanges: hasEdits,
+          onClosed() { if (alive(ticket)) render(); },
+          async onImported(binding) {
+            if (!isCurrent(binding) || hasEdits()) return false;
+            await refresh();
+            if (!alive(ticket) || chosen !== selection || selectedPageUrl !== page.url || hasEdits()
+                || !binding.localRevision || snapshot?.revision !== binding.localRevision) return false;
+            pageValue = JSON.stringify(currentPage());
+            message("Gemeinsame Bildtexte geladen. Die Übernahme in Squarespace bleibt ein eigener Schritt.");
+            return true;
+          } });
+      } catch { if (alive(ticket)) message("Der gemeinsame Bildtextabgleich konnte nicht geöffnet werden. Gespeicherte Texte bleiben erhalten.", "error"); return false; }
+      finally { sharedOpening = false; if (alive(ticket)) render(); }
+    }
     function onClick(event) {
       const pageButton = event.target?.closest?.("[data-alt-page-url]");
       if (pageButton && dialog.contains?.(pageButton)) { void selectPage(pageButton.dataset.altPageUrl); return; }
@@ -669,7 +774,9 @@
       else if (action === "scan" || action === "scan-page") void post("scan", action === "scan-page" ? { pageUrl: selectedPageUrl } : {});
       else if (action === "connect-transfer") void connectTransfer();
       else if (action === "transfer") void transferCurrentPage();
+      else if (action === "keep-existing") void keepExisting(key);
       else if (action === "suggest") void suggestImage(key);
+      else if (action === "shared") void openSharedTexts();
       else if (action === "show-unsaved") void showUnsaved();
       else if (["draft", "approve", "verify"].includes(action)) void changeImage(action, key);
       else if (action === "reset") { edits.delete(editKey(selectedPageUrl, key)); render(); message("Ungespeicherte Eingabe zurückgesetzt."); }
@@ -686,13 +793,13 @@
     render();
     return Object.freeze({ open, refresh, discover: () => post("discover"), scan: (pageUrl) => post("scan", pageUrl ? { pageUrl } : {}),
       saveDraft: (key) => changeImage("draft", key), approve: (key) => changeImage("approve", key), verify: (key) => changeImage("verify", key),
-      connectTransfer, transfer: transferCurrentPage, suggestImage,
+      connectTransfer, transfer: transferCurrentPage, keepExisting, suggestImage, openSharedTexts,
       selectPage, showUnsaved,
       snapshot: () => snapshot,
-      hasUnsavedDrafts: hasEdits,
+      hasUnsavedDrafts: () => hasEdits() || sharedOpening || sharedTextsController?.hasUnsavedChanges() === true,
       stop() {
         if (stopped) return;
-        stopped = true; closeSession(); controller.destroy?.();
+        stopped = true; sharedTextsController?.stop(); closeSession(); controller.destroy?.();
         openButton?.removeEventListener?.("click", onOpen);
         dialog.removeEventListener?.("click", onClick); dialog.removeEventListener?.("input", onInput); dialog.removeEventListener?.("change", onInput);
         dialog.removeEventListener?.("load", onImage, true); dialog.removeEventListener?.("error", onImage, true);
@@ -701,7 +808,8 @@
   }
 
   function setupWebsiteAltTexts(options = {}) {
-    const controller = createWebsiteAltTextsController({ ...options,
+    const sharedTextsController = global.SpeciesExplorerWebsiteAltSync?.createWebsiteAltSyncController({ ...options, safeImageUrl });
+    const controller = createWebsiteAltTextsController({ ...options, sharedTextsController,
       dialog: global.document.querySelector("#website-alt-texts-dialog"),
       openButton: global.document.querySelector("#website-alt-texts-open"),
     });

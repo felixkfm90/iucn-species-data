@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 import { fixture, page, species } from "./test-fixtures.mjs";
 import { createSharedProjectHttp } from "./http.mjs";
 import { createSharedProjectClient, createMemoryCredentialStore } from "./client.mjs";
+import { createSharedProjectClientStore } from "./client-store.mjs";
+import { digest, objectJson } from "./security.mjs";
 
 const denied = (code) => (error) => error.code === code;
 async function scoped(fn, { clock } = {}) {
@@ -52,6 +54,63 @@ test("desktop online connection/edit/sync returns no credentials and persists no
   const bytes = fs.readFileSync(path.join(f.root, "cache.sqlite"));
   assert.ok(!bytes.includes(Buffer.from(f.password)));
   for (const secret of secrets) assert.ok(!bytes.includes(Buffer.from(secret)));
+}));
+
+test("a reviewed conflict cannot use a different project, person or newly changed writer role", () => scoped(async ({ store, a, b, original, client, connect }) => {
+  const requests = [], value = client({ fetchImpl: (url, options) => { requests.push({ url: String(url), method: options?.method || "GET" }); return fetch(url, options); } });
+  await connect(value); const status = await value.status();
+  await value.editExistingObject("page", original.id, page("Retained local text"));
+  const server = store.submitChange(b.token, { changeId: "other-person-server-edit", kind: "page", id: original.id, baseRevision: original.revision, data: page("Confirmed server text") });
+  await value.sync(); const conflict = (await value.listConflicts())[0];
+  const requiredBinding = { baseUrl: status.baseUrl, projectId: status.projectId, userId: a.user.id, role: "admin" };
+  for (const changed of [{ projectId: "different-project" }, { userId: "different-person" }, { baseUrl: "https://different.example.org" }]) {
+    await assert.rejects(value.resolveConflict(conflict.id, { strategy: "current", expectedRevision: server.object.revision, requiredBinding: { ...requiredBinding, ...changed } }), denied("conflict_review_changed"));
+  }
+  store.updateUser(b.token, a.user.id, { role: "contributor", expectedVersion: store.me(a.token).version });
+  await assert.rejects(value.resolveConflict(conflict.id, { strategy: "current", expectedRevision: server.object.revision, requiredBinding }), denied("conflict_review_changed"));
+  assert.equal(requests.filter((request) => request.method === "POST" && /\/conflicts\/.*\/resolve$/.test(request.url)).length, 0);
+  assert.equal(store.getObject(b.token, "page", original.id).data.title, "Confirmed server text");
+  assert.equal((await value.listConflicts()).length, 1); assert.equal((await value.getObject("page", original.id)).data.title, "Retained local text");
+}));
+
+test("reading server state recovers a lost conflict-resolution acknowledgement without sending another change", () => scoped(async ({ store, a, b, original, client, connect }) => {
+  let lose = true; const requests = [], value = client({ fetchImpl: async (url, options) => {
+    requests.push({ url: String(url), method: options?.method || "GET" }); const response = await fetch(url, options);
+    if (lose && options?.method === "POST" && /\/conflicts\/.*\/resolve$/.test(String(url))) { lose = false; throw new Error("Synthetic lost resolution response"); }
+    return response;
+  } });
+  await connect(value); await value.editExistingObject("page", original.id, page("Retained local text"));
+  store.submitChange(b.token, { changeId: "foreign-edit-before-lost-resolution", kind: "page", id: original.id, baseRevision: original.revision, data: page("Foreign text") });
+  await value.sync(); const conflict = (await value.listConflicts())[0];
+  await assert.rejects(value.resolveConflict(conflict.id, { strategy: "merged", data: page("Human reviewed target") }), denied("offline"));
+  const committed = store.getObject(a.token, "page", original.id); assert.equal(committed.data.title, "Human reviewed target");
+  assert.equal((await value.listConflicts())[0].resolvedAt, null); const before = requests.length;
+  await value.refresh();
+  assert.ok((await value.listConflicts())[0].resolvedAt, "a read refresh must expose an already decided server conflict");
+  assert.ok(requests.slice(before).every((entry) => entry.method === "GET"));
+  assert.equal((await value.getObject("page", original.id)).data.title, "Retained local text");
+  const rebased = await value.resolveConflict(conflict.id, { strategy: "merged", expectedRevision: committed.revision, data: page("Explicitly rebased target") });
+  assert.equal(rebased.localPending, true); assert.equal(store.getObject(a.token, "page", original.id).revision, committed.revision);
+}));
+
+test("a late read refresh cannot resurrect a conflict already settled by another local cache writer", () => scoped(async ({ f, store, b, original, client, connect }) => {
+  let peer, intercept = false, conflict;
+  const value = client({ fetchImpl: async (url, options) => {
+    const response = await fetch(url, options);
+    if (intercept && (!options?.method || options.method === "GET") && String(url).endsWith(`/conflicts/${conflict.id}`)) {
+      intercept = false; const resolved = store.resolveConflict(b.token, conflict.id, { strategy: "current", expectedRevision: conflict.currentRevision });
+      peer.resolve(peer.active().id, conflict.id, resolved);
+    }
+    return response;
+  } });
+  await connect(value); await value.editExistingObject("page", original.id, page("Local conflict"));
+  store.submitChange(b.token, { changeId: "server-before-local-resolution-race", kind: "page", id: original.id, baseRevision: original.revision, data: page("Server version") });
+  await value.sync(); conflict = (await value.listConflicts())[0];
+  try {
+    peer = createSharedProjectClientStore({ filename: path.join(f.root, "cache.sqlite"), localStorageConfirmed: true }); intercept = true;
+    await value.refresh(); assert.equal((await value.listConflicts()).length, 0);
+    assert.equal((await value.status()).pending, 0);
+  } finally { peer?.close(); }
 }));
 
 test("offline existing edits coalesce safely and replay after reconnection; absent objects cannot be created", () => scoped(async ({ store, a, original, client, connect }) => {
@@ -297,4 +356,152 @@ test("repeated full desktop sign-in reuses one device registration; disconnect r
   assert.equal(store.devices(a.token)[0].revoked, true);
   assert.equal((await value.status()).connection, "disconnected");
   assert.deepEqual(await value.list(), []);
+}));
+
+function approvalRecord() {
+  return { type: "fn-species-record", schemaVersion: 1, id: "approval-owl",
+    input: { german: "Freigabekauz", english: "Approval owl", genus: "Strix", species: "approval", size: "20 cm", weight: "400 g", life_expectancy: "10 Jahre" },
+    generated: { URLSlug: "approval-owl", privateOriginal: "Retained private original" }, taxonomyOverride: null, assessmentBinding: 123,
+    assets: { assetName: "Freigabekauz", files: {}, overrides: {}, credits: null, portraitMetadata: { prompt: "Private original prompt" } },
+    editorial: { websiteUrl: null, sections: [], gallery: [], generalSectionId: null, embeddedGeneralText: null } };
+}
+async function approvalScoped(fn) {
+  return scoped(async (context) => {
+    const { f, store, a, client, connect } = context, created = store.createObject(a.token, { kind: "species", id: "approval-owl", data: approvalRecord() });
+    let beforeFetch = null, afterFetch = null; const requests = [];
+    const value = client({ fetchImpl: async (url, options) => {
+      requests.push({ url, method: options.method || "GET", body: options.body });
+      if (beforeFetch) await beforeFetch(url, options);
+      const response = await fetch(url, options);
+      return afterFetch ? await afterFetch(url, options, response) || response : response;
+    } }); await connect(value);
+    const status = await value.status(), input = { expectedRevision: created.revision, expectedDataHash: digest(objectJson(created.data)),
+      requiredBinding: { baseUrl: status.baseUrl, projectId: status.projectId, userId: status.user.id, role: status.user.role } };
+    const other = createSharedProjectClientStore({ filename: path.join(f.root, "cache.sqlite"), localStorageConfirmed: true });
+    const bindingId = other.active().id;
+    try {
+      await fn({ ...context, value, other, bindingId, input, created, requests,
+        beforeFetch: (hook) => { beforeFetch = hook; }, afterFetch: (hook) => { afterFetch = hook; },
+        approve: (overrides = {}) => value.approveObject("species", created.id, { ...input, ...overrides }) });
+    } finally { beforeFetch = null; afterFetch = null; other.close(); }
+  });
+}
+
+for (const phase of ["auth/me", "capabilities"]) {
+  test(`bound species approval rejects a second-cache draft added during ${phase} before any approval POST`, () => approvalScoped(async ({ store, a, value, other, bindingId, created, requests, beforeFetch, approve }) => {
+    beforeFetch((url) => {
+      if (!url.endsWith(`/${phase}`)) return;
+      beforeFetch(null); const next = structuredClone(created.data); next.input.weight = "499 g";
+      other.edit(bindingId, "species", created.id, next);
+    });
+    await assert.rejects(approve(), denied("pending_review"));
+    assert.equal(requests.filter(({ url, method }) => method === "POST" && url.endsWith("/approve")).length, 0);
+    assert.equal((await value.status()).pending, 1); assert.equal(store.getObject(a.token, "species", created.id).approval, "draft");
+    assert.equal(other.get(bindingId, "species", created.id).data.input.weight, "499 g");
+  }));
+}
+
+test("bound species approval atomically rejects a still-releasing role change immediately before POST", () => approvalScoped(async ({ store, a, b, created, beforeFetch, approve }) => {
+  let changedRole = false;
+  beforeFetch((url) => {
+    if (!url.endsWith("/approve")) return;
+    beforeFetch(null); store.updateUser(b.token, a.user.id, { role: "publisher", expectedVersion: store.me(a.token).version }); changedRole = true;
+  });
+  await assert.rejects(approve(), denied("approval_review_changed")); assert.equal(changedRole, true);
+  assert.equal(store.getObject(b.token, "species", created.id).approval, "draft");
+}));
+
+test("bound species approval validates full hash, revision and all scope fields without any approval writes", () => approvalScoped(async ({ requests, input, approve }) => {
+  for (const overrides of [{ expectedDataHash: "0".repeat(64) }, { expectedRevision: "different-revision" },
+    ...[{ projectId: "other-project" }, { userId: "other-person" }, { baseUrl: "https://other.example.org" }, { role: "publisher" }]
+      .map((changed) => ({ requiredBinding: { ...input.requiredBinding, ...changed } }))]) {
+    await assert.rejects(approve(overrides), denied("approval_review_changed"));
+  }
+  assert.equal(requests.filter(({ url, method }) => method === "POST" && url.endsWith("/approve")).length, 0);
+}));
+
+test("bound species approval requires fresh compatible authenticated capability evidence before every POST", async (t) => {
+  for (const support of ["missing-endpoint", "missing-flag", "old-flag", "wrong-person"]) await t.test(support, () => approvalScoped(async ({ store, a, created, requests, afterFetch, approve }) => {
+    afterFetch(async (url, _options, response) => {
+      if (!url.endsWith("/capabilities")) return;
+      if (support === "missing-endpoint") return new Response(JSON.stringify({ error: { code: "not_found" } }), { status: 404 });
+      const data = await response.json();
+      if (support === "missing-flag") delete data.boundSpeciesApproval;
+      else if (support === "old-flag") data.boundSpeciesApproval = 0;
+      else data.user.id = "different-person";
+      return new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    await assert.rejects(approve(), denied(support === "wrong-person" ? "approval_review_changed" : "approval_binding_server_required"));
+    assert.equal(requests.filter(({ url, method }) => method === "POST" && url.endsWith("/approve")).length, 0);
+    assert.equal(store.getObject(a.token, "species", created.id).approval, "draft");
+  }));
+});
+
+test("bound species approval leaves unrelated queued objects untouched and returns the exact reviewed server object", () => approvalScoped(async ({ value, original, created, approve }) => {
+  await value.editExistingObject("page", original.id, page("Unrelated retained draft"));
+  const result = await approve();
+  assert.equal(result.revision, created.revision); assert.equal(result.approvedRevision, created.revision); assert.equal(result.approval, "approved");
+  assert.deepEqual(result.data, created.data); assert.equal(result.localPending, false); assert.equal(result.localConflict, false);
+  assert.equal(result.internalOnly, true); assert.equal(result.externalPublication, "not-performed");
+  assert.equal((await value.status()).pending, 1); assert.equal((await value.getObject("page", original.id)).data.title, "Unrelated retained draft");
+}));
+
+test("a new local species draft after the approval commit stays separate from the exact approved server response", () => approvalScoped(async ({ value, other, bindingId, created, afterFetch, approve }) => {
+  afterFetch((url) => {
+    if (!url.endsWith("/approve")) return;
+    afterFetch(null); const next = structuredClone(created.data); next.input.weight = "499 g"; other.edit(bindingId, "species", created.id, next);
+  });
+  const result = await approve();
+  assert.deepEqual(result.data, created.data); assert.equal(result.approvedRevision, created.revision); assert.equal(result.localPending, true);
+  assert.equal((await value.getObject("species", created.id)).data.input.weight, "499 g"); assert.equal((await value.status()).pending, 1);
+}));
+
+test("a lost committed species-approval response is not retried and normal reads recover the actual approval", () => approvalScoped(async ({ store, a, value, created, requests, afterFetch, approve }) => {
+  afterFetch(async (url, _options, response) => {
+    if (!url.endsWith("/approve")) return;
+    afterFetch(null); await response.text(); throw new Error("Synthetic lost approval response");
+  });
+  await assert.rejects(approve(), denied("offline"));
+  assert.equal(store.getObject(a.token, "species", created.id).approvedRevision, created.revision);
+  assert.equal(requests.filter(({ url, method }) => method === "POST" && url.endsWith("/approve")).length, 1);
+  await value.refresh(); assert.equal((await value.getObject("species", created.id)).approval, "approved");
+  assert.equal(requests.filter(({ url, method }) => method === "POST" && url.endsWith("/approve")).length, 1);
+}));
+
+test("a full private cache change during capability reading invalidates the original approval hash", () => approvalScoped(async ({ other, bindingId, created, requests, beforeFetch, approve }) => {
+  beforeFetch((url) => {
+    if (!url.endsWith("/capabilities")) return;
+    beforeFetch(null); const data = structuredClone(created.data); data.generated.privateOriginal = "Different retained private original";
+    other.saveObjects(bindingId, [{ ...created, data }]);
+  });
+  await assert.rejects(approve(), denied("approval_review_changed"));
+  assert.equal(requests.filter(({ url, method }) => method === "POST" && url.endsWith("/approve")).length, 0);
+}));
+
+test("a newer server revision immediately before approval is rejected without approving the new content", () => approvalScoped(async ({ store, a, b, created, beforeFetch, approve }) => {
+  beforeFetch((url) => {
+    if (!url.endsWith("/approve")) return;
+    beforeFetch(null); const data = structuredClone(created.data); data.input.weight = "480 g";
+    store.submitChange(b.token, { changeId: "approval-server-drift", kind: "species", id: created.id, baseRevision: created.revision, data });
+  });
+  await assert.rejects(approve(), denied("approval_review_changed"));
+  const current = store.getObject(a.token, "species", created.id); assert.equal(current.approval, "draft"); assert.equal(current.data.input.weight, "480 g");
+}));
+
+test("a fully reviewed publisher can approve, while an unbound full-record client call remains blocked", () => approvalScoped(async ({ store, a, b, value, input, requests, approve }) => {
+  await assert.rejects(approve({ expectedDataHash: undefined }), denied("approval_review_changed"));
+  assert.equal(requests.filter(({ url, method }) => method === "POST" && url.endsWith("/approve")).length, 0);
+  store.updateUser(b.token, a.user.id, { role: "publisher", expectedVersion: store.me(a.token).version }); await value.refresh();
+  const result = await approve({ requiredBinding: { ...input.requiredBinding, role: "publisher" } }); assert.equal(result.approval, "approved");
+}));
+
+test("an inconsistent approval receipt cannot be reported as a successful reviewed species approval", () => approvalScoped(async ({ created, requests, afterFetch, approve }) => {
+  afterFetch(async (url, _options, response) => {
+    if (!url.endsWith("/approve")) return;
+    afterFetch(null); const data = await response.json(); data.data.generated.privateOriginal = "Unbound response original";
+    return new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
+  });
+  await assert.rejects(approve(), denied("invalid_approval_response"));
+  assert.equal(requests.filter(({ url, method }) => method === "POST" && url.endsWith("/approve")).length, 1);
+  assert.equal(created.data.generated.privateOriginal, "Retained private original");
 }));

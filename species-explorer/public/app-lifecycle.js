@@ -55,8 +55,9 @@
     setTimeoutImpl = global.setTimeout?.bind(global),
     clearTimeoutImpl = global.clearTimeout?.bind(global),
     revisionIntervalMs = DEFAULT_REVISION_INTERVAL_MS,
+    onWorkspaceState = () => {},
   } = {}) {
-    let lifecycleBound = false;
+    let lifecycleBound = false, loadTicket = 0;
 
     function applyEditingMode(enabled) {
       state.editMode = Boolean(enabled);
@@ -65,6 +66,7 @@
       elements.editModeToggle.setAttribute("aria-pressed", presentation.pressed);
       elements.editModeToggle.textContent = presentation.label;
       elements.editModeToggle.title = presentation.title;
+      onWorkspaceState();
       return presentation;
     }
 
@@ -74,31 +76,45 @@
     }
 
     async function refreshExplorerModelOnly({ reload = false } = {}) {
+      const workspace = state.workspace || "local", epoch = state.workspaceEpoch || 0;
       const snapshot = await loadExplorerSnapshot({
         reload,
         failureMessage: "Lokale Daten konnten nicht aktualisiert werden.",
       });
+      if (workspace !== (state.workspace || "local") || epoch !== (state.workspaceEpoch || 0)) throw new Error("Der Artbestand oder die Projektanmeldung wurde während des Ladens gewechselt.");
       state.dataRevision = snapshot.revision.revision;
       state.species = snapshot.species;
+      state.workspaceStatus = snapshot.workspace || null;
       updateSummary(snapshot.summary);
       updateValidation(snapshot.validation);
       updatePendingChanges(snapshot.pendingChanges);
       populateStatusFilter();
       applyFilters();
+      onWorkspaceState();
       return snapshot;
     }
 
     async function loadData({ reload = false } = {}) {
+      const ticket = ++loadTicket, workspace = state.workspace || "local", epoch = state.workspaceEpoch || 0;
+      const dialogWasOpen = hasOpenDialog();
       state.dataLoading = true;
       elements.reloadButton.disabled = true;
       elements.reloadButton.textContent = "Lädt…";
+      onWorkspaceState();
       try {
         const snapshot = await loadExplorerSnapshot({
           reload,
           failureMessage: "Lokale Daten konnten nicht geladen werden.",
         });
+        if (ticket !== loadTicket || workspace !== (state.workspace || "local") || epoch !== (state.workspaceEpoch || 0)) return null;
+        if (!dialogWasOpen && hasOpenDialog()) {
+          state.pendingRevisionReload = true;
+          return null;
+        }
         state.dataRevision = snapshot.revision.revision;
         state.species = snapshot.species;
+        state.workspaceStatus = snapshot.workspace || null;
+        elements.detailPanel.inert = false;
         updateSummary(snapshot.summary);
         updateValidation(snapshot.validation);
         updatePendingChanges(snapshot.pendingChanges);
@@ -119,9 +135,23 @@
           } else {
             selectSpecies(next);
           }
+        } else {
+          elements.detailPanel.innerHTML = `<div class="empty-state"><h2>Keine Art ausgewählt</h2><p>${workspace === "shared-project"
+            ? "Der gemeinsame Bestand enthält noch keine vollständig eingerichtete Art. Die Projektverbindung und die vorbereitete Anfangsübernahme findest du unter Gemeinsames Projekt."
+            : "Keine Art im ausgewählten Bestand vorhanden."}</p></div>`;
         }
         return snapshot;
       } catch (error) {
+        if (ticket !== loadTicket || workspace !== (state.workspace || "local") || epoch !== (state.workspaceEpoch || 0)) return null;
+        if (!dialogWasOpen && hasOpenDialog()) {
+          state.pendingRevisionReload = true;
+          return null;
+        }
+        if (workspace === "shared-project") {
+          state.species = []; state.filtered = []; state.selectedId = "";
+          state.workspaceStatus = { source: "shared-project", available: false, permissions: {} };
+          renderSpeciesList();
+        }
         elements.detailPanel.innerHTML = `
           <div class="error-state">
             <h2>Daten konnten nicht geladen werden</h2>
@@ -130,9 +160,12 @@
         `;
         return null;
       } finally {
-        state.dataLoading = false;
-        elements.reloadButton.disabled = false;
-        elements.reloadButton.textContent = "Aktualisieren";
+        if (ticket === loadTicket) {
+          state.dataLoading = false;
+          elements.reloadButton.disabled = false;
+          elements.reloadButton.textContent = "Aktualisieren";
+          onWorkspaceState();
+        }
       }
     }
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createExplorerDeviceBackupProvider } from "./explorer-backup.mjs";
+import { validateWebsiteAltJournal } from "./project-journal-backup.mjs";
 
 test("persönliche Sicherung bindet ausschließlich feste Profile und alle alten Cache-/Importprojekte", async () => {
   let config; const sentinel = {};
@@ -20,4 +21,17 @@ test("unlesbares Teilprofil oder Abbruch verhindert eine vermeintlich vollständ
   await assert.rejects(config.resolveProjectIds(), /nicht vollständig lesbar/);
   const abort = new AbortController(); abort.abort(new Error("eigener Sicherungsabbruch"));
   await assert.rejects(config.resolveProjectIds({ signal: abort.signal }), /eigener Sicherungsabbruch/);
+});
+
+test("eingerichtetes Bildtextjournal bindet auch frühere eigene Projekte und seinen exakten Validator", async () => {
+  let config;
+  const base = { sharedProject: { backupProjectIds: async () => ["project-current"] },
+    initialProjectImport: { backupProjectIds: async () => [] }, providerFactory(value) { config = value; } };
+  createExplorerDeviceBackupProvider({ ...base, websiteAltSync: { backupProjectIds: async () => ["project-alt-old", "project-current"] } });
+  assert.deepEqual(await config.resolveProjectIds(), ["project-alt-old", "project-current"]);
+  assert.equal(config.files.length, 4);
+  assert.deepEqual(config.files[3], { id: "website-alt-sync", relativePath: "website-alt-sync.sqlite", kind: "sqlite",
+    required: true, validate: validateWebsiteAltJournal });
+  createExplorerDeviceBackupProvider({ ...base, websiteAltSyncConfigured: true });
+  await assert.rejects(config.resolveProjectIds(), /Bildtextjournal.*nicht vollständig lesbar/);
 });

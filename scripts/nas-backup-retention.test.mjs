@@ -89,6 +89,41 @@ test("helper is definition-only and guards revisions, checksum proofs, restore l
 });
 
 for (const executable of ["powershell.exe", "pwsh.exe"]) {
+  test(`NAS manifest binding preserves exact ISO timestamp strings including fractional zeros in ${executable}`, windows, (t) => {
+    const available = spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command", "$PSVersionTable.PSVersion.Major"], { encoding: "utf8" });
+    if (available.error?.code === "ENOENT" && executable === "pwsh.exe") { t.skip("PowerShell 7 is not installed"); return; }
+    assert.equal(available.status, 0, available.stderr);
+    const result = run(t, `
+      $timestamps = @('2026-11-01T12:34:56.1200000+01:00', '2026-11-01T12:34:56.0000000+00:00',
+        '2026-11-01T12:34:56.1234567+01:00', '2026-11-01T12:34:56.1234560Z')
+      $index = 0
+      $results = foreach ($timestamp in $timestamps) {
+        $index++
+        $file = New-FixtureArchive $root $index -CreatedAt $timestamp
+        $expected = (Test-NasArchiveContents $file).manifest
+        # Match the actual main script: createdAt is an exact original string,
+        # not a DateTime round-trip reconstructed from the archived JSON.
+        $expected.createdAt = $timestamp
+        $bound = Test-NasArchiveContents -ArchivePath $file -ExpectedManifest $expected
+        $expected.createdAt = $timestamp.Replace('12:34:56', '12:34:57')
+        $changed = Test-NasArchiveContents -ArchivePath $file -ExpectedManifest $expected
+        [pscustomobject]@{ timestamp = $timestamp; accepted = $bound.ok; reason = $bound.reason;
+          readValue = $(if ($bound.ok) { [string]$bound.manifest.createdAt } else { '' });
+          readType = $(if ($bound.ok) { $bound.manifest.createdAt.GetType().FullName } else { '' });
+          changedAccepted = $changed.ok; changedReason = $changed.reason }
+      }
+      ConvertTo-Json -InputObject @($results) -Depth 5 -Compress
+    `, null, executable);
+    assert.equal(result.length, 4);
+    for (const entry of result) {
+      assert.equal(entry.accepted, true, `${entry.timestamp}: ${entry.reason}`);
+      assert.equal(entry.readValue, entry.timestamp);
+      assert.equal(entry.readType, "System.String");
+      assert.equal(entry.changedAccepted, false);
+      assert.match(entry.changedReason, /gebundenen Ausgangsstand/u);
+    }
+  });
+
   test(`NAS archive accepts a late-month date and preserves its bound record order in ${executable}`, windows, (t) => {
     const available = spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command", "$PSVersionTable.PSVersion.Major"], { encoding: "utf8" });
     if (available.error?.code === "ENOENT" && executable === "pwsh.exe") {
@@ -192,6 +227,14 @@ test("actual main script completes and reuses a verified backup in PowerShell 7"
   }
   assert.equal(available.status, 0, available.stderr);
   const result = run(t, `${mockGit}
+    # This exact fractional clock formerly failed only when the real clock's
+    # final fractional digits happened to be zero in PowerShell 7.
+    function Get-Date {
+      param([string]$Format = '')
+      $fixed = [DateTimeOffset]::Parse('2026-11-01T12:34:56.1200000+01:00', [Globalization.CultureInfo]::InvariantCulture)
+      if ($Format) { return $fixed.ToString($Format) }
+      return $fixed
+    }
     $code = Get-Content -LiteralPath (Join-Path $root 'main-fixture.ps1') -Raw -Encoding UTF8
     $nas = Join-Path $root 'nas'
     $first = ((& ([scriptblock]::Create($code)) -BackupRoot $nas) -join [Environment]::NewLine) | ConvertFrom-Json

@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { createSharedProjectClient } from "./client.mjs";
 import { canonicalJson, transportJson } from "./security.mjs";
 import { check, ProjectError } from "./errors.mjs";
+import { createExplorerSpeciesEditor } from "./explorer-species-editor.mjs";
+import { createSpeciesWorkspace } from "./species-workspace.mjs";
+import { createExplorerSpeciesConflicts } from "./explorer-species-conflicts.mjs";
+import { createExplorerSpeciesApproval } from "./explorer-species-approval.mjs";
 
 function stamp(object) {
   return createHash("sha256").update(transportJson({ kind: object.kind, id: object.id, revision: object.revision, data: object.data })).digest("hex");
@@ -45,7 +49,14 @@ export function createExplorerSharedProjectService(options = {}) {
       return { ...conflict, latestServer: { ...latestServer, localPending: false, localConflict: false }, changedSinceConflict: latestServer.revision !== conflict.currentRevision };
     }));
   }
+  const withClient = (operation) => run(async () => operation(client, await permissions()));
+  const speciesEditor = createExplorerSpeciesEditor({ withClient });
+  const speciesWorkspace = createSpeciesWorkspace({ withClient });
+  const speciesConflicts = createExplorerSpeciesConflicts({ withClient });
+  const speciesApproval = createExplorerSpeciesApproval({ withClient });
   return {
+    speciesEditor, speciesWorkspace, speciesConflicts, speciesApproval,
+    capabilities: () => run(() => client.capabilities()),
     snapshot: async () => {
       if (working || closing || closed) {
         const cached = lastSnapshot ? structuredClone(lastSnapshot) : { schemaVersion: 1, status: { connection: "checking" },
@@ -97,6 +108,9 @@ export function createExplorerSharedProjectService(options = {}) {
     async close() {
       if (closed) return;
       closing = true;
+      speciesEditor.close();
+      speciesConflicts.close();
+      speciesApproval.close();
       // Abort an in-flight client request before joining the adapter queue.
       await client.close(); await chain; closed = true; users = []; devices = [];
     }

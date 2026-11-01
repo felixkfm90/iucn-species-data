@@ -59,6 +59,8 @@ function createFixture({
   loadError = null,
   revision = null,
   dialogOpen = false,
+  loadSnapshot = null,
+  renderSelection = () => {},
 } = {}) {
   const elements = {
     editModeToggle: new FakeElement(),
@@ -115,6 +117,7 @@ function createFixture({
     loadExplorerSnapshot: async (options) => {
       calls.snapshots.push(options);
       if (loadError) throw loadError;
+      if (loadSnapshot) return loadSnapshot(options);
       return snapshot;
     },
     fetchRevision: async () => revision,
@@ -137,6 +140,7 @@ function createFixture({
     selectSpecies: (id) => {
       state.selectedId = id;
       calls.selected.push(id);
+      renderSelection(id, elements.detailPanel);
     },
     hasOpenDialog: () => dialogOpen,
     escapeHtml: (value) => String(value)
@@ -151,7 +155,10 @@ function createFixture({
     },
     clearTimeoutImpl: (id) => calls.clearedTimers.push(id),
   });
-  return { controller, state, elements, documentRef, windowRef, calls };
+  return {
+    controller, state, elements, documentRef, windowRef, calls,
+    setDialogOpen: (value) => { dialogOpen = Boolean(value); },
+  };
 }
 
 test("Lebenszyklus beschreibt Bearbeitungsmodus und Schließwarnung eindeutig", () => {
@@ -232,7 +239,7 @@ test("Datenladen wählt die URL-Art und hält den Assistenten-Hintergrund stabil
   assert.equal(selectedFixture.elements.reloadButton.textContent, "Aktualisieren");
   assert.equal(selectedFixture.state.dataLoading, false);
 
-  const heldFixture = createFixture({ snapshot, requestedSpeciesId: "loewe" });
+  const heldFixture = createFixture({ snapshot, requestedSpeciesId: "loewe", dialogOpen: true });
   heldFixture.state.holdNewSpeciesBackground = true;
   heldFixture.elements.newSpeciesDialog.open = true;
   await heldFixture.controller.loadData({ reload: true });
@@ -250,6 +257,95 @@ test("Ladefehler werden maskiert angezeigt und geben Aktualisieren wieder frei",
   assert.equal(fixture.elements.reloadButton.disabled, false);
   assert.equal(fixture.elements.reloadButton.textContent, "Aktualisieren");
   assert.equal(fixture.state.dataLoading, false);
+});
+
+test("Zugangsverlust des gemeinsamen Bestands entfernt zuvor sichtbare Arten statt lokal auszuweichen", async () => {
+  const f = createFixture({ loadError: new Error("Projektanmeldung prüfen") });
+  f.state.workspace = "shared-project"; f.state.species = [{ id: "prior-person-private" }];
+  f.state.filtered = [...f.state.species]; f.state.selectedId = "prior-person-private";
+  await f.controller.loadData();
+  assert.equal(f.state.species.length, 0); assert.equal(f.state.filtered.length, 0); assert.equal(f.state.selectedId, "");
+  assert.equal(f.state.workspaceStatus.available, false); assert.equal(f.state.workspace, "shared-project");
+  assert.equal(f.calls.renderSpeciesList, 1); assert.equal(f.calls.snapshots.length, 1);
+  assert.doesNotMatch(f.elements.detailPanel.innerHTML, /prior-person-private/);
+});
+
+test("überholte Ladeantworten verändern weder den neu gewählten Bestand noch dessen laufenden Ladezustand", async () => {
+  const pending = [], f = createFixture({ loadSnapshot: () => new Promise((resolve) => pending.push(resolve)) });
+  f.state.workspace = "local"; const first = f.controller.loadData();
+  f.state.workspace = "shared-project"; const second = f.controller.loadData();
+  pending[0](createSnapshot([{ id: "old-local" }])); await first;
+  assert.equal(f.state.species.length, 0); assert.equal(f.state.dataLoading, true);
+  const shared = { ...createSnapshot([{ id: "shared-owl" }], "shared-revision"), workspace: { source: "shared-project", sourceScope: "person-project" } };
+  pending[1](shared); await second;
+  assert.equal(f.state.species[0].id, "shared-owl"); assert.equal(f.state.dataLoading, false);
+  assert.equal(f.state.workspaceStatus.sourceScope, "person-project"); assert.deepEqual(f.calls.selected, ["shared-owl"]);
+});
+
+test("Datenladen bewahrt einen während der Antwortzeit geöffneten Dialog und lädt nach dessen Schließen erneut", async () => {
+  for (const workspace of ["local", "shared-project"]) {
+    let resolveSnapshot;
+    const f = createFixture({
+      loadSnapshot: () => new Promise((resolve) => { resolveSnapshot = resolve; }),
+      renderSelection: (id, panel) => { panel.innerHTML = `Artansicht ${id}`; },
+    });
+    f.state.workspace = workspace;
+    const previousSpecies = [{ id: "amsel" }];
+    f.state.species = previousSpecies;
+    f.state.filtered = previousSpecies;
+    f.state.selectedId = "amsel";
+    f.state.dataRevision = "revision-1";
+    const loading = f.controller.loadData({ reload: true });
+    assert.equal(f.state.dataLoading, true);
+    f.setDialogOpen(true);
+    const draft = '<dialog open><textarea>Eigener ungespeicherter Text</textarea></dialog>';
+    f.elements.detailPanel.innerHTML = draft;
+
+    const snapshot = createSnapshot([{ id: "amsel", germanName: "Neue Fassung" }], "revision-2");
+    resolveSnapshot(snapshot);
+    assert.equal(await loading, null);
+    assert.equal(f.elements.detailPanel.innerHTML, draft);
+    assert.equal(f.state.species, previousSpecies);
+    assert.equal(f.state.dataRevision, "revision-1");
+    assert.deepEqual(f.calls.selected, []);
+    assert.equal(f.calls.summaries.length, 0);
+    assert.equal(f.state.pendingRevisionReload, true);
+    assert.equal(f.state.dataLoading, false);
+    assert.equal(f.elements.reloadButton.disabled, false);
+    assert.equal(f.elements.reloadButton.textContent, "Aktualisieren");
+
+    f.setDialogOpen(false);
+    const retry = f.controller.loadData();
+    resolveSnapshot(snapshot);
+    assert.equal(await retry, snapshot);
+    assert.equal(f.state.species, snapshot.species);
+    assert.equal(f.state.dataRevision, "revision-2");
+    assert.deepEqual(f.calls.selected, ["amsel"]);
+    assert.equal(f.elements.detailPanel.innerHTML, "Artansicht amsel");
+    assert.equal(f.state.dataLoading, false);
+  }
+});
+
+test("ein verzögerter Ladefehler überschreibt keinen inzwischen geöffneten Dialog", async () => {
+  let rejectSnapshot;
+  const f = createFixture({
+    loadSnapshot: () => new Promise((resolve, reject) => { rejectSnapshot = reject; }),
+  });
+  f.state.species = [{ id: "amsel" }];
+  f.state.dataRevision = "revision-1";
+  const loading = f.controller.loadData();
+  f.setDialogOpen(true);
+  const draft = '<dialog open><textarea>Ungespeicherter Entwurf</textarea></dialog>';
+  f.elements.detailPanel.innerHTML = draft;
+  rejectSnapshot(new Error("Vorübergehend nicht erreichbar"));
+
+  assert.equal(await loading, null);
+  assert.equal(f.elements.detailPanel.innerHTML, draft);
+  assert.equal(f.state.species[0].id, "amsel");
+  assert.equal(f.state.dataRevision, "revision-1");
+  assert.equal(f.state.pendingRevisionReload, true);
+  assert.equal(f.state.dataLoading, false);
+  assert.equal(f.elements.reloadButton.disabled, false);
 });
 
 test("Revisionswechsel wird bei offenem Dialog vertagt und sonst geladen", async () => {

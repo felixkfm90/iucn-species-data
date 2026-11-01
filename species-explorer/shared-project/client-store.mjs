@@ -50,6 +50,22 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
     return row ? { id: row.id, baseUrl: row.base_url, projectId: row.project_id, userId: row.user_id, user: JSON.parse(row.user_json) } : null;
   }
   function pending(id) { open(); return db.prepare(`SELECT * FROM queue WHERE binding_id=? AND state IN ${pendingStates} ORDER BY seq`).all(id); }
+  function conflictStamp(id, conflictId) {
+    open(); const row = db.prepare("SELECT conflict_json FROM conflicts WHERE binding_id=? AND id=? AND resolved=0").get(id, conflictId);
+    return row ? digest(row.conflict_json) : null;
+  }
+  function assertConflictVersions(id, conflictId, expected) {
+    if (expected === undefined) return true;
+    const row = db.prepare("SELECT conflict_json FROM conflicts WHERE binding_id=? AND id=? AND resolved=0").get(id, conflictId);
+    check(row && Array.isArray(expected) && expected.length <= 100000, 409, "conflict_review_changed", "Die erhaltenen lokalen Fassungen müssen erneut verglichen werden.");
+    const conflict = JSON.parse(row.conflict_json), current = pending(id).filter((entry) => entry.kind === conflict.kind && entry.object_id === conflict.objectId);
+    check(current.length === expected.length && current.every((entry, index) => {
+      const shown = expected[index];
+      return shown && Object.keys(shown).length === 3 && shown.changeId === entry.change_id && shown.state === entry.state
+        && shown.sha256 === digest(objectJson(JSON.parse(entry.data_json)));
+    }), 409, "conflict_review_changed", "Nach der Vorschau ist eine weitere lokale Fassung hinzugekommen oder geändert worden. Alle Eingaben bleiben erhalten.");
+    return true;
+  }
   function object(id, kind, objectId, { readOnly = false, serverOnly = false } = {}) {
     open(); const row = db.prepare("SELECT * FROM cache WHERE binding_id=? AND kind=? AND id=?").get(id, kind, objectId);
     check(row && row.visible, 404, "object_not_cached", "Dieses Objekt ist für diese Projektverbindung nicht verfügbar.");
@@ -176,14 +192,26 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
         db.prepare("INSERT OR REPLACE INTO conflicts VALUES (?,?,?,0)").run(id, value.id, JSON.stringify(value));
       });
     },
+    conflictStamp,
+    refreshConflict(id, changeId, value, expectedStamp) {
+      return tx(() => {
+        const row = db.prepare("SELECT * FROM queue WHERE binding_id=? AND change_id=? AND state='conflict'").get(id, changeId);
+        if (!row || row.conflict_id !== value.id || expectedStamp === null || conflictStamp(id, value.id) !== expectedStamp) return false;
+        check(value.kind === row.kind && value.objectId === row.object_id, 502, "invalid_response", "Der Konflikt gehört nicht zum erhaltenen lokalen Entwurf.");
+        db.prepare("UPDATE conflicts SET conflict_json=? WHERE binding_id=? AND id=? AND resolved=0").run(JSON.stringify(value), id, value.id);
+        return true;
+      });
+    },
     conflicts(id) {
       open(); return db.prepare("SELECT * FROM conflicts WHERE binding_id=? AND resolved=0 ORDER BY id").all(id).map((row) => {
         const conflict = JSON.parse(row.conflict_json), entries = pending(id).filter((entry) => entry.kind === conflict.kind && entry.object_id === conflict.objectId);
         return { ...conflict, localVersions: entries.map((entry) => ({ changeId: entry.change_id, data: JSON.parse(entry.data_json), state: entry.state })) };
       });
     },
-    resolve(id, conflictId, value) {
+    assertConflictVersions,
+    resolve(id, conflictId, value, { expectedLocalVersions } = {}) {
       return tx(() => {
+        assertConflictVersions(id, conflictId, expectedLocalVersions);
         const conflict = db.prepare("SELECT * FROM conflicts WHERE binding_id=? AND id=?").get(id, conflictId);
         check(conflict, 404, "conflict_not_found", "Der Konflikt ist lokal nicht vorhanden.");
         const parsed = JSON.parse(conflict.conflict_json);
@@ -194,8 +222,9 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
         saveRemote(id, value.object);
       });
     },
-    rebaseResolvedConflict(id, conflictId, currentObject, data) {
+    rebaseResolvedConflict(id, conflictId, currentObject, data, { expectedLocalVersions } = {}) {
       return tx(() => {
+        assertConflictVersions(id, conflictId, expectedLocalVersions);
         const row = db.prepare("SELECT * FROM conflicts WHERE binding_id=? AND id=? AND resolved=0").get(id, conflictId);
         check(row, 404, "conflict_not_found", "Der Konflikt ist lokal nicht vorhanden.");
         const conflict = JSON.parse(row.conflict_json);

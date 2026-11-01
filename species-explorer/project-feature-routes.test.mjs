@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import test from "node:test";
 import { createExplorerRequestHandler, matchExplorerRoute } from "./request-router.mjs";
-import { invokeSharedProjectOperation } from "./project-feature-routes.mjs";
+import { invokeSharedProjectOperation, matchProjectFeatureRoute } from "./project-feature-routes.mjs";
 import { createLocalMutationBarrier } from "./local-mutation-barrier.mjs";
 import { startUpdateWithCompletion } from "./update-completion/start.mjs";
 
@@ -56,6 +56,34 @@ test("Projektadapter gibt nur benannte Methoden weiter und bleibt ohne Einrichtu
   await assert.rejects(invokeSharedProjectOperation({}, { action: "close" }), { statusCode: 404 });
 });
 
+test("normaler gemeinsamer Arteditor erhält benannte Lese-/Vorschau-/Speicherrouten ohne lokale JSON-Umleitung", async () => {
+  assert.deepEqual(matchExplorerRoute("GET", "/api/shared-project/species"), { name: "shared-project", action: "species-list" });
+  assert.deepEqual(matchExplorerRoute("GET", "/api/shared-project/species/testkauz"), { name: "shared-project", action: "species-get", id: "testkauz" });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/shared-project/species/testkauz/preview"), { name: "shared-project", action: "species-preview", id: "testkauz" });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/shared-project/species/testkauz/save"), { name: "shared-project", action: "species-save", id: "testkauz" });
+  for (const [method, url] of [["POST", "/api/shared-project/species"], ["GET", "/api/shared-project/species/testkauz/save"], ["POST", "/api/shared-project/species/testkauz/delete"]]) {
+    assert.notEqual(matchExplorerRoute(method, url).name, "shared-project");
+  }
+  const calls = [], editor = Object.fromEntries(["list", "get", "preview", "save"].map((method) => [method, (...args) => { calls.push([method, ...args]); return { ok: true }; }]));
+  for (const action of ["list", "get", "preview", "save"]) await invokeSharedProjectOperation({ speciesEditor: editor }, { action: `species-${action}`, id: "testkauz", payload: { token: "reviewed" } });
+  assert.deepEqual(calls, [["list"], ["get", "testkauz"], ["preview", "testkauz", { token: "reviewed" }], ["save", "testkauz", { token: "reviewed" }]]);
+});
+
+test("gemeinsame Artenansicht und Revision werden vor dem Art-ID-Matcher ausschließlich lesend zugeordnet", async () => {
+  for (const method of ["GET", "HEAD"]) {
+    assert.deepEqual(matchExplorerRoute(method, "/api/shared-project/species/workspace"), { name: "shared-project", action: "species-workspace" });
+    assert.deepEqual(matchExplorerRoute(method, "/api/shared-project/species/workspace/revision"), { name: "shared-project", action: "species-workspace-revision" });
+  }
+  for (const path of ["/api/shared-project/species/workspace", "/api/shared-project/species/workspace/revision"]) {
+    assert.notEqual(matchExplorerRoute("POST", path).name, "shared-project");
+  }
+  const calls = [], service = { speciesWorkspace: { read: () => { calls.push("read"); return { species: [] }; }, revision: () => { calls.push("revision"); return { revision: "bound" }; } } };
+  assert.deepEqual(await invokeSharedProjectOperation(service, { action: "species-workspace" }), { species: [] });
+  assert.deepEqual(await invokeSharedProjectOperation(service, { action: "species-workspace-revision" }), { revision: "bound" });
+  assert.deepEqual(calls, ["read", "revision"]);
+  await assert.rejects(invokeSharedProjectOperation(null, { action: "species-workspace" }), { statusCode: 503 });
+});
+
 test("Schließbarriere wartet begonnene Mutation ab und verhindert neue Aufträge bis zur Freigabe", async () => {
   const barrier = createLocalMutationBarrier(), finishWrite = barrier.enter();
   const acquiring = barrier.acquire();
@@ -66,6 +94,40 @@ test("Schließbarriere wartet begonnene Mutation ab und verhindert neue Aufträg
   assert.equal(barrier.active, 0); assert.throws(() => barrier.enter());
   release(); release();
   barrier.enter()(); assert.equal(barrier.active, 0);
+});
+
+test("vollständige Artkonflikte verwenden eigene gebundene Lese-, Vorschau- und Übernahmewege", async () => {
+  const id = "12345678-1234-4234-8234-123456789abc", root = "/api/shared-project/species/conflicts", calls = [];
+  for (const method of ["GET", "HEAD"]) {
+    assert.equal(matchProjectFeatureRoute(method, root).action, "species-conflicts-list");
+    assert.equal(matchProjectFeatureRoute(method, `${root}/${id}`).action, "species-conflicts-get");
+  }
+  for (const method of ["POST", "GET", "DELETE"]) {
+    for (const suffix of ["preview", "resolve"]) {
+      const route = matchProjectFeatureRoute(method, `${root}/${id}/${suffix}`);
+      assert.equal(route?.action ?? null, method === "POST" ? `species-conflicts-${suffix}` : null);
+    }
+  }
+  const service = { speciesConflicts: Object.fromEntries(["list", "get", "preview", "resolve"].map((name) => [name, async (...args) => { calls.push([name, ...args]); return { name }; }])) };
+  for (const [name, payload] of [["list"], ["get"], ["preview", { choices: {} }], ["resolve", { token: "shown" }]]) {
+    await invokeSharedProjectOperation(service, { action: `species-conflicts-${name}`, id, payload });
+  }
+  assert.deepEqual(calls, [["list"], ["get", id], ["preview", id, { choices: {} }], ["resolve", id, { token: "shown" }]]);
+  await assert.rejects(invokeSharedProjectOperation(null, { action: "species-conflicts-list" }), { statusCode: 503 });
+});
+
+test("interne Artfreigabe besitzt ausschließlich geschützte POST-Vorschau und expliziten Freigabeweg", async () => {
+  const root = "/api/shared-project/species/fixture-owl/approval", calls = [];
+  for (const method of ["GET", "HEAD", "DELETE", "POST"]) {
+    for (const action of ["preview", "approve"]) {
+      const route = matchProjectFeatureRoute(method, `${root}/${action}`);
+      assert.equal(route?.action ?? null, method === "POST" ? `species-approval-${action}` : null);
+    }
+  }
+  const service = { speciesApproval: { preview: async (...args) => { calls.push(["preview", ...args]); }, approve: async (...args) => { calls.push(["approve", ...args]); } } };
+  await invokeSharedProjectOperation(service, { action: "species-approval-preview", id: "fixture-owl", payload: { expectedRevision: "shown" } });
+  await invokeSharedProjectOperation(service, { action: "species-approval-approve", id: "fixture-owl", payload: { token: "reviewed" } });
+  assert.deepEqual(calls, [["preview", "fixture-owl", { expectedRevision: "shown" }], ["approve", "fixture-owl", { token: "reviewed" }]]);
 });
 
 test("nicht abgeschlossene Mutation hebt nur den misslungenen Schließversuch wieder auf", async () => {

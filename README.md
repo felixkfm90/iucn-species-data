@@ -74,15 +74,42 @@ Vorhandene Links zu öffentlichen FN-Artseiten und die automatische Anzeige ihre
 ### Gemeinsames Projekt
 
 **Datenbank-Aktionen → Weitere Aktionen → Backup und Einstellungen → Gemeinsames Projekt** öffnet
-die persönliche Verbindung zum künftigen NAS-Dienst sowie den
+die persönliche Verbindung zum eingerichteten NAS-Dienst sowie den
 gemeinsamen Redaktionsbereich. Bestehende Arten/Seiten können als lokale Entwürfe bearbeitet und
 anschließend ausdrücklich abgeglichen werden; widersprüchliche Fassungen bleiben zur Entscheidung
 erhalten. Neue Objekte und interne Freigaben benötigen die Onlineverbindung und die passende Rolle.
 Eine interne Freigabe veröffentlicht keine Squarespace-Seite. Personen-/Geräteverwaltung ist nach
-den eigenen Rechten verfügbar. Die Dienstadresse und persönlichen Zugänge werden bei der tatsächlichen
-NAS-Einrichtung festgelegt. Bis dahin bleibt der bisherige lokale Bestandsworkflow verfügbar.
+den eigenen Rechten verfügbar. Dienstadresse und persönliche Zugänge sind eingerichtet; Betriebsstand
+und noch offene Abnahmen stehen in der [NAS-Anleitung](nas/README.md). Der bisherige lokale Bestand bleibt verfügbar.
 
-Entwürfe werden mit **Entwurf lokal speichern** gesichert. Das Schließen des Bereichs erhält seine
+**Artbestand → Auf diesem PC / Gemeinsames Projekt** wählt in der ergänzten Programmfassung den
+Bestand für die normale Artenansicht. Die Wahl bleibt auf diesem Gerät gespeichert. Gemeinsame
+Grunddaten werden zunächst lokal vorgemerkt; **Änderungen abgleichen** sendet die wartenden Änderungen,
+**Serverstand lesen** lädt den Dienststand bewusst. Eine fehlende Anmeldung oder Verbindung wechselt
+nicht still auf den lokalen Bestand. Öffentliche Medienverweise benötigen eine Internetverbindung,
+solange die Dateien nicht auf diesem Gerät bereitgestellt sind. Der vollständige Anfangsbestand ist
+noch nicht übernommen; gekoppelte Namens-/Medienwege und die native Gesamtprüfung bleiben offen.
+
+Bei einem Artkonflikt unter **Gemeinsames Projekt → Grunddaten vergleichen** die erhaltenen lokalen
+Fassungen mit dem Serverstand vergleichen. Für abweichende Grunddaten bewusst einen Serverwert,
+eine lokale Fassung oder einen eigenen Text wählen, anschließend **Änderungen prüfen** und
+**Geprüfte Grunddaten übernehmen**. **Serverfassung beibehalten** bereitet dieselbe ausdrückliche
+Prüfung vor. Die gespeicherten Fassungen bleiben als Verlauf erhalten. Nach einer unklaren Antwort
+zuerst **Serverstand lesen** und erneut vergleichen; der Explorer wiederholt keine Übernahme automatisch.
+Deutsche und wissenschaftliche Umbenennungen bleiben bis zum gekoppelten Umbenennungsweg gesperrt.
+
+In der normalen gemeinsamen Artansicht erscheint für berechtigte Personen **Aktuelle Fassung intern
+freigeben**, sobald die Änderungen dieser Art abgeglichen sind. Die Vorschau zeigt die genaue Fassung
+für das Nachschlagewerk mit Texten, Taxonomie, Bildern und Ton. **Geprüfte Fassung intern freigeben**
+bestätigt nur diese Version für Projektleser und das Nachschlagewerk. Später hinzugekommene lokale
+Änderungen bleiben ungeprüft. Artseiten-Endfreigabe und Squarespace-Übernahme sind eigene Schritte.
+
+Gespeicherte Website-Bildtexte lassen sich je Seite unter **Website-Bildtexte → Seitenaktionen →
+Bildtexte gemeinsam abgleichen** vergleichen und ausdrücklich senden oder auf diesem PC übernehmen.
+Offene Texteingaben vorher speichern oder freigeben. Der Vergleich zeigt beide Fassungen mit
+Bildvorschau; die Übernahme in Squarespace bleibt der eigene Button im Bildtextbereich.
+
+Im Redaktionsbereich werden Entwürfe mit **Entwurf lokal speichern** gesichert. Das Schließen des Bereichs erhält seine
 Formulareingaben während derselben Programmsitzung; vor dem Beenden der App offene Eingaben speichern.
 Der Explorer warnt vor Verlust. Gerätecache und geschützte Anmeldetokens liegen im persönlichen
 Appprofil, getrennt von gemeinsamen Daten. Einrichtung, Betriebsgrenzen und aktueller

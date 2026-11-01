@@ -6,6 +6,18 @@
       throw new TypeError("Validierungsanzeige benötigt pluralize als Funktion.");
     }
 
+    if (validation.source === "shared-project") {
+      const clean = validation.pending === 0 && validation.conflicts === 0;
+      return { isOk: clean, overallText: validation.conflicts ? `${validation.conflicts} Konflikt(e) prüfen`
+        : validation.connection === "online" ? validation.pending ? "Lokale Änderungen warten auf Abgleich" : "Gemeinsamer Stand auf diesem Gerät"
+          : "Offline · gespeicherter gemeinsamer Stand",
+      data: { ok: true, value: `${validation.speciesCount} Arten`, detail: validation.legacyCount ? `${validation.legacyCount} weitere Arten benötigen vollständige Grunddaten` : "Vollständige gemeinsame Arbeitsdatensätze" },
+      assets: { ok: validation.missingMediaCount === 0, value: `${validation.availableMediaCount} Medienverweise`, detail: "Medien benötigen eine Internetverbindung, solange sie nicht auf diesem Gerät heruntergeladen sind." },
+      report: { ok: clean, value: validation.conflicts ? `${validation.conflicts} Konflikte` : validation.pending ? `${validation.pending} lokale Änderungen` : "Kein Abgleich offen",
+        detail: "Interne Freigabe und Websiteübernahme bleiben eigene Schritte." }, specialText: "Gemeinsamer FN-Bestand",
+      detailItems: validation.legacyCount ? ["Für vorhandene Arten ohne vollständige Grunddaten ist die kontrollierte Bestandsübernahme noch offen."] : [] };
+    }
+
     const isOk = validation.status === "ok";
     const dataOk = validation.data.issueSpeciesCount === 0;
     const assetsOk = validation.assets.issueSpeciesCount === 0;
@@ -209,6 +221,15 @@
     }
 
     function renderDatabaseStatus(stateName = "") {
+      if (state.workspace === "shared-project" && !state.taxonomyDatabaseBusy && !state.taxonomyMaintenanceSnapshot?.active
+        && !state.taxonomyMasterSnapshot?.active && !["running", "awaiting-review", "failed"].includes(state.pipelineStatusSnapshot?.status)
+        && !["running", "failed"].includes(state.backupStatusSnapshot?.status)) {
+        elements.pipelineMenuButton.className = "header-action header-edit-slot database-status";
+        elements.pipelineStatus.className = "pipeline-status-text";
+        elements.pipelineStatus.textContent = "Datenbank & Einstellungen";
+        elements.pipelineMenuButton.title = "Lokale Datenbank, Sicherung und Projekteinstellungen";
+        elements.pipelineMenuButton.setAttribute("aria-label", "Datenbank-Aktionen öffnen"); return;
+      }
       const taxonomyProgress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({
         master: state.taxonomyMasterSnapshot, reference: state.taxonomyMaintenanceSnapshot,
         busy: state.taxonomyDatabaseBusy, preparation: state.taxonomyDatabasePreparation });
@@ -272,7 +293,7 @@
       const mapProvenanceCounts = documentRef.querySelector?.("#map-provenance-counts");
       if (mapProvenanceCounts) mapProvenanceCounts.textContent =
         `${summary.browserImportedMapCount || 0} IUCN-Browserimporte · ${summary.ownCareMapCount ?? summary.manualMapCount} eigene Pflege/Altmarkierungen`;
-      elements.reportDate.textContent = formatDate(summary.reportGeneratedAt);
+      elements.reportDate.textContent = summary.source === "shared-project" ? "Gemeinsames Projekt" : formatDate(summary.reportGeneratedAt);
     }
 
     function updateValidation(validation) {

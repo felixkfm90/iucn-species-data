@@ -7,8 +7,8 @@ import test from "node:test";
 import { tmpdir, assertTestTempPath } from "../../scripts/test-temp.mjs";
 import { createManagedTempSession } from "../temp-session.mjs";
 import { createSharedProjectClientStore } from "./client-store.mjs";
-import { createInitialProjectImport } from "./initial-import.mjs";
 import { canonicalJson } from "./security.mjs";
+import { buildSpeciesWorkingRecords } from "../species-content/working-records.mjs";
 import { createDeviceBackupProvider, validateDeviceBackupCopy } from "./device-backup.mjs";
 
 const DEVICE = "device-ec2d31f7-0485-4a04-96c4-b40e233b126a";
@@ -19,7 +19,24 @@ export const backupSpecs = [
   { id: "cache", relativePath: "project-cache.sqlite", kind: "client-cache", required: true },
   { id: "import", relativePath: "initial-import.sqlite", kind: "import-journal" },
 ];
-async function fixture(t, { journal = false } = {}) {
+function createJournal(filename, version) {
+  const db = new DatabaseSync(filename);
+  db.exec(`
+    CREATE TABLE plans(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,base_url TEXT NOT NULL,
+      source_hash TEXT NOT NULL,release_readers INTEGER NOT NULL,state TEXT NOT NULL,created_at TEXT NOT NULL,last_error TEXT);
+    CREATE TABLE items(plan_id TEXT NOT NULL REFERENCES plans(id),id TEXT NOT NULL,name TEXT NOT NULL,
+      target_json TEXT NOT NULL,target_hash TEXT NOT NULL,state TEXT NOT NULL,expected_revision TEXT,expected_approval TEXT,
+      intent_actor TEXT,PRIMARY KEY(plan_id,id));
+    CREATE TABLE receipts(sequence INTEGER PRIMARY KEY AUTOINCREMENT,plan_id TEXT NOT NULL REFERENCES plans(id),
+      object_id TEXT,operation TEXT NOT NULL,phase TEXT NOT NULL,revision TEXT,actor_id TEXT,created_at TEXT NOT NULL);
+    CREATE TABLE lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT NOT NULL,pid INTEGER NOT NULL);
+    PRAGMA user_version=${version};
+  `);
+  if (version === 2) db.exec("CREATE TABLE source_bindings(plan_id TEXT PRIMARY KEY REFERENCES plans(id),kind TEXT NOT NULL,version INTEGER NOT NULL,evidence_json TEXT NOT NULL)");
+  return db;
+}
+const publicTarget = () => ({ id: "species-a", scientificName: "Strix fixture", commonName: "Fixture-Art", taxonomy: [], sections: [], media: { sounds: [], gallery: [] } });
+async function fixture(t, { journal = false, journalVersion = 1 } = {}) {
   const root = await fs.mkdtemp(path.join(tmpdir(), "devbackup-")), repoRoot = path.join(root, "repo"), profileRoot = path.join(root, "Geräteprofil mit Umlaut ü");
   await fs.mkdir(profileRoot, { recursive: true });
   await fs.writeFile(path.join(profileRoot, "device.json"), JSON.stringify({ schemaVersion: 1, id: DEVICE, name: "Fixture-PC" }));
@@ -33,20 +50,18 @@ async function fixture(t, { journal = false } = {}) {
     store.saveObjects(binding.id, [{ kind: "page", id: "page-a", revision: "rev-a", data: { title: "Initial" } }]);
     store.edit(binding.id, "page", "page-a", { title: `Offline ${binding.projectId}` });
   }
-  let importer;
   if (journal) {
-    importer = createInitialProjectImport({ filename: path.join(profileRoot, "initial-import.sqlite"), localStorageConfirmed: true,
-      service: { refresh() {}, create() {}, approve() {} }, readCatalog() {}, expectedSha256: "a".repeat(64) });
-    const db = new DatabaseSync(path.join(profileRoot, "initial-import.sqlite"));
-    const target = { title: "Noch nicht importiert" };
+    const db = createJournal(path.join(profileRoot, "initial-import.sqlite"), journalVersion);
+    const target = journalVersion === 1 ? { title: "Noch nicht importiert" } : publicTarget();
     db.prepare("INSERT INTO plans VALUES (?,?,?,?,?,'planned',?,NULL)").run("plan-a", "project-a", "https://fixture.invalid", "a".repeat(64), 1, "2026-10-31T12:00:00Z");
     db.prepare("INSERT INTO items VALUES (?,?,?,?,?,'pending',NULL,NULL,NULL)").run("plan-a", "species-a", "Fixture-Art", JSON.stringify(target), sha(canonicalJson(target)));
+    if (journalVersion === 2) db.prepare("INSERT INTO source_bindings VALUES (?, 'public-catalog', 1, '{}')").run("plan-a");
     db.close();
   }
   const snapshots = [];
   t.after(async () => {
     for (const snapshot of snapshots) await snapshot.dispose();
-    await importer?.close(); store.close(); await session.close();
+    store.close(); await session.close();
     await fs.rm(assertTestTempPath(root), { recursive: true, force: true, maxRetries: 3, retryDelay: 25 });
   });
   const config = { profileRoot, deviceId: DEVICE, resolveProjectIds: async () => ["project-a", "project-b"], files: backupSpecs, tempSession: session };
@@ -189,6 +204,190 @@ test("malformed import payload hashes and unknown SQLite versions are not green"
   await assert.rejects(f.prepare(), /Importauftrag/);
   const cache = new DatabaseSync(f.filename); cache.exec("PRAGMA user_version=99"); cache.close();
   await assert.rejects(f.prepare(), /SQLite-Version/);
+});
+
+async function workingJournalFixture(t) {
+  const f = await fixture(t, { journal: true, journalVersion: 2 });
+  const assetName = "Fixture Art (gebunden)", assetsRoot = path.join(f.root, "working-assets");
+  await fs.mkdir(path.join(assetsRoot, assetName), { recursive: true });
+  await fs.writeFile(path.join(assetsRoot, assetName, "map.jpg"), "Synthetic fixture map bytes");
+  const built = await buildSpeciesWorkingRecords({
+    speciesList: [{ german: "Eigener Anzeigename", genus: "Strix", species: "fixture", unknown: { retained: true } }],
+    speciesData: [{ URLSlug: "species-a", Genus: "Strix", Species: "fixture" }],
+    catalog: { schemaVersion: 1, revision: "fixture", generatedAt: "2026-11-01T00:00:00.000Z", species: [publicTarget()] },
+    assetOverrides: { version: 1, assets: {} }, taxonomyOverrides: { version: 1, species: {} }, assessmentBindings: {},
+    bindings: [{ id: "species-a", assetName, generalSectionId: null, embeddedGeneralText: null }], assetsRoot,
+  });
+  assert.equal(built.complete, true);
+  const evidence = { sources: built.sources, evidence: built.evidence }, target = built.records[0];
+  const filename = path.join(f.profileRoot, "initial-import.sqlite"), db = new DatabaseSync(filename);
+  db.prepare("UPDATE plans SET source_hash=?").run(workingSourceHash(evidence));
+  db.prepare("UPDATE items SET name=?,target_json=?,target_hash=?").run(target.input.german, JSON.stringify(target), sha(canonicalJson(target)));
+  db.prepare("UPDATE source_bindings SET kind='working-records',evidence_json=?").run(JSON.stringify(evidence)); db.close();
+  return { ...f, journalFilename: filename, evidence, target };
+}
+const workingSourceHash = (evidence) => sha(canonicalJson({ kind: "working-records", version: 1, ...evidence }, { maxBytes: 8 * 1024 * 1024, maxNodes: 300000 }));
+function changeJournal(f, sql, ...values) {
+  const db = new DatabaseSync(f.journalFilename || path.join(f.profileRoot, "initial-import.sqlite"));
+  try { db.exec("PRAGMA foreign_keys=OFF;"); if (values.length) db.prepare(sql).run(...values); else db.exec(sql); }
+  finally { db.close(); }
+}
+
+test("exact import journals v1 and v2 public sources remain readable without migration", async (t) => {
+  for (const journalVersion of [1, 2]) {
+    const f = await fixture(t, { journal: true, journalVersion }), filename = path.join(f.profileRoot, "initial-import.sqlite");
+    const before = await fs.readFile(filename), snapshot = await f.prepare(), { options, directory } = await f.restoreCopy(snapshot);
+    assert.equal(snapshot.summary.pending, 3);
+    assert.equal((await validateDeviceBackupCopy(options)).pending, 3);
+    const db = new DatabaseSync(path.join(directory, "initial-import.sqlite"), { readOnly: true });
+    assert.equal(db.prepare("PRAGMA user_version").get().user_version, journalVersion); db.close();
+    assert.deepEqual(await fs.readFile(filename), before);
+  }
+});
+
+test("v2 working import evidence and full targets survive backup and separate restore inspection", async (t) => {
+  const f = await workingJournalFixture(t), before = await fs.readFile(f.journalFilename), snapshot = await f.prepare();
+  const { options, directory } = await f.restoreCopy(snapshot);
+  assert.equal((await validateDeviceBackupCopy(options)).pending, 3);
+  const db = new DatabaseSync(path.join(directory, "initial-import.sqlite"), { readOnly: true });
+  assert.deepEqual(JSON.parse(db.prepare("SELECT target_json FROM items").get().target_json), f.target);
+  assert.deepEqual(JSON.parse(db.prepare("SELECT evidence_json FROM source_bindings").get().evidence_json), f.evidence); db.close();
+  assert.deepEqual(await fs.readFile(f.journalFilename), before);
+});
+
+test("v2 journals keep public import history and working plans separately bound and accept a never-planned journal", async (t) => {
+  const f = await workingJournalFixture(t), db = new DatabaseSync(f.journalFilename), target = publicTarget();
+  db.prepare("INSERT INTO plans VALUES (?,?,?,?,?,'superseded',?,NULL)").run("historical-public", "project-b", "https://fixture.invalid", "a".repeat(64), 1, "2026-10-30T12:00:00Z");
+  db.prepare("INSERT INTO items VALUES (?,?,?,?,?,'pending',NULL,NULL,NULL)").run("historical-public", target.id, target.commonName, JSON.stringify(target), sha(canonicalJson(target)));
+  db.prepare("INSERT INTO source_bindings VALUES (?,'public-catalog',1,'{}')").run("historical-public"); db.close();
+  const snapshot = await f.prepare(), restored = await f.restoreCopy(snapshot);
+  assert.equal(snapshot.summary.pending, 3); assert.equal((await validateDeviceBackupCopy(restored.options)).pending, 3);
+
+  const empty = await fixture(t, { journal: true, journalVersion: 2 });
+  changeJournal(empty, "DELETE FROM items; DELETE FROM source_bindings; DELETE FROM plans;");
+  const emptySnapshot = await empty.prepare(), emptyRestore = await empty.restoreCopy(emptySnapshot);
+  assert.equal(emptySnapshot.summary.pending, 2); assert.equal((await validateDeviceBackupCopy(emptyRestore.options)).pending, 2);
+});
+
+test("v2 import journals reject unknown tables, columns, missing foreign keys and missing plan bindings", async (t) => {
+  for (const sql of [
+    "CREATE TABLE unknown_state(value TEXT)", "CREATE VIEW unknown_view AS SELECT id FROM plans",
+    "ALTER TABLE source_bindings ADD COLUMN unknown TEXT", "ALTER TABLE items ADD COLUMN unknown TEXT",
+    "ALTER TABLE plans ADD COLUMN unknown TEXT", "ALTER TABLE receipts ADD COLUMN unknown TEXT", "ALTER TABLE lease ADD COLUMN unknown TEXT",
+    "DROP TABLE source_bindings", "DELETE FROM source_bindings", "PRAGMA user_version=3",
+    "INSERT INTO source_bindings VALUES (NULL,'public-catalog',1,'{}')",
+    "UPDATE source_bindings SET plan_id='orphan-plan'", "UPDATE items SET plan_id='orphan-plan'",
+    "INSERT INTO receipts(plan_id,operation,phase,created_at) VALUES ('orphan-plan','plan','prepared','2026-11-01')",
+    "ALTER TABLE source_bindings RENAME TO old_bindings; CREATE TABLE source_bindings(plan_id TEXT PRIMARY KEY,kind TEXT NOT NULL,version INTEGER NOT NULL,evidence_json TEXT NOT NULL); INSERT INTO source_bindings SELECT * FROM old_bindings; DROP TABLE old_bindings",
+    "ALTER TABLE source_bindings RENAME TO old_bindings; CREATE TABLE source_bindings(plan_id TEXT PRIMARY KEY REFERENCES plans(id),kind TEXT NOT NULL,version TEXT NOT NULL,evidence_json TEXT NOT NULL); INSERT INTO source_bindings SELECT * FROM old_bindings; DROP TABLE old_bindings",
+  ]) {
+    await t.test(sql.split(";")[0], async (t) => {
+      const f = await fixture(t, { journal: true, journalVersion: 2 }); changeJournal(f, sql);
+      await assert.rejects(f.prepare(), /Import|SQLite|konsistent/);
+    });
+  }
+});
+
+test("v2 import journals reject unknown source kinds, versions, public fields and target bindings", async (t) => {
+  const mutations = [
+    ["UPDATE source_bindings SET kind='future-source'"], ["UPDATE source_bindings SET version=2"],
+    ["UPDATE source_bindings SET evidence_json=?", '{"unknown":true}'],
+    ["UPDATE source_bindings SET evidence_json=?", '[]'],
+    ["UPDATE plans SET source_hash='not-a-hash'"],
+    ["UPDATE items SET id='different-species'"],
+    ["UPDATE items SET target_json=?,target_hash=?", '{"title":"Unknown public payload"}', sha(canonicalJson({ title: "Unknown public payload" }))],
+  ];
+  for (const [sql, ...values] of mutations) {
+    const f = await fixture(t, { journal: true, journalVersion: 2 }); changeJournal(f, sql, ...values);
+    await assert.rejects(f.prepare(), /Import|Quell|Katalog|Artkennung/);
+  }
+});
+
+test("v2 working journals reject inconsistent source, record, identity and file evidence even after outer hashes are rebound", async (t) => {
+  for (const mutation of [
+    (e) => { e.unknown = true; },
+    (e) => { e.sources.unknown = e.sources.catalog; },
+    (e) => { e.sources.speciesList.sha256 = "not-a-hash"; },
+    (e) => { e.evidence[0].id = "different-species"; },
+    (e) => { e.evidence[0].assetName = "Different assets"; },
+    (e) => { e.evidence[0].input.sha256 = "0".repeat(64); },
+    (e) => { e.evidence[0].generated.bytes++; },
+    (e) => { e.evidence[0].record.sha256 = "0".repeat(64); },
+    (e) => { e.evidence[0].files[0].sha256 = "0".repeat(64); },
+    (e) => { e.evidence[0].files[0].bytes++; },
+    (e) => { e.evidence[0].files[0].filename = "other.jpg"; },
+    (e) => { e.evidence[0].files.pop(); },
+    (e) => { e.evidence.push(structuredClone(e.evidence[0])); },
+  ]) {
+    const f = await workingJournalFixture(t), evidence = structuredClone(f.evidence); mutation(evidence);
+    changeJournal(f, "UPDATE source_bindings SET evidence_json=?", JSON.stringify(evidence));
+    changeJournal(f, "UPDATE plans SET source_hash=?", workingSourceHash(evidence));
+    await assert.rejects(f.prepare(), /Import|Quell|Beleg|Arbeits|Art|Datei/);
+  }
+  const hashChanged = await workingJournalFixture(t);
+  changeJournal(hashChanged, "UPDATE plans SET source_hash=?", "0".repeat(64));
+  await assert.rejects(hashChanged.prepare(), /Import|Quell|Beleg|Arbeits/);
+  const targetChanged = await workingJournalFixture(t), target = structuredClone(targetChanged.target);
+  target.input.german = "Ungebundene Änderung";
+  changeJournal(targetChanged, "UPDATE items SET target_json=?,target_hash=?", JSON.stringify(target), sha(canonicalJson(target)));
+  await assert.rejects(targetChanged.prepare(), /Import|Quell|Beleg|Arbeits/);
+});
+
+test("v2 skipped entries retain source evidence while preserving the different existing server hash", async (t) => {
+  for (const kind of ["public-catalog", "working-records"]) {
+    const f = kind === "working-records" ? await workingJournalFixture(t) : await fixture(t, { journal: true, journalVersion: 2 });
+    changeJournal(f, "UPDATE items SET state='skipped',target_hash=?,expected_revision='existing-revision'", "f".repeat(64));
+    const snapshot = await f.prepare(), { options } = await f.restoreCopy(snapshot);
+    assert.equal(snapshot.summary.pending, 2); assert.equal((await validateDeviceBackupCopy(options)).pending, 2);
+  }
+});
+
+test("v2 backup rejects a skipped item relabeled created or approved without durable object receipts", async (t) => {
+  for (const kind of ["public-catalog", "working-records"]) {
+    for (const state of ["created", "approved"]) {
+      const f = kind === "working-records" ? await workingJournalFixture(t) : await fixture(t, { journal: true, journalVersion: 2 });
+      changeJournal(f, "UPDATE items SET state='skipped',expected_revision='existing-revision'");
+      changeJournal(f, "UPDATE items SET state=?,intent_actor='fixture-admin',expected_approval=?", state, state === "approved" ? "existing-revision" : null);
+      await assert.rejects(f.prepare(), (error) => error.code === "import_journal_drift" && error.status === 409);
+    }
+  }
+});
+
+test("v2 backups retain real creation and approval receipt stages while v1 keeps its explicit legacy reader", async (t) => {
+  for (const state of ["create-intent", "created", "approve-intent", "approved"]) {
+    const f = await fixture(t, { journal: true, journalVersion: 2 });
+    const filename = path.join(f.profileRoot, "initial-import.sqlite"), db = new DatabaseSync(filename), revision = "created-revision";
+    const add = db.prepare("INSERT INTO receipts(plan_id,object_id,operation,phase,revision,actor_id,created_at) VALUES ('plan-a','species-a',?,?,?,?, '2026-11-01T12:00:00Z')");
+    db.prepare("UPDATE items SET state=?,intent_actor='fixture-admin',expected_revision=?,expected_approval=?")
+      .run(state, state === "create-intent" ? null : revision, state === "approved" ? revision : null);
+    add.run("create", "intent", null, "fixture-admin");
+    if (state !== "create-intent") add.run("create", "recovered-confirmed", revision, "recovery-admin");
+    if (["approve-intent", "approved"].includes(state)) add.run("approve", "intent", revision, "recovery-admin");
+    if (state === "approved") add.run("approve", "recovered-confirmed", revision, "another-admin");
+    db.close();
+    const snapshot = await f.prepare(), { options } = await f.restoreCopy(snapshot), pending = state === "approved" ? 2 : 3;
+    assert.equal(snapshot.summary.pending, pending); assert.equal((await validateDeviceBackupCopy(options)).pending, pending);
+    if (state === "created") {
+      changeJournal(f, "UPDATE receipts SET object_id='foreign-art'");
+      await assert.rejects(f.prepare(), (error) => error.code === "import_journal_drift");
+    }
+  }
+  const legacy = await fixture(t, { journal: true });
+  changeJournal(legacy, "UPDATE items SET state='created',intent_actor='legacy-actor',expected_revision='legacy-revision'");
+  const snapshot = await legacy.prepare(), { options } = await legacy.restoreCopy(snapshot);
+  assert.equal((await validateDeviceBackupCopy(options)).pending, 3);
+});
+
+test("separate v2 restore inspection rejects a changed inner source hash even with a recomputed archive manifest", async (t) => {
+  const f = await workingJournalFixture(t), snapshot = await f.prepare(), { options, directory } = await f.restoreCopy(snapshot);
+  const filename = path.join(directory, "initial-import.sqlite"), db = new DatabaseSync(filename);
+  db.prepare("UPDATE plans SET source_hash=?").run("0".repeat(64)); db.close();
+  const manifestPath = path.join(directory, "device-backup-manifest.json"), manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+  const record = manifest.files.find((item) => item.id === "import"), bytes = await fs.readFile(filename);
+  record.bytes = bytes.length; record.sha256 = sha(bytes);
+  manifest.stateHash = sha(canonicalJson({ deviceId: manifest.deviceId, projectIds: manifest.projectIds, files: manifest.files }));
+  await fs.writeFile(manifestPath, JSON.stringify(manifest));
+  await assert.rejects(validateDeviceBackupCopy(options), /Import|Quell|Beleg|Arbeits/);
 });
 
 test("a corrupt active cache is preserved and cannot produce a successful full backup", async (t) => {

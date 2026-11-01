@@ -49,7 +49,14 @@ function Test-NasArchiveContents {
       throw "Sicherung hat kein eindeutiges, lesbares Pruefmanifest."
     }
     $reader = [IO.StreamReader]::new($manifestEntries[0].Open())
-    try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json }
+    try {
+      $jsonParameters = @{ InputObject = $reader.ReadToEnd() }
+      # The manifest hash binds the original JSON strings. PowerShell 7's
+      # automatic DateTime conversion otherwise drops fractional trailing zeros.
+      # Windows PowerShell already preserves these strings and has no DateKind.
+      if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $jsonParameters.DateKind = 'String' }
+      $manifest = ConvertFrom-Json @jsonParameters
+    }
     finally { $reader.Dispose() }
     if ($manifest.schemaVersion -ne 2 -or $manifest.backupKind -ne "arten-explorer-nas-restore" -or
         -not $manifest.archiveId -or $manifest.gitCommit -notmatch '^[a-f0-9]{40,64}$' -or
