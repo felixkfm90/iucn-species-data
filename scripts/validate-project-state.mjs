@@ -2,17 +2,19 @@ import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { buildExplorerModel } from "../species-explorer/explorer-model.mjs";
+import { missingSoundPackageErrors, reportedMediaOmissions } from "./validate-media-assets.mjs";
 
 const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 export async function validateProjectState(repoRoot = process.cwd()) {
   const errors = [];
-  const [model, speciesList, speciesData, assessmentIds, overrides] = await Promise.all([
+  const [model, speciesList, speciesData, assessmentIds, overrides, missingReport] = await Promise.all([
     buildExplorerModel(repoRoot),
     readJson(repoRoot, "species_list.json"),
     readJson(repoRoot, "speciesData.json"),
     readJson(repoRoot, "lastSavedAssessmentId.json"),
     readJson(repoRoot, "species-assets-overrides.json"),
+    readJson(repoRoot, "fehlende_elemente_report.json"),
   ]);
 
   if (!Array.isArray(speciesList)) errors.push("species_list.json ist kein Array.");
@@ -24,15 +26,40 @@ export async function validateProjectState(repoRoot = process.cwd()) {
   addDuplicateErrors(speciesData, (entry) => normalized(entry.URLSlug), "URL-Slug", errors);
   addDuplicateErrors(speciesData, (entry) => scientificKey(entry.Genus, entry.Species), "generierter wissenschaftlicher Name", errors);
 
-  if (model.validation.status !== "ok") {
-    errors.push(`Explorer-Validierung meldet ${model.validation.issueCount} Problem(e).`);
-    for (const species of model.species.filter((entry) => entry.inconsistencies.length > 0)) {
-      errors.push(`${species.germanName}: ${species.inconsistencies.join("; ")}`);
+  const validationErrors = [];
+  for (const species of model.species) {
+    const presentFiles = new Set([
+      ["map.jpg", species.assets.map.exists],
+      ["portrait.webp", species.assets.portrait.exists],
+      ["portrait.json", species.assets.portrait.metadataExists],
+      ["sound.mp3", species.assets.sound.exists],
+      ["credits.json", species.assets.credits.exists],
+      ["spectrogram.webp", species.assets.spectrogram.exists],
+    ].filter(([, exists]) => exists).map(([name]) => name));
+    const omissions = reportedMediaOmissions(missingReport, { germanName: species.germanName, safeName: species.safeName });
+    validationErrors.push(...omissions.errors);
+    if (omissions.allowMissingMap && species.assets.map.exists) {
+      validationErrors.push(`${species.germanName}: Report meldet fehlende Karte, aber die Datei ist vorhanden.`);
     }
-    for (const issue of model.validation.report.counterIssues ?? []) errors.push(`Report: ${issue}`);
-    for (const check of model.validation.report.checks ?? []) {
-      if (!check.ok) errors.push(`Report: ${check.label ?? check.key ?? "Listenabweichung"}`);
+    if (omissions.allowMissingPortrait && species.assets.portrait.exists) {
+      validationErrors.push(`${species.germanName}: Report meldet fehlendes Artportrait, aber die Datei ist vorhanden.`);
     }
+    if (omissions.allowMissingSound) validationErrors.push(...missingSoundPackageErrors(species.germanName, presentFiles));
+    // Keep the Explorer's work queue unchanged. Only precisely reported absent
+    // images are publishable; data, metadata, hash and report errors still block.
+    const blockingIssues = species.inconsistencies.filter(issue => !(
+      (issue === "Karte fehlt" && !species.assets.map.exists && omissions.allowMissingMap)
+      || (issue === "Artporträt fehlt" && !species.assets.portrait.exists
+        && !species.assets.portrait.metadataExists && omissions.allowMissingPortrait)
+    ));
+    if (blockingIssues.length > 0) validationErrors.push(`${species.germanName}: ${blockingIssues.join("; ")}`);
+  }
+  for (const issue of model.validation.report.counterIssues ?? []) validationErrors.push(`Report: ${issue}`);
+  for (const check of model.validation.report.checks ?? []) {
+    if (!check.ok) validationErrors.push(`Report: ${check.label ?? check.key ?? "Listenabweichung"}`);
+  }
+  if (validationErrors.length > 0) {
+    errors.push(`Projektvalidierung meldet ${validationErrors.length} veröffentlichungsrelevante Problem(e).`, ...validationErrors);
   }
 
   const knownSafeNames = new Set(model.species.map((entry) => entry.safeName));
@@ -43,7 +70,8 @@ export async function validateProjectState(repoRoot = process.cwd()) {
     if (!knownSafeNames.has(safeName)) errors.push(`Verwaiste Assessment-Zuordnung: ${safeName}`);
   }
   for (const species of model.species) {
-    if (species.isManualMap) continue;
+    // This tracker identifies the cached automatic map, not the species record.
+    if (species.isManualMap || !species.assets.map.exists) continue;
     const expectedAssessment = Number(species.iucn.assessmentId);
     const trackedAssessment = Number(assessmentIds?.[species.safeName]);
     if (!Number.isFinite(expectedAssessment) || expectedAssessment <= 0) continue;

@@ -42,6 +42,13 @@ Widersprüche zwischen Report und tatsächlichen Dateien stoppen die Übertragun
 auch die Abwesenheit ausgelassener Dateien bis zum Abschluss. Ein später hinzugekommenes Medium
 erfordert eine neue Prüfung. Fehlende IUCN-Fachdaten gelten dadurch nicht als vervollständigt.
 
+Die nachgelagerte Projektprüfung `audit:project` verwendet dieselben reportgebundenen Regeln für
+fehlende Medien. Ein zulässig fehlendes Medium bleibt im Explorer als Pflegehinweis sichtbar und
+verhindert allein keine Veröffentlichung. Für eine nicht gespeicherte Karte wird keine erfolgreiche
+Downloadquittung in `lastSavedAssessmentId.json` verlangt. Vorhandene automatische Karten benötigen
+weiterhin die passende Assessment-Zuordnung; echte Art-/Datenabweichungen und veraltete Reports
+bleiben Fehler.
+
 Der Pipeline-Kartenadapter `scripts/iucn-map-adapter.mjs` verwendet dieselbe tatsächliche JPEG-Prüfung
 vor Dateiersatz und Bewertungsquittung. Direkter Abruf und Cacheweg prüfen Startadresse und jedes manuell
 verfolgte Weiterleitungsziel auf öffentliche HTTP-/HTTPS-Adressen; API-Zugangsdaten bleiben ausschließlich

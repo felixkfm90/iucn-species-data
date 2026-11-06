@@ -21,6 +21,36 @@ export const MEDIA_LIMITS = Object.freeze({
 
 export { inspectJpeg, inspectPng, inspectWebp } from "./image-header.mjs";
 
+// Shared publication policy only: callers still validate the bytes of present
+// media. A reported omission never makes a partial package or stale report safe.
+export function reportedMediaOmissions(report, { germanName, safeName }) {
+  const errors = [];
+  const assetReports = (Array.isArray(report?.missing?.speciesAssets) ? report.missing.speciesAssets : [])
+    .filter(entry => entry?.german === germanName && entry.safeName === safeName);
+  if (assetReports.length > 1) errors.push(`${germanName}: fehlende Artdateien sind im Report mehrfach aufgeführt.`);
+  const reportedParts = new Set(assetReports.length === 1 && Array.isArray(assetReports[0].missing) ? assetReports[0].missing : []);
+  const mapReported = (report?.missing?.maps ?? []).includes(germanName);
+  const allowMissingMap = mapReported && reportedParts.has("map.jpg");
+  const allowMissingPortrait = reportedParts.has("portrait.webp");
+  const allowMissingSound = (report?.missing?.soundMp3 ?? []).includes(germanName);
+  if (!allowMissingMap && (mapReported || reportedParts.has("map.jpg"))) {
+    errors.push(`${germanName}: Karten- und Artdateireport stimmen nicht überein. Bitte den Report erneut erstellen.`);
+  }
+  return { allowMissingMap, allowMissingPortrait, allowMissingSound, errors };
+}
+
+export function missingSoundPackageErrors(germanName, presentFiles) {
+  const soundFiles = ["sound.mp3", "credits.json", "spectrogram.webp"];
+  const unexpectedlyPresent = soundFiles.filter(name => presentFiles.has(name));
+  if (unexpectedlyPresent.length > 0 && unexpectedlyPresent.length < soundFiles.length) {
+    return [`${germanName}: bewusst fehlendes Soundpaket ist nur teilweise vorhanden (${unexpectedlyPresent.join(", ")}).`];
+  }
+  if (unexpectedlyPresent.length === soundFiles.length) {
+    return [`${germanName}: Report meldet fehlenden Sound, aber das vollständige Soundpaket ist vorhanden.`];
+  }
+  return [];
+}
+
 export async function validateRepositoryMedia(repoRoot = process.cwd(), { decodeImage = validateImageDecode } = {}) {
   const checkedInputs = new Map();
   const remember = (filePath, buffer) => checkedInputs.set(filePath, buffer === null ? null : createHash("sha256").update(buffer).digest("hex"));
@@ -30,7 +60,6 @@ export async function validateRepositoryMedia(repoRoot = process.cwd(), { decode
   if (!Array.isArray(speciesList)) throw new Error("species_list.json muss ein Array sein.");
 
   const allowedMissingSounds = new Set(report?.missing?.soundMp3 ?? []);
-  const reportedMissingMaps = new Set(report?.missing?.maps ?? []);
   let allowedMissingMaps = 0, allowedMissingPortraits = 0;
   const expectedSafeNames = new Set();
   const results = [];
@@ -41,19 +70,13 @@ export async function validateRepositoryMedia(repoRoot = process.cwd(), { decode
     const safeName = sanitizeAssetName(germanName);
     expectedSafeNames.add(safeName);
     const assetDir = path.join(repoRoot, "species-assets", safeName);
-    const assetReports = (Array.isArray(report?.missing?.speciesAssets) ? report.missing.speciesAssets : [])
-      .filter(entry => entry?.german === germanName && entry.safeName === safeName);
-    if (assetReports.length > 1) errors.push(`${germanName}: fehlende Artdateien sind im Report mehrfach aufgeführt.`);
-    const reportedParts = new Set(assetReports.length === 1 && Array.isArray(assetReports[0].missing) ? assetReports[0].missing : []);
-    const allowMissingMap = reportedMissingMaps.has(germanName) && reportedParts.has("map.jpg");
-    const allowMissingPortrait = reportedParts.has("portrait.webp");
+    const omissions = reportedMediaOmissions(report, { germanName, safeName });
+    const { allowMissingMap, allowMissingPortrait } = omissions;
+    errors.push(...omissions.errors);
     if (allowMissingMap) allowedMissingMaps++;
     if (allowMissingPortrait) allowedMissingPortraits++;
     if (fs.existsSync(assetDir) || !allowMissingMap || !allowMissingPortrait || !allowedMissingSounds.has(germanName)) {
       validateDirectorySize(assetDir, germanName, MEDIA_LIMITS.speciesPackage, errors);
-    }
-    if (!allowMissingMap && (reportedMissingMaps.has(germanName) || reportedParts.has("map.jpg"))) {
-      errors.push(`${germanName}: Karten- und Artdateireport stimmen nicht überein. Bitte den Report erneut erstellen.`);
     }
     await validateRequiredImage(path.join(assetDir, "map.jpg"), "Karte", inspectJpeg, MEDIA_LIMITS.map, results, errors, repoRoot, remember, decodeImage, allowMissingMap);
     await validateRequiredImage(
@@ -78,12 +101,7 @@ export async function validateRepositoryMedia(repoRoot = process.cwd(), { decode
     if (allowedMissingSounds.has(germanName)) {
       const unexpectedlyPresent = soundFiles.filter((name) => fs.existsSync(path.join(assetDir, name)));
       if (unexpectedlyPresent.length === 0) for (const name of soundFiles) remember(path.join(assetDir, name), null);
-      if (unexpectedlyPresent.length > 0 && unexpectedlyPresent.length < soundFiles.length) {
-        errors.push(`${germanName}: bewusst fehlendes Soundpaket ist nur teilweise vorhanden (${unexpectedlyPresent.join(", ")}).`);
-      }
-      if (unexpectedlyPresent.length === soundFiles.length) {
-        errors.push(`${germanName}: Report meldet fehlenden Sound, aber das vollständige Soundpaket ist vorhanden.`);
-      }
+      errors.push(...missingSoundPackageErrors(germanName, new Set(unexpectedlyPresent)));
       continue;
     }
 
