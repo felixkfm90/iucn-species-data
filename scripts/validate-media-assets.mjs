@@ -23,13 +23,15 @@ export { inspectJpeg, inspectPng, inspectWebp } from "./image-header.mjs";
 
 export async function validateRepositoryMedia(repoRoot = process.cwd(), { decodeImage = validateImageDecode } = {}) {
   const checkedInputs = new Map();
-  const remember = (filePath, buffer) => checkedInputs.set(filePath, createHash("sha256").update(buffer).digest("hex"));
+  const remember = (filePath, buffer) => checkedInputs.set(filePath, buffer === null ? null : createHash("sha256").update(buffer).digest("hex"));
   const readBoundJson = (filePath) => { const buffer = fs.readFileSync(filePath); remember(filePath, buffer); return JSON.parse(buffer); };
   const speciesList = readBoundJson(path.join(repoRoot, "species_list.json"));
   const report = readBoundJson(path.join(repoRoot, "fehlende_elemente_report.json"));
   if (!Array.isArray(speciesList)) throw new Error("species_list.json muss ein Array sein.");
 
   const allowedMissingSounds = new Set(report?.missing?.soundMp3 ?? []);
+  const reportedMissingMaps = new Set(report?.missing?.maps ?? []);
+  let allowedMissingMaps = 0, allowedMissingPortraits = 0;
   const expectedSafeNames = new Set();
   const results = [];
   const errors = [];
@@ -39,8 +41,21 @@ export async function validateRepositoryMedia(repoRoot = process.cwd(), { decode
     const safeName = sanitizeAssetName(germanName);
     expectedSafeNames.add(safeName);
     const assetDir = path.join(repoRoot, "species-assets", safeName);
-    validateDirectorySize(assetDir, germanName, MEDIA_LIMITS.speciesPackage, errors);
-    await validateRequiredImage(path.join(assetDir, "map.jpg"), "Karte", inspectJpeg, MEDIA_LIMITS.map, results, errors, repoRoot, remember, decodeImage);
+    const assetReports = (Array.isArray(report?.missing?.speciesAssets) ? report.missing.speciesAssets : [])
+      .filter(entry => entry?.german === germanName && entry.safeName === safeName);
+    if (assetReports.length > 1) errors.push(`${germanName}: fehlende Artdateien sind im Report mehrfach aufgeführt.`);
+    const reportedParts = new Set(assetReports.length === 1 && Array.isArray(assetReports[0].missing) ? assetReports[0].missing : []);
+    const allowMissingMap = reportedMissingMaps.has(germanName) && reportedParts.has("map.jpg");
+    const allowMissingPortrait = reportedParts.has("portrait.webp");
+    if (allowMissingMap) allowedMissingMaps++;
+    if (allowMissingPortrait) allowedMissingPortraits++;
+    if (fs.existsSync(assetDir) || !allowMissingMap || !allowMissingPortrait || !allowedMissingSounds.has(germanName)) {
+      validateDirectorySize(assetDir, germanName, MEDIA_LIMITS.speciesPackage, errors);
+    }
+    if (!allowMissingMap && (reportedMissingMaps.has(germanName) || reportedParts.has("map.jpg"))) {
+      errors.push(`${germanName}: Karten- und Artdateireport stimmen nicht überein. Bitte den Report erneut erstellen.`);
+    }
+    await validateRequiredImage(path.join(assetDir, "map.jpg"), "Karte", inspectJpeg, MEDIA_LIMITS.map, results, errors, repoRoot, remember, decodeImage, allowMissingMap);
     await validateRequiredImage(
       path.join(assetDir, "portrait.webp"),
       "Artportrait",
@@ -51,11 +66,18 @@ export async function validateRepositoryMedia(repoRoot = process.cwd(), { decode
       repoRoot,
       remember,
       decodeImage,
+      allowMissingPortrait,
     );
+    const portraitMetadataPath = path.join(assetDir, "portrait.json");
+    if (fs.existsSync(portraitMetadataPath)) {
+      if (!fs.existsSync(path.join(assetDir, "portrait.webp"))) errors.push(`${germanName}: Artportrait fehlt, aber seine Metadaten sind vorhanden.`);
+      validateRequiredJson(portraitMetadataPath, "Artportrait-Metadaten", MEDIA_LIMITS.credits, results, errors, remember);
+    } else if (allowMissingPortrait) remember(portraitMetadataPath, null);
 
     const soundFiles = ["sound.mp3", "credits.json", "spectrogram.webp"];
     if (allowedMissingSounds.has(germanName)) {
       const unexpectedlyPresent = soundFiles.filter((name) => fs.existsSync(path.join(assetDir, name)));
+      if (unexpectedlyPresent.length === 0) for (const name of soundFiles) remember(path.join(assetDir, name), null);
       if (unexpectedlyPresent.length > 0 && unexpectedlyPresent.length < soundFiles.length) {
         errors.push(`${germanName}: bewusst fehlendes Soundpaket ist nur teilweise vorhanden (${unexpectedlyPresent.join(", ")}).`);
       }
@@ -100,6 +122,10 @@ export async function validateRepositoryMedia(repoRoot = process.cwd(), { decode
   // public inputs rather than authorizing files changed during that wait.
   for (const [filePath, expectedHash] of checkedInputs) {
     try {
+      if (expectedHash === null) {
+        if (fs.existsSync(filePath)) errors.push(`${relative(filePath)}: Datei ist während der Medienprüfung hinzugekommen. Bitte erneut prüfen.`);
+        continue;
+      }
       if (createHash("sha256").update(fs.readFileSync(filePath)).digest("hex") !== expectedHash) {
         errors.push(`${relative(filePath)}: Datei wurde während der Medienprüfung geändert. Bitte erneut prüfen.`);
       }
@@ -113,6 +139,8 @@ export async function validateRepositoryMedia(repoRoot = process.cwd(), { decode
       checkedMedia: results.length,
       errors: errors.length,
       allowedMissingSounds: allowedMissingSounds.size,
+      allowedMissingMaps,
+      allowedMissingPortraits,
     },
     limitsBytes: MEDIA_LIMITS,
     errors,
@@ -120,11 +148,13 @@ export async function validateRepositoryMedia(repoRoot = process.cwd(), { decode
   };
 }
 
-async function validateRequiredImage(filePath, label, inspector, maxBytes, results, errors, repoRoot, remember, decodeImage) {
+async function validateRequiredImage(filePath, label, inspector, maxBytes, results, errors, repoRoot, remember, decodeImage, allowMissing = false) {
   if (!fs.existsSync(filePath)) {
+    if (allowMissing) { remember(filePath, null); return; }
     errors.push(`${relative(filePath)}: ${label} fehlt.`);
     return;
   }
+  if (allowMissing) errors.push(`${relative(filePath)}: Report meldet fehlendes ${label}, aber die Datei ist vorhanden.`);
   if (!validateFileSize(filePath, label, maxBytes, errors)) return;
   const buffer = fs.readFileSync(filePath);
   remember(filePath, buffer);

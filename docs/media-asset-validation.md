@@ -1,6 +1,6 @@
 # Medienprüfung und Pages-Größenbudget
 
-Stand: 2026-10-09
+Stand: 2026-11-06
 
 ## Zweck
 
@@ -25,9 +25,22 @@ beweist keine darstellbare Karte. Inhaltshashgebundene Erfolge werden nur in ein
 gehalten; geänderte Bytes werden erneut geprüft. Der Kartenimport nutzt dieselbe Prüfung vor Übernahme;
 Fehler erhalten das vorherige Medium und Register. Die Veröffentlichung bindet ihre Eingänge erneut nach
 der asynchronen Prüfung. Linux-CI installiert FFmpeg ausdrücklich, statt fehlende Dekodierbarkeit zu überspringen.
-Verwaiste Art-Assetordner werden abgewiesen. Ein laut `fehlende_elemente_report.json` bewusst fehlendes Soundpaket
-wie beim Grünen Leguan ist erlaubt; ein nur teilweise vorhandenes Soundpaket oder ein Widerspruch zum Report ist
-hingegen ein Fehler.
+Verwaiste Art-Assetordner werden abgewiesen. Der fehlende Medienbestand in
+`fehlende_elemente_report.json` kann folgende Auslassungen dokumentieren:
+
+- Eine fehlende Karte muss sowohl in `missing.maps` als auch im zur Art passenden
+  `missing.speciesAssets`-Eintrag mit deutschem Namen, Assetnamen und `map.jpg` aufgeführt sein.
+- Ein fehlendes Artportrait muss im passenden `missing.speciesAssets`-Eintrag mit `portrait.webp`
+  aufgeführt sein. Vorhandene Portraitmetadaten ohne zugehöriges Portrait werden abgewiesen.
+- Ein vollständig fehlendes Soundpaket wie beim Grünen Leguan ist über `missing.soundMp3` erlaubt.
+  Aufnahme, Credits und Spektrogramm dürfen dabei nicht nur teilweise zurückgeblieben sein.
+
+Der Report beschreibt den fehlenden Bestand und enthält keinen eigenständigen Nachweis einer
+Überspringen-Entscheidung. Der fehlende Bestand bleibt im Explorer sichtbar. Bereits vorhandene
+Dateien werden weiterhin vollständig geprüft. Beschädigte Bilder, unvollständige Pakete und
+Widersprüche zwischen Report und tatsächlichen Dateien stoppen die Übertragung. Die Prüfung bindet
+auch die Abwesenheit ausgelassener Dateien bis zum Abschluss. Ein später hinzugekommenes Medium
+erfordert eine neue Prüfung. Fehlende IUCN-Fachdaten gelten dadurch nicht als vervollständigt.
 
 Der Pipeline-Kartenadapter `scripts/iucn-map-adapter.mjs` verwendet dieselbe tatsächliche JPEG-Prüfung
 vor Dateiersatz und Bewertungsquittung. Direkter Abruf und Cacheweg prüfen Startadresse und jedes manuell

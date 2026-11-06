@@ -468,6 +468,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
         || !entry.assets.sound.exists
         || !entry.assets.credits.exists
         || !entry.assets.spectrogram.exists
+        || !entry.assets.portrait.exists
       ))
       .map((entry) => entry.germanName),
     assessmentId: generatedList
