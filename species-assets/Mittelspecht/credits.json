@@ -1,0 +1,13 @@
+{
+  "scientific_name": "Dendrocoptes medius",
+  "german_name": "Mittelspecht",
+  "recordist": "Sonothèque ADVL",
+  "country": "France",
+  "location": "Ducey, Manche, Normandie",
+  "quality": "A",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "xeno-canto.org",
+  "url": "https://xeno-canto.org/707128",
+  "rejectionKey": "xeno-canto:707128",
+  "notes": "Stage 1 (openOnly=true, q=A, len25-35=false) | query=\"gen:Dendrocoptes sp:medius q:A\" | page=2"
+}

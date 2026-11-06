@@ -565,5 +565,14 @@
     "size": "ca. 9 cm",
     "weight": "ca. 1-7 g",
     "life_expectancy": "ca. 2-3 Jahre"
+  },
+  {
+    "german": "Mittelspecht",
+    "english": "Middle Spotted Woodpecker",
+    "genus": "Dendrocoptes",
+    "species": "medius",
+    "size": "ca. 20-22 cm",
+    "weight": "ca. 50-85 g",
+    "life_expectancy": "ca. 8 Jahre"
   }
 ]

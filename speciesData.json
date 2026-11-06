@@ -1510,5 +1510,39 @@
     "Species": "ignicapilla",
     "Letztes IUCN Update": "2025",
     "Daten abgerufen": "2026-10-19"
+  },
+  {
+    "URLSlug": "dendrocoptesmedius",
+    "Wissenschaftlicher Name": "Dendrocoptes medius",
+    "Deutscher Name": "Mittelspecht",
+    "Englischer Name": "Middle Spotted Woodpecker",
+    "Gewicht": "ca. 50-85 g",
+    "Größe": "ca. 20-22 cm",
+    "Lebenserwartung": "ca. 8 Jahre",
+    "Assessment ID": 132055069,
+    "Status": "LC",
+    "Trend": "Zunehmend",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "600.000-1.399.999",
+    "Generationsdauer": "5,2 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Subphylum": "Vertebrata",
+    "Class": "Aves",
+    "Order": "Piciformes",
+    "Family": "Picidae",
+    "Genus": "Dendrocoptes",
+    "Species": "medius",
+    "Taxon ID": "22681114",
+    "IUCN-Zuordnung": {
+      "scientificName": "Leiopicus medius",
+      "queriedName": "Leiopicus medius",
+      "matchedBy": "master-synonym",
+      "taxonId": "22681114",
+      "masterTaxonId": "mtx_c275816f1335fb1add32740018e4048d",
+      "masterVersion": "master-20261024014609415"
+    },
+    "Letztes IUCN Update": "2018",
+    "Daten abgerufen": "2026-11-06"
   }
 ]

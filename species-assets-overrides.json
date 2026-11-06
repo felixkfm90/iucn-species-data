@@ -1743,6 +1743,40 @@
         "reason": "Automatisch durch die Pipeline gepflegt.",
         "updatedAt": "2026-10-19T15:06:35.871Z"
       }
+    },
+    "Mittelspecht": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-11-06T18:10:12.164Z",
+        "approvedAt": "2026-11-06T18:10:15.077Z",
+        "sha256": "cf43ae39b3dc57c70b8a374f46e2110921dff02fce82902ef897fdcc2fd34633",
+        "metadataSha256": "28f8e8a704d320cfdf144c15a8d4de3098b3c5eee6f9b0f37ca38666a209aa7e"
+      },
+      "sound": {
+        "rejectedSources": [
+          {
+            "key": "xeno-canto:918633",
+            "source": "xeno-canto.org",
+            "url": "https://xeno-canto.org/918633",
+            "recordist": "Sonothèque ADVL",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "rejectedAt": "2026-11-06T18:10:32.804Z"
+          }
+        ],
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-11-06T18:10:44.074Z"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "3100e213fb442fcd2280df8342f73fb27ca8a597a9996be2834d5c53a0606ec7",
+        "spectrogramSha256": "4da038d3a3e1d1056c3e913e18561adb15dfa692deee33cf7334b7fc3c9077b4",
+        "generatedAt": "2026-11-06T18:10:35.200Z",
+        "verifiedAt": "2026-11-06T18:10:35.206Z"
+      }
     }
   },
   "spectrogramGenerator": {
