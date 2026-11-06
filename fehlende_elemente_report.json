@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-11-06T18:49:53.838Z",
+  "generatedAt": "2026-11-06T18:53:43.767Z",
   "counts": {
     "totalSpecies": 64,
     "missingSoundMp3": 3,
     "missingSoundCredits": 0,
-    "missingMap": 1,
+    "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 4,
+    "missingSpeciesAssets": 3,
     "ncSoundLicensesAll": 11
   },
   "missing": {
@@ -19,9 +19,7 @@
       "Goldbaumsteiger"
     ],
     "soundCredits": [],
-    "maps": [
-      "Mittelspecht"
-    ],
+    "maps": [],
     "speciesAssets": [
       {
         "german": "Grüner Leguan",
@@ -48,13 +46,6 @@
           "sound.mp3",
           "credits.json",
           "spectrogram.webp"
-        ]
-      },
-      {
-        "german": "Mittelspecht",
-        "safeName": "Mittelspecht",
-        "missing": [
-          "map.jpg"
         ]
       }
     ],

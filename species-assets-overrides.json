@@ -1776,6 +1776,23 @@
         "spectrogramSha256": "4da038d3a3e1d1056c3e913e18561adb15dfa692deee33cf7334b7fc3c9077b4",
         "generatedAt": "2026-11-06T18:10:35.200Z",
         "verifiedAt": "2026-11-06T18:10:35.206Z"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "careMode": "manual",
+        "provenance": {
+          "provider": "unspecified",
+          "acquisition": "file",
+          "assurance": "unverified"
+        },
+        "reason": "Karte als lokale Datei importiert.",
+        "source": "https://www.iucnredlist.org/species/22681114/132055069/distribution_map",
+        "germanName": "Mittelspecht",
+        "originalFileName": "distribution_map_T22681114A132055069.png",
+        "importedAt": "2026-11-06T18:53:43.686Z",
+        "updatedAt": "2026-11-06T18:53:43.686Z",
+        "sha256": "de67c18f584d327d9d402cc12370c9bc3bb9c6c9ce9e560761a4e4aa6ba61ad6"
       }
     }
   },
