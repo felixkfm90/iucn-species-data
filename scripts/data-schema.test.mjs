@@ -78,6 +78,16 @@ test("Optionale Kartenherkunft trennt deklarierte Browserquelle, Pflege und bool
   } };
   const validate = (value) => validateAssetOverridesSchema({ version: 1, assets: { Amsel: { map: value } } });
   assert.deepEqual(validate(map), []);
+  const browser = { ...map, provenance: { ...map.provenance, taxonId: "22681114",
+    canonicalUrl: "https://www.iucnredlist.org/species/22681114/1/distribution_map" } };
+  assert.deepEqual(validate(browser), []);
+  assert.ok(validate({ ...browser, provenance: { ...browser.provenance, taxonId: "999" } }).length);
+  assert.ok(validate({ ...browser, provenance: { ...browser.provenance, assessmentId: "2" } }).length);
+  for (const id of ["0", "", "bad"]) {
+    const changed = { ...browser, provenance: { ...browser.provenance, assessmentId: id,
+      canonicalUrl: `https://www.iucnredlist.org/species/22681114/${id}/distribution_map` } };
+    assert.ok(validate(changed).length, `ungültige Bewertungskennung: ${id}`);
+  }
   assert.deepEqual(validate({ manual: true }), [], "bestehende Schutzmarkierung unverändert zulässig");
   assert.deepEqual(validate({ manual: false, protectFromPipeline: true }), []);
   for (const changed of [{ protectFromPipeline: "ja" }, { careMode: "automatic" },

@@ -90,6 +90,31 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   );
 });
 
+test("IUCN-Kartenkennung stammt aus abgerufenen Daten und ändert die führende Artidentität nicht", async (context) => {
+  const repoRoot = await createEditableFixture();
+  context.after(() => rm(repoRoot, { recursive: true, force: true }));
+  const file = join(repoRoot, "speciesData.json");
+  const rows = JSON.parse(await readFile(file, "utf8"));
+  const before = (await buildExplorerModel(repoRoot)).species[0];
+  for (const [taxonId, binding, expected] of [
+    ["22727600", { taxonId: "999" }, "22727600"],
+    [undefined, { taxonId: "22727600" }, "22727600"],
+    [undefined, undefined, "Unbekannt"],
+  ]) {
+    delete rows[0]["Taxon ID"];
+    delete rows[0]["IUCN-Zuordnung"];
+    if (taxonId !== undefined) rows[0]["Taxon ID"] = taxonId;
+    if (binding !== undefined) rows[0]["IUCN-Zuordnung"] = binding;
+    await writeFile(file, JSON.stringify(rows));
+    const species = (await buildExplorerModel(repoRoot)).species[0];
+    assert.equal(species.iucn.taxonId, expected);
+    assert.equal(species.iucn.assessmentId, before.iucn.assessmentId);
+    assert.equal(species.id, before.id);
+    assert.equal(species.scientificName, before.scientificName);
+    assert.equal(species.germanName, before.germanName);
+  }
+});
+
 test("Bekannt fehlender Sound ist Pflegehinweis statt Assetproblem", async (context) => {
   const repoRoot = await createEditableFixture();
   context.after(() => rm(repoRoot, { recursive: true, force: true }));

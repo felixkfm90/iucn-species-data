@@ -108,9 +108,13 @@ export function validateAssetOverridesSchema(value) {
             if (!["unverified", "user-declared", "program-retrieved"].includes(provenance.assurance)) issues.push(`${label}.provenance.assurance ist ungültig.`);
             if (provenance.acquisition === "browser-file") {
               const id = provenance.assessmentId;
+              const taxonId = provenance.taxonId;
+              const validUrl = provenance.canonicalUrl === `https://www.iucnredlist.org/api/v4/assessments/${id}/distribution_map/jpg`
+                || typeof taxonId === "string" && /^[1-9]\d*$/.test(taxonId)
+                  && provenance.canonicalUrl === `https://www.iucnredlist.org/species/${taxonId}/${id}/distribution_map`;
               if (asset.careMode !== "provider" || provenance.provider !== "iucn"
-                || provenance.assurance !== "user-declared" || typeof id !== "string" || !/^\d+$/.test(id)
-                || provenance.canonicalUrl !== `https://www.iucnredlist.org/api/v4/assessments/${id}/distribution_map/jpg`) {
+                || provenance.assurance !== "user-declared" || typeof id !== "string" || !/^[1-9]\d*$/.test(id)
+                || !validUrl) {
                 issues.push(`${label}.provenance muss die erklärte IUCN-Browserherkunft und passende kanonische Bewertung enthalten.`);
               }
             }

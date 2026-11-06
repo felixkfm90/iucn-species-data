@@ -23,6 +23,19 @@ test("Browserherkunft ist eine explizite Nutzerangabe, kein technischer Bildnach
   assert.equal(mapCareState(map).ownCare, false);
 });
 
+test("Browserseitenformat bindet sowohl Artkennung als auch Bewertung und erhält Alteinträge", () => {
+  const current = { iucn: { taxonId: "22720330", assessmentId: "132000123" } };
+  const source = "https://www.iucnredlist.org/species/22720330/132000123/distribution_map";
+  const care = createMapImportCare({ ...payload, source }, current);
+  assert.equal(care.provenance.canonicalUrl, source);
+  assert.equal(care.provenance.taxonId, "22720330");
+  assert.equal(createMapImportCare(payload, species).provenance.canonicalUrl, payload.source);
+  for (const value of [source.replace("22720330", "999"), source.replace("132000123", "999"), `${source}?extra=1`]) {
+    assert.throws(() => createMapImportCare({ ...payload, source: value }, current));
+  }
+  assert.throws(() => createMapImportCare({ ...payload, source, originalName: "T999A132000123.jpg" }, current));
+});
+
 test("Altdaten und fehlende Pflegewahl bleiben geschützt und werden nicht umklassifiziert", () => {
   const care = createMapImportCare({ ...payload, careMode: undefined }, species);
   assert.equal(care.careMode, "manual");

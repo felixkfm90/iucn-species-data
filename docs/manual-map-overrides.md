@@ -1,6 +1,6 @@
 # Manual Map Overrides
 
-Stand: 2026-10-19
+Stand: 2026-11-06
 
 Ziel: Karten dokumentieren, die nicht rein automatisch aus der IUCN-Pipeline stammen oder nachtraeglich manuell
 gepflegt/ersetzt wurden. Diese Liste ist Teil des monatlichen Audits, damit manuell gepflegte Karten nicht durch
@@ -24,6 +24,12 @@ bleiben mit `protectFromPipeline: true` geschützt. Altes `manual: true` schütz
 `protectFromPipeline: false` nicht aufgehoben. Kopf/Projektstatus zeigen Schutz, Browserimporte und eigene
 Pflege/Altmarkierungen getrennt. Der automatische IUCN-Download wurde damit nicht repariert; kein neuer
 erfolgreicher maschineller Abruf belegt.
+
+Für die erklärte IUCN-Browserherkunft ist zusätzlich das Browserformat
+`https://www.iucnredlist.org/species/<Taxon-ID>/<Assessment-ID>/distribution_map`
+zulässig. Beide Kennungen stammen aus den abgerufenen IUCN-Daten derselben Art. Beim unveränderten Browserimport
+werden Quellenadresse und ein erkennbarer IUCN-Dateiname gegen diese Kennungen geprüft. Bereits gespeicherte
+API-Quellenadressen bleiben als historische Herkunft gültig und werden nicht umgeschrieben.
 
 ## Liste
 

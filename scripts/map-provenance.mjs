@@ -39,7 +39,10 @@ export function createMapImportCare(payload, species) {
   const assessmentId = String(species?.iucn?.assessmentId ?? "").trim();
   const source = String(payload?.source ?? "").trim();
   const canonicalUrl = `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`;
-  if (!/^\d+$/.test(assessmentId) || source !== canonicalUrl) {
+  const taxonId = String(species?.iucn?.taxonId ?? "").trim();
+  const browserUrl = /^[1-9]\d*$/.test(taxonId)
+    ? `https://www.iucnredlist.org/species/${taxonId}/${assessmentId}/distribution_map` : "";
+  if (!/^[1-9]\d*$/.test(assessmentId) || source !== canonicalUrl && (!browserUrl || source !== browserUrl)) {
     throw new Error("Für die IUCN-Browserangabe ist der unveränderte IUCN-Kartenlink dieser Bewertung erforderlich.");
   }
   const fileAssessment = String(payload?.originalName ?? "")
@@ -47,8 +50,13 @@ export function createMapImportCare(payload, species) {
   if (fileAssessment && fileAssessment !== assessmentId) {
     throw new Error("Die IUCN-Datei gehört zu einer anderen Bewertung.");
   }
+  const fileTaxon = String(payload?.originalName ?? "").match(/^T(\d+)A\d+(?:\s*\(\d+\))?\.(?:jpe?g|png)$/i)?.[1];
+  if (fileTaxon && /^[1-9]\d*$/.test(taxonId) && fileTaxon !== taxonId) {
+    throw new Error("Die IUCN-Datei gehört zu einer anderen Art.");
+  }
   return { importMode, careMode: "provider", provenance: {
     provider: "iucn", acquisition: "browser-file", assurance: "user-declared",
-    assessmentId, canonicalUrl,
+    assessmentId, canonicalUrl: source,
+    ...(source === browserUrl ? { taxonId } : {}),
   } };
 }

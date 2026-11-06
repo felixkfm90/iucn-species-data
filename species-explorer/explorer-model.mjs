@@ -355,6 +355,7 @@ export async function buildExplorerModel(repoRoot = REPO_ROOT) {
       },
       iucn: {
         assessmentId: valueOrUnknown(generated?.["Assessment ID"]),
+        taxonId: valueOrUnknown(generated?.["Taxon ID"] ?? generated?.["IUCN-Zuordnung"]?.taxonId),
         status: valueOrUnknown(generated?.Status),
         category: valueOrUnknown(generated?.Kategorie),
         trend: valueOrUnknown(generated?.Trend),
