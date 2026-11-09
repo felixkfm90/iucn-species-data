@@ -1,6 +1,6 @@
 # CI-Qualitätsgate vor GitHub Pages
 
-Stand: 2026-10-27
+Stand: 2026-11-09
 
 ## Ziel
 
@@ -23,11 +23,18 @@ höchstens **25 Minuten**, das eigentliche `quality:ci`-Gate separat höchstens 
 Der zusätzliche Puffer gehört zur Einrichtung; keine Prüfung wird übersprungen oder durch ein früheres
 lokales Ergebnis ersetzt. Build und Deployment benötigen weiterhin den erfolgreichen Quality-Job.
 
-Anlass sind die beiden Veröffentlichungsversuche vom 27. Oktober für `d4ce4db` und `116b133`:
-Die Ubuntu-Paketdownloads liefen bis zum bisherigen gemeinsamen 15-Minuten-Limit weiter; beide Jobs
-wurden vor dem Start des Qualitätsgates abgebrochen. Die begrenzte Anpassung ändert ausschließlich drei
-Zeitlimitangaben. Paketfehler, fehlender Decoder oder ein fehlgeschlagenes Qualitätsgate bleiben Fehler.
-Die tatsächlichen Lauf-/Veröffentlichungsnachweise werden gemäß [Roadmap](roadmap.md) privat gesichert.
+Am 27. Oktober liefen die Ubuntu-Paketdownloads für `d4ce4db` und `116b133` bis zum damaligen gemeinsamen
+15-Minuten-Limit. Auch das später getrennte 25-Minuten-Budget wurde beim Paketdownload für `fa6bf46`
+ausgeschöpft. Der folgende Lauf für `cc69dd6` installierte FFmpeg mit demselben Runner-Image und demselben
+Workflow erfolgreich. Die tatsächlichen Laufnachweise sind über die [Roadmap](roadmap.md) dokumentiert.
+
+Der vorbereitete Workflow begrenzt pro Bezugsweg das Laden der Paketindizes auf zwei Minuten und den
+Paketdownload auf drei Minuten. Bei einem Fehler mit den Runner-Quellen versucht er es einmal mit den
+Ubuntu-Archiven `archive.ubuntu.com` und `security.ubuntu.com` für die Releasekennung des Runners.
+Die alternative Quellenliste gilt nur für diesen Schritt und verwendet den Ubuntu-Archivschlüssel.
+Erst nach dem vollständigen Download installiert APT FFmpeg aus den geladenen Paketen und der Workflow
+prüft den Aufruf `ffmpeg -version`. Scheitern beide Downloadwege, die Installation oder der Versionsaufruf,
+stoppt der Quality-Job. Die Zeitgrenzen betreffen die Paketvorbereitung auf dem Runner.
 
 ## Quality-Job
 

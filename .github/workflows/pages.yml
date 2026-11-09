@@ -36,7 +36,30 @@ jobs:
 
       - name: Install media decoder
         timeout-minutes: 25
-        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends ffmpeg
+        shell: bash
+        run: |
+          download_ffmpeg() {
+            sudo timeout --kill-after=10s 2m apt-get "$@" --error-on=any update &&
+              sudo timeout --kill-after=10s 3m apt-get "$@" --yes --download-only --no-install-recommends install ffmpeg
+          }
+
+          apt_sources=()
+          if ! download_ffmpeg; then
+            echo "::warning::FFmpeg download from runner sources failed. Retrying via Ubuntu archives."
+            source /etc/os-release
+            alternate_sources=$(mktemp --suffix=.list)
+            trap 'rm -f -- "$alternate_sources"' EXIT
+            cat > "$alternate_sources" <<EOF
+          deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://archive.ubuntu.com/ubuntu ${VERSION_CODENAME:?} main universe
+          deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://archive.ubuntu.com/ubuntu ${VERSION_CODENAME}-updates main universe
+          deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://security.ubuntu.com/ubuntu ${VERSION_CODENAME}-security main universe
+          EOF
+            apt_sources=(-o "Dir::Etc::sourcelist=$alternate_sources" -o "Dir::Etc::sourceparts=-")
+            download_ffmpeg "${apt_sources[@]}"
+          fi
+
+          sudo apt-get "${apt_sources[@]}" --yes --no-download --no-install-recommends install ffmpeg
+          ffmpeg -version
 
       - name: Run quality gate
         timeout-minutes: 15
