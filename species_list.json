@@ -574,5 +574,14 @@
     "size": "ca. 20-22 cm",
     "weight": "ca. 50-85 g",
     "life_expectancy": "ca. 8 Jahre"
+  },
+  {
+    "german": "Rappenantilope",
+    "english": "Giant Sable Antelope",
+    "genus": "Hippotragus",
+    "species": "niger",
+    "size": "ca. 115-140 cm",
+    "weight": "Männchen: ca. 180-230 kg; Weibchen: ca. 160-180 kg",
+    "life_expectancy": "ca. 16 Jahre"
   }
 ]

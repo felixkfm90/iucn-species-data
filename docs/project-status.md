@@ -5,29 +5,30 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-11-06T18:53:43.767Z`
+Report-Datenstand: `2026-11-11T16:39:05.526Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 64 |
-| Aktive Arten | 64 |
-| Arten in `speciesData.json` | 64 |
-| Vollständige Art-Assetordner | 64 |
-| Karten | 64 |
+| Eingaben in `species_list.json` | 65 |
+| Aktive Arten | 65 |
+| Arten in `speciesData.json` | 65 |
+| Vollständige Art-Assetordner | 65 |
+| Karten | 65 |
 | Sounds | 61 |
 | Credits | 61 |
 | Spektrogramme | 61 |
-| Artporträts | 64 |
+| Artporträts | 65 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
-## Geschützte Karten (10)
+## Geschützte Karten (11)
 
 - Blaukehlchen
 - Erdbeerfröschchen
 - Goldbaumsteiger
 - Grünfink
 - Mittelspecht
+- Rappenantilope
 - Rebhuhn
 - Rotaugenlaubfrosch
 - Sommergoldhähnchen
@@ -45,10 +46,11 @@ Report-Datenstand: `2026-11-06T18:53:43.767Z`
 
 Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein technischer Bildnachweis.
 
-## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (4)
+## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (5)
 
 - Blaukehlchen
 - Mittelspecht
+- Rappenantilope
 - Sommergoldhähnchen
 - Wintergoldhähnchen
 
@@ -66,8 +68,9 @@ Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein techni
 - Rotstirnamazone
 - Scharlachara
 
-## Bewusst fehlende Tierstimmen (3)
+## Bewusst fehlende Tierstimmen (4)
 
 - Gepard
 - Goldbaumsteiger
 - Grüner Leguan
+- Rappenantilope

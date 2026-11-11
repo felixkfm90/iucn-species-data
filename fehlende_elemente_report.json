@@ -1,22 +1,23 @@
 {
-  "generatedAt": "2026-11-06T18:53:43.767Z",
+  "generatedAt": "2026-11-11T16:39:05.526Z",
   "counts": {
-    "totalSpecies": 64,
-    "missingSoundMp3": 3,
+    "totalSpecies": 65,
+    "missingSoundMp3": 4,
     "missingSoundCredits": 0,
     "missingMap": 0,
     "missingAssessmentId": 0,
     "missingStatus": 0,
     "missingCategory": 0,
     "missingTrend": 0,
-    "missingSpeciesAssets": 3,
+    "missingSpeciesAssets": 4,
     "ncSoundLicensesAll": 11
   },
   "missing": {
     "soundMp3": [
       "Grüner Leguan",
       "Gepard",
-      "Goldbaumsteiger"
+      "Goldbaumsteiger",
+      "Rappenantilope"
     ],
     "soundCredits": [],
     "maps": [],
@@ -42,6 +43,15 @@
       {
         "german": "Goldbaumsteiger",
         "safeName": "Goldbaumsteiger",
+        "missing": [
+          "sound.mp3",
+          "credits.json",
+          "spectrogram.webp"
+        ]
+      },
+      {
+        "german": "Rappenantilope",
+        "safeName": "Rappenantilope",
         "missing": [
           "sound.mp3",
           "credits.json",

@@ -1607,5 +1607,39 @@
     },
     "Letztes IUCN Update": "2018",
     "Daten abgerufen": "2026-11-06"
+  },
+  {
+    "URLSlug": "hippotragusniger",
+    "Wissenschaftlicher Name": "Hippotragus niger",
+    "Deutscher Name": "Rappenantilope",
+    "Englischer Name": "Giant Sable Antelope",
+    "Gewicht": "Männchen: ca. 180-230 kg; Weibchen: ca. 160-180 kg",
+    "Größe": "ca. 115-140 cm",
+    "Lebenserwartung": "ca. 16 Jahre",
+    "Assessment ID": 50188654,
+    "Status": "LC",
+    "Trend": "Stabil",
+    "Kategorie": "Nicht gefährdet",
+    "Populationgröße": "50.000-60.000",
+    "Generationsdauer": "7,1 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Subphylum": "Vertebrata",
+    "Class": "Mammalia",
+    "Order": "Artiodactyla",
+    "Family": "Bovidae",
+    "Genus": "Hippotragus",
+    "Species": "niger",
+    "Taxon ID": "10170",
+    "IUCN-Zuordnung": {
+      "scientificName": "Hippotragus niger",
+      "queriedName": "Hippotragus niger",
+      "matchedBy": "scientific-name",
+      "taxonId": "10170",
+      "masterTaxonId": "mtx_619cb4193a950d2103c4937d587cfab3",
+      "masterVersion": "master-20261024014609415"
+    },
+    "Letztes IUCN Update": "2017",
+    "Daten abgerufen": "2026-11-11"
   }
 ]
