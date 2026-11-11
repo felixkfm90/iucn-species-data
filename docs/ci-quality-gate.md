@@ -29,8 +29,10 @@ ausgeschöpft. Der folgende Lauf für `cc69dd6` installierte FFmpeg mit demselbe
 Workflow erfolgreich. Die tatsächlichen Laufnachweise sind über die [Roadmap](roadmap.md) dokumentiert.
 
 Der vorbereitete Workflow begrenzt pro Bezugsweg das Laden der Paketindizes auf zwei Minuten und den
-Paketdownload auf drei Minuten. Bei einem Fehler mit den Runner-Quellen versucht er es einmal mit den
-Ubuntu-Archiven `archive.ubuntu.com` und `security.ubuntu.com` für die Releasekennung des Runners.
+Paketdownload auf drei Minuten. Bei einem Fehler mit den Runner-Quellen versucht er es einmal über
+`archive.ubuntu.com` für die Releasekennung des Runners, einschließlich der signierten Sicherheitsaktualisierungen.
+Am 11. November war `security.ubuntu.com` im Ubuntu-26.04-Runner zeitweise nicht auflösbar, während das
+Hauptarchiv antwortete. Der Ausweichweg verwendet deshalb für alle drei Paketquellen das Hauptarchiv.
 Die alternative Quellenliste gilt nur für diesen Schritt und verwendet den Ubuntu-Archivschlüssel.
 Erst nach dem vollständigen Download installiert APT FFmpeg aus den geladenen Paketen und der Workflow
 prüft den Aufruf `ffmpeg -version`. Scheitern beide Downloadwege, die Installation oder der Versionsaufruf,

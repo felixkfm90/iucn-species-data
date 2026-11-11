@@ -52,7 +52,7 @@ jobs:
             cat > "$alternate_sources" <<EOF
           deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://archive.ubuntu.com/ubuntu ${VERSION_CODENAME:?} main universe
           deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://archive.ubuntu.com/ubuntu ${VERSION_CODENAME}-updates main universe
-          deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://security.ubuntu.com/ubuntu ${VERSION_CODENAME}-security main universe
+          deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] https://archive.ubuntu.com/ubuntu ${VERSION_CODENAME}-security main universe
           EOF
             apt_sources=(-o "Dir::Etc::sourcelist=$alternate_sources" -o "Dir::Etc::sourceparts=-")
             download_ffmpeg "${apt_sources[@]}"
