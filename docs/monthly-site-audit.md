@@ -106,6 +106,21 @@ zentriert. „Karte vergrößern“ ist in allen Ansichten als nativer Knopf err
 Hintergrundschutz und Rückkehrfokus bleiben erhalten. Karten-/CSS-/Footerstand gemeinsam prüfen;
 Quellintegration und tatsächlich veröffentlichte Darstellung getrennt nachweisen.
 
+Bei neuen oder umgebauten Artseiten die Kartenüberschrift im gerenderten Squarespace-Raster
+prüfen. Der Überschriftenblock nutzt auf dem Desktop die verfügbare Breite des Kartenbereichs.
+Der Kartenblock beginnt unter der Überschrift und lässt auch bei einem Umbruch Platz für die
+letzte Zeile. Die Prüfung umfasst ein schmales Desktopfenster und eine schmale Mobilansicht
+bis 320 CSS-Pixel. Der lokale GitHub-Pages-Qualitätslauf bestätigt keine sichtbare Platzierung
+von Squarespace-Blöcken.
+
+Der Karten-Lader 1.0.12 ergänzt die Darstellung vorhandener Artseiten auf Mobilbreiten unter 768
+CSS-Pixeln. Er korrigiert nur eine tatsächlich überdeckte, einzeln gebundene Kartenüberschrift
+mit finalem Kartenblock im selben Fluid-Engine-Raster. Der Kartenblock beginnt an der nächsten
+freien Rasterlinie nach der Überschrift und behält seine Zeilenzahl. Beim Wechsel zur breiten
+Ansicht gilt wieder das gespeicherte Raster. Bereits lesbare Layouts und gemeinsame Kartenblöcke
+benötigen keine Korrektur. Die öffentliche Browser-Nachprüfung ist erst nach Pages-Deployment und
+Übernahme der neuen Skriptversion im Squarespace-Footer vollständig.
+
 Galeriebeschriftungen und Bildfokus werden in den tatsächlichen CMS-Galerieeinträgen gepflegt.
 Ein veränderter Vorschaubildfokus erhält die quadratische Galerie und ihr vollständiges Original in der
 Vergrößerung. Bei reinen Textkorrekturen Bildquellen, Reihenfolge und übrige Beschriftungen vergleichen;

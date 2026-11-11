@@ -1,13 +1,76 @@
-// Map loader 1.0.11: compact map preview with a native opener in every viewport.
+// Map loader 1.0.12: keep legacy map headings visible on narrow screens.
 (async function () {
   const ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data";
   let closeActiveMap = null;
+  let releaseMapLayout;
 
   function init() {
+    releaseMapLayout?.();
     const wrapper = document.getElementById("map-wrapper");
     const outputEl = document.getElementById("map-output");
+    releaseMapLayout = wrapper && outputEl ? keepLegacyMapHeadingVisible(wrapper, outputEl) : undefined;
     if (!wrapper || !outputEl) return;
     loadMap(outputEl);
+  }
+
+  function keepLegacyMapHeadingVisible(wrapper, outputEl) {
+    if (!/^\/wildlife\/[a-z0-9-]+\/[a-z0-9-]+\/?$/.test(window.location?.pathname || "")
+        || !["www.fnwildlifetravel.de", "fnwildlifetravel.de"].includes(window.location.hostname)
+        || outputEl.parentElement !== wrapper || wrapper.closest('[data-fn-map-section="1"]')) return;
+    const mapBlock = wrapper.closest(".fe-block"), grid = mapBlock?.parentElement;
+    if (!grid?.matches(".fluid-engine") || document.querySelectorAll("#map-wrapper,#map-output").length !== 2) return;
+    const headings = [...grid.querySelectorAll("h4")].filter(node => node.textContent.trim().toLowerCase() === "verbreitungskarte");
+    const [heading] = headings, headingBlock = heading?.closest(".fe-block");
+    if (headings.length !== 1 || !headingBlock || headingBlock === mapBlock || headingBlock.parentElement !== grid
+        || headingBlock.innerText.trim() !== heading.innerText.trim()) return;
+
+    const mobile = window.matchMedia("(width < 768px)");
+    const properties = ["grid-row-start", "grid-row-end"];
+    let previous, frame = null, stopped = false;
+    function restoreRows() {
+      if (!previous) return;
+      for (const [index, property] of properties.entries()) {
+        const [value, priority] = previous[index];
+        if (value) mapBlock.style.setProperty(property, value, priority);
+        else mapBlock.style.removeProperty(property);
+      }
+      previous = null;
+    }
+    function fit() {
+      frame = null;
+      restoreRows();
+      if (!mobile.matches || !mapBlock.isConnected || !heading.isConnected) return;
+      const map = getComputedStyle(mapBlock), label = getComputedStyle(headingBlock);
+      const start = Number(map.gridRowStart), end = Number(map.gridRowEnd), labelEnd = Number(label.gridRowEnd);
+      if (![start, end, labelEnd].every(value => Number.isSafeInteger(value) && value > 0)
+          || start >= end || start >= labelEnd || map.gridColumnStart !== label.gridColumnStart || map.gridColumnEnd !== label.gridColumnEnd) return;
+      const otherBlocks = [...grid.children].filter(block => block !== mapBlock && block.matches(".fe-block"));
+      if (otherBlocks.some(block => !(Number(getComputedStyle(block).gridRowEnd) <= Math.min(labelEnd, end)))) return;
+      const range = document.createRange();
+      range.selectNodeContents(heading);
+      const card = wrapper.getBoundingClientRect();
+      const lines = [...range.getClientRects()].filter(line => line.width > 0 && line.height > 0);
+      if (heading.getBoundingClientRect().bottom <= card.top + 1 || !lines.some(line =>
+        line.bottom > card.top + 1 && line.left < card.right && line.right > card.left)) return;
+      previous = properties.map(property => [mapBlock.style.getPropertyValue(property), mapBlock.style.getPropertyPriority(property)]);
+      mapBlock.style.setProperty(properties[0], String(labelEnd), "important");
+      mapBlock.style.setProperty(properties[1], String(labelEnd + end - start), "important");
+      const bottom = Math.max(...[...range.getClientRects()].filter(line => line.width > 0 && line.height > 0).map(line => line.bottom));
+      if (wrapper.getBoundingClientRect().top < bottom) restoreRows();
+    }
+    function schedule() {
+      if (stopped || frame !== null) return;
+      frame = window.requestAnimationFrame(fit);
+    }
+    window.addEventListener("resize", schedule, { passive: true });
+    document.fonts?.ready.then(schedule);
+    schedule();
+    return () => {
+      stopped = true;
+      window.removeEventListener("resize", schedule);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      restoreRows();
+    };
   }
 
   function sourceHtml() {

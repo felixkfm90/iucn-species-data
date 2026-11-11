@@ -24,7 +24,7 @@ test("Karten-Vollbild übernimmt den Alternativtext der Ausgangskarte", () => {
   assert.match(mapSource, /img\.alt = altText \|\| "Vergrößerte Verbreitungskarte"/);
 });
 
-async function mapFixture({ width = 767, available = true } = {}) {
+async function mapFixture({ width = 767, available = true, legacyLayout } = {}) {
   const frames = [], scrollCalls = [], focusCalls = [], geometry = { header: null, currentTop: 300, height: 300, outlineWidth: 1.76991, outlineOffset: 3.53982, pendingSmoothTop: null };
   const events = new Map(), documentEvents = new Map();
   const body = element(), content = element(), previouslyInert = element();
@@ -67,7 +67,29 @@ async function mapFixture({ width = 767, available = true } = {}) {
     addEventListener: (name, listener) => events.set(name, listener),
     removeEventListener: (name, listener) => { if (events.get(name) === listener) events.delete(name); },
   };
-  const context = vm.createContext({ window, document, fetch: async () => ({ ok: available }),
+  let mapRows, layout;
+  if (legacyLayout) {
+    window.location = { hostname: "www.fnwildlifetravel.de", pathname: "/wildlife/afrika/acinonyxjubatus" };
+    window.matchMedia = () => ({ get matches() { return window.innerWidth < 768; } });
+    window.cancelAnimationFrame = () => {};
+    const styles = new Map();
+    mapRows = { getPropertyValue: key => styles.get(key)?.[0] ?? "", getPropertyPriority: key => styles.get(key)?.[1] ?? "",
+      setProperty: (key, value, priority) => styles.set(key, [value, priority]), removeProperty: key => styles.delete(key) };
+    const label = { textContent: "Verbreitungskarte", innerText: "VERBREITUNGSKARTE", isConnected: true, getBoundingClientRect: () => ({ bottom: 157 }) };
+    const grid = { matches: selector => selector === ".fluid-engine", querySelectorAll: () => [label] };
+    const gridItem = { gridColumnStart: "2", gridColumnEnd: "10" };
+    const headingCell = { parentElement: grid, matches: () => true, innerText: label.innerText };
+    const mapCell = { parentElement: grid, matches: () => true, isConnected: true, style: mapRows };
+    grid.children = [headingCell, mapCell];
+    label.closest = () => headingCell;
+    content.closest = selector => selector === ".fe-block" ? mapCell : legacyLayout === "grouped" ? content : null;
+    content.getBoundingClientRect = () => ({ left: 20, right: 305, top: styles.size || legacyLayout === "clear" ? 180 : 130 });
+    document.querySelectorAll = () => [content, output];
+    document.createRange = () => ({ selectNodeContents() {}, getClientRects: () => [{ left: 20, right: 240, width: 220, height: 27, bottom: 158 }] });
+    layout = node => node === headingCell ? { ...gridItem, gridRowEnd: "52" }
+      : { ...gridItem, gridRowStart: "51", gridRowEnd: "58" };
+  }
+  const context = vm.createContext({ window, document, getComputedStyle: layout, fetch: async () => ({ ok: available }),
     Image: function () { return makeNode("img"); } });
   new vm.Script(mapSource, { filename: "map-loader.js" }).runInContext(context);
   documentEvents.get("DOMContentLoaded")();
@@ -79,9 +101,23 @@ async function mapFixture({ width = 767, available = true } = {}) {
       preventDefault() { this.prevented = true; }, stopImmediatePropagation() { this.stopped = true; } };
     events.get("keydown")?.(event); return event;
   };
-  return { document, content, previouslyInert, output, opener, open, key, events, window, frames, scrollCalls, focusCalls, geometry, flush: () => { while (frames.length) frames.shift()(); if (geometry.pendingSmoothTop !== null) { geometry.currentTop = geometry.pendingSmoothTop; geometry.pendingSmoothTop = null; } },
+  return { document, content, previouslyInert, output, opener, open, key, events, window, frames, scrollCalls, focusCalls, geometry, mapRows, flush: () => { while (frames.length) frames.shift()(); if (geometry.pendingSmoothTop !== null) { geometry.currentTop = geometry.pendingSmoothTop; geometry.pendingSmoothTop = null; } },
     overlay: () => body.children.find((node) => node.getAttribute("role") === "dialog") };
 }
+
+test("Nur überlappende alte Kartenraster werden mobil versetzt und beim Verbreitern zurückgesetzt", async () => {
+  for (const legacyLayout of ["overlap", "clear", "grouped"]) {
+    const f = await mapFixture({ width: 320, legacyLayout });
+    const rows = () => [f.mapRows.getPropertyValue("grid-row-start"), f.mapRows.getPropertyValue("grid-row-end")];
+    f.flush();
+    assert.deepEqual(rows(), legacyLayout === "overlap" ? ["52", "59"] : ["", ""]);
+    f.window.innerWidth = 768;
+    f.events.get("resize")?.();
+    f.flush();
+    assert.deepEqual(rows(), ["", ""]);
+    assert.equal(f.opener.className, "species-map-opener");
+  }
+});
 
 
 test("Mobile Karte öffnet als benannter Dialog mit Tastaturfokus und vollständiger Rückgabe", async () => {
