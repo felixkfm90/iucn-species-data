@@ -79,13 +79,16 @@ npm.cmd run --silent assets:check
 
 Der Medienvalidator begrenzt Ausreißer unabhängig vom Gesamtbestand:
 
-- Karte: 2 MiB;
+- Karte: 20 MiB, entsprechend der technischen Grenze des Kartenimports und der Bildprüfung;
 - Artportrait: 2 MiB;
 - Tierstimme: 10 MiB;
 - Credits: 128 KiB;
 - Spektrogramm: 0,5 MiB;
 - veröffentlichte PNG-Grafik: 2 MiB;
 - vollständiges Artpaket: 15 MiB.
+
+Die Medienprüfung vor der Explorer-Übertragung und die CI nutzen dieselben Grenzen. Eine gültige Karte
+über 2 MiB kann unverändert übertragen werden, wenn das vollständige Artpaket ins Budget passt.
 
 `scripts/prepare-pages-artifact.mjs` misst zusätzlich das vollständig vorbereitete `_site/`-Verzeichnis. Sein
 Budget wächst automatisch mit dem fachlichen Artenbestand: 12 MiB Grundbedarf plus 2,5 MiB je Eintrag in

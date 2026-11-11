@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { inspectMp3Buffer } from "./audio-format.mjs";
-import { validateImageDecode } from "./image-validation.mjs";
+import { IMAGE_DECODE_LIMITS, validateImageDecode } from "./image-validation.mjs";
 import { inspectJpeg, inspectPng, inspectWebp } from "./image-header.mjs";
 import { createHash } from "node:crypto";
 
@@ -10,7 +10,7 @@ const modulePath = fileURLToPath(import.meta.url);
 const isCli = path.resolve(process.argv[1] || "") === modulePath;
 const MIB = 1024 * 1024;
 export const MEDIA_LIMITS = Object.freeze({
-  map: 2 * MIB,
+  map: IMAGE_DECODE_LIMITS.bytes,
   portrait: 2 * MIB,
   sound: 10 * MIB,
   credits: 128 * 1024,

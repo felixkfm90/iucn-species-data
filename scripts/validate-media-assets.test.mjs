@@ -36,6 +36,27 @@ test("Vollständig reportgebunden ausgelassene Medien benötigen keinen leeren A
   assert.equal(result.ok, true, result.errors.join("\n"));
 });
 
+test("Eine Karte über 2 MiB wird zur Bildprüfung weitergereicht, solange das Artpaket ins Budget passt", async t => {
+  const f = await mediaFixture(t);
+  const mapBytes = 2_392_212;
+  await fs.truncate(path.join(f.directory, "map.jpg"), mapBytes);
+  const mapSizes = [];
+  const result = await f.validate({ decodeImage: async (buffer, { format }) => {
+    if (format === "jpeg") mapSizes.push(buffer.length);
+  } });
+  assert.equal(result.ok, true, result.errors.join("\n"));
+  assert.deepEqual(mapSizes, [mapBytes]);
+});
+
+test("Eine Karte innerhalb der Bildprüfgröße zählt weiterhin zum Gesamtbudget der Art", async t => {
+  const f = await mediaFixture(t);
+  await fs.truncate(path.join(f.directory, "map.jpg"), 15 * 1024 * 1024);
+  const result = await f.validate();
+  assert.equal(result.ok, false);
+  assert.equal(result.errors.length, 1);
+  assert.match(result.errors[0], /gesamtes Artpaket ist .* größer als erlaubt/);
+});
+
 test("Fehlende Karte benötigt übereinstimmenden Karten- und Artdateireport", async t => {
   for (const change of [
     report => { report.missing.maps = []; },
