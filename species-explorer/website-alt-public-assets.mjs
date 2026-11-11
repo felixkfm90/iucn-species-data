@@ -3,14 +3,15 @@ import { sanitizeAssetName } from "./species-model.mjs";
 import { normalizeWebsitePageUrl, parseWebsiteAltPage } from "./website-alt-parser.mjs";
 
 export const WEBSITE_PUBLIC_ASSET_ROOT = "https://felixkfm90.github.io/iucn-species-data/";
-// These public sources were fetched and checked on 28 October 2026. Unknown
-// module bytes stop inference until their output rules have been reviewed.
+// Unknown public module bytes stop inference until their output rules have been reviewed.
+// The two map-loader versions emit the same image and text during the layout rollout.
 const MODULE_HASHES = Object.freeze({
-  "species-core.js": "1b57880e9c4f4d8e092c1c6a0994fdb8c363e2875c9631420953ad56c074f9dc",
-  "species-status.js": "343e3d7d77a6d4fc0a10f8cb8ff51d54b9b3f416010e08b2ae88ba0e556295d2",
-  "species-sound.js": "c4b84e9b75a40b8f6ce7cf7d9af2ea3cc204ff2c10bf93ad3e79ed12e79654e0",
-  "map-loader.js": "aee7fccc809047c686238645d88d3618f6e5486bd980dcfc4279a4e647ed35df",
-  "species-portrait.js": "f1e8f7b0ac200737609a43d6ab488f388e54c46c0aee1e9a317f3202cc203c4a",
+  "species-core.js": ["1b57880e9c4f4d8e092c1c6a0994fdb8c363e2875c9631420953ad56c074f9dc"],
+  "species-status.js": ["343e3d7d77a6d4fc0a10f8cb8ff51d54b9b3f416010e08b2ae88ba0e556295d2"],
+  "species-sound.js": ["c4b84e9b75a40b8f6ce7cf7d9af2ea3cc204ff2c10bf93ad3e79ed12e79654e0"],
+  "map-loader.js": ["aee7fccc809047c686238645d88d3618f6e5486bd980dcfc4279a4e647ed35df",
+    "17389bf87f03ba653eeb2bea248229374242877d0a70a0c603f20d5eece185bf"],
+  "species-portrait.js": ["f1e8f7b0ac200737609a43d6ab488f388e54c46c0aee1e9a317f3202cc203c4a"],
 });
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
@@ -159,7 +160,7 @@ export function createWebsiteAltPublicAssets({ fetchImpl = globalThis.fetch, now
     return cached(`module:${url}`, async () => {
       const source = await read(url);
       const hash = sha256(source);
-      if (hash !== MODULE_HASHES[name]) throw new Error(`Öffentliches Modul ${name} hat einen ungeprüften Quellstand; Bildzuordnung bleibt offen`);
+      if (!MODULE_HASHES[name].includes(hash)) throw new Error(`Öffentliches Modul ${name} hat einen ungeprüften Quellstand; Bildzuordnung bleibt offen`);
       moduleProofs.set(url, hash);
     });
   }
