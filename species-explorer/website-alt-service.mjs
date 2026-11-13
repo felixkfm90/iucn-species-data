@@ -54,8 +54,10 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
   }
 
   async function snapshot() {
-    const saved = await state.snapshot();
     const connected = await readConnection();
+    // Bind the result before reading the store. A transfer can finish during
+    // either asynchronous read, and a new receipt needs its committed state.
+    const outcomeAtRead = transferRuntime, transferRunning = transferring();
     const connecting = Boolean(currentJob && (jobKind === "connect-transfer" || jobKind === "transfer" && transferRuntime?.phase === "connecting"));
     const loginRequired = Boolean(connected.loginRequired || currentJob && jobKind === "transfer"
       && transferRuntime?.phase === "login-required" && !connected.connected);
@@ -63,7 +65,8 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
       : loginRequired && !connected.connected ? { ...connected, status: "login-required" }
       : !connected.connected && ["failed", "cancelled"].includes(connectRuntime?.status)
         ? { ...connected, status: connectRuntime.status, message: connectRuntime.message } : connected;
-    let outcome = transferRuntime || await loadWebsiteAltTransferReceipt(storageRoot, saved);
+    const saved = await state.snapshot();
+    let outcome = outcomeAtRead || await loadWebsiteAltTransferReceipt(storageRoot, saved);
     const page = saved.pages?.find((entry) => entry.url === outcome?.pageUrl);
     let staleResult = false;
     const results = (outcome?.results || []).map((entry) => {
@@ -82,7 +85,7 @@ export function createWebsiteAltTextsService({ repoRoot, dataRoot, store,
     return { ...saved, capabilities: { keepExisting: typeof state.keepExisting === "function" },
       scan: { ...saved.scan, ...runtime, running: keepingExisting || Boolean(currentJob && !transferring()) },
       transfer: { ...connectionState, ...outcome, available: connected.available, connected: connected.connected,
-        loginRequired, windowOpen: connected.windowOpen, running: transferring(),
+        loginRequired, windowOpen: connected.windowOpen, running: transferRunning,
         connectionStatus: connectionState.status, connectionMessage: connectionState.message, results } };
   }
 

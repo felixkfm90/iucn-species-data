@@ -425,6 +425,38 @@ test("Ergebnisquittung wird nach Neustart lesend angezeigt und veraltete positiv
   await reopened.close();
 }));
 
+test("Snapshot liest den bestätigten Bildstand auch bei gleichzeitigem Abschluss der Übernahme", () => fixture(async ({ service, adapter, payload }) => {
+  const writerEntered = defer(), finishWriter = defer(), statusEntered = defer(), finishStatus = defer();
+  const transfer = adapter.transfer, connectionSnapshot = adapter.snapshot;
+  adapter.transfer = async (...args) => {
+    writerEntered.resolve();
+    await finishWriter.promise;
+    return transfer(...args);
+  };
+  let snapshot;
+  try {
+    await service.transfer(await payload());
+    await writerEntered.promise;
+    adapter.snapshot = async () => {
+      adapter.snapshot = connectionSnapshot;
+      statusEntered.resolve();
+      await finishStatus.promise;
+      return connectionSnapshot();
+    };
+    snapshot = service.snapshot();
+    await statusEntered.promise;
+    finishWriter.resolve();
+    assert.equal((await settled(service)).transfer.status, "completed");
+  } finally {
+    finishWriter.resolve();
+    finishStatus.resolve();
+  }
+  const result = await snapshot;
+  assert.equal(result.transfer.running, false);
+  assert.equal(result.transfer.status, "completed", result.transfer.message);
+  assert.equal(result.transfer.results[0].status, "verified");
+}));
+
 for (const scenario of [
   { label: "Fehlgeschlagener Lauf bleibt nach Verbinden und bewusstem Wiederöffnen sichtbar", partial: false, loginFails: false },
   { label: "Fehlgeschlagene Anmeldung versteckt keine gespeicherten Bildresultate", partial: false, loginFails: true },
