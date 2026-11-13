@@ -82,7 +82,7 @@ export function qualificationRequestAllowed(details, baseUrl) {
 }
 
 /** Actual production services; only the owner's final Windows spawn is replaced. */
-export async function startQualificationServer({ fixture, action, getWindow, onFinished, onFailure, record } = {}) {
+export async function startQualificationServer({ fixture, action, getWindow, onFinished, onFailure, record, windowsRoot } = {}) {
   assertQualificationFixture(fixture);
   if (!ACTIONS.includes(action) || [getWindow, onFinished, onFailure, record].some((value) => typeof value !== "function")) {
     throw new Error("Eindeutiger Prüfkompositor mit eigenem Fenster und Abschlussbeobachter erforderlich.");
@@ -94,14 +94,14 @@ export async function startQualificationServer({ fixture, action, getWindow, onF
   const [{ createExplorerServer }, { createDesktopUpdateCompletionOwner }] = await Promise.all([
     import("../server.mjs"), import("../desktop/update-completion-owner.mjs"),
   ]);
-  const suppressed = createSuppressedSystemSpawn({ fixture, action, record });
+  const suppressed = createSuppressedSystemSpawn({ fixture, action, record, windowsRoot });
   let baseUrl, completion, closeInProgress = false, server;
   try {
     server = await createExplorerServer({ repoRoot: fixture.repoRoot, taxonomyRoot: fixture.taxonomyRoot,
       lightroomSearchRoot: fixture.searchRoot, nasBackupRoot: fixture.nasRoot, host: "127.0.0.1", port: 0,
       updateCompletionFactory(serverContext) {
         completion = createDesktopUpdateCompletionOwner({ device: fixture.device, stateRoot: fixture.stateRoot, serverContext,
-          getWindow, getBaseUrl: () => baseUrl, adapterOptions: { spawnImpl: suppressed.spawnImpl },
+          getWindow, getBaseUrl: () => baseUrl, adapterOptions: { spawnImpl: suppressed.spawnImpl, windowsRoot },
           acquireDesktopClose() {
             if (closeInProgress) throw new Error("Die eigene Prüfsitzung schließt bereits.");
             closeInProgress = true;

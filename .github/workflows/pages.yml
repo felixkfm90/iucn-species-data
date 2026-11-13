@@ -22,7 +22,7 @@ jobs:
   quality:
     name: Quality checks
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - name: Verify dispatched catalog commit
         if: inputs.catalog_commit != ''
@@ -78,7 +78,7 @@ jobs:
           ffmpeg -version
 
       - name: Run quality gate
-        timeout-minutes: 15
+        timeout-minutes: 25
         run: npm run --silent quality:ci
 
   build:

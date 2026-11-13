@@ -204,7 +204,7 @@ test("Echter Bootstrap: eigener Server und unveränderte Dashboard-/Headerlogik 
   const restore = installQualificationEnvironment(f), events = [], requests = [];
   let running, state;
   try {
-    running = await startQualificationServer({ fixture: f, action: "none", getWindow: () => null,
+    running = await startQualificationServer({ fixture: f, action: "none", getWindow: () => null, windowsRoot: "C:\\FixtureWindows",
       onFinished: () => assert.fail("Kein Update und kein Fensterabschluss in dieser Bootstrapprobe"),
       onFailure: () => assert.fail("Keine Abschlussaktion in dieser Bootstrapprobe"), record: (event) => events.push(event) });
     const html = await (await fetch(running.baseUrl)).text();

@@ -18,10 +18,12 @@ Ein Fehler im Quality-Job verhindert damit sowohl den Artefakt-Upload als auch d
 
 ## Getrennte Zeitbudgets für Einrichtung und Prüfung
 
-Der Quality-Job besitzt ein Gesamtlimit von **45 Minuten**. Die Installation des Mediendecoders hat
-höchstens **25 Minuten**, das eigentliche `quality:ci`-Gate separat höchstens **15 Minuten**.
-Der zusätzliche Puffer gehört zur Einrichtung; keine Prüfung wird übersprungen oder durch ein früheres
-lokales Ergebnis ersetzt. Build und Deployment benötigen weiterhin den erfolgreichen Quality-Job.
+Der Quality-Job besitzt ein Gesamtlimit von **55 Minuten**. Die Installation des Mediendecoders hat
+höchstens **25 Minuten**, das eigentliche `quality:ci`-Gate separat höchstens **25 Minuten**.
+Der Lauf vom 13. November erreichte nach gut 15 Minuten die Desktop-Abschlussprobe. Ihr
+simulierter Windows-Pfad wird für diesen Test ausdrücklich übergeben, damit derselbe Bootstrap
+auch unter Linux prüfbar ist. Der längere Prüfschritt deckt die gewachsene Testsuite ab.
+Build und Deployment benötigen weiterhin den erfolgreichen Quality-Job.
 
 Am 27. Oktober liefen die Ubuntu-Paketdownloads für `d4ce4db` und `116b133` bis zum damaligen gemeinsamen
 15-Minuten-Limit. Auch das später getrennte 25-Minuten-Budget wurde beim Paketdownload für `fa6bf46`
