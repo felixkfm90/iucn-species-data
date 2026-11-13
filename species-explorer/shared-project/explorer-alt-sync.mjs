@@ -3,7 +3,7 @@ import { createWebsiteAltSync } from "./website-alt-sync.mjs";
 const failure = (message, statusCode = 409) => Object.assign(new Error(message), { statusCode });
 const actions = new Map([["link", "link"], ["queue", "queue"], ["sync", "sync"], ["pull", "pull"], ["import", "importRemote"], ["resolve", "resolve"]]);
 
-/** The legacy local store stays independent; only explicit page actions use this bridge. */
+/** Page actions keep the legacy store separate from central sync and its local journal receipts. */
 export function createExplorerWebsiteAltSync({ websiteAltTexts, sharedProject, bridgeFactory = createWebsiteAltSync, ...options } = {}) {
   if (!websiteAltTexts?.createSharedSyncStoreAdapter || !sharedProject?.createWebsiteAltSyncAdapter) {
     throw failure("Die kontrollierten lokalen und gemeinsamen Bildtextanschlüsse fehlen.");
@@ -40,6 +40,7 @@ export function createExplorerWebsiteAltSync({ websiteAltTexts, sharedProject, b
       if (!method) throw failure("Unbekannte gemeinsame Bildtextaktion.", 404);
       return bridge[method](payload);
     },
+    reconcileAfterProjectSync: (status) => bridge.reconcileAfterProjectSync(status),
     async blockingState() {
       try {
         const value = await bridge.snapshot();

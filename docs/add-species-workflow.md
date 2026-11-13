@@ -1,8 +1,103 @@
 # Add Species Workflow
 
-Stand: 2026-10-31
+Stand: 2026-11-06
 
-Dieses Dokument beschreibt Phase 5.6: weitere Arten ergaenzen.
+Dieses Dokument führt die Artanlage und die anschließende Vorbereitung ihrer Website-Artseiten.
+
+Die Art wird im Explorer **einmal angelegt**. Eine Website-Artseite kann später bei Bedarf folgen;
+sie ist keine Voraussetzung für den Artenbestand oder das Nachschlagewerk. Der Seiteneditor übernimmt
+die vorhandene Artzuordnung und ergänzt Fachtexte, Bilder und Bildtexte. Der heutige lokale Artassistent
+und der neue Editor für vollständige gemeinsame Artobjekte sind noch nicht nahtlos verbunden. Dieser
+Anschluss gehört zur laufenden Umsetzung; eine zweite manuelle Artanlage ist kein vorgesehener Arbeitsablauf.
+
+Der neue Backendanschluss vom 2. November verwendet dieselbe lesende Eingabe-/Kollisionsprüfung und
+bewahrt gewählte Taxonomiereferenzen samt Herkunft. Er legt nach gebundener Vorschau ausschließlich
+einen gemeinsamen Artentwurf an, ohne lokale Artenliste oder Dateien zu schreiben. Gleichzeitige
+Doppelanlagen werden im Dienst abgefangen; verlorene Antworten lösen keine automatische zweite
+Anlage aus. Die [genauen Regeln](../species-explorer/shared-project/README.md#quellengebundene-gemeinsame-artanlage)
+stehen im gemeinsamen Modulvertrag. Der anschließende Quellstand verbindet die allgemeinen Felder
+des normalen Assistenten mit Vorschau und ausdrücklicher gemeinsamer Anlage. Unbestätigte Vorgänge
+bleiben beim Dialogschließen im Arbeitsspeicher zum rein lesenden Serververgleich erhalten.
+Der Nachlauf besteht mit 135 gezielten Oberflächen-/Adapterfällen und 41 Explorerintegrationsfällen.
+Eine sichtbare Chromeprobe mit künstlichen Daten bestätigt die Wiederaufnahme nach verlorener Antwort
+bei genau einem tatsächlichen Anlageauftrag. Persönlicher Desktopstart und NAS-/Zweit-PC-Betrieb
+bleiben davon getrennt abzunehmen.
+Fach-/Medienabläufe werden dadurch nicht als fertig ausgewiesen; der bisherige lokale Assistent bleibt erhalten.
+
+### Gemeinsamer Einartkern für Fach- und Mediendaten
+
+Der Quellnachlauf vom **2. November** löst die bisherigen Fachdaten-, Sound- und Einartregeln aus
+`update.mjs`. Der lokale CLI verwendet diese Bausteine bereits unmittelbar:
+
+- [Fachdaten](../scripts/species-data-pipeline.mjs) reichen die sieben manuellen Felder samt ausgewählter Taxonomiereferenz an
+  den IUCN-Adapter weiter. Die [IUCN-Synonymzuordnung](taxonomy-source-decision.md#36-iucn-red-list) erhält den führenden Masternamen.
+  Ein unvollständiger Abruf erhält weiterhin brauchbare Altdaten samt
+  unbekannten Zusatzfeldern und manuellen Ergänzungen; fehlende Daten werden nicht erfunden.
+- [Sound](../scripts/species-sound-pipeline.mjs) erhält Ausgabeordner, aktuellen Pflegebestand,
+  Netzwerk, Wartezeiten und Meldungen vom Aufrufer. Quellenreihenfolge, Lizenzwahl, Ablehnungen,
+  Schutzentscheidungen, Dateisperren und Credits bleiben erhalten.
+- [Einartsteuerung](../scripts/species-pipeline.mjs) verbindet Daten, Ton und Karte in der bisherigen
+  Reihenfolge. Karten- und NC-Tonläufe behalten ihre getrennten Prüfgrenzen. Auswahl, Wartepause,
+  Taxonomie-Override-Synchronisierung und Register-/Berichtsschreiben bleiben im lokalen CLI.
+
+Der registrierte Providerlauf besteht mit **62/62 Fällen**, einschließlich 36 neuer Kern-/Sound-/CLI-Fälle;
+die betroffenen Explorer-/Artanlage-/Taxonomieregressionen mit **58/58 Fällen**, jeweils ohne Skips.
+Drei neue Fälle führen den tatsächlichen `update.mjs` mit künstlichen Antworten in eigenen Testordnern
+aus; sie prüfen erhaltene Eingaben, geschützten Ton, die aktuelle Karte und den Altdatenrückfall.
+Ein voriger Teststart scheiterte an der Windows-URL-Schreibweise des Testloaders; der Loader ist korrigiert.
+Die kleinen Testdateien für bereits vorhandene Medien sind dabei ausdrücklich kein Dekodiernachweis.
+Der erste erweiterte Gegenlauf traf außerdem die Windows-Git-Prozessgrenze und eine veraltete
+Oberflächen-Quelltextprüfung. Die Prüfung berücksichtigt jetzt den erhaltenen gemeinsamen Wiederaufnahmekontext;
+der abschließende normale Windows-Gegenlauf besteht ohne Lockerung der Produktregeln.
+
+Damit ist der wiederverwendbare Ausführungskern vorhanden. Der gemeinsame Fach-/Medienknopf ist noch
+nicht angeschlossen: Er benötigt die aktuelle gemeinsame Ausgangsfassung, gebundene Kandidaten,
+dauerhafte Kandidatendateien und die ausdrücklich begrenzte Übernahme in dieselbe Änderungswarteschlange.
+Eine zusätzliche lokale Artanlage, ein automatischer Erstimport oder eine Websiteveröffentlichung
+gehören nicht zu diesem Schritt. Die [Übernahmegrenze](../species-explorer/shared-project/README.md#vorbereitung-gemeinsamer-fach--und-medienergänzungen)
+steht im gemeinsamen Modulvertrag.
+
+Der nachfolgende Node-Vorbereiter verwendet diesen Kern mit einer eigenen verwalteten Temp-Sitzung
+und tatsächlich gelesenen gemeinsamen Originaldateien. Er prüft Hash, Größe, Container und Dekodierung;
+neue Aufnahmen erhalten ein tatsächlich gerendertes Spektrogramm und exakt gehashte Credits.
+Erneut belegte identische Bildbytes bleiben als neuer Karten-/Spektrogrammbeleg erhalten.
+Der Antworttransport begrenzt JSON auf 4 MiB, JPEG auf 20 MiB und Ton auf 50 MiB bereits beim Lesen.
+Quellencheckpoints, Abbruchsignale und Fristen beenden hängende Antwortkörper; der Renderer wartet
+auch bei Abbruch auf den tatsächlichen Kindprozessabschluss. `close()` beendet und verbindet die
+eigenen laufenden Vorbereitungen; der Schließaufruf wartet deren Abschluss ab. Es werden weder lokale Artregister noch die gemeinsame Queue geändert.
+
+Die reine Schutzprojektion erhält unbekannte Altwerte, manuelle Taxonomieentscheidungen,
+Pflege-/Ablehnungsinformationen und redaktionelle Inhalte in Record1/2. Blockierende Abweichungen
+geben den vollständigen alten Record mit leerer Änderungsliste zurück. Der abschließende Nachlauf
+besteht mit **59/59 gezielten Fällen** und **37/37 Audioregressionen**, ohne Skips. Der rote Vorlauf
+bleibt erhalten: fehlende optionale Eingabefelder sind jetzt ohne erfundene Werte serialisierbar,
+der echte Kartenfixture erfüllt die bestehende Mindestgröße und der Schließtest erwartet den
+asynchronen Fehler korrekt. Der Node-Client kann diese Kandidaten inzwischen mit den geprüften Bytes
+dauerhaft im persönlichen Cache speichern. Wiederöffnen und Gerätesicherung einschließlich
+Wiederherstellung sind lokal geprüft. Der [gemeinsame Modulvertrag](../species-explorer/shared-project/README.md#vorbereitung-gemeinsamer-fach--und-medienergänzungen)
+führt Bindungen, Quoten und Prüfgrenzen. Der Projektdienst kann eine ausdrücklich geprüfte
+Zielfassung inzwischen aus den Quelldaten nachrechnen und bei unveränderter Art- und Personenbindung
+als Entwurf übernehmen. Der Node-Client legt die ausdrücklich geprüfte Zielfassung in die persönliche
+Warteschlange und überträgt beim Abgleich zuerst den Entwurf, dann die noch benötigten Dateien.
+Eine unklare Antwort lässt sich nach einem Neustart anhand derselben Auftragskennung und der
+Dateibelege klären. Neue Bild- und Tondateien müssen vor der internen Leserfreigabe vollständig
+bereitstehen.
+
+Im gemeinsamen Artbestand öffnet **Artvorschlag prüfen** im Bearbeitungsmodus den Vergleich.
+**Vorschlag vorbereiten** verwendet die auf dem PC eingerichteten IUCN- und Xeno-Canto-Zugänge.
+Die Auswahl zeigt die mit den vorhandenen Zugängen möglichen Läufe. Für eine sichere Vorbereitung
+müssen benötigte vorhandene Originaldateien exakt lesbar sein. Der Explorer prüft dafür die lokale
+Ablage, die persönlichen Offlineinhalte, den gemeinsamen Dienst und gegebenenfalls die exakt gebundene
+öffentliche FN-Datei. Ein gespeicherter Vorschlag kann bei passender Artgrundlage offline geöffnet werden.
+Geänderte Dateien lassen sich im Vergleich öffnen oder anhören. **Zur Übernahme vormerken** und **Jetzt
+abgleichen** sind getrennte Aktionen. Der lokale Explorer-HTTP-Test und die sichtbare Windows-Probe
+vom 3. November prüfen Vorbereitung, Vergleich, Dateivorschau und Übernahme mit synthetischen Quellen
+und separatem Testbestand. Die Karte war im Vorschlag sichtbar und ist als Originaldatei im Dienst
+belegt. Der Nachlauf schließt die geschützte Karte auch an die normale Artansicht an. Der Explorer
+prüft Projektanmeldung, Artfassung und Dateibindung. Bereits heruntergeladene Dateien können aus
+der persönlichen Ablage gelesen werden. Die sichtbare Gegenprobe zeigt dieselbe synthetische Karte
+in der normalen Artansicht und in der Vergrößerung. Die Probe lief mit einem eigenen Electron-Fenster
+und Produktions-Renderer. Installierte Fassung und NAS-Betrieb bleiben getrennte Abnahmen.
 
 ## Vorbereitung des künftigen Website-Artseitenworkflows
 
@@ -84,6 +179,29 @@ Primärquellen: [Modell](https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF),
 [gebundene lokale Laufzeit](https://github.com/ggml-org/llama.cpp/releases/tag/b11960).
 
 ### Vorhandene Ausgangsbasis
+
+Der Quellstand vom **1. November** ergänzt einen durchgehenden Exploreranschluss für bestehende
+vollständige gemeinsame Artobjekte: **Artseite vorbereiten** öffnet Vorlagenwahl, Zielbereich,
+Fachabschnitte, bewusste Leerentscheidungen und geordnete Bilder mit bearbeitbaren Bildtexten.
+Hauptaktion ist **Speichern und Vorschau prüfen**. Die Endfreigabe bindet die aktuelle Vorschau und
+die ausdrücklichen menschlichen Prüfentscheidungen; spätere Eingaben entwerten diese Vorschau.
+Der gemeinsame Abgleich bleibt eine eigene bewusste Aktion. Eine unbekannte Anlegeantwort muss
+zuerst gelesen werden, bevor derselbe Auftrag nach belegtem Fehlen erneut gesendet werden kann.
+
+Der persönliche Speicher trennt Entwürfe nach tatsächlicher Projektadresse und Person. Vorhandene
+Projektbilder werden zunächst als Metadaten geführt; eine sichtbare Downloadaktion lädt ihre Bytes.
+Neue Bilder werden lokal mit stabiler ID und Hash verwaltet, tatsächlich dekodiert und erst beim
+gezielten Seitenabgleich übertragen. Fehlende lokale Bilder verhindern keine reine Offlineänderung
+an unveränderten bereits servergebundenen Referenzen. Bildbytes, Berechtigungen und Ursprung werden
+vor dem Anzeigen und Übertragen erneut gebunden. Die Gerätesicherung nimmt das Seitenjournal auf
+und prüft die benötigten Bildbindungen dateiübergreifend; ein Serverbeleg ist keine lokale Bildsicherung.
+
+Diese Fassung wird derzeit integriert geprüft. Der NAS-Dienst bleibt bis zum tatsächlichen Upgrade
+bei **0.1.2**; der vorbereitete Containerquellstand **0.1.4** ergänzt verwaltete Bilder und FFmpeg.
+Noch offen sind neuer Paketbau und NAS-Betriebsprüfung, lokale Abschnitts-/Bildvorschläge in diesem
+Editor, Übernahme freigegebener Fachtexte ins Nachschlagewerk und der beobachtete CMS-Anlageweg.
+Es wird keine Squarespace-Seite angelegt oder veröffentlicht. Modulgrenzen führt das
+[Artseitenmodul](../species-explorer/page-authoring/README.md); der aktuelle Prüfstand bleibt in der Roadmap.
 
 | Baustein | Heute vorhanden | Für den Folgeworkflow noch fehlend |
 | --- | --- | --- |
@@ -397,6 +515,18 @@ vorherige Eingaben oder Pruefansichten erneut zu sehen.
 
 ### Schritt 1: Allgemeine Daten pruefen
 
+Bei **Artanlage fortsetzen** werden die bereits gespeicherten Grunddaten und ein vorhandenes
+Artportrait frisch geladen und wieder angezeigt. Nach dem ersten Speichern sind Grunddaten und
+Portraitoptionen in diesem Assistenten zur Ansicht gesperrt. Änderungen erfolgen über die normale
+Artbearbeitung, damit Zuordnung und Dateien kontrolliert erhalten bleiben. Die Schritte bleiben
+zum Nachsehen erreichbar; Weiterblättern löst keine erneute Anlage aus. Vor dem ersten Speichern
+verworfene Vorschauen und ausdrücklich abgebrochene Anlagen werden dadurch nicht wiederhergestellt.
+
+Die Hauptansicht bezeichnet den Datenabgleich als **Arten ↔ Artdaten**. Angelegte Arten sind die
+vom Benutzer erfassten Grunddaten; abgerufene Artdaten sind die Ergebnisse des automatischen
+Fachdatenlaufs. Fehlende IUCN-Daten werden weiter als offen angezeigt. Ein dokumentiertes fehlendes
+Medium kann entsprechend der [Medienprüfung](media-asset-validation.md) später ergänzt werden.
+
 Die App zeigt keine internen Dateinamen mehr im Dialogkopf. Anwender sehen nur die fachlichen Schritte.
 
 Wenn eine lokale Taxonomiereferenz installiert ist, unterstützt sie alle drei Namensfelder:
@@ -512,9 +642,12 @@ Der Neue-Art-Lauf verwendet denselben Kartenabruf wie die Kartenbearbeitung. Lie
 speicherbare Karte, bietet der Assistent eine JPEG-/PNG-Dateiauswahl und Dateiablage per Drag-and-drop. Die Datei
 wird lokal geprüft (maximal 20 MB) und erst mit `Manuelle Karte übernehmen` gespeichert. Bei einer lokalen Datei
 wird die Quellen-URL nicht abgerufen; ein dortiges HTTP 403 verhindert deshalb den Dateiimport nicht.
-Der offizielle Link aus der bekannten Assessment-ID ist vorbelegt. Ein IUCN-Dateiname mit anderer Assessment-ID
-wird abgewiesen; bei einem beliebig benannten lokalen Bild wird die vorbelegte IUCN-Herkunft entfernt und kann
+Der offizielle Browserlink aus der bekannten Taxon- und Assessment-ID ist vorbelegt:
+`https://www.iucnredlist.org/species/<Taxon-ID>/<Assessment-ID>/distribution_map`.
+Beide Kennungen stammen aus derselben abgerufenen IUCN-Bewertung. Fehlt eine Kennung, wird kein Link erfunden.
+Ein IUCN-Dateiname mit anderer Taxon- oder Assessment-ID wird abgewiesen; bei einem beliebig benannten lokalen Bild wird die vorbelegte IUCN-Herkunft entfernt und kann
 bewusst eingetragen werden. Alternativ bleibt der Import eines direkt erreichbaren Kartenlinks möglich.
+Die Browserseite ist kein direkt herunterladbares Bild; der automatische API-Kartenabruf bleibt ein eigener offener Punkt.
 
 ### Schritt 4: Sound und Abschluss
 

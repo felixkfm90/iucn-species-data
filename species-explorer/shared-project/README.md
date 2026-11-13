@@ -1,13 +1,220 @@
 # Gemeinsamer Projektdienst: Modulvertrag
 
-Stand: 2026-11-01. Diese isolierte Node-24-Basis liest keine bestehenden Repo-, Taxonomie-,
+Stand: 2026-11-02. Diese isolierte Node-24-Basis liest keine bestehenden Repo-, Taxonomie-,
 Lightroom- oder Websitebestände. Sie verändert und veröffentlicht keine Squarespace-Inhalte.
 Die fachlichen Betriebsentscheidungen und die NAS-Abnahme führt `docs/multi-device-backup-plan.md`.
 
 `store.mjs` stellt die explizite Objektfassade für spätere bestätigte Importe bereit:
 `createObject(token, {kind, id, data})` legt ausschließlich einen Entwurf an;
-`submitChange(token, {changeId, kind, id, baseRevision, data})` ändert ausschließlich bestehende Objekte.
+`submitChange(token, {changeId, kind, id, baseRevision, data, intent?})` ändert ausschließlich bestehende Objekte.
 Es gibt keinen automatischen Import und keinen Bootstrap über HTTP.
+
+Der optionale Zweck `page-editorial-adoption` ist ausschließlich für die erneute serverseitige
+Projektion eines gespeicherten FN-Artseitenentwurfs in eine vorhandene vollständige Art bestimmt.
+Er bindet tatsächliche Person, Rolle, Projekt und beide Ausgangsfassungen. Der Server berechnet
+den vollständigen Record-2-Kandidaten selbst neu; allgemeine Anlage und Grunddatenbearbeitung
+dürfen diesen Redaktions-/Versionswechsel nicht vornehmen. Der unveränderte Request einschließlich
+Zweck ist Teil der idempotenten Änderungskennung. Ein bereits bestätigter Auftrag bleibt deshalb
+auch nach späteren Seitenänderungen eindeutig wiederaufnehmbar.
+
+Record 2 speichert Richtext, Quellen, Abschnittsrollen, Leerstellen und einzelne Bildverwendungen
+verlustfrei; der vollständige private Datensatz ist auf 4 MiB begrenzt. Normale Originalfelder und
+Dateibindungen bleiben erhalten. Die größere HTTP-Grenze gilt nur für ausdrücklich typisierte
+Record-2-Schreibaufträge nach der bestehenden Berechtigungsprüfung. Seitenabruf, Cache, persönliche
+Sicherung und Medienreferenzprüfung müssen dieselben typisierten Daten vollständig erhalten.
+Die Freigabe bleibt getrennt: Catalog 1 und die bisher freigegebene Artversion bleiben erhalten;
+eine neue Record-2-Leserfreigabe verlangt ausdrücklich die getrennte Reader-Catalog-2-Prüfung.
+
+## Erweiterte Leserfassung
+
+Der neue lokale Quellanschluss stellt Reader-Catalog 2 zusätzlich bereit. `/api/v2/catalog`
+liefert einen begrenzten Gesamtbestand; `/api/v2/catalog/page` liefert höchstens 25 Arten und
+4 MiB je Seite mit kleiner Reserve für eine einzelne große Art. Fortsetzungen und Abschlussprüfung
+sind an die tatsächlich freigegebenen Versionen, Projekt, Person, Rolle und Sitzung gebunden.
+Ein Rechte- oder Freigabewechsel verlangt einen neuen Abruf; nicht freigegebene Entwürfe erscheinen
+nicht. Die bestehenden Catalog-1-Antworten werden nicht still umgeformt oder um Arten gekürzt.
+
+Reader 2 unterscheidet bestehende öffentliche Textabschnitte und vollständig strukturierte
+Seiteninhalte. Neue Grunddaten-/Statusfelder sind kuratiert. Interne Register, Prompts,
+Bearbeitungsakteure und Quellenbindungsbelege gehören nicht in den Reader. Bereits öffentliche
+Legacytexte bleiben unverändert; darin vorhandene alte Allgemeinangaben werden nicht durch einen
+Freitextparser entfernt. Einzelne Galerieverwendungen behalten eigene Kennungen, Texte und Positionen.
+
+Medien sind ausdrücklich öffentliche HTTPS-Verweise, tatsächlich bereitgestellte Projektbilder,
+gebundene normale Projektdateien oder noch nicht bereitgestellte Verweise. Ein ID-Präfix allein
+belegt keine Datei. Der private Resolver muss Projekt, Kennung, Hash, Größe, MIME und Attribution
+vollständig bestätigen. Vorhandene normale Dateien ohne URL und ohne privaten Bytebeleg bleiben
+ehrlich `unavailable`; sie werden nicht in erfundene URLs umgewandelt. Die private normale Bild-/MP3-
+Ablage ist im nachfolgenden Quellanschluss ergänzt; ihr Geräteanschluss und NAS-Betrieb bleiben offen.
+
+`POST /api/v2/species/:id/approval-preview` benötigt die genaue Artrevision und gibt die tatsächliche
+Readerprojektion, ihren Hash und offene Medienverwendungen lesend zurück. Die ausdrückliche Freigabe
+verwendet weiterhin den vorhandenen Freigabeendpunkt, jetzt mit `readerCatalogVersion:2`, passendem
+`expectedReaderHash` und der geprüften Personen-/Rollenbindung. Die Schreibtransaktion projiziert
+erneut und prüft die tatsächliche Medienbereitstellung. Nicht angeforderte Karte/Galerie erzeugen
+keine neue Medienpflicht; ihre Daten bleiben erhalten. Der bisherige Standard bleibt Catalog 1.
+
+Dieser zusätzliche Dienstweg ist zunächst lokale Integration. Die neue sichtbare Übernahmeaktion
+im Artseiteneditor ist angeschlossen; ihre native Bedienabnahme, die kompatible Geräteanbindung
+und NAS-Aktivierung bleiben getrennte Nachweise.
+
+Der Reader-/Normalquellenkern vor dem folgenden Medienanschluss ist mit **55/55 Fällen** geprüft, einschließlich realem HTTP,
+mehreren MiB vollständiger Fachtexte, Bytepaginierung, privater Bildfreigabe und tatsächlichem
+Rechteentzug. Die anschließende vorhandene Store-/HTTP-/Artfreigabe-/Authority-/Containerregression
+besteht mit **91/91 Fällen**. Der reine Normaldateivertrag erhält bisherige Datei-IDs und bindet
+Projekt, Art, Dateislot und alle sechs Metadaten in eine unveränderliche Inhaltskennung. Er legt
+selbst keine Bytes oder neuen Tabellen an. Der ergänzte vollständige MP3-Prüfer besteht **27/27 Fälle**;
+seine Grenzen führt der [Audiovertrag](../../docs/audio-format-validation.md#vollständige-prüfung-für-den-gemeinsamen-mediendienst).
+
+## Normale Artdateien im Anschluss vom 2. November
+
+Der neue Dienstanschluss ergänzt Schema 6 um getrennte unveränderliche Normaldateibelege und
+deduplizierte Originalbytes. Nur ein vollständig qualifiziertes Schema 5 wird in einer eigenen
+Transaktion erweitert; unbekannte oder teilweise vorhandene Tabellen werden nicht repariert.
+Die bestehenden Bildtabellenbedingungen bleiben erhalten. Der Quellstart erzeugt jetzt Schema 6;
+auf dem NAS ist dieser Stand noch nicht aktiviert.
+
+| API unter `/api/v1` | Vertrag |
+| --- | --- |
+| `POST /normal-media` | `{speciesId,slot,expectedRevision,asset,expectedBinding}` bindet eine tatsächlich vorhandene aktuelle Artdatei und die geprüfte Person/Rolle. |
+| `GET /normal-media/:contentId` | Begrenzte Dateimetadaten und tatsächlicher Bereitstellungsstand. |
+| `PUT /normal-media/:contentId/content` | Unveränderte Rohbytes mit den bestehenden drei Projekt-/Personen-/Rollenkopfzeilen; Hash, Länge, Format und vollständige Dekodierprüfung müssen passen. |
+| `GET /normal-media/:contentId/content` | Konkrete Originalbytes nach erneuter Berechtigungs- und Quellenprüfung. |
+
+Die festen Rollen sind `portrait.webp`, `map.jpg`, `sound.mp3` und `spectrogram.webp`.
+Ihre ursprünglichen Dateikennungen bleiben erhalten, auch bei einer Kennung mit `image-` am Anfang.
+Die zusätzliche `normal-<SHA256>`-Inhaltskennung bindet Projekt, Art, Rolle und sämtliche sechs
+Dateimetadaten einschließlich Quellenangabe. Die erste zugehörige tatsächliche Artversion bleibt
+als Fremdschlüssel gespeichert. Ein passender Hash eines anderen Bildregisters ist kein Normaldateibeleg.
+Eine exakte Wiederverwendung derselben Normalbindung in der Galerie behält diesen Dateibeleg;
+abweichende Quellenangaben oder Bytes werden nicht durch die gleiche Kennung freigestellt.
+
+Artbilder sind bis 20 MiB und 40 Millionen Pixel, vollständige MP3-Originale bis 50 MiB erlaubt.
+Der bisherige Seitenentwurf besitzt weiterhin seine engere Metadatengrenze; daraus folgt keine
+pauschale Vergrößerung aller Seitenbilder. Empfang ist auf 120 Sekunden begrenzt, Dekodieren auf
+15 Sekunden. Bild- und Tonprüfung teilen sich einen exklusiven Dienstzugang. Nach der Prüfung werden
+Anmeldung, Rolle, Personenversion und unveränderliche Quellfassung innerhalb der Schreibtransaktion
+erneut gelesen. Weder Originaldateien noch vorhandene Artfassungen werden dabei verändert.
+
+Reine Leser erhalten nur die genaue Normalbindung einer tatsächlich freigegebenen Fassung derselben
+Art und Rolle. Die Leserprojektion unterscheidet Normalrollen von neuen Galeriebildern unabhängig vom
+ID-Präfix. Tatsächliche Verfügbarkeitsänderungen erhöhen eine eigene Medienrevision und entwerten alte
+Lesefortsetzungen. Sicherung und getrenntes Restore prüfen Schema 6, tatsächliche Bytehashes,
+Bilddimensionen, vollständige MP3-Framegrenzen und die Bindung an die gespeicherte Artversion.
+Die Bereitstellung ist noch nicht als automatische Windows-/Handy-Dateinachlieferung angeschlossen.
+
+Die neue Teilprüfung besteht mit **58/58 Fällen ohne Skips**: additive Schemaänderung und Rollback,
+Originalkennungen, Rechteentzug während der Prüfung, unveränderte Aufruf-/Decoderbytes, echte HTTP-
+Bild-/MP3-Übertragung sowie getrennte Sicherung/Wiederherstellung. Der erste Lauf hatte 57/58:
+Eine Leserrolle erhielt bei direktem Storeaufruf zunächst eine Strukturmeldung vor der eigentlichen
+Berechtigungsablehnung. Die Berechtigung wird jetzt vor der Eingangsprüfung und erneut in der
+Schreibtransaktion geprüft. Diese lokalen Fälle belegen keinen Linux-/NAS-/Zielgerätebetrieb.
+Die anschließend vollständig ausgeführte gemeinsame Dienstregression besteht mit **597/597 Fällen,
+ohne Skips**. Sie umfasst auch die bisherigen Bearbeitungs-, Offline-, Rechte-, Konflikt-, Import-,
+persönlichen Sicherungs-, Reader- und Bildtextwege. Der erste neue PC-Lauf hatte 93/94 Fälle;
+seine doppelt reservierte Test-Zieladresse ist korrigiert, der gezielte Workspace-Nachlauf besteht
+mit 31/31. Danach bestehen die vollständige Artseitenserie mit **182/182** und die NAS-Serie
+mit **31/31**, jeweils ohne Skips. Die NAS-Serie enthält den isolierten Laufzeitstart ausschließlich
+aus der Container-Kopierliste und getrennte Sicherungs-/Restorefälle der bekannten alten Formate.
+
+## Windows-Anschluss und Leserfreigabe
+
+Der folgende Anschluss ergänzt den zuvor geprüften Dienstkern. Sein neuer Quellstand verbindet
+den vorhandenen persönlichen Windows-Client mit der Normaldateibereitstellung und der erweiterten
+Freigabeansicht. Die vollständige gemeinsame Serie besteht mit **635 von 636 Fällen**; ein zusätzlicher
+Dateisymlinkfall ist wegen fehlender Betriebssystemberechtigung ausdrücklich übersprungen. Echte
+Hardlink-/Verzeichnisjunction-, Dateidrift- und Handleabschlussfälle sind ausgeführt. Die betroffenen
+Folgeserien bestehen mit **192/192 Artseiten**, **19/19 Artaktionen**, **34/34 Explorerintegration**,
+**7/7 Router** und **170/170 lokale Texthilfe**, jeweils ohne Skips. Das ist eine lokale automatisierte
+Qualifikation; native Bedienung und NAS-/Zielgerätebetrieb bleiben getrennt.
+
+`client.normalMedia` verwendet dieselbe persönliche Anmeldung und serialisierte Clientqueue.
+`status(input)`, `read(input)` und `upload({...input,buffer})` benötigen die genaue Art, den festen
+Dateislot, UUID-Revision, vollständigen Datenhash und
+`requiredBinding:{baseUrl,projectId,userId,role}`. Ein optionales Node-Abbruchsignal ist eine eigene
+zweite Option. Die Methoden legen keine weitere Queue oder lokale Mediendatenbank an. Status liest
+nur Metadaten; Lesen ist ein ausdrücklich ausgelöster Abruf und gibt begrenzte geprüfte Bytes zurück.
+Eine Bereitstellung ist ein eigener Schreibauftrag. Sie prüft aktuelle Anmeldung, Fähigkeit,
+Originalbytes und Quelle, bestätigt gegebenenfalls vorhandene Dateien und überträgt fehlende Bytes
+höchstens einmal. Nach einer ungewissen Antwort beginnt erst ein neuer ausdrücklicher Auftrag mit
+einer Statusprobe. Die Binärantwortgrenze von 50 MiB gilt ausschließlich für den festen Normaldatei-
+Inhaltsendpunkt; sonstige Bildantworten bleiben auf 20 MiB begrenzt.
+
+Der lokale Leser erhält ausschließlich einen tatsächlichen vollständigen Art-Datensatz und einen
+festen Slot. Er liest unter `species-assets/<gebundener assetName>/<Slot>`, prüft Pfadsegmente,
+Verknüpfungen, geöffneten Dateihandle, Größe, Identität, Änderungszeiten und Originalhash. Er schreibt
+keine Datei. Reines Node-FS bietet dabei keinen atomaren, sämtliche übergeordneten Verzeichnisse
+bindenden Öffner: Ein während des Öffnens ersetzter Pfad wird über die Handleidentität vor dem
+Bytezugriff abgewiesen. Eine absolute Garantie, dass dabei niemals kurz ein fremder Handle entsteht,
+wird nicht behauptet. Bei bestehenden Seitenverwendungen reichen Fachkern, Vorschau und Texthilfe
+die tatsächliche Art sowie die genauen sechs Medienfelder Node-intern weiter. Eine normale Datei
+mit `image-UUID` fällt damit nicht allein wegen ihrer Kennung in den Galeriecache.
+
+`previewReaderApproval` bindet die vollständige Reader-2-Serverprojektion an Artversion, Datenhash,
+Person, Rolle, tatsächlichen Leserhash und offene Medienverwendungen. Der vorhandene interne
+Freigabedialog zeigt die vollständigen Texte, Quellen, Bildfolge und Bildtexte kompakt aufklappbar.
+Private Dateien haben dort zunächst einen textuellen Bereitstellungsstatus; die tatsächliche
+Bildbetrachtung bleibt über den Artseiteneditor beziehungsweise die vorhandenen Medienansichten
+erforderlich. Die neue Ansicht ist keine native Darstellungsabnahme.
+
+Bei fehlenden normalen Dateien zeigt **Artdateien bereitstellen** Auswahl und Umfang. Erst der
+Klick verbraucht die geprüfte Vorschauentscheidung und liest beziehungsweise überträgt die fehlenden
+Originale. `/api/shared-project/species/:id/approval/provide-media` erhält ausschließlich `{token}`.
+Vollständiger Erfolg liefert `provided:true`; ein späterer Fehler liefert `provided:false` mit den
+bereits bestätigten Slots und dem angehaltenen Slot. Es gibt keinen automatischen Wiederholungs-
+oder Freigabeauftrag. Danach benötigt die interne Freigabe eine neue Leserprüfung. Bereits
+freigegebene Record-1-Inhalte können ausdrücklich mit `readerCatalogVersion:2` auf fehlende
+Dateibereitstellung geprüft werden; eine zweite Freigabe derselben Artversion wird abgewiesen.
+Der erste bestehende Record-1-Ablauf bleibt Catalog 1, Record 2 benötigt die erweiterte Vorschau.
+
+Schließen bricht Netzaufträge ab und wartet den vorhandenen Arbeitsbesitzer ab. Fehlende lokale
+Originale bleiben von unsicheren oder geänderten Dateien unterschieden. Ein ausdrücklich gestarteter
+Artseiten-Leseweg kann eine bereits bereitgestellte normale Datei authentifiziert vom Dienst lesen;
+nur die bestätigte fehlende Dienstfähigkeit erlaubt den bisherigen öffentlichen Kompatibilitätsweg.
+Anmelde-, Berechtigungs-, Netzwerk- oder fehlende Bytebelege werden nicht durch diesen Rückfall verdeckt.
+Der ausdrückliche persönliche Offlinecache ist im folgenden Anschluss beschrieben. Die kompatible
+Android-Anbindung an Reader 2 bleibt ein eigener offener Schritt; die installierte App 0.1.2+3
+wird durch diese Windows-Änderung nicht aktualisiert.
+
+### Auswählbare Offline-Artdateien
+
+Im gemeinsamen Artbestand öffnet **Artdateien offline verwenden** die Auswahl vorhandener
+Artporträts, Verbreitungskarten, Tonaufnahmen und Spektrogramme. Sie zeigt Dateigrößen und bereits
+lokal gespeicherte Dateien. Die Vorschau liest nur den persönlichen Cache. Erst **Auswahl herunterladen**
+lädt die ausgewählten Dateien vom gemeinsamen Dienst und legt vollständig geprüfte Originalbytes ab.
+Zusätzliche Websitefotos sind von dieser Auswahl getrennt. Neue Downloads benötigen eine bestätigte
+Artfassung ohne offene eigene Änderungen oder Konflikte und eine Onlineverbindung; der normale
+App-Lesemodus verhindert diesen lesenden Download nicht.
+
+Der Clientcache erhält dafür additiv Schema 4 mit getrennten Normaldateitabellen im vorhandenen
+persönlichen Cache. `normalMedia.read` bleibt ohne dauerhafte Aufnahme; `download` speichert ausdrücklich,
+`describeLocal` liest Metadaten und `readLocal` ausschließlich lokale Bytes. Projektadresse, Projekt,
+Person, konkrete Art, fester Slot und sämtliche sechs Quellenmetadaten bleiben gebunden. Die gespeicherte
+Artversion und ihr Datenhash belegen den Downloadkontext und ersetzen keine Leserfreigabe.
+Voll berechtigte Bearbeiter dürfen erhaltene Dateibindungen älterer eigener Offline-Seiten nutzen;
+Lesersitzungen benötigen die exakte aktuell gecachte freigegebene Artbindung. Offline lässt sich nur
+der zuletzt bekannte Berechtigungsstand prüfen. Bekannter Rollenverlust sperrt den Zugriff und erhält
+die gespeicherten Bytes.
+
+Bild- und Normalcache teilen dieselbe 192-MiB-Bytegrenze; je Medienpool wird keine zusätzliche Reserve
+eröffnet. Cacheaufnahme, Sicherungsdatei und persönliches Gesamtpaket behalten ihre bisherigen
+384-MiB-, 512-MiB- und 1-GiB-Grenzen. Platzmangel verwirft ausschließlich die neue Aufnahme.
+Bereits bestätigte Dateien eines teilweise fehlgeschlagenen Downloads bleiben erhalten, die Auswahl
+muss erneut geprüft werden. Es gibt weder automatische Wiederholung noch Verdrängung alter Inhalte.
+Die zugehörige Sicherungsprüfung und kontextuelle Zuordnung führt der
+[Mehrgerätevertrag](../../docs/multi-device-backup-plan.md#normaldateien-und-auswählbare-offlineablage-vom-2-november).
+
+Der lokale Offline-Nachlauf besteht mit **44/44** gezielten Cache-/Client-/Explorerfällen und
+**88/88** Sicherungsfällen. Der breite Nachlauf besteht mit **664 bestandenen Fällen bei 665 insgesamt**;
+ein Dateisymlinkfall bleibt wegen fehlender Windows-Berechtigung ausdrücklich übersprungen.
+Weitere Gegenproben bestehen inzwischen mit **221/221 Artseiten**, **28/28 Artaktionen**, **337/337 sonstigen
+Oberflächenabläufen**, **34/34 Explorerintegration** und **7/7 Routerfällen**. Die danach ergänzte
+historische Quellen- und Rücklesekompatibilität besteht zusätzlich mit **22/22 Journalfällen**. Das sind lokale
+Modul-/HTTP-/SQLite- und Integrationsnachweise, keine installierte NAS-, Zweit-PC- oder Bedienabnahme.
+Der bisherige private Windows-Installer enthält diesen nachfolgenden Cache-4-Anschluss noch nicht.
+Der anschließende CMS-Rücklesevertrag verwendet getrennte Plan-/Quittungsversion 2 und überprüfbare
+Editorwerte statt eines behaupteten vollständigen Planhashes. Der betroffene Sicherungsnachlauf
+besteht mit **101/101 Fällen**; Einzelregeln führt der [Artseitenvertrag](../page-authoring/README.md#vollständige-planbindung-und-tatsächliche-rücklesung).
 
 ## Start und Speicherung
 
@@ -56,10 +263,25 @@ Ein Passwortwechsel erfordert das bisherige Passwort und beendet alle bisherigen
 Alle folgenden Pfade beginnen mit `/api/v1`. Außer Login benötigt jede Aktion den passenden Bearer.
 JSON-Aktionen senden `Content-Type: application/json`; Refresh darf einen leeren Körper enthalten.
 
+Eine Geräteeinladung gilt zwei Minuten. Der Dienst hält nur ihren Hash im Arbeitsspeicher und
+bindet ihn an Projekt, ausstellende Sitzung und Benutzerfassung. Eine neue Einladung derselben
+Person ersetzt die frühere. Abmeldung, Sitzungsablauf, geänderte Benutzerfassung und
+Dienstneustart machen offene Einladungen unbrauchbar. Die Einlösung legt in einer Transaktion
+die widerrufbare Gerätezulassung an und erstellt eine Lesesitzung. Gleichzeitige Einlösungen
+derselben Einladung ergeben genau eine Zulassung. Der lokale Explorer akzeptiert den
+Ausstellungsauftrag nur für das gerade angezeigte Projekt und Konto. Die QR-Anzeige unter
+**Eigene Geräte** rendert lokal und wird beim Schließen, Ablauf und Wechsel in den Lesemodus
+entfernt. Der gebundene Encoder [qrcode-generator 2.0.4](https://github.com/kazuhikoarase/qrcode-generator)
+liegt mit MIT-Lizenz unter `species-explorer/public/vendor`. Der Android-Quellstand verarbeitet den
+QR-Code mit ZXing und verlangt vor der Einlösung die Bestätigung der Projektadresse.
+
 | Aktion | Eingabe und Ergebnis |
 | --- | --- |
+| `GET /capabilities` | Authentifizierte Fähigkeiten des konkreten Projekts und der aktuellen Person. `pageEditorialAdoption:1` und `speciesRecordVersions:[1,2]` kennzeichnen den neuen Entwurfsweg; das ist keine Catalog-2- oder Betriebsabnahme. |
 | `POST /auth/login` | `{username,password,deviceLabel?,scope?}` → `{token,expiresAt,scope,user,projectId,device?}`. Sitzung 12 Stunden, optionales Gerät 30 Tage. `scope` ist standardmäßig `full`; Android fordert ausdrücklich `read` an. `device` enthält einmalig `id`, `token`, `expiresAt`. |
 | `POST /auth/refresh` | Bearer ist das Gerätetoken → neue ausschließlich lesende Sitzung, höchstens 12 Stunden und nie länger als die Gerätezulassung. |
+| `POST /auth/pairing` | Volle Sitzung und `{}` → `{schemaVersion:1,code,projectId,expiresAt}`. `devicePairing:1` in den Fähigkeiten kennzeichnet die Unterstützung. |
+| `POST /auth/pairing/redeem` | `{code,projectId,deviceLabel}` → persönliche Lesesitzung und widerrufbare Gerätezulassung. Der Aufruf verwendet den Einladungscode im JSON-Körper. |
 | `GET /auth/me` | Öffentliche Daten der angemeldeten Person plus stabile `projectId`, keine Passwort- oder Tokenhashes. Auch Refresh enthält diese Projekt-ID. |
 | `POST /auth/logout` | `{revokeDevice?:true}` beendet Sitzung und gegebenenfalls das zugehörige Gerät. |
 | `GET /auth/devices`, `DELETE /auth/devices/:id` | Eigene Geräte ansehen/widerrufen; Administration kann bekannte Gerätekennungen anderer Personen widerrufen. |
@@ -70,6 +292,7 @@ JSON-Aktionen senden `Content-Type: application/json`; Refresh darf einen leeren
 | `GET /objects/page` | Begrenzter konsistenter Abruf: `limit=1..25`, optional `kind`, bei Fortsetzung exakt `snapshot` und `cursor`; Abschlussprüfung `snapshot=...&check=1`. |
 | `GET/PUT /objects/:kind/:id` | PUT `{changeId,baseRevision,data}`; dieselbe Objektkennung ausschließlich im Pfad. |
 | `POST /changes` | Idempotente bestehende Änderung `{changeId,kind,id,baseRevision,data}`. |
+| `POST /changes/:id/cancel` | `{requestHash}` schließt einen noch unbestätigten eigenen Auftrag ausdrücklich ab. Der Dienst liefert zuerst eine vorhandene Übernahme-/Konfliktquittung oder versiegelt den Abbruch. Bereits übernommene Daten werden nicht zurückgesetzt. |
 | `POST /objects/:kind/:id/approve` | `{expectedRevision}`; interne Freigabe, ausdrücklich `externalPublication:"not-performed"`. |
 | `GET /conflicts`, `GET /conflicts/:id` | Redaktion sieht dauerhaft erhaltene Ausgangs-, Server- und Vorschlagsversion. |
 | `POST /conflicts/:id/resolve` | `{expectedRevision,strategy,data?}`; `current`, `proposed` oder `merged`. Entscheidung erzeugt keine neue Freigabe. |
@@ -115,6 +338,27 @@ Alle Fassadenaktionen sind asynchron: `connect({baseUrl,username,password})`, `d
 Passwörter werden nur zur Anmeldung übertragen. Standardmäßig ist ausschließlich HTTPS zulässig;
 HTTP für Loopback benötigt das ausdrückliche Testflag. Redirects werden manuell abgewiesen.
 Der Client ruft keine Medienadressen auf und schreibt keine bisherigen JSON-/Taxonomiedateien.
+
+Die neue Node-Fassade `previewPageEditorial(pageObjectId,speciesSlug)` bereitet nach frischer
+Anmeldung, Fähigkeitsprüfung und Bestandsabgleich eine personengebundene Vorschau vor.
+`adoptPageEditorial(token)` prüft die Grundlage erneut und versiegelt ausschließlich den
+Artentwurf in derselben persönlichen Warteschlange. Der Token gilt höchstens zehn Minuten
+und einmal; weder Vorschau noch Annahme führen automatisch einen Schreibabgleich, eine
+Leserfreigabe oder CMS-Veröffentlichung aus. Der sichtbare Exploreranschluss folgt getrennt.
+Nach endgültiger Ablehnung einer geänderten Seitenquelle bleiben der versiegelte Auftrag und
+spätere abhängige Fassungen erhalten. `cancelPageEditorial(changeId)` schließt einen solchen
+alten Auftrag ausdrücklich ab, wenn keine späteren eigenen Fassungen daran hängen. Der Dienst
+entscheidet diesen Abbruch atomar gegenüber dem Originalschreiben und erhält das Ergebnis
+dauerhaft. Verlorene Antworten bleiben wiederaufnehmbar. Hängen weitere eigene Fassungen daran,
+stoppt der Abschluss sichtbar mit `editorial_followup_review_required`; diese benötigen eine
+gesonderte Übernahmeentscheidung. Während eines noch unbestätigten Abbruchs verhindert eine
+dauerhafte persönliche Sperre neue Folgeänderungen derselben Art; andere Arten bleiben bearbeitbar.
+Nach Neustart setzt der Abgleich zuerst genau diesen Abbruch fort, auch wenn zuvor noch kein
+Netzaufruf zugestellt worden war. Bereits bestätigter Abschluss und ein später fehlgeschlagener
+Leseabruf werden über `refreshConfirmed` getrennt zurückgegeben. Die persönliche Sicherung prüft
+die Sperre gegen ihren tatsächlichen versiegelten Auftrag und weist verwaiste Marker zurück.
+Der neue Bedienweg bleibt bis zum Exploreranschluss und
+den noch offenen Integrationsprüfungen außerhalb der Alltagsbedienung.
 
 Der injizierbare Anmeldespeicher besitzt die asynchronen Methoden `get(key)`, `set(key,value)`, `delete(key)`.
 Nur diese interne Fassade bekommt Sitzungs-/Gerätetokens; ihre sichere dauerhafte Umsetzung liefert die
@@ -186,6 +430,12 @@ Freigaben zusätzlich `/approve`, Konflikte `/conflicts/:id/resolve`, Personen `
 
 Der Bereich bietet strukturierte Namen/Fachabschnitte, bewusste Leerstellen, öffentliche Bildvorschauen,
 Alternativtexte/Beschriftungen, Versionen und gezielte Konfliktentscheidungen sowie Rollen-/Gerätepflege.
+Ein Kontowechsel verwirft die bisher angezeigten Personen und Geräte schon vor der Anmeldung.
+Wenn die Anmeldung gelingt und der anschließende Bestandsabruf ausfällt, gelten nur das neue Konto
+und dessen lokaler Bestand. Ein abgelehnter Anmeldeversuch lässt die vorhandene Sitzung bestehen.
+Die Bestätigung einer Rechteänderung nennt die Person, die gewählte Benutzerstufe und den
+künftigen Zugangsstatus. Geänderte Eingaben oder eine inzwischen neu geladene Ansicht verlangen
+eine neue Bestätigung. Der Dienst prüft zusätzlich die angezeigte Fassung der Zielperson.
 Er führt fremde Inhalte ausschließlich über DOM/textContent ein. Der bisherige lokale Explorer bleibt
 ein eigener Workflow. Server-/Router-Sitzungsschutz, persönlicher safeStorage-Speicher,
 Bereichseintrag/CSS, App-Lebenszyklus und Abschlusswächter sind inzwischen quellseitig angebunden;
@@ -220,7 +470,11 @@ verwenden ausschließlich den Cache. Die Vorschau bindet Person, Dienstadresse, 
 angezeigte lokale Fassung und Zielwerte. Speichern verbraucht diese kurzlebige Vorschau und merkt nur
 die geprüfte Änderung in derselben Queue vor. Es startet weder Netzabgleich noch Freigabe oder lokale
 JSON-/Assetmaterialisierung. Ein zwischenzeitlicher Personen-/Projektwechsel oder eine andere
-lokale Fassung stoppt den Auftrag. Der Vorschautoken ist keine dauerhafte fachliche Eigenschaft.
+lokale Fassung stoppt den Auftrag. Auch ein neu erkannter Konflikt entwertet eine offene
+Grunddatenvorschau, selbst wenn die angezeigte Revision und die Felder gleich aussehen.
+Die lokale Warteschlange prüft Fassung und Abgleichstatus gemeinsam in ihrer Schreibtransaktion.
+Nach erneutem Vergleich kann eine Folgefassung bewusst vorgemerkt werden. Der Vorschautoken
+ist keine dauerhafte fachliche Eigenschaft.
 
 Der Grunddatenadapter blockiert deutsche und wissenschaftliche Umbenennungen, solange der gekoppelte
 gemeinsame URL-/Assetpfadadapter noch fehlt. Vorhandene schmalere Katalogobjekte bleiben lesbar und
@@ -249,6 +503,167 @@ Medien-/Taxonomie-/Lösch-/Rücknahmeaktionen sind für diesen gemeinsamen Ansch
 sie werden weder als lokale Artaktion angeboten noch still an lokale Schreibendpunkte weitergeleitet.
 Redaktionelle Fachabschnitte und geordnete Galerien sind lesbar; bewusste Leerstellen bleiben sichtbar.
 Ein öffentlicher Medienverweis ist keine heruntergeladene oder hashgeprüfte lokale Datei.
+
+### Quellengebundene gemeinsame Artanlage
+
+Der Backendanschluss vom **2. November** ergänzt `explorer-species-creation.mjs` über dieselbe
+persönliche Fassade. POST `/api/shared-project/species/new/preview` prüft manuelle Eingaben und
+liefert einen gebundenen Vorschautoken; POST `/api/shared-project/species/new/create` bestätigt
+ausschließlich diesen Token. Der anschließende Quellstand verbindet den vorhandenen Artassistenten
+mit diesem Weg und ist gezielt automatisiert sowie in einer eigenen sichtbaren Chromeprobe geprüft.
+Der lokale Artassistent arbeitet weiterhin lokal.
+
+Im gemeinsamen Bestand erscheint **Neue Art** bei voller Online-Anmeldung mit Anlegerecht im
+Bearbeitungsmodus. Beim Öffnen prüft GET `/api/shared-project/species/new/availability` Dienstfähigkeit,
+Personenkontext und den eingerichteten tatsächlichen lokalen Quellenleser, ohne Artquellen zu lesen
+oder etwas anzulegen. Dieselben Eingabefelder und die Taxonomieauswahl bleiben erhalten. Nach
+**Eingaben prüfen** folgt ausdrücklich **Art im gemeinsamen Projekt anlegen**. Ein gemeinsamer
+Entwurf startet keinen lokalen Portrait-/Karten-/Soundlauf. Diese gemeinsamen Folgewege bleiben
+offen; der Dialog benennt fehlende Fachinformationen und Artdateien ausdrücklich.
+
+Der tatsächliche Node-Quellenleser verwendet dieselbe Eingabeprüfung, Namensableitung, lokale
+Artenliste, Modell-Kollisionsprüfung und Taxonomiezuordnung wie der bisherige Assistent. Er schreibt
+keine Artenliste, erstellt keine Sicherung und startet keine Pipeline. Vorhandene lokale Arten oder
+Assetordner verhindern eine neue quellenlose Anlage; dafür bleibt die bewusste Übernahme zuständig.
+Eine ausgewählte Taxonomiereferenz samt tatsächlicher `assignmentBinding` bleibt am manuellen Input
+erhalten. Erzeugte Fachdaten bleiben unbekannt, Dateibindungen leer; es werden keine Taxonomie oder
+Medien aus Namen erfunden. Spätere gemeinsame Fach-/Medienergänzungen bleiben zu vervollständigen.
+
+Vorschau und Bestätigung binden Quelle, Eingaben, Projektadresse, Projekt, Person, Rolle und positive
+Personenversion. Die Fassade verlangt eine volle Online-Anmeldung und bestätigtes `speciesCreation:1`;
+der ältere NAS-Dienst darf keine stille Rückfallanlage erhalten. Der persönliche Cache bewahrt nun
+die vom Server gelieferte Personenversion; alte Einträge werden bei erneuter Identitätsprüfung ergänzt.
+Der Server kontrolliert die gebundene Person erneut innerhalb seiner tatsächlichen Schreibtransaktion.
+Jede neue vollständige Art prüft dort wissenschaftliche Identität, deutschen Namen, URL-Slugs und
+Assetnamen gegen den Bestand. Das gilt auch außerhalb des administrativen Erstimports.
+
+Ein begonnener Schreibversuch darf über denselben Token niemals einen zweiten POST auslösen.
+Bei unklarer Antwort sind ausschließlich frischer Bestandsabruf und exakter Serverfassungsvergleich
+erlaubt. Der eigene POST-Endpunkt `/api/shared-project/species/new/recover` ist dafür zwingend nur
+lesend: Er entzieht selbst einem bislang nicht versendeten Token vor dem ersten asynchronen Schritt
+das Schreibrecht und liest keine lokalen Artquellen. **Serverstand prüfen** darf somit niemals einen
+ersten Anlageauftrag auslösen. Ein Treffer heißt „vorhanden, geprüft“, ohne eigene Autorschaft zu
+behaupten. Andere oder fehlende Fassungen bleiben offen. Beim bloßen Dialogschließen bewahrt die
+Oberfläche den offenen Kontext ausschließlich im Arbeitsspeicher. **Neue Art** öffnet bei derselben
+Quelle wieder diesen Prüfweg statt einer neuen Vorschau. Die Kontexte sind sitzungsgebunden; nach
+einem vollständigen Explorerneustart muss der tatsächliche Bestand geprüft werden. Es entsteht keine
+zusätzliche Offline-Anlegequeue und keine Speicherung privater Formularwerte im Browserprofil.
+Offline werden weiterhin ausschließlich bestehende Objekte geändert. Freigabe und Veröffentlichung
+bleiben getrennte Schritte. Die Kerngegenprobe besteht mit **130/130 Fällen**, einschließlich echter
+HTTP-Konkurrenz, normalem Exploreranschluss, verlorener Antwort und Personenwechsel unmittelbar vor
+dem Servercommit. Dieser frühere Kernnachweis gilt nicht für die danach ergänzte Oberfläche und den
+eigenen Recoveryendpunkt. Das ist keine native Assistenten-, Zweit-PC- oder NAS-Betriebsabnahme.
+
+Der anschließende Oberflächen-/Recoverynachlauf besteht mit **135/135 gezielten Fällen** und
+**41/41 Explorerintegrationsfällen**, jeweils ohne Skips. Darin sind der wirkliche Formularleser,
+Feldcontroller, Personen-/Quellenwechsel sowie ein nicht zugestellter erster Anlageaufruf enthalten.
+Ein vorab reproduzierter Anzeigefehler beim Wiederöffnen getrennter Männchen-/Weibchenwerte ist
+korrigiert: Nach dem Wiederherstellen der Checkboxen wird ihre Feldgruppe erneut berechnet.
+
+Die zusätzliche sichtbare Chromeprobe verwendet den tatsächlichen lokalen Explorer und eigene
+Loopbackdienste mit ausschließlich künstlichen Daten. Sie prüft Öffnen, manuelle Eingabe mit
+umgebenden Namensleerzeichen, Vorschau und absichtlich verlorene Speicherantwort. Nach Schließen,
+bewusstem Serverstandlesen und erneutem Öffnen bestätigt **Serverstand prüfen** dieselbe Fassung.
+Der tatsächliche Transportzähler bleibt bei **genau einem Anlage-POST**, der Datensatz bei einem
+unfreigegebenen Entwurf. Lokale Ausgangsdateien und gebundene Quellen bleiben bytegleich; alle
+eigenen Server und Fixtures sind regulär geschlossen. Der erste nicht erreichbare Teststart bleibt
+als getrenntes Fehlerprotokoll erhalten; sein Aufräumdeadline ist beendet. Keine vorhandenen
+Personenprofile, NAS-Daten oder Websiteinhalte verwendet. Diese Browserprobe ersetzt weder einen
+aktualisierten persönlichen Electron-Start noch die tatsächliche NAS-/Zweit-PC-Abnahme.
+
+### Vorbereitung gemeinsamer Fach- und Medienergänzungen
+
+Der bisherige lokale Pipelinecontroller startet `update.mjs` im echten Arbeitsbestand und schließt
+lokale Veröffentlichungsschritte an. Eine ausschließlich gemeinsam angelegte Art wird dafür nicht
+vorübergehend in die lokale Artenliste eingetragen. Der Quellnachlauf vom **2. November** extrahiert
+stattdessen den bereits vom lokalen CLI verwendeten Einartkern; Ausführung und Gegenproben beschreibt
+der [Artanlagevertrag](../../docs/add-species-workflow.md#gemeinsamer-einartkern-für-fach--und-mediendaten).
+Dies ist noch kein durchgehender gemeinsamer Abruf-/Übernahmeweg und kein NAS-Deployment.
+
+`species-enrichment.mjs` und `species-enrichment-preparer.mjs` bilden inzwischen den geprüften
+Node-Kandidatenweg. Die wirkliche Objektversion und ihr vollständiger Hash werden gebunden; der
+Aufrufer muss Projekt, Person, Rolle und aktuelle Quelle über einen positiv bestätigten Checkpoint
+erneut prüfen. Der Vorbereiter verwendet dieselben vorhandenen Quellenadapter in einer eigenen
+verwalteten Temp-Sitzung. Tatsächliche Originalbytes und Kandidaten werden begrenzt gelesen und
+dekodiert; unbekannte Altcredits werden in die wirklichen neuen JSON-Bytes übernommen.
+`species-enrichment-transport.mjs` begrenzt schon die Antwortkörper und verknüpft deren Abbruch mit
+dem Gesamtauftrag. Der Renderer bestätigt seinen tatsächlichen Prozessabschluss, bevor die eigene
+Sitzung geschlossen wird. Der Nachlauf besteht mit **59/59 gezielten Fällen** und **37/37 Audioregressionen**.
+Die Rückgabe ist ausdrücklich `persistentCandidate:false` und verändert keine gemeinsame Fassung.
+Der normale manuelle Grunddatenweg bleibt für solche Änderungen gesperrt.
+
+Der anschließende Node-interne Vorbereiter muss die wirkliche gemeinsame Ausgangsfassung und einen
+ausdrücklichen Arbeitsbereich verwenden. Ergebnis, Herkunft, Assessmentbezug und tatsächliche
+Dateihashes/-größen bleiben gebunden; abweichende aufgelöste Artidentitäten verlangen eine sichtbare
+Prüfentscheidung. Die Übernahme braucht Projekt-/Personen-/Rollenbindung, Personenfassung und atomaren
+Vergleich der aktuellen Objektversion samt vollständigem Ausgangshash. Sie darf nicht über den
+normalen manuellen Grunddatenweg geschützte Felder austauschen.
+
+Die ausdrücklich begrenzte Ergänzung muss unbekannte Eingabefelder, manuelle Taxonomieentscheidungen
+einschließlich Begründung und Zusatzfeldern, Schutz-/Ablehnungsentscheidungen sowie vorhandene
+redaktionelle Inhalte erhalten. Nur belegte automatische Vergleichswerte werden aktualisiert.
+Bei Record2 sind geänderte normale Dateien zusätzlich exakt in `editorial.normalAssets` nachzuführen;
+vorhandene Abschnitte, Galerie, Quellen und bewusste Leerentscheidungen bleiben gebunden.
+
+Der heutige Normalmediendienst verlangt bereits den passenden aktuellen Serverrecord. Deshalb kann
+er neue Kandidatenbytes erst nach deren Recordübernahme bereitstellen. Der lokale Nachlauf vom
+**3. November** speichert deshalb den vollständigen Einartvorschlag mit seinen geprüften Dateien im
+persönlichen Cache. Der erste erfolgreiche Schreibvorgang erweitert Cacheformat 4 in derselben
+SQLite-Transaktion zu Format 5. Vorschlag und Bytebestand erscheinen gemeinsam oder werden gemeinsam
+zurückgerollt. Bild-, Ton- und Vorschlagsdateien teilen dieselbe Medienreserve und Sicherungsgrenze.
+
+Der Node-Client prüft vor dem Speichern die frisch gelesene gemeinsame Art und die persönliche
+Bindung. Beim Wiederöffnen werden vollständiger Ausgangshash, Artversion, Dienst, Projekt, Person und
+Rollenfassung abgeglichen. Im angemeldeten Offlinebetrieb kann der Client die unveränderte bekannte
+Artgrundlage aus dem Cache verwenden. Ein abweichender Serverstand stoppt die Speicherung. Eine
+identische Wiederholung liefert dieselbe Kennung. Der Kandidat bleibt ein privater Vorschlag.
+
+Die bestehende Gerätesicherung prüft Format 5 auf exakte Tabellen, vollständige Bindungen, Dateigrößen,
+Hashes und dekodierbare Medien. Die Restoreprobe liest aus einer eigenen wiederhergestellten Kopie
+dieselben Vorschlagsbytes. Inaktive persönliche Fassungen bleiben Bestandteil der Sicherung. Der
+neue Client liest die bisherigen Cacheformate. Ein bereits auf Format 5 erweiterter Cache benötigt
+einen Client mit Format-5-Unterstützung. **60/60** gezielte Vorbereitungs- und Speicherfälle sowie **93/94**
+Medien- und Sicherungsfälle bestehen. Eine Windows-Junction-Gegenprobe ist mangels Berechtigung
+übersprungen.
+
+Der Dienst meldet `speciesEnrichment: 1` und nimmt den typgekennzeichneten Vorschlag über
+`POST /api/v1/changes` an. Er berechnet die vollständige Zielfassung aus der Ausgangsversion und
+dem Quellvorschlag nach. In einer Transaktion prüft er den aktuellen Ausgangshash, die Benutzer-
+und Rollenfassung sowie den geprüften Zielhash. Eine überholte Artfassung ergibt eine gezielte
+Ablehnung zur erneuten Prüfung. Eine exakte Wiederholung liefert den vorhandenen Änderungsbeleg.
+Die bisher freigegebene Leserfassung bleibt aktiv. Neue Bild- und Tonbytes sperren die interne
+Leserfreigabe bis zu ihrer geprüften Bereitstellung, auch bei späteren manuellen Änderungen am
+Entwurf. Diese Voraussetzung bleibt in der Projektdatenbank über Neustart und Sicherung erhalten.
+Bei der ersten übernommenen Artvorbereitung wechselt die Datenbank in derselben Transaktion zu
+Schema 7. Dieses Format bindet den Schutz neuer Medien auch an die Dienstversion. Eine Rücknahme
+verwendet die zur alten Dienstversion passende Sicherung vor dem Wechsel. [NAS-Betriebsgrenzen](../../nas/README.md)
+
+Der Node-Client stellt einen Vorschlag mit seiner Kennung und dem geprüften Zielhash ausdrücklich in
+die bestehende persönliche Warteschlange. Beim Einstellen prüft er die aktuelle Fassung online.
+Vorschauen auf der unveränderten gespeicherten Grundlage bleiben offline lesbar. Die Sicherung prüft
+auch, ob der gespeicherte Auftrag noch genau auf seinen privaten Vorschlag und dessen Dateien zeigt.
+Bei einer konkurrierenden Änderung vor der Übernahme bleibt der alte Vorschlag in der Sicherung.
+Der Auftrag fällt aus der aktiven Warteschlange und benötigt eine neue Prüfung.
+
+Nach der Übernahme speichert der Client die Entwurfskennung dauerhaft und liefert die Originalbytes
+über den vorhandenen Normalmediendienst nach. Bei einem erneuten Abgleich prüft er zuerst den
+Dienstbeleg. Eine bereits bestätigte Datei wird wiedererkannt. Nachfolgende Änderungen an der Art
+bleiben erhalten. Eine Datei, deren Bindung die aktuelle Fassung inzwischen ersetzt hat, wird
+übersprungen und im Ergebnis getrennt ausgewiesen. Die interne Leserfreigabe bleibt ein eigener
+Schritt.
+
+Der Explorer-Dialog **Artvorschlag prüfen** ruft über die lokale Sitzung getrennt Status,
+Vorbereitung, Vormerken und Abgleich auf. Er zeigt den Vergleich der alten und vorgeschlagenen
+Fachwerte und die neuen Bild- und Tondateien. Die Dateivorschau ist auf die aktuelle persönliche
+Projektbindung, die genaue Kandidatenkennung und den festen Dateislot begrenzt. Der Explorer
+liefert die Vorschlagsbytes ohne öffentlichen URL-Ersatz. Er beendet laufende Quellenarbeit, wenn
+die Vorschau geschlossen oder die Sitzung beendet wird. Der Test über die lokale HTTP-Schnittstelle
+und die sichtbare Windows-Probe vom 3. November verwenden simulierte Quellen und einen echten
+isolierten Projektdienst. Der Abgleich speichert genau einen Entwurf und die Originalkarte. Die
+normale Artansicht lädt gebundene Karten, Porträts, Aufnahmen und Spektrogramme über einen lokalen
+Leseweg mit persönlicher Projektanmeldung und exakter Artfassung. Vorhandene Offlineinhalte haben
+Vorrang. Das bloße Ansehen legt keinen Offlinebestand an. Öffentliche Dateien verwenden weiterhin
+ihren gebundenen Verweis. Installierter Desktop- und NAS-Betrieb bleiben getrennte Abnahmen.
 
 ### Feldweise Entscheidung vollständiger Artkonflikte
 
@@ -347,9 +762,17 @@ Zielrecords und Dateibelege. Vor jeder Anlage beziehungsweise internen Freigabe 
 Register und nur die Dateien der betroffenen Art erneut geprüft. Ein unvollständiger Bestand wird
 nicht zum Importplan; der Renderer liefert weder Pfade noch eigene Quellenhashes.
 
-Der feste Leser `local-working-source.mjs` liest die fünf bisherigen Rootregister als stabilen Block,
-verwendet den gebundenen öffentlichen Katalog und erkennt dessen erzeugten Allgemeinblock ausschließlich
-über den bestehenden Exporter und exakten Vergleich. Alle übrigen Fachtexte bleiben erhalten. Die
+Der feste Leser `local-working-source.mjs` liest die fünf bisherigen Rootregister als stabilen Block.
+Bei der Vorbereitung prüft er die aktuelle öffentliche App-Katalogfassung gegen ihre Freigabedatei.
+Die Vorschau zeigt die verwendete Fassung mit Datum und Artzahl. Ohne Netz oder ohne öffentliche
+Freigabedatei ist der mitgelieferte Stand verfügbar. Eine beschädigte öffentliche Fassung sperrt
+die Vorschau. Der bestätigte Importplan bindet dieselbe Katalogfassung auch beim Fortsetzen.
+Ältere Pläne behalten ihre ursprüngliche mitgelieferte Quelle. Der Leser erkennt den erzeugten
+Allgemeinblock über den bestehenden Exporter und exakten Vergleich. Alle übrigen Fachtexte bleiben
+erhalten. Eindeutig lokal angelegte Arten gehen mit ihrem lokalen Art- und Dateibestand in die
+Vorschau ein. Ohne passenden Websitebeleg bleiben Websiteadresse,
+redaktionelle Abschnitte, Galerie und öffentliche Medienadressen für diese Arten leer. Die manuelle
+Eingabezeile, der erzeugte Artdatensatz und lokale Dateien werden auch dann gemeinsam gebunden. Die
 Node-Option `sharedProjectImportOptions.sourceKind: "working-records"` schließt diesen Leser an den
 normalen Explorer-Server an; Browseranfragen können die Quelle nicht wechseln. Der tatsächliche lokale
 Bestand ist zusätzlich vollständig lesend vorbereitet und je Art erneut geprüft, ohne Dateiänderung,
@@ -368,12 +791,64 @@ abgewiesen. Jede Clientaktion bindet Dienstadresse, Projekt und Person; der Stor
 Projekt und Person erneut innerhalb der Schreibtransaktion. Unter einer anderen Kennung vorhandene
 strukturierte Artidentitäten blockieren die Neuanlage auch bei einer Änderung nach der Vorprüfung.
 Vorhandene schmale oder abweichende vollständige Objekte werden weder überschrieben noch freigegeben.
+Die Vorschau zählt abweichende Projektfassungen getrennt und kennzeichnet die betroffenen Arten.
 Datensätze bleiben auf 256 KiB begrenzt; ihre Transportumhüllung passt in die bestehende HTTP-Grenze.
 
-Diese Kette ist mit künstlichen Quellen, eigenen Dateien und tatsächlichen HTTP-Diensten geprüft.
-Der normale Desktop verwendet weiterhin die gebundene öffentliche Erstquelle. Umschaltung des regulären
-Desktopstarts auf die vollständige Quelle, NAS-Upgrade, konkrete Übernahmefreigabe und ein späterer bestehender Typwechsel
-sind noch offen. Mediendateien werden durch diesen Datensatzimport nicht auf andere Geräte kopiert.
+Der reguläre Desktop verwendet den gebundenen vollständigen Arbeitsbestand. Alte Pläne aus der
+öffentlichen Quelle behalten ihre Belege und ihren ursprünglichen Datenvertrag. Die Anbindung ist mit
+künstlichen Quellen, eigenen Dateien und tatsächlichen HTTP-Diensten geprüft. Seit dem 9. November
+läuft NAS 0.1.9. Für den produktiven Lauf stehen die persönliche Verbindungsprüfung und die konkrete
+Übernahmefreigabe aus. Für bereits angelegte schmale Objekte bleibt der gesonderte Typwechsel offen.
+Mediendateien werden separat bereitgestellt.
+
+Die lokale Betriebsprobe vom 9. November verwendete das hashgeprüfte NAS-Quellarchiv 0.1.9, den
+aktuellen lokalen Arbeitsbestand, eine neue SQLite-Datenbank und zwei getrennte Testkonten über
+Loopback-HTTP. Die Vorschau meldete 64 eindeutige Arten und der Testdienst blieb bis zur Ausführung
+leer. Die Probe übernahm alle 64 als Entwürfe. Das zweite Konto las jeden Datensatz vollständig
+zurück. Der Katalog für Projektleser blieb leer. Die separat gestartete Medienphase bestätigte
+250 Dateien mit 115.163.452 Bytes. Für drei Arten fehlen im Quellbestand Tonaufnahme und
+Spektrogramm. Der private Nachweis liegt im Deployment-Prüfbereich unter
+`working-import-rehearsal-64-20261109.json`. Produktive Übernahme und echter Mehrgerätebetrieb
+bleiben getrennte Abnahmen.
+
+Die erneute lokale Probe am 13. November verwendet den aktuellen Bestand und die geprüfte
+öffentliche Katalogfassung. Die Vorschau ließ den getrennten Testdienst leer. Der bestätigte
+Testimport legte alle 65 Arten als Entwürfe an und ein zweites Konto las sie vollständig zurück.
+Der getrennte Medienlauf bestätigte alle 252 vorgesehenen Originaldateien mit insgesamt
+118.086.096 Bytes.
+
+Ein vorhandener Vorbereitungsbeleg bindet den gesamten Importplan an das ursprüngliche Projektkonto.
+Ein Kontowechsel während der Quellenvorbereitung verwirft diese Vorbereitung. Ein anderes Konto kann
+den gespeicherten Plan weder starten noch ersetzen. Wechselt die Anmeldung während der Übernahme,
+stoppt der Lauf vor der nächsten Anlage oder internen Freigabe. Das ursprüngliche Konto kann den
+gebundenen Plan nach erneuter Prüfung mit den erhaltenen Quittungen fortsetzen. Das Importjournal
+verwendet dafür seine vorhandene Schema-Version 2.
+
+Nach einer abgeschlossenen vollständigen Übernahme erscheint **Artdateien für das Projekt
+bereitstellen**. Die Vorschau zählt die gebundenen Artporträts, Verbreitungskarten, Tonaufnahmen und
+Spektrogramme der durch diesen Plan neu angelegten Arten und zeigt ihre Gesamtgröße. Die Aktion
+benötigt eine eigene Bestätigung. Der lokale POST `/api/shared-project/import/media` erhält dafür
+ausschließlich Plan-ID und Bestätigung. Bereits vorhandene Arten gehören nicht zur Auswahl.
+
+Die Bereitstellung bindet den vorbereitenden Admin, das Projekt, die Artrevision, den Datenhash und
+den Dateislot. Sie prüft zuerst den bestätigten Dateistatus beim Dienst. Fehlende Dateien werden
+aus dem festen lokalen Artordner gelesen und über den vorhandenen Normaldateiweg bereitgestellt.
+Seit dem Import geänderte Artfassungen werden in der Liste zur Einzelprüfung markiert. Meldet der
+Dienst während der Bereitstellung eine geänderte Version, liest der Explorer die aktuelle Artfassung
+und prüft Konto und Projekt erneut. Bei bestätigter Abweichung überspringt er nur die verbleibenden
+Dateien dieser Art und fährt mit den anderen Arten fort. Eine unveränderte Fassung nach dem Konflikt
+oder eine unklare Berechtigung hält den Lauf an. Bereits bestätigte Dateien bleiben erhalten. Ein neuer bestätigter Start
+prüft deren Status erneut. Die aktuelle Fortschrittsanzeige gehört zur laufenden Sitzung. Als
+dauerhafter Nachweis dienen die bestätigten Originale beim Projektdienst und das bestehende
+Importjournal. Die Aktion ändert weder Artfassungen noch Leserfreigaben und hat keinen Website-Schritt.
+
+Die lokale Probe bestätigt den separaten Aufruf über den regulären Desktopserver und den exakten
+Dateiabruf in einem zweiten, unabhängig angemeldeten Testprofil. Eine verlorene Antwort, eine
+geänderte Artfassung, ein fremdes Administrationskonto und das reguläre Schließen wurden getrennt
+geprüft. Die betroffene Import-, Datei-, Desktop- und Transportserie besteht mit 95 Fällen. Der
+private Beleg `data/website/checks/nas-implementation-20261101/deployment/working-import-media-preflight-20261103.json`
+bindet die lesende Prüfung der Originalgrößen und Dateizuordnungen des hiesigen Bestands. Die
+tatsächliche Übernahme und der Abruf auf den vorgesehenen PCs bleiben Betriebsprüfungen.
 
 ## Begrenzter, konsistenter Bestandsabruf
 
@@ -423,10 +898,26 @@ wird nicht an Renderer oder HTTP-Routen ausgegeben. Die expliziten Methoden sind
 | `link({pageUrl,expectedPageRevision,confirmed:true,adoptUnlinkedApprovals?})` | Lokale Fassung und Absicht sichern, online verknüpfen oder erstmals als Entwurf anlegen; ein abweichender vorhandener Datensatz verlangt Vergleich. |
 | `queue({pageUrl,expectedPageRevision?,adoptUnlinkedApprovals?})` | Gespeicherte lokale Seite vor jedem Netzversuch dauerhaft an die belegte gemeinsame Ausgangsversion binden. |
 | `sync({pageUrl})` | Neuere gespeicherte lokale Änderungen zuerst vormerken, anschließend ausschließlich diese Seite senden; Konflikte bleiben offen. |
+| `reconcileAfterProjectSync(status)` | Nach dem ausdrücklichen zentralen Abgleich vorgemerkte Seiten anhand des empfangenen Projektcache bestätigen oder zum Vergleich markieren. Nur die passende Fassung erhält die Quittung. |
 | `pull({pageUrl})` | Gemeinsamen Stand ausdrücklich laden und für getrennte lokale Übernahme vormerken. |
-| `importRemote({pageUrl,expectedPageRevision,confirmed:true})` | Kontrollierten gemeinsamen Stand gegen die tatsächlich angezeigte lokale Seitenfassung importieren. |
+| `importRemote({pageUrl,expectedPageRevision,expectedRemoteRevision,confirmed:true})` | Die verglichene gemeinsame Version erneut online prüfen und gegen die angezeigte lokale Seitenfassung importieren. |
 | `conflicts(pageUrl)`, `resolve({...})` | Ausgangs-, Server- und eigene Fassung vergleichen; gezielte aktuelle, lokale oder zusammengeführte Zielentscheidung mit beiden angezeigten Revisionen. Lokaler Import bleibt anschließend ausdrücklich. |
 | `close()` | Neue Aktionen sperren, begonnene Schritte abschließen oder vor dem nächsten Schreib-/Netzschritt stoppen, Journal schließen. Vor dem gemeinsamen Client schließen. |
+
+Die erste Verknüpfung bindet Cacheabruf, gemeinsame Anlage und lokale Quittung an die Projektadresse,
+das Projekt und die ursprüngliche Anmeldung einschließlich ihrer Rolle und Benutzerfassung.
+Bei einem Wechsel der Anmeldung bleibt die lokale Fassung erhalten. Die ursprüngliche Person kann
+denselben Schritt nach erneutem Öffnen ausdrücklich fortsetzen.
+Dieselbe Bindung gilt beim Vormerken und seitenweisen Senden gespeicherter Bildtexte. Ein Wechsel
+zwischen diesen Schritten versendet auch dann keine wartenden Änderungen des neuen Kontos, wenn
+sie dieselbe Seite betreffen. Nur die ursprüngliche Bindung erhält eine Abgleichquittung.
+Beim Konfliktvergleich bleiben Lesen, Auswahl und Senden an diese Anmeldung und die verglichene
+Seitenrevision gebunden. Für einen bereits gespeicherten Serverkonflikt prüft der Dienst zusätzlich
+Projekt, Person und Rolle in der Konfliktentscheidung. Bei einem Wechsel bleiben die Fassungen
+offen. Nach erneuter Prüfung kann die ursprüngliche Person die Auswahl ausdrücklich bestätigen.
+Entsteht erst beim Senden aus dem Vergleich ein neuer Konflikt, zeigt **Stand neu lesen** den
+aktuellen Serverstand und die zuvor gewählte lokale Fassung im Vergleich. Eine lokale Übernahme
+setzt eine neue Entscheidung voraus.
 
 Der gemeinsame Server prüft die echte Actorrolle und die gespeicherte Ausgangs-/Serverfassung.
 Bisher unverknüpfte lokale Freigaben brauchen eine ausdrückliche Übernahme durch Administration oder
@@ -438,7 +929,9 @@ Beobachtung passen. Importierte Nachweise bleiben vorhandene Nachweise; Synchron
 öffentliche Prüfung durch, erteilt keine menschliche Freigabe und schreibt nichts in Squarespace.
 
 `website-alt-store.mjs` bietet additive kontrollierte Exporte und einen lokalen Import mit frischer
-Gesamt- sowie Seitenrevision. Nur ein nicht serialisierbares Node-intern ausgestelltes Herkunftsticket
+Gesamt- sowie Seitenrevision. Die Quittung enthält genau die bei der Übernahme gespeicherte Fassung.
+Eine unmittelbar danach gespeicherte Änderung wird als lokal offen angezeigt und erst mit einem
+ausdrücklichen Abgleich gesendet. Nur ein nicht serialisierbares Node-intern ausgestelltes Herkunftsticket
 berechtigt diesen Import; ein JSON-Feld wie `serverValidated:true` genügt nicht. Historien bleiben erhalten,
 ältere Scans oder ungeprüft zurückkehrende entfernte Bilder stoppen. Änderungen einer anderen Seite werden
 erneut gegen deren unveränderte Zielseitenbindung eingelesen. Der bisherige lokale Arbeitsablauf bleibt
@@ -452,6 +945,9 @@ Die konfigurierte Gerätesicherung enthält damit Gerätekennung, Projektcache, 
 Bildtextjournal; dessen exakter Schema-/Inhaltsvalidator prüft auch frühere Projektbindungen. Ein defektes
 konfiguriertes Journal bleibt erhalten und verhindert eine vermeintlich vollständige Sicherung. Der
 lokale Explorer startet dennoch; gemeinsame Bildtexte zeigen den fehlenden persönlichen Anschluss an.
+Scheitert die Initialisierung eines beschädigten Bildtextjournals oder Projektcaches, schließt der
+jeweilige Besitzer die SQLite-Verbindung sofort. Die Windows-Integration prüft, dass beide Dateien
+nach dem Schließen des Explorers ohne Wartezeit verschoben werden können und bytegleich bleiben.
 Ohne redaktionelle Anmeldung werden keine fremden Journalentwürfe angezeigt.
 Der allgemeine Projekteditor erkennt `website-alt-page` als Bildtextdatensatz und verweist auch bei
 Konflikten auf den eigenen Vergleich unter Website-Bildtexte. Sein allgemeines Seitenformular speichert
@@ -480,3 +976,36 @@ Gezielte Gegenproben: `paging.test.mjs`, `website-alt-sync.test.mjs` und
 `page-authoring/shared-adapter.test.mjs`; ausschließlich synthetische eigene Test-temp-Fixtures und echter
 Loopbackdienst. Dies ist kein Nachweis eines gestarteten NAS-Dienstes, eines Gerätezugriffs oder einer
 öffentlich geänderten Website.
+
+## Verwaltete Seitenbilder im neuen Quellstand
+
+Der Bilddienst meldet authentifiziert `managedImageMedia:1` und `stablePageAssetBinding:1`.
+Store-Schema 5 erweitert den bisherigen vollständigen Arbeitsdatensatz um unveränderliche
+Bildmetadaten und nach SHA-256 deduplizierte Bildbytes. Ein bestehender geprüfter Schema-4-Store
+wird additiv erweitert; unbekannte Schemaelemente stoppen vor der Initialisierung. Die alte
+Version 0.1.2 auf dem NAS besitzt diese Fähigkeiten nicht. Containerbau und Betriebsabnahme
+des erweiterten Quellstands 0.1.6 sind gesondert erforderlich; die älteren Vorstufen bleiben getrennt belegt.
+
+| API unter `/api/v1` | Vertrag |
+| --- | --- |
+| `POST /media` | Metadatenabsicht `{id,sha256,bytes,mimeType,attribution,expectedBinding:{projectId,userId,role}}`; die Bild-ID ist eine stabile `image-<UUID>`. |
+| `PUT /media/:id/content` | Unveränderte Rohbytes mit Content-Type sowie `X-Shared-Project-Id`, `X-Shared-User-Id` und `X-Shared-Role`; vorhandene vollständige ID-/Bytebindungen werden nur identisch bestätigt. |
+| `GET /media/:id` | Begrenzte Metadaten, keine Bildbytes und keine automatische Nachlieferung. |
+| `GET /media/:id/content` | Nur die konkret angeforderte vollständige Bilddatei nach aktueller Berechtigungsprüfung. |
+
+JPEG, PNG und WebP sind bis 20 MiB und 40 Millionen Pixel zulässig. Hash, Länge, Dateisignatur
+und tatsächliches Dekodieren müssen zusammenpassen. Die tatsächliche Anmeldung, Gerätebindung,
+Personenversion und Rolle werden nach der Dekodierung erneut geprüft. Pro Dienst ist nur ein
+Bildeingang gleichzeitig aktiv; ein zweiter wird sichtbar abgewiesen. JSON-Eingang hat 15 Sekunden,
+Bildbytes 120 Sekunden feste Gesamtzeit und anschließendes Dekodieren höchstens 15 Sekunden.
+Readers erhalten nur Bilder exakt zugeordnet zu einer tatsächlich intern freigegebenen Objektversion.
+Seitenanlage, Änderung und Konfliktentscheidung prüfen ihre verwalteten Bildreferenzen atomar.
+
+Die Bildablage wurde zunächst mit Cache-Schema 3 eingeführt; der additive Normaldateianschluss
+erweitert denselben persönlichen Cache auf Schema 4. Getrennte Metadaten-/Byte-/Serverbelege je
+Projektadresse, Projekt und Person. `media.importImage` verwaltet neue lokale Bytes,
+`refreshMetadata` liest nur Metadaten, `downloadImage` lädt nach ausdrücklichem Auftrag.
+Ein gezielter `sync` einer `fn-species-page` überträgt ausschließlich ihre benötigten neuen
+Bilder vor dem bestehenden CAS-Auftrag; es entsteht keine zweite Seitenqueue. Unklare Antworten
+bleiben unklar und werden nicht automatisch wiederholt. Cache-/Sicherungsgrenzen und die
+dateiübergreifende Seitenbildbindung führt der [Mehrgerätevertrag](../../docs/multi-device-backup-plan.md).

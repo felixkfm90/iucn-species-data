@@ -8,36 +8,54 @@
     <link rel="stylesheet" href="/website-alt-texts.css">
     <link rel="stylesheet" href="/website-alt-sync.css">
     <link rel="stylesheet" href="/shared-project.css">
+    <link rel="stylesheet" href="/page-authoring.css">
     <link rel="stylesheet" href="/workspace.css">
     <link rel="stylesheet" href="/local-ai.css">
+    <link rel="stylesheet" href="/language-check.css">
+    <link rel="stylesheet" href="/header.css">
   </head>
   <body>
     <div class="app-shell">
       <header class="app-header">
         <div class="header-brand">
           <h1>Arten-Explorer</h1>
+          <div class="header-workspace" role="group" aria-label="Artbestand">
+            <label for="species-workspace">Artbestand</label>
+            <select id="species-workspace"><option value="local">Lokaler Bestand</option><option value="shared-project">Gemeinsamer FN-Bestand</option></select>
+            <span class="header-species-count"><strong id="species-count">–</strong> Arten</span>
+          </div>
         </div>
-        <img
-          class="header-logo"
-          src="/fn-wildlife-travel-logo-glow.jpg"
-          alt="FN Wildlife & Travel"
-        >
-        <div class="header-status" aria-label="Datenstatus">
-          <button id="pipeline-menu-button" class="header-action header-edit-slot database-status outdated" type="button">
-            <span id="pipeline-status" class="pipeline-status-text">Datenbank aktualisieren</span>
-          </button>
-          <button
-            id="edit-mode-toggle"
-            class="header-action mode-toggle"
-            type="button"
-            aria-pressed="false"
-            title="Zwischen Lesemodus und Bearbeitungsmodus wechseln"
-          >
-            Lesemodus 🔒
-          </button>
-          <span id="report-date">Daten werden geladen</span>
+        <img class="header-logo" src="/fn-wildlife-travel-logo-glow.jpg" alt="FN Wildlife & Travel">
+        <div class="header-status" aria-label="Programmstatus und Aktionen">
+          <div id="database-status" class="database-status outdated" role="status" aria-live="polite">
+            <span id="pipeline-status" class="pipeline-status-text">Datenstatus wird geprüft</span>
+          </div>
+          <button id="database-transfer-button" class="database-status outdated database-transfer-button" type="button"
+            aria-haspopup="dialog" aria-controls="pipeline-dialog" aria-label="Änderungen offen – Übertragungsvorschau öffnen" hidden>Änderungen offen <span aria-hidden="true">›</span></button>
+          <div class="header-menu-group">
+            <button id="website-menu-button" class="header-action" type="button" aria-haspopup="menu" aria-controls="website-menu" aria-expanded="false" disabled>FN-Website ▾</button>
+            <div id="website-menu" class="header-menu website-pages-overview" role="menu" aria-label="FN-Website" hidden>
+              <span id="website-pages-summary" class="header-menu-note" role="status">FN-Website wird geprüft …</span>
+              <button id="website-pages-check" class="edit-only" type="button" role="menuitem">Website prüfen</button>
+              <button id="website-alt-texts-open" class="edit-only" type="button" role="menuitem">Website-Bildtexte</button>
+              <p class="header-menu-note">Artseiten bereitest du bei der ausgewählten Art vor.</p>
+            </div>
+          </div>
+          <button id="edit-mode-toggle" class="header-action mode-toggle" type="button" aria-pressed="false" aria-label="Bearbeitungsfunktionen einblenden" title="Bearbeitungsfunktionen einblenden">🔒</button>
+          <div class="header-menu-group">
+            <button id="app-menu-button" class="header-action app-menu-button" type="button" aria-label="Weitere Aktionen" aria-haspopup="menu" aria-controls="app-menu" aria-expanded="false">⋮</button>
+            <div id="app-menu" class="header-menu" role="menu" aria-label="Weitere Aktionen" hidden>
+              <button id="inspection-open" type="button" role="menuitem">Prüfung &amp; Hinweise</button>
+              <button id="pipeline-menu-button" class="edit-only" type="button" role="menuitem" title="Datenbank-Aktionen öffnen">Datenbank-Aktionen</button>
+              <button id="header-backup-open" class="edit-only" type="button" role="menuitem">Sicherung</button>
+              <button id="header-settings-open" type="button" role="menuitem">Einstellungen</button>
+            </div>
+          </div>
+          <div class="header-report"><span id="report-date">Daten werden geladen</span><span id="edit-mode-status">Lesemodus</span></div>
         </div>
       </header>
+
+      <div id="validation-issue-notice" class="validation-issue-notice" role="status" hidden></div>
 
       <section id="update-completion-notice" class="pipeline-run-notice" role="status" hidden></section>
 
@@ -53,57 +71,6 @@
           <span id="pipeline-run-notice-detail"></span>
         </div>
         <button id="pipeline-run-notice-open" type="button">Details anzeigen</button>
-      </section>
-
-      <section class="summary-bar" aria-label="Projektübersicht">
-        <div><strong id="species-count">–</strong><span>Arten</span></div>
-        <div><strong id="asset-issues">–</strong><span>Assetprobleme</span></div>
-        <div><strong id="nc-count">–</strong><span>NC-Sounds</span></div>
-        <div title="Zählt gespeicherte Schutzentscheidungen, nicht fehlgeschlagene Downloads. Browserherkunft ist eine eigene Angabe, kein technischer Herkunftsnachweis."><strong id="manual-map-count">–</strong><span>Geschützte Karten</span><small id="map-provenance-counts"></small></div>
-      </section>
-
-      <section class="validation-dashboard" aria-labelledby="validation-title">
-        <div class="species-workspace" role="group" aria-label="Artbestand">
-          <label for="species-workspace">Artbestand</label>
-          <select id="species-workspace"><option value="local">Auf diesem PC</option><option value="shared-project">Gemeinsames Projekt</option></select>
-          <span id="species-workspace-status" role="status">Lokaler Bestand auf diesem PC</span>
-          <button id="species-workspace-refresh" type="button" hidden>Serverstand lesen</button>
-          <button id="species-workspace-sync" class="edit-only" type="button" hidden>Änderungen abgleichen</button>
-        </div>
-        <div class="validation-heading">
-          <div>
-            <h2 id="validation-title">Validierung und Status</h2>
-          </div>
-          <span id="validation-overall" class="validation-overall">Prüfung läuft…</span>
-        </div>
-        <div class="validation-grid">
-          <article id="validation-data-card" class="validation-card">
-            <span id="validation-data-label">Eingabe ↔ Pipeline</span>
-            <strong id="validation-data">–</strong>
-            <small id="validation-data-detail">Wird geprüft</small>
-          </article>
-          <article id="validation-assets-card" class="validation-card">
-            <span id="validation-assets-label">Assetstruktur</span>
-            <strong id="validation-assets">–</strong>
-            <small id="validation-assets-detail">Wird geprüft</small>
-          </article>
-          <article id="validation-report-card" class="validation-card">
-            <span id="validation-report-label">Report-Abgleich</span>
-            <strong id="validation-report">–</strong>
-            <small id="validation-report-detail">Wird geprüft</small>
-          </article>
-          <article class="validation-card info">
-            <span>Besondere Pflege</span>
-            <strong id="validation-special">–</strong>
-            <small>Manuelle Karten, NC-Sounds und Soundhinweise</small>
-          </article>
-        </div>
-        <div id="validation-details" class="validation-details" hidden></div>
-        <div class="website-pages-overview">
-          <span id="website-pages-summary" role="status">FN-Website wird geprüft …</span>
-          <button id="website-pages-check" class="edit-only" type="button">Website prüfen</button>
-          <button id="website-alt-texts-open" class="edit-only" type="button">Website-Bildtexte</button>
-        </div>
       </section>
 
       <main class="workspace">
@@ -159,6 +126,59 @@
       </main>
     </div>
 
+    <dialog id="inspection-dialog" class="edit-dialog inspection-dialog" aria-labelledby="inspection-title">
+      <div class="edit-form">
+        <header class="edit-dialog-header">
+          <h2 id="inspection-title">Prüfung &amp; Hinweise</h2>
+          <button id="inspection-close" class="edit-close" type="button" aria-label="Prüfung und Hinweise schließen">×</button>
+        </header>
+        <div class="species-workspace" role="group" aria-label="Artbestand">
+          <span id="species-workspace-status" role="status">Lokaler Bestand auf diesem PC</span>
+          <button id="species-workspace-refresh" type="button" hidden>Serverstand lesen</button>
+          <button id="species-workspace-sync" class="edit-only" type="button" hidden>Änderungen abgleichen</button>
+        </div>
+      <section class="summary-bar" aria-label="Projektübersicht">
+        <div><strong id="asset-issues">–</strong><span>Assetprobleme</span></div>
+        <div><strong id="nc-count">–</strong><span>NC-Sounds</span></div>
+        <div title="Zählt gespeicherte Schutzentscheidungen, nicht fehlgeschlagene Downloads. Browserherkunft ist eine eigene Angabe, kein technischer Herkunftsnachweis."><strong id="manual-map-count">–</strong><span>Geschützte Karten</span><small id="map-provenance-counts"></small></div>
+      </section>
+
+      <section class="validation-dashboard" aria-labelledby="validation-title">
+        <div class="validation-heading">
+          <div>
+            <h2 id="validation-title">Validierung und Status</h2>
+          </div>
+          <span id="validation-overall" class="validation-overall">Prüfung läuft…</span>
+        </div>
+        <div class="validation-grid">
+          <article id="validation-data-card" class="validation-card">
+            <span id="validation-data-label">Arten ↔ Artdaten</span>
+            <strong id="validation-data">–</strong>
+            <small id="validation-data-detail">Wird geprüft</small>
+          </article>
+          <article id="validation-assets-card" class="validation-card">
+            <span id="validation-assets-label">Assetstruktur</span>
+            <strong id="validation-assets">–</strong>
+            <small id="validation-assets-detail">Wird geprüft</small>
+          </article>
+          <article id="validation-report-card" class="validation-card">
+            <span id="validation-report-label">Report-Abgleich</span>
+            <strong id="validation-report">–</strong>
+            <small id="validation-report-detail">Wird geprüft</small>
+          </article>
+          <article class="validation-card info">
+            <span>Besondere Pflege</span>
+            <strong id="validation-special">–</strong>
+            <small>Manuelle Karten, NC-Sounds und Soundhinweise</small>
+          </article>
+        </div>
+        <div id="validation-details" class="validation-details" hidden></div>
+      </section>
+
+        <div class="edit-actions"><button id="inspection-done" type="button">Schließen</button></div>
+      </div>
+    </dialog>
+
     <dialog id="website-alt-texts-dialog" class="website-alt-dialog" aria-label="Website-Bildtexte"></dialog>
     <dialog id="shared-project-dialog" class="edit-dialog shared-project-dialog" aria-label="Gemeinsames Projekt">
       <button id="shared-project-close" class="shared-project-close" type="button">Fenster schließen</button>
@@ -171,7 +191,7 @@
         <header class="edit-dialog-header">
           <div>
             <h3 id="new-species-title">Neue Art anlegen</h3>
-            <p>Erst allgemeine Daten prüfen, danach optional ein Artportrait vorbereiten.</p>
+            <p class="new-species-introduction">Erst allgemeine Daten prüfen, danach optional ein Artportrait vorbereiten.</p>
           </div>
           <button class="edit-close new-species-cancel" type="button" aria-label="Dialog schließen">×</button>
         </header>
@@ -641,7 +661,7 @@
                 </button>
               </div>
             </section>
-            <section class="action-subgroup">
+            <section id="database-backup-settings" class="action-subgroup">
               <h4>Backup und Einstellungen</h4>
               <div class="action-group-buttons">
                 <button type="button" data-backup-action="nas">
@@ -655,10 +675,6 @@
                 <button type="button" data-settings-action="backup-path">
                   <strong>Backup-Pfad einstellen</strong>
                   <span>Lokalen NAS-Zielpfad für ZIP-Backups ändern</span>
-                </button>
-                <button id="shared-project-open" class="edit-only" type="button">
-                  <strong>Gemeinsames Projekt</strong>
-                  <span>Zusammenarbeit einrichten, Entwürfe und Änderungen abgleichen</span>
                 </button>
               </div>
             </section>
@@ -688,7 +704,7 @@
         </details>
 
         <div class="edit-actions">
-          <button class="pipeline-cancel pipeline-dialog-close-button" type="button">Abbrechen</button>
+          <button class="pipeline-cancel pipeline-dialog-close-button" type="button">Fenster schließen</button>
           <button id="pipeline-start-button" class="edit-save-button" type="submit" hidden disabled>Starten</button>
         </div>
       </form>
@@ -752,12 +768,17 @@
         <header class="edit-dialog-header">
           <div>
             <p class="edit-eyebrow">Einstellungen</p>
-            <h3 id="settings-dialog-title">Backup-Pfad einstellen</h3>
-            <p>Diese Einstellung gilt nur lokal auf diesem Rechner und wird nicht committed.</p>
+            <h3 id="settings-dialog-title">Einstellungen</h3>
+            <p>Projektverbindung und lokaler Sicherungspfad</p>
           </div>
           <button class="edit-close settings-cancel" type="button" aria-label="Dialog schließen">×</button>
         </header>
 
+        <section class="settings-project-connection">
+          <h4>Gemeinsames Projekt</h4>
+          <p>Persönlich anmelden und den gemeinsamen FN-Bestand lesen. Bearbeitungen benötigen zusätzlich den Bearbeitungsmodus und passende Projektrechte.</p>
+          <button id="shared-project-open" type="button">Projektverbindung und Anmeldung</button>
+        </section>
         <div class="edit-fields settings-fields">
           <label>
             <span>NAS-Zielpfad</span>
@@ -780,7 +801,7 @@
 
         <div class="edit-actions">
           <button class="settings-reset-button" type="button">Standard verwenden</button>
-          <button class="settings-cancel" type="button">Abbrechen</button>
+          <button class="settings-cancel" type="button">Fenster schließen</button>
           <button class="edit-save-button settings-save-button" type="submit">Speichern</button>
         </div>
       </form>
@@ -942,10 +963,12 @@
     <script src="/app-media.js" defer></script>
     <script src="/app-detail-media.js" defer></script>
     <script src="/app-website-pages.js" defer></script>
+    <script src="/app-language-check.js" defer></script>
     <script src="/app-website-alt-texts.js" defer></script>
     <script src="/app-website-alt-sync.js" defer></script>
     <script src="/app-local-ai.js" defer></script>
     <script src="/app-species-conflicts.js" defer></script>
+    <script src="/vendor/qrcode-generator-2.0.4.js" defer></script>
     <script src="/app-shared-project.js" defer></script>
     <script src="/app-shared-import.js" defer></script>
     <script src="/app-detail-view.js" defer></script>
@@ -967,8 +990,13 @@
     <script src="/app-dashboard.js" defer></script>
     <script src="/app-lifecycle.js" defer></script>
     <script src="/app-workspace.js" defer></script>
+    <script src="/app-page-ai.js" defer></script>
+    <script src="/app-page-authoring.js" defer></script>
+    <script src="/app-species-offline.js" defer></script>
+    <script src="/app-species-enrichment.js" defer></script>
     <script src="/app-species-actions.js" defer></script>
     <script src="/app-asset-maintenance.js" defer></script>
+    <script src="/app-header.js" defer></script>
     <script src="/app.js" defer></script>
   </body>
 </html>

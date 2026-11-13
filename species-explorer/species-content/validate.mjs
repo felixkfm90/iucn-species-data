@@ -2,12 +2,15 @@ import { createHash } from "node:crypto";
 import { sanitizeAssetName } from "../species-model.mjs";
 import { buildCatalog } from "../shared-project/catalog.mjs";
 import { parseWebsiteEditorialPage, parseWebsiteAltPage, canonicalWebsiteImageSource } from "../website-alt-parser.mjs";
+import { reportedMediaOmissions } from "../../scripts/validate-media-assets.mjs";
 
 const sha = (value) => createHash("sha256").update(value).digest("hex");
 const taxonomyKeys = new Set(["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"]);
+// The public catalog uses seven taxonomic ranks and excludes IUCN lookup metadata.
+const sourceOnlyKeys = new Set(["URLSlug", "Subphylum", "Taxon ID", "IUCN-Zuordnung"]);
 
 /** Independent source-to-DTO parity check, using explicit bound source inputs only. */
-export async function validateSpeciesSnapshot({ snapshot, speciesData, pages, readAsset }) {
+export async function validateSpeciesSnapshot({ snapshot, speciesData, pages, readAsset, missingMediaReport }) {
   const issues = [], rows = [];
   const verify = (condition, code, details = {}) => { if (!condition) issues.push({ code, ...details }); return Boolean(condition); };
   let catalog;
@@ -18,6 +21,9 @@ export async function validateSpeciesSnapshot({ snapshot, speciesData, pages, re
   for (const record of speciesData) {
     const slug = record.URLSlug, before = issues.length, data = catalog.species.find((entry) => entry.id === slug), source = pages.get(slug);
     if (!verify(data && source, "species-source-missing", { slug })) continue;
+    const germanName = record["Deutscher Name"], assetName = sanitizeAssetName(germanName);
+    const omissions = missingMediaReport ? reportedMediaOmissions(missingMediaReport, { germanName, safeName: assetName }) : null;
+    if (omissions) verify(!omissions.errors.length, "inconsistent-media-omission-report", { slug });
     const editorial = parseWebsiteEditorialPage(source.html, source.url), images = parseWebsiteAltPage(source.html, source.url).images;
     verify(editorial.complete, "source-editorial-incomplete", { slug });
     verify(data.websiteUrl === source.url, "website-url-mismatch", { slug });
@@ -30,7 +36,7 @@ export async function validateSpeciesSnapshot({ snapshot, speciesData, pages, re
     }
     const general = data.sections.find((entry) => entry.title.trim().toLowerCase() === "allgemein");
     for (const [key, value] of Object.entries(record)) {
-      if (key === "URLSlug" || taxonomyKeys.has(key) || value === null || value === undefined || value === "") continue;
+      if (sourceOnlyKeys.has(key) || taxonomyKeys.has(key) || value === null || value === undefined || value === "") continue;
       verify(general?.text.includes(`${key}: ${value}`), "structured-value-missing", { slug, key });
     }
     const expectedTitles = editorial.sections.map((entry) => entry.heading || "Einleitung"), actual = data.sections.filter((entry) => entry.id !== "structured-general");
@@ -39,7 +45,9 @@ export async function validateSpeciesSnapshot({ snapshot, speciesData, pages, re
       const text = section.paragraphs.map((entry) => entry.kind === "list-item" ? `• ${entry.text}` : entry.text).join("\n\n");
       const target = actual[index];
       verify(target && (target.title.trim().toLowerCase() === "allgemein" ? target.text.startsWith(text) : target.text === text), "editorial-paragraph-parity-mismatch", { slug, index });
-      if (!text && target?.title === "Verbreitungskarte") verify(Boolean(data.media.map) && target.intentionallyEmpty, "dynamic-map-misclassified", { slug });
+      if (!text && target?.title === "Verbreitungskarte") {
+        verify((Boolean(data.media.map) || omissions?.allowMissingMap) && target.intentionallyEmpty, "dynamic-map-misclassified", { slug });
+      }
     }
     verify(JSON.stringify(data.media.gallery.map((entry) => canonicalWebsiteImageSource(entry.url))) === JSON.stringify(editorial.gallerySources), "gallery-order-or-source-mismatch", { slug });
     for (const [order, gallery] of data.media.gallery.entries()) {
@@ -49,11 +57,13 @@ export async function validateSpeciesSnapshot({ snapshot, speciesData, pages, re
       verify(gallery.alt === matching[0]?.alt && gallery.caption === (captions[0] ?? ""), "public-gallery-text-mismatch", { slug, order });
       verify(!("bytes" in gallery) && !("sha256" in gallery), "unmeasured-gallery-integrity-claim", { slug, order });
     }
-    const assetName = sanitizeAssetName(record["Deutscher Name"]);
     let mediaChecked = 0;
     for (const [key, filename, entries] of [["portrait", "portrait.webp", data.media.portrait ? [data.media.portrait] : []],
       ["map", "map.jpg", data.media.map ? [data.media.map] : []], ["sound", "sound.mp3", data.media.sounds]]) {
-      if (key !== "sound") verify(entries.length === 1, "required-media-missing", { slug, key });
+      if (omissions) {
+        const documentedMissing = omissions[key === "portrait" ? "allowMissingPortrait" : key === "map" ? "allowMissingMap" : "allowMissingSound"];
+        verify(entries.length === (documentedMissing ? 0 : 1), "media-omission-mismatch", { slug, key });
+      } else if (key !== "sound") verify(entries.length === 1, "required-media-missing", { slug, key });
       for (const entry of entries) {
         verify(entry.url === `https://felixkfm90.github.io/iucn-species-data/species-assets/${encodeURIComponent(assetName)}/${filename}`,
           "asset-url-mismatch", { slug, key });

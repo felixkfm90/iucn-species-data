@@ -2,26 +2,19 @@ import fs from "fs";
 import path from "path";
 import { buildPipelinePlan } from "./scripts/pipeline-selection.mjs";
 import { isMapProtected } from "./scripts/map-provenance.mjs";
-import {
-  audioFormatLabel,
-  detectAudioFormat,
-  isMp3Buffer,
-} from "./scripts/audio-format.mjs";
 import { createIucnDataAdapter } from "./scripts/iucn-data-adapter.mjs";
+import { readIucnMasterReference } from "./species-explorer/taxonomy-iucn-reference.mjs";
+import { defaultTaxonomyRoot } from "./species-explorer/taxonomy-storage.mjs";
 import { createIucnMapAdapter } from "./scripts/iucn-map-adapter.mjs";
-import { createXenoCantoAdapter } from "./scripts/xeno-canto-adapter.mjs";
-import { createWikimediaCommonsAudioAdapter } from "./scripts/wikimedia-commons-audio-adapter.mjs";
-import { createINaturalistAudioAdapter } from "./scripts/inaturalist-audio-adapter.mjs";
+import { createSpeciesSoundPipeline } from "./scripts/species-sound-pipeline.mjs";
+import {
+  createEmptyPipelineSpeciesData as emptyEntry,
+  formatPipelineTaxonomyName as formatTaxonomyName,
+  preservePipelineSpeciesData as preserveExistingSpeciesData,
+  createSpeciesDataPipeline,
+} from "./scripts/species-data-pipeline.mjs";
+import { createSpeciesPipeline } from "./scripts/species-pipeline.mjs";
 import { appendPipelineErrorLog } from "./scripts/pipeline-error-log.mjs";
-import {
-  inatLicenseUrl,
-  isNcLicense,
-  normalizeLicenseUrl,
-} from "./scripts/sound-source-license.mjs";
-import {
-  commonsSoundRejectionKey,
-  normalizeSoundRejectionKey,
-} from "./scripts/sound-rejection-key.mjs";
 import {
   applyTaxonomyOverride,
   createEmptyTaxonomyOverrideRegistry,
@@ -45,7 +38,6 @@ const XENO_TOKEN = process.env.XENO_TOKEN;
 
 const BASE = "https://api.iucnredlist.org/api/v4";
 const RATE_LIMIT = 400;
-const SOUND_CANDIDATE_RETRY_LIMIT = 12;
 
 // Assessment-ID Trackfile (für Karten-Caching)
 const ASSESSMENT_TRACK_FILE = "./lastSavedAssessmentId.json";
@@ -80,29 +72,6 @@ if (fs.existsSync(TAXONOMY_OVERRIDES_FILE)) {
 
 function logError(msg) {
   appendPipelineErrorLog(msg);
-}
-
-function formatTaxonomyName(value) {
-  const text = String(value ?? "").trim();
-  if (!text || text.toLocaleLowerCase("de") === "n/a") return text || "n/a";
-  return text
-    .toLocaleLowerCase("de")
-    .replace(/(^|[\s-])([\p{L}])/gu, (_match, prefix, letter) => (
-      `${prefix}${letter.toLocaleUpperCase("de")}`
-    ));
-}
-
-function normalizeTaxonomyFields(entry) {
-  if (!entry || typeof entry !== "object") return entry;
-  return {
-    ...entry,
-    Kingdom: formatTaxonomyName(entry.Kingdom),
-    Phylum: formatTaxonomyName(entry.Phylum),
-    Subphylum: formatTaxonomyName(entry.Subphylum),
-    Class: formatTaxonomyName(entry.Class),
-    Order: formatTaxonomyName(entry.Order),
-    Family: formatTaxonomyName(entry.Family),
-  };
 }
 
 function parsePipelineArgs(rawArgs) {
@@ -218,144 +187,8 @@ function isManualAsset(safeName, assetType) {
   return assetOverrides.assets?.[safeName]?.[assetType]?.manual === true;
 }
 
-function rejectedSoundKeys(safeName) {
-  const sources = assetOverrides.assets?.[safeName]?.sound?.rejectedSources;
-  if (!Array.isArray(sources)) return new Set();
-  return new Set(sources
-    .map((entry) => normalizeSoundRejectionKey(entry?.key))
-    .filter(Boolean));
-}
-
-function isRejectedSoundCandidate(safeName, key, german, extraRejectedKeys = new Set()) {
-  const normalizedKey = normalizeSoundRejectionKey(key);
-  if (!normalizedKey) return false;
-  const rejected = rejectedSoundKeys(safeName);
-  const temporaryRejected = new Set(
-    [...extraRejectedKeys].map((entry) => normalizeSoundRejectionKey(entry)).filter(Boolean),
-  );
-  if (!rejected.has(normalizedKey) && !temporaryRejected.has(normalizedKey)) return false;
-  console.log(`↩ Abgelehnte Soundquelle wird übersprungen für ${german}: ${normalizedKey}`);
-  return true;
-}
-
-function xenoRejectionKey(recording) {
-  const id = String(recording?.id ?? "").trim();
-  if (id) return `xeno-canto:${id}`;
-  const file = String(recording?.file ?? "").trim();
-  return file ? `xeno-canto:${file}` : "";
-}
-
-function commonsRejectionKey(hit) {
-  return commonsSoundRejectionKey(hit);
-}
-
-function inatRejectionKey(hit) {
-  const observationId = String(hit?.observation?.id ?? "").trim();
-  const soundId = String(hit?.sound?.id ?? hit?.sound?.uuid ?? hit?.url ?? "").trim();
-  return `inaturalist:${observationId}:${soundId || "unknown"}`;
-}
-
-function soundRejectionKeyFromCredits(credits) {
-  const explicit = String(credits?.rejectionKey ?? "").trim();
-  if (explicit) return normalizeSoundRejectionKey(explicit);
-  const source = String(credits?.source ?? "").toLocaleLowerCase("de");
-  const url = String(credits?.url ?? "").trim();
-  const notes = String(credits?.notes ?? "").trim();
-  const xenoMatch = url.match(/xeno-canto\.org\/(\d+)/i) || notes.match(/xeno-canto\.org\/(\d+)/i);
-  if (source.includes("xeno") && xenoMatch) return `xeno-canto:${xenoMatch[1]}`;
-  if (source.includes("wikimedia")) {
-    return normalizeSoundRejectionKey(`wikimedia-commons:${url || notes}`);
-  }
-  if (source.includes("inaturalist")) {
-    const observation = notes.match(/Observation=([^|\s]+)/i)?.[1] ?? "";
-    const sound = notes.match(/sound=([^|\s]+)/i)?.[1] ?? "";
-    if (observation || sound) return `inaturalist:${observation}:${sound || url}`;
-  }
-  return "";
-}
-
-function soundRejectionKeyFromCreditsFile(creditsPath) {
-  if (!fs.existsSync(creditsPath)) return "";
-  try {
-    return soundRejectionKeyFromCredits(JSON.parse(fs.readFileSync(creditsPath, "utf8")));
-  } catch {
-    return "";
-  }
-}
-
-function isFileLockError(error) {
-  const code = String(error?.code ?? "").toUpperCase();
-  const message = String(error?.message ?? "").toLowerCase();
-  return (
-    code === "EPERM" ||
-    code === "EBUSY" ||
-    code === "EACCES" ||
-    message.includes("operation not permitted") ||
-    message.includes("permission denied") ||
-    message.includes("access is denied")
-  );
-}
-
-function removeTempFile(tempPath) {
-  try {
-    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-  } catch {
-    // Best-effort cleanup. A later write will overwrite the same temp path.
-  }
-}
-
-async function replaceExistingFileWithTemp(tempPath, targetPath) {
-  let lastError = null;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    try {
-      fs.renameSync(tempPath, targetPath);
-      return;
-    } catch (error) {
-      lastError = error;
-      if (!isFileLockError(error)) throw error;
-      await sleep(250 * (attempt + 1));
-    }
-  }
-  throw lastError;
-}
-
-function temporarilySkipSoundCandidate(extraRejectedKeys, key, german, sourceLabel) {
-  const normalizedKey = String(key ?? "").trim();
-  if (normalizedKey) extraRejectedKeys.add(normalizedKey);
-  console.warn(`⚠ ${sourceLabel} für ${german} konnte nicht übernommen werden; prüfe nächste Quelle.`);
-}
-
 async function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-function emptyEntry(scientific, german = scientific, english = "Unbekannt", manual = {}) {
-  const URLSlug = scientific.toLowerCase().replace(/\s+/g, "");
-  return {
-    URLSlug,
-    "Wissenschaftlicher Name": scientific,
-    "Deutscher Name": german,
-    "Englischer Name": english,
-    Gewicht: manual.weight || "n/a",
-    Größe: manual.size || "n/a",
-    Lebenserwartung: manual.lifeExpectancy || "n/a",
-    "Assessment ID": "n/a",
-    Status: "n/a",
-    Trend: "n/a",
-    Kategorie: "n/a",
-    Populationgröße: "n/a",
-    Generationsdauer: "n/a",
-    Kingdom: "n/a",
-    Phylum: "n/a",
-    Subphylum: "n/a",
-    Class: "n/a",
-    Order: "n/a",
-    Family: "n/a",
-    Genus: "n/a",
-    Species: "n/a",
-    "Letztes IUCN Update": "n/a",
-    "Daten abgerufen": new Date().toISOString().slice(0, 10),
-  };
 }
 
 function getInputSlug(s) {
@@ -374,32 +207,6 @@ function loadExistingSpeciesData() {
   }
 }
 
-function hasUsableSpeciesData(entry) {
-  return Boolean(
-    entry &&
-      entry["Wissenschaftlicher Name"] &&
-      entry["Wissenschaftlicher Name"] !== "n/a" &&
-      entry["Assessment ID"] &&
-      entry["Assessment ID"] !== "n/a" &&
-      entry.Status &&
-      entry.Status !== "n/a" &&
-      entry.Kategorie &&
-      entry.Kategorie !== "n/a" &&
-      entry.Trend &&
-      entry.Trend !== "n/a"
-  );
-}
-
-function preserveExistingSpeciesData(existing, inputSpecies) {
-  return normalizeTaxonomyFields({
-    ...existing,
-    "Englischer Name": inputSpecies.english || existing["Englischer Name"],
-    Gewicht: inputSpecies.weight || existing.Gewicht,
-    Größe: inputSpecies.size || existing.Größe,
-    Lebenserwartung: inputSpecies.life_expectancy || existing.Lebenserwartung || "n/a",
-  });
-}
-
 const iucnDataAdapter = createIucnDataAdapter({
   fetch,
   token: TOKEN,
@@ -408,6 +215,7 @@ const iucnDataAdapter = createIucnDataAdapter({
   emptyEntry,
   formatTaxonomyName,
   baseUrl: BASE,
+  resolveTaxonomy: input => readIucnMasterReference(input, { taxonomyRoot: defaultTaxonomyRoot(process.env, process.cwd()) }),
 });
 const { iucnGET, fetchSpeciesData } = iucnDataAdapter;
 
@@ -436,501 +244,21 @@ const { downloadMapForSpecies } = createIucnMapAdapter({
 // XENO-CANTO + COMMONS + iNATURALIST SOUNDS (Open first, NC fallback) - MULTI PAGE
 // =======================
 
-function validateDownloadedMp3(buffer, source, german) {
-  if (isMp3Buffer(buffer)) return true;
-  const format = audioFormatLabel(detectAudioFormat(buffer));
-  console.warn("⚠ " + source + "-Datei für " + german + " ist technisch " + format + " und kein gültiges MP3; Kandidat wird übersprungen.");
-  return false;
-}
-
-function readSoundLicense(creditsPath) {
-  if (!fs.existsSync(creditsPath)) return "";
-  try {
-    const credits = JSON.parse(fs.readFileSync(creditsPath, "utf8"));
-    return normalizeLicenseUrl(credits.license || "");
-  } catch (error) {
-    logError("Credits konnten nicht gelesen werden (" + creditsPath + "): " + error.message);
-    return "";
-  }
-}
-
-const { findRecordingByStage } = createXenoCantoAdapter({
+const { downloadSoundIfMissing } = createSpeciesSoundPipeline({
   fetch,
   token: XENO_TOKEN,
   sleep,
+  sanitizeAssetName,
+  speciesAssetDir,
+  readAssetOverrides: () => assetOverrides,
+  logError,
+  logger: console,
 });
 
-const commonsAudioAdapter = createWikimediaCommonsAudioAdapter({ fetch, sleep, logError });
-async function findCommonsRecording(genus, species, german, safeName, extraRejectedKeys = new Set()) {
-  return commonsAudioAdapter.findRecording(genus, species, german, {
-    isRejected: (hit) => isRejectedSoundCandidate(
-      safeName,
-      commonsRejectionKey(hit),
-      german,
-      extraRejectedKeys,
-    ),
-  });
-}
-
-const inaturalistAudioAdapter = createINaturalistAudioAdapter({ fetch, sleep, logError });
-async function findInatRecording(genus, species, german, safeName, extraRejectedKeys = new Set()) {
-  return inaturalistAudioAdapter.findRecording(genus, species, german, {
-    isRejected: (hit) => isRejectedSoundCandidate(
-      safeName,
-      inatRejectionKey(hit),
-      german,
-      extraRejectedKeys,
-    ),
-  });
-}
-
-async function tryXenoStageCandidates({
-  genus,
-  species,
-  german,
-  mp3Path,
-  creditsPath,
-  stage,
-  originalStageIndex,
-  stages,
-  extraRejectedKeys,
-  isRejected,
-  foundMessage,
-}) {
-  for (let attempt = 0; attempt < SOUND_CANDIDATE_RETRY_LIMIT; attempt++) {
-    const hit = await findRecordingByStage(genus, species, stage, { isRejected });
-    if (!hit?.rec) return null;
-
-    const message = typeof foundMessage === "function"
-      ? foundMessage(originalStageIndex)
-      : foundMessage;
-    console.log(message);
-
-    const result = await saveSoundRecording({
-      genus,
-      species,
-      german,
-      mp3Path,
-      creditsPath,
-      chosen: hit.rec,
-      chosenInfo: hit,
-      chosenStageIndex: originalStageIndex,
-      stages,
-    });
-
-    if (result === "ok" || result === "locked" || result === "error") return result;
-    temporarilySkipSoundCandidate(extraRejectedKeys, xenoRejectionKey(hit.rec), german, "Xeno-Canto-Soundkandidat");
-  }
-
-  console.warn(`⚠ Zu viele nicht übernehmbare Xeno-Canto-Kandidaten für ${german}; prüfe nächste Suchstufe.`);
-  return null;
-}
-
-async function tryCommonsCandidates({ genus, species, german, safeName, mp3Path, creditsPath, extraRejectedKeys, foundMessage }) {
-  for (let attempt = 0; attempt < SOUND_CANDIDATE_RETRY_LIMIT; attempt++) {
-    const hit = await findCommonsRecording(genus, species, german, safeName, extraRejectedKeys);
-    if (!hit) return null;
-
-    console.log(foundMessage);
-    const result = await saveCommonsSoundRecording({
-      genus,
-      species,
-      german,
-      mp3Path,
-      creditsPath,
-      hit,
-    });
-
-    if (result === "ok" || result === "locked" || result === "error") return result;
-    temporarilySkipSoundCandidate(extraRejectedKeys, commonsRejectionKey(hit), german, "Commons-Soundkandidat");
-  }
-
-  console.warn(`⚠ Zu viele nicht übernehmbare Commons-Kandidaten für ${german}; prüfe nächste Quelle.`);
-  return null;
-}
-
-async function tryInatCandidates({ genus, species, german, safeName, mp3Path, creditsPath, extraRejectedKeys, foundMessage }) {
-  for (let attempt = 0; attempt < SOUND_CANDIDATE_RETRY_LIMIT; attempt++) {
-    const hit = await findInatRecording(genus, species, german, safeName, extraRejectedKeys);
-    if (!hit) return null;
-
-    console.log(foundMessage);
-    const result = await saveInatSoundRecording({
-      genus,
-      species,
-      german,
-      mp3Path,
-      creditsPath,
-      hit,
-    });
-
-    if (result === "ok" || result === "locked" || result === "error") return result;
-    temporarilySkipSoundCandidate(extraRejectedKeys, inatRejectionKey(hit), german, "iNaturalist-Soundkandidat");
-  }
-
-  console.warn(`⚠ Zu viele nicht übernehmbare iNaturalist-Kandidaten für ${german}; prüfe nächste Suchstufe.`);
-  return null;
-}
-
-async function downloadSoundIfMissing(genus, species, german, { forceAlternativeSearch = false } = {}) {
-  const safeGerman = sanitizeAssetName(german);
-  const targetDir = speciesAssetDir(safeGerman);
-
-  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
-
-  const mp3Path = path.join(targetDir, "sound.mp3");
-  const creditsPath = path.join(targetDir, "credits.json");
-  const extraRejectedKeys = new Set();
-  const currentSoundKey = forceAlternativeSearch ? soundRejectionKeyFromCreditsFile(creditsPath) : "";
-  if (currentSoundKey) extraRejectedKeys.add(currentSoundKey);
-  const rejectXenoCandidate = (recording) =>
-    isRejectedSoundCandidate(safeGerman, xenoRejectionKey(recording), german, extraRejectedKeys);
-
-  if (fs.existsSync(mp3Path) && isManualAsset(safeGerman, "sound")) {
-    console.log(`🎵 Manuell gepflegter Sound für ${german} ist geschützt, überspringe Suche.`);
-    return fs.existsSync(creditsPath) ? "ok" : "missing";
-  }
-
-  const stages = [
-    { openOnly: true, q: "A", len2535: true }, // 0
-    { openOnly: true, q: "A", len2535: false }, // 1
-    { openOnly: true, q: "B", len2535: true }, // 2
-    { openOnly: true, q: "B", len2535: false }, // 3
-    { openOnly: true, q: "C", len2535: true }, // 4
-    { openOnly: true, q: "C", len2535: false }, // 5
-    { openOnly: false, q: "A", len2535: true }, // 6
-    { openOnly: false, q: "A", len2535: false }, // 7
-    { openOnly: false, q: "B", len2535: true }, // 8
-    { openOnly: false, q: "B", len2535: false }, // 9
-    { openOnly: false, q: "C", len2535: true }, // 10
-    { openOnly: false, q: "C", len2535: false }, // 11
-  ];
-
-  const openStages = stages.filter((stage) => stage.openOnly);
-  const fallbackStages = stages.filter((stage) => !stage.openOnly);
-
-  if (fs.existsSync(mp3Path)) {
-    const hasCredits = fs.existsSync(creditsPath);
-    const existingLicense = readSoundLicense(creditsPath);
-
-    if (hasCredits && !isNcLicense(existingLicense) && !forceAlternativeSearch) {
-      console.log(`🎵 Sound existiert bereits für ${german}`);
-      return "ok";
-    }
-
-    console.log(
-      forceAlternativeSearch && hasCredits
-        ? `🎵 Sound existiert für ${german}; suche gezielt nach einer Alternative.`
-        : hasCredits
-        ? `🎵 NC-Sound existiert für ${german}; prüfe freie Alternative.`
-        : `🎵 Sound ohne Credits existiert für ${german}; prüfe dokumentierte freie Alternative.`,
-    );
-    for (let i = 0; i < openStages.length; i++) {
-      const originalStageIndex = stages.indexOf(openStages[i]);
-      const result = await tryXenoStageCandidates({
-        genus,
-        species,
-        german,
-        mp3Path,
-        creditsPath,
-        stage: openStages[i],
-        originalStageIndex,
-        stages,
-        extraRejectedKeys,
-        isRejected: rejectXenoCandidate,
-        foundMessage: (stageIndex) => `✔ Freie Alternative gefunden für ${german} (Stage ${stageIndex}).`,
-      });
-      if (result) return result;
-    }
-
-    const commonsResult = await tryCommonsCandidates({
-      genus,
-      species,
-      german,
-      safeName: safeGerman,
-      mp3Path,
-      creditsPath,
-      extraRejectedKeys,
-      foundMessage: `✔ Freie Commons-Alternative gefunden für ${german}.`,
-    });
-    if (commonsResult) return commonsResult;
-
-    const inatResult = await tryInatCandidates({
-      genus,
-      species,
-      german,
-      safeName: safeGerman,
-      mp3Path,
-      creditsPath,
-      extraRejectedKeys,
-      foundMessage: `✔ Freie iNaturalist-Alternative gefunden für ${german}.`,
-    });
-    if (inatResult) return inatResult;
-
-    if (forceAlternativeSearch) {
-      for (let i = 0; i < fallbackStages.length; i++) {
-        const originalStageIndex = stages.indexOf(fallbackStages[i]);
-        const result = await tryXenoStageCandidates({
-          genus,
-          species,
-          german,
-          mp3Path,
-          creditsPath,
-          stage: fallbackStages[i],
-          originalStageIndex,
-          stages,
-          extraRejectedKeys,
-          isRejected: rejectXenoCandidate,
-          foundMessage: (stageIndex) => `✔ Weitere Soundalternative gefunden für ${german} (Stage ${stageIndex}).`,
-        });
-        if (result) return result;
-      }
-    }
-
-    console.log(
-      forceAlternativeSearch && hasCredits
-        ? `ℹ Keine weitere Soundalternative gefunden für ${german}; vorhandener Sound bleibt erhalten.`
-        : hasCredits
-        ? `ℹ Keine freie Alternative gefunden für ${german}; vorhandener NC-Sound bleibt erhalten.`
-        : `⚠ Keine dokumentierte freie Alternative gefunden für ${german}; vorhandener Sound bleibt ohne Credits.`,
-    );
-    return hasCredits ? "ok" : "missing";
-  }
-
-  for (let i = 0; i < openStages.length; i++) {
-    const originalStageIndex = stages.indexOf(openStages[i]);
-    const result = await tryXenoStageCandidates({
-      genus,
-      species,
-      german,
-      mp3Path,
-      creditsPath,
-      stage: openStages[i],
-      originalStageIndex,
-      stages,
-      extraRejectedKeys,
-      isRejected: rejectXenoCandidate,
-      foundMessage: (stageIndex) => `✔ Freie Aufnahme gefunden für ${german} (Stage ${stageIndex}).`,
-    });
-    if (result) return result;
-  }
-
-  const commonsResult = await tryCommonsCandidates({
-    genus,
-    species,
-    german,
-    safeName: safeGerman,
-    mp3Path,
-    creditsPath,
-    extraRejectedKeys,
-    foundMessage: `✔ Freie Commons-Aufnahme gefunden für ${german}.`,
-  });
-  if (commonsResult) return commonsResult;
-
-  const inatResult = await tryInatCandidates({
-    genus,
-    species,
-    german,
-    safeName: safeGerman,
-    mp3Path,
-    creditsPath,
-    extraRejectedKeys,
-    foundMessage: `✔ Freie iNaturalist-Aufnahme gefunden für ${german}.`,
-  });
-  if (inatResult) return inatResult;
-
-  for (let i = 0; i < fallbackStages.length; i++) {
-    const originalStageIndex = stages.indexOf(fallbackStages[i]);
-    const result = await tryXenoStageCandidates({
-      genus,
-      species,
-      german,
-      mp3Path,
-      creditsPath,
-      stage: fallbackStages[i],
-      originalStageIndex,
-      stages,
-      extraRejectedKeys,
-      isRejected: rejectXenoCandidate,
-      foundMessage: (stageIndex) => `✔ Aufnahme gefunden für ${german} (Stage ${stageIndex}).`,
-    });
-    if (result) return result;
-  }
-
-  console.log(`⚠ Keine Aufnahmen verfügbar für ${genus} ${species}`);
-  return "missing";
-}
-
-async function saveSoundRecording({
-  genus,
-  species,
-  german,
-  mp3Path,
-  creditsPath,
-  chosen,
-  chosenInfo,
-  chosenStageIndex,
-  stages,
-}) {
-  const lic = normalizeLicenseUrl(chosen.lic || "");
-  const audioUrl = chosen.file?.startsWith("https:") ? chosen.file : `https:${chosen.file}`;
-  const tempMp3 = mp3Path + ".tmp";
-  let replacedSound = false;
-
-  try {
-    const audioRes = await fetch(audioUrl);
-    if (!audioRes.ok) {
-      console.warn(`⚠ Fehler beim Herunterladen der Datei (${audioRes.status}); Kandidat wird übersprungen.`);
-      return "retry";
-    }
-
-    const buffer = Buffer.from(await audioRes.arrayBuffer());
-    if (!validateDownloadedMp3(buffer, "Xeno-Canto", german)) return "retry";
-    fs.writeFileSync(tempMp3, buffer);
-    await replaceExistingFileWithTemp(tempMp3, mp3Path);
-    replacedSound = true;
-
-    console.log(`✔ Sound gespeichert: ${mp3Path}`);
-
-    const st = stages[chosenStageIndex];
-    const credits = {
-      scientific_name: `${genus} ${species}`,
-      german_name: german,
-      recordist: chosen.rec || "n/a",
-      country: chosen.cnt || "n/a",
-      location: chosen.loc || "n/a",
-      quality: chosen.q || "n/a",
-      license: lic || "n/a",
-      source: "xeno-canto.org",
-      url: chosen.id ? `https://xeno-canto.org/${chosen.id}` : "n/a",
-      rejectionKey: xenoRejectionKey(chosen),
-      notes: `Stage ${chosenStageIndex} (openOnly=${st.openOnly}, q=${st.q}, len25-35=${st.len2535}) | query="${chosenInfo.query}" | page=${chosenInfo.page}`,
-    };
-
-    fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
-
-    return "ok";
-  } catch (err) {
-    removeTempFile(tempMp3);
-    if (!replacedSound && isFileLockError(err)) {
-      console.warn(`⚠ Sounddatei für ${german} ist noch geöffnet oder gesperrt; Alternative konnte nicht gespeichert werden.`);
-      logError(`Sound ${genus} ${species}: Datei gesperrt (${err.message})`);
-      return "locked";
-    }
-    console.error(`❌ Fehler beim Sound-Download ${genus} ${species}: ${err.message}`);
-    logError(`Sound ${genus} ${species}: ${err.message}`);
-    return replacedSound ? "error" : "retry";
-  }
-}
-
-async function saveCommonsSoundRecording({ genus, species, german, mp3Path, creditsPath, hit }) {
-  const tempMp3 = mp3Path + ".tmp";
-  let replacedSound = false;
-
-  try {
-    const audioRes = await fetch(hit.mp3Url);
-    if (!audioRes.ok) {
-      console.warn(`⚠ Fehler beim Herunterladen der Commons-Datei (${audioRes.status}); Kandidat wird übersprungen.`);
-      return "retry";
-    }
-
-    const buffer = Buffer.from(await audioRes.arrayBuffer());
-    if (!validateDownloadedMp3(buffer, "Commons", german)) return "retry";
-
-    fs.writeFileSync(tempMp3, buffer);
-    await replaceExistingFileWithTemp(tempMp3, mp3Path);
-    replacedSound = true;
-
-    console.log(`✔ Commons-Sound gespeichert: ${mp3Path}`);
-
-    const source = String(hit.credit || "").toLowerCase().includes("inaturalist")
-      ? "Wikimedia Commons / iNaturalist"
-      : "Wikimedia Commons";
-
-    const credits = {
-      scientific_name: `${genus} ${species}`,
-      german_name: german,
-      recordist: hit.artist || "n/a",
-      country: "n/a",
-      location: "n/a",
-      quality: "n/a",
-      license: normalizeLicenseUrl(hit.license) || "n/a",
-      source,
-      url: hit.descriptionUrl || hit.fileUrl || "n/a",
-      rejectionKey: commonsRejectionKey(hit),
-      notes: `Free Commons replacement. Query="${hit.query}" | title="${hit.title}" | original=${hit.fileUrl} | mp3=${hit.mp3Url}`,
-    };
-
-    fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
-
-    return "ok";
-  } catch (err) {
-    removeTempFile(tempMp3);
-    if (!replacedSound && isFileLockError(err)) {
-      console.warn(`⚠ Sounddatei für ${german} ist noch geöffnet oder gesperrt; Commons-Alternative konnte nicht gespeichert werden.`);
-      logError(`Commons-Sound ${genus} ${species}: Datei gesperrt (${err.message})`);
-      return "locked";
-    }
-    console.error(`❌ Fehler beim Commons-Sound-Download ${genus} ${species}: ${err.message}`);
-    logError(`Commons-Sound ${genus} ${species}: ${err.message}`);
-    return replacedSound ? "error" : "retry";
-  }
-}
-
-async function saveInatSoundRecording({ genus, species, german, mp3Path, creditsPath, hit }) {
-  const tempMp3 = mp3Path + ".tmp";
-  let replacedSound = false;
-
-  try {
-    const audioRes = await fetch(hit.url);
-    if (!audioRes.ok) {
-      console.warn(`⚠ Fehler beim Herunterladen der iNaturalist-Datei (${audioRes.status}); Kandidat wird übersprungen.`);
-      return "retry";
-    }
-
-    const buffer = Buffer.from(await audioRes.arrayBuffer());
-    if (!validateDownloadedMp3(buffer, "iNaturalist", german)) return "retry";
-    fs.writeFileSync(tempMp3, buffer);
-    await replaceExistingFileWithTemp(tempMp3, mp3Path);
-    replacedSound = true;
-
-    console.log(`✔ iNaturalist-Sound gespeichert: ${mp3Path}`);
-
-    const observation = hit.observation;
-    const sound = hit.sound;
-    const user = observation.user?.login || "n/a";
-    const license = sound.license_code || sound.license || "";
-
-    const credits = {
-      scientific_name: `${genus} ${species}`,
-      german_name: german,
-      recordist: sound.attribution || user,
-      country: "n/a",
-      location: observation.place_guess || "n/a",
-      quality: observation.quality_grade || hit.qualityGrade || "n/a",
-      license: inatLicenseUrl(license) || "n/a",
-      source: "iNaturalist",
-      url: observation.uri || `https://www.inaturalist.org/observations/${observation.id}`,
-      rejectionKey: inatRejectionKey(hit),
-      notes: `Free iNaturalist replacement. Observation=${observation.id} | user=${user} | license=${license} | sound=${sound.id || sound.uuid || "n/a"} | file=${hit.url}`,
-    };
-
-    fs.writeFileSync(creditsPath, JSON.stringify(credits, null, 2));
-
-    return "ok";
-  } catch (err) {
-    removeTempFile(tempMp3);
-    if (!replacedSound && isFileLockError(err)) {
-      console.warn(`⚠ Sounddatei für ${german} ist noch geöffnet oder gesperrt; iNaturalist-Alternative konnte nicht gespeichert werden.`);
-      logError(`iNaturalist-Sound ${genus} ${species}: Datei gesperrt (${err.message})`);
-      return "locked";
-    }
-    console.error(`❌ Fehler beim iNaturalist-Sound-Download ${genus} ${species}: ${err.message}`);
-    logError(`iNaturalist-Sound ${genus} ${species}: ${err.message}`);
-    return replacedSound ? "error" : "retry";
-  }
-}
-
+const { prepareSpeciesData } = createSpeciesDataPipeline({ fetchSpeciesData, logError });
+const { runSpecies } = createSpeciesPipeline({
+  prepareSpeciesData, downloadSoundIfMissing, downloadMapForSpecies, sanitizeAssetName, isManualAsset,
+});
 
 // =======================
 // REPORT: Fehlende Elemente (+ NC-Lizenzen gesamt)
@@ -991,6 +319,7 @@ function createMissingElementsReport(speciesData) {
     if (!fs.existsSync(assetSoundPath)) missingAssetParts.push("sound.mp3");
     if (!fs.existsSync(assetCreditsPath)) missingAssetParts.push("credits.json");
     if (!fs.existsSync(assetSpectrogramPath)) missingAssetParts.push("spectrogram.webp");
+    if (!fs.existsSync(path.join(assetDir, "portrait.webp"))) missingAssetParts.push("portrait.webp");
     if (missingAssetParts.length) {
       report.missing.speciesAssets.push({ german, safeName: safe, missing: missingAssetParts });
     }
@@ -1138,71 +467,8 @@ function printReportToConsole(report) {
         continue;
       }
 
-      let data = assetOnlyMode && existingData
-        ? preserveExistingSpeciesData(existingData, s)
-        : await fetchSpeciesData(
-          s.genus,
-          s.species,
-          s.german,
-          s.english,
-          s.size,
-          s.weight,
-          s.life_expectancy,
-        );
-
-      if (!hasUsableSpeciesData(data) && hasUsableSpeciesData(existingData)) {
-        console.warn(`⚠ Verwende vorhandene Daten für ${s.german}, neuer Abruf war unvollständig.`);
-        logError(`Fallback auf vorhandene Daten: ${s.german} (${s.genus} ${s.species})`);
-        data = preserveExistingSpeciesData(existingData, s);
-      }
-
+      const { data } = await runSpecies(s, { mode: args.mode, existingData });
       output.push(data);
-
-      const forceSoundAlternativeSearch = args.mode === "nc-sounds"
-        && targetSlugs.has(currentSlug);
-      const soundStatus = args.mode === "manual-maps"
-        ? "ok"
-        : await downloadSoundIfMissing(
-          s.genus,
-          s.species,
-          s.german,
-          { forceAlternativeSearch: forceSoundAlternativeSearch },
-        );
-      const recheckProtectedMap = args.mode === "all"
-        && isManualAsset(sanitizeAssetName(s.german), "map");
-      const mapStatus = args.mode === "nc-sounds"
-        ? "ok"
-        : await downloadMapForSpecies(
-          data,
-          args.mode === "manual-maps" || recheckProtectedMap
-            ? { force: true, allowManual: true, recordAssessment: false }
-            : undefined,
-        );
-
-      const speciesOk =
-        data &&
-        data["Wissenschaftlicher Name"] !== "n/a" &&
-        data["Assessment ID"] &&
-        data["Assessment ID"] !== "n/a";
-
-      const soundLabel = args.mode === "manual-maps" ? "nicht geprüft" : soundStatus;
-      const mapLabel = args.mode === "nc-sounds" ? "nicht geprüft" : mapStatus;
-      const dataLabel = speciesOk ? "ok" : "n/a";
-
-      const hasError = soundLabel === "error" || mapLabel === "error";
-      const hasBlocked = soundLabel === "locked" || mapLabel === "locked";
-      const hasMissing =
-        soundLabel === "missing" || mapLabel === "missing" || mapLabel === "n/a" || dataLabel === "n/a";
-      const icon = hasError ? "❌" : hasBlocked || hasMissing ? "⚠" : "✅";
-
-      const germanName = data["Deutscher Name"] || s.german || "unbekannt";
-      const sciName = data["Wissenschaftlicher Name"] || `${s.genus} ${s.species}`;
-
-      console.log(
-        `${icon} Fertig: ${germanName} - ${sciName} (Sound: ${soundLabel}, Map: ${mapLabel}, Spezies-Data: ${dataLabel})`
-      );
-      console.log("");
-
       await sleep(RATE_LIMIT);
     }
 

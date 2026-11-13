@@ -23,7 +23,7 @@ export async function verifyDocumentMedia(document, mediaFacade, context) {
     try {
       total += asset.bytes;
       check(total <= 96 * 1024 * 1024, 'media_preview_budget', 'Die Bildauswahl überschreitet das begrenzte lokale Vorschaufenster.', 409);
-      const bytes = await mediaFacade.read(context, asset.id);
+      const bytes = await mediaFacade.read({ ...context, pageSpecies: document.species, mediaAsset: asset }, asset.id);
       check(Buffer.isBuffer(bytes) || bytes instanceof Uint8Array, 'media_missing', 'Die bereitgestellte Datei fehlt.', 409);
       check(bytes.byteLength === asset.bytes && sha256(bytes) === asset.sha256, 'media_changed', 'Die bereitgestellte Datei stimmt nicht mehr mit dem Entwurf überein.', 409);
       const b = Buffer.from(bytes);
@@ -41,6 +41,7 @@ export async function verifyDocumentMedia(document, mediaFacade, context) {
   return result;
 }
 function attribution(asset) { return asset?.attribution ? `<p class="source">${esc(asset.attribution)}</p>` : ''; }
+function sourceHtml(source) { return `<p class="source">${esc(source.label)}${source.url ? ` · ${esc(source.url)}` : ''}</p>`; }
 function mediaImage(asset, alt, media, className = '') {
   if (!asset || !media.get(asset.id)?.ok) return '<p class="open">Bilddatei nicht bereitgestellt oder nicht bestätigt</p>';
   return `<img class="${className}" src="${media.get(asset.id).dataUrl}" alt="${esc(alt)}">${attribution(asset)}`;
@@ -59,6 +60,12 @@ export function composePage(draft, media) {
   const slots = [{ type: 'heading', level: 3, text: document.title }];
   if (hasContent(document.introduction)) slots.push({ type: 'richtext', html: renderRichText(document.introduction) });
   const preview = [`<h3>${esc(document.title)}</h3>`, renderRichText(document.introduction)];
+  function appendSources(sources, sectionId) {
+    for (const source of sources) {
+      slots.push({ type: 'source', source: { ...source }, ...(sectionId === undefined ? {} : { sectionId }) });
+      preview.push(sourceHtml(source));
+    }
+  }
   for (const section of document.sections) {
     slots.push({ type: 'heading', level: 4, text: section.title, sectionId: section.id });
     preview.push(`<section data-section="${esc(section.id)}"><h4>${esc(section.title)}</h4>`);
@@ -73,13 +80,13 @@ export function composePage(draft, media) {
     if (hasContent(section.blocks)) { const html = renderRichText(section.blocks); slots.push({ type: 'richtext', html, sectionId: section.id }); preview.push(html); }
     if (document.emptyConfirmations[section.id]) preview.push('<p class="empty">Bewusst leer · bestätigt</p>');
     if (section.kind === 'map-module') { slots.push({ type: 'code', code: FN_MAP_CODE, executeInPreview: false, module: 'existing-fn-map' }); preview.push(mediaImage(species.normalAssets.map, `Verbreitung von ${species.commonName || species.scientificName}`, media)); }
-    for (const source of section.sources) preview.push(`<p class="source">${esc(source.label)}${source.url ? ` · ${esc(source.url)}` : ''}</p>`);
+    appendSources(section.sources, section.id);
     preview.push('</section>');
   }
   slots.push({ type: 'gallery', items: document.images.map((image,order) => ({ id: image.id, assetId: image.assetId, sha256: image.asset.sha256, bytes: image.asset.bytes,
     mimeType: image.asset.mimeType, alt: image.alt, caption: image.caption, decorative: image.decorative, order, attribution: image.asset.attribution })) });
   preview.push(`<div class="gallery">${document.images.map(image => `<figure data-image="${esc(image.id)}">${mediaImage(image.asset,image.alt,media)}${image.caption ? `<figcaption>${esc(image.caption)}</figcaption>` : ''}</figure>`).join('')}</div>`);
-  for (const source of document.sources) preview.push(`<p class="source">${esc(source.label)}${source.url ? ` · ${esc(source.url)}` : ''}</p>`);
+  appendSources(document.sources);
   const structure = { schemaVersion: 1, templateId: template.id, templateHash: template.templateHash, title: document.title, path: `${document.parentPath}/${document.slug}`,
     siteShell: template.siteShell, runtimeScripts: template.runtimeScripts, normalAssets: normalAssetUrls(species), normalAssetBindings: species.normalAssets,
     slots, intendedCmsState: 'unpublished', publish: false };

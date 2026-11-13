@@ -9,25 +9,79 @@
     "verification": "https://nodejs.org/dist/v24.22.1/SHASUMS256.txt"
   },
   "electron": {
-    "version": "42.11.18",
-    "url": "https://github.com/electron/electron/releases/download/v42.11.18/electron-v42.11.18-win32-x64.zip",
-    "sha256": "95db2e9cdbe61d292f28ba42e863518b605115a79e6aebb3c21d5a99b28f35ba",
-    "bytes": 149404826,
-    "verification": "https://api.github.com/repos/electron/electron/releases/tags/v42.11.18"
+    "version": "45.2.3",
+    "url": "https://github.com/electron/electron/releases/download/v45.2.3/electron-v45.2.3-win32-x64.zip",
+    "sha256": "489cd061908e697394b004298bf5ffd345c935d10e8ca197ba819f019ab2dec0",
+    "bytes": 158182975,
+    "verification": "https://api.github.com/repos/electron/electron/releases/tags/v45.2.3"
   },
   "git": {
     "version": "2.56.0.windows.4",
     "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/MinGit-2.56.0.4-64-bit.zip",
     "sha256": "e3bf78351fe777fba47ddee5950082f8a98bb0f02604fdc7ba3ee2cb68ffa877",
     "bytes": 39846926,
-    "verification": "https://api.github.com/repos/git-for-windows/git/releases/tags/v2.56.0.windows.4"
+    "verification": "https://api.github.com/repos/git-for-windows/git/releases/tags/v2.56.0.windows.4",
+    "sourceCompanion": {
+      "evidenceDirectory": "mingit-2.56.0.4-20261104",
+      "runtimeFileCount": 375,
+      "archiveCount": 51,
+      "coreArchive": "mingw-w64-git-2.56.0.4-1.src.tar.gz",
+      "evidence": {
+        "mingit-file-provenance.json": "faa23f7fd797ffdc1b4d1d9ff73d739279bd59409de118c813f567d38d908987",
+        "package-sources/source-coverage.json": "07c31c79c38f1c985685f1a411eab8d3affffee9be331df9b6bb3c9a1f4ba4a5",
+        "package-sources/source-signatures.json": "53cfee347e740cbafb3255aae1cc45ab834e2059e1c23a10313cf0de2c2eb955",
+        "upstream-msys2/installer-source-coverage.json": "f20e61c825cb2b604b6486c02c83d1bb4ba6fb5d9e01fb45cf88f0d52e857c38",
+        "upstream-msys2/source-archives/verified-source-signatures.json": "6bb6a838e98483df56cd137dd25de401ffb5975e85116cea386fd965da3ba6f6",
+        "packaging-evidence/mingit-packaging-provenance.json": "d8f0fa39d9d5750bbbf779def12457206cb9abb86e370862705195c3ada6a628",
+        "packaging-evidence/verified-package-signatures.json": "5078d8b2a61215b1224f0386ea0ca8cfb91b1783b3b460098989f534caea5d75",
+        "git-for-windows-ucrt64.files.tar.xz": "2ff67d4ee16bf9a18b0e9915e256b4b4a20bb192d3c8038d6f3bb588dbf4df58",
+        "git-for-windows-ucrt64.files.tar.xz.sig": "205cdcbb19224c847ac54cc4e622c90586ef22b63e293893e655607ef997cc2e",
+        "git-for-windows-x86_64.files.tar.xz": "301dc862855efa007b272d1afa37f9691112203ff331b1bee74463c255c0ebba",
+        "git-for-windows-x86_64.files.tar.xz.sig": "01cb7563411a4097317b28a0ecafbe2e4447fc9e434e3258ce886810776ba417",
+        "git-for-windows-release-keyring.gpg": "b282d8948bec9cf826f42c547d915df53c2e60c81a9eb528c3079fd07f53d077",
+        "upstream-msys2/msys2-keyring-source.json": "a34e0c2c3e823d3435beec8482be85476ca02d627c5920e2aa5b9282d3ce683a",
+        "pacman-release-signatures.json": "f0f69c304b66565ad690b97a77889d7e0ff3906569ab2093afbd67d765c4147c",
+        "mingw-w64-git-2.56.0.4-1.src.tar.gz.sig": "3d5e9ea7163b8e31f524d8b79c87f8849612e2e940f957e36957b7d4e8d83360"
+      }
+    }
+  },
+  "java": {
+    "version": "17.0.21+9",
+    "url": "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.21%2B9/OpenJDK17U-jre_x64_windows_hotspot_17.0.21_9.zip",
+    "sha256": "fe4656bd78fb09812dc38c49da777f79cc33e7ee435a254be82f9e7f40d9d117",
+    "bytes": 43860024,
+    "verification": "https://api.github.com/repos/adoptium/temurin17-binaries/releases/tags/jdk-17.0.21%2B9"
   },
   "ffmpeg": {
     "version": "8.1.1",
-    "url": "https://github.com/GyanD/codexffmpeg/releases/download/8.1.1/ffmpeg-8.1.1-essentials_build.zip",
-    "archiveSha256": "6f58ce889f59c311410f7d2b18895b33c03456463486f3b1ebc93d97a0f54541",
-    "ffmpegSha256": "228d7a8556258de907fdb55f36850078ebc7680b84ec30d84ea02e99bec1d1eb",
-    "ffprobeSha256": "0fde260f5abd35c9cafd96f594cc76365a780c1b73a90e35b6a3409ea1db1bf0",
-    "source": "https://github.com/FFmpeg/FFmpeg/commit/239f2c733d"
+    "source": "https://github.com/FFmpeg/FFmpeg/commit/239f2c733de417201d7ad3b3b8b0d9b63285b2b1",
+    "evidenceDirectory": "ffmpeg-controlled-build-20261104",
+    "files": {
+      "bin/ffmpeg.exe": ["candidate/ffmpeg.exe", "5fa5cae127339b93340e7fec3e305197f53797cc7b85e93dc946192c50bdee78"],
+      "bin/ffprobe.exe": ["candidate/ffprobe.exe", "6e985cb953503949ab2757dc89de4cd0cfc0671ef3700e180f6767c9b227c2c2"],
+      "LICENSE.txt": ["candidate/FFmpeg-COPYING.GPLv3", "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"],
+      "licenses/FFmpeg-LICENSE.md": ["candidate/FFmpeg-LICENSE.md", "2e1d16c72fd74e12063776371da757322f8b77589386532f4fd8634bde7de1af"],
+      "licenses/LAME-COPYING": ["candidate/LAME-COPYING", "bfe4a52dc4645385f356a8e83cc54216a293e3b6f1cb4f79f5fc0277abf937fd"],
+      "licenses/LAME-LICENSE": ["candidate/LAME-LICENSE", "7a40cbd8818c57e5285e83c772a459a996d1662c824a879836b97b473c07cae4"],
+      "licenses/WebP-COPYING": ["candidate/WebP-COPYING", "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf"],
+      "licenses/zlib-LICENSE": ["candidate/zlib-LICENSE", "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2"],
+      "licenses/GCC-COPYING.RUNTIME": ["candidate/GCC-COPYING.RUNTIME", "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74"],
+      "licenses/GCC-COPYING3": ["candidate/GCC-COPYING3", "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"],
+      "licenses/MinGW-CRT-COPYING": ["candidate/MinGW-CRT-COPYING", "99a69660981156c21336fdb5661f89341b013c94e4bf9e1c7467b4745718397f"],
+      "licenses/MinGW-COPYING-runtime.txt": ["candidate/MinGW-COPYING-runtime.txt", "1db8da07b436c68833c0673ffee3d9fcb2526047f3820b81661865dfedc79a1f"],
+      "licenses/MinGW-COPYING.txt": ["candidate/MinGW-COPYING.txt", "f38e6194bd3bfa1b654f118e5acefe0aead437bbe669eee43957ccc65a7127f1"],
+      "licenses/MinGW-winpthreads-COPYING": ["candidate/MinGW-winpthreads-COPYING", "63263614cdd29f2f93cba85e992f041b31f9fc7b4033692f31269489a8a1b177"],
+      "sources/FFmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1.tar.gz": ["FFmpeg-239f2c733de417201d7ad3b3b8b0d9b63285b2b1.tar.gz", "ec0aa20fb9f6fd3692ffc04dc12ffa43cfffc4a479e388ccd7910ec6cfe188a2"],
+      "sources/lame-3.100.tar.gz": ["candidate/lame-3.100.tar.gz", "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e"],
+      "sources/mingw-w64-libwebp-1.6.0-1.src.tar.zst": ["mingw-w64-libwebp-1.6.0-1.src.tar.zst", "c8c63f98e018a7595d22e8a3e65b7caf83345fed666866a6e67d153b16f48141"],
+      "sources/mingw-w64-libwebp-1.6.0-1.src.tar.zst.sig": ["mingw-w64-libwebp-1.6.0-1.src.tar.zst.sig", "61a1eb7a20de139db5c25f4cd5b2ce59173f2765ec64f1d4a0579f6fbad3d453"],
+      "sources/mingw-w64-zlib-1.3.2-3.src.tar.zst": ["mingw-w64-zlib-1.3.2-3.src.tar.zst", "4b7839ab2826d3e3d27fe46150d2180a1f561f4d03c9e82aeb4b056180561f00"],
+      "sources/mingw-w64-zlib-1.3.2-3.src.tar.zst.sig": ["mingw-w64-zlib-1.3.2-3.src.tar.zst.sig", "2a8f7b6ad9f784b60e2d584f1fe587032bfea06d1610dbef3f160028dae812dc"],
+      "sources/build-static-lame.sh": ["build-static-lame.sh", "d9eb320d037d43ae8781daf5b89845ed6ee26e9fb0adf210ed0ca3ba178b279c"],
+      "sources/build-with-static-lame.sh": ["build-with-static-lame.sh", "48612652a3fb21af8bfdf5339e896664d1c78ab4a0bda03da67fdfdf49e280f7"],
+      "sources/linked-msys2-library-sources.json": ["linked-msys2-library-sources.json", "a592ca34eae6325dfd6aaeb5eceaed7e3a2ba330599eb447e911703c946f3f28"],
+      "sources/compiler-runtime-source-bindings.json": ["compiler-runtime-source-bindings.json", "3e61d7349619b0303a2ba32d22aff24e8a267eab73e7a9bc37664d33934bb030"],
+      "sources/toolchain-packages.txt": ["toolchain-packages.txt", "65a327d3d8de0d3d8570b1f31e7279bb4b38a7dbc1551f2ac0f8cc259505dc6b"]
+    }
   }
 }

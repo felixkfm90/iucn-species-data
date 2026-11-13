@@ -3,9 +3,14 @@ import { validateWebsiteAltPageRecord, websiteAltPageRevision } from "../website
 import { normalizeWebsitePageUrl } from "../website-alt-parser.mjs";
 import { validateWebsiteAltObject, validateWebsiteAltRemoteObject, websiteAltObjectId } from "./website-alt-sync.mjs";
 import { canonical, fingerprint, fields, identifier, digest, text } from "../page-authoring/contract.mjs";
-import { validateStoredDocument, encodePageAuthoringDraft, pageImagesHash } from "../page-authoring/shared.mjs";
-import { normalizeAssetMetadata } from "../page-authoring/model.mjs";
+import { validateStoredDocument, encodePageAuthoringDraft, pageImagesHash, validatePageAuthoringObject,
+  importPageAuthoringAsDraft,pageAuthoringObjectId,validatePageAuthoringServerEvidence } from "../page-authoring/shared.mjs";
+import { PAGE_AUTHORING_CORE_COLUMNS,PAGE_WORKSPACE_COLUMNS,PAGE_SCOPE_COLUMNS,pageWorkspaceScope,validatePageWorkspaceBinding,
+  canRecoverCmsSave } from "../page-authoring/repository.mjs";
+import { collectPageMediaRequirements } from "./page-media-backup.mjs";
 import { composePage } from "../page-authoring/compose.mjs";
+import { createCmsReadbackExpectation, verifyCmsReadbackProof } from "../page-authoring/cms-readback.mjs";
+import { assertCmsSaveReadback, validateCmsSaveBinding } from "../page-authoring/cms-save-binding.mjs";
 
 const HASH = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -108,17 +113,51 @@ const AUTHORING_COLUMNS = Object.freeze({
   cms_receipts: "project_id,attempt_id,receipt_id,payload_hash,payload_json",
 });
 const CMS_STATES = new Set(["prepared", "dispatched", "saved-unpublished", "uncertain", "failed"]);
+function retainedCompositionStructures(value) {
+  const current = composePage(value, new Map()).structure;
+  // Read-only qualification of retained pre-source-slot history. The old HTML
+  // already showed sources; its structure omitted every source slot. No other
+  // field/slot may change, and this does not authorize executing an old plan.
+  const historical = { ...current, slots: current.slots.filter(slot => slot.type !== "source") };
+  return equal(current, historical) ? [current] : [current, historical];
+}
 function draftValue(row, document, current = false) {
   return { id: row.draft_id, projectId: row.project_id, revision: row.revision, sequence: row.sequence, parentRevision: row.parent_revision,
     contentHash: row.body_hash, document, actorId: row.actor_id, createdAt: row.created_at, current };
 }
-function receipt(value, attempt, plan) {
-  fields(value, ["id", "attemptId", "planHash", "contentHash", "imagesHash", "status", "pageId", "path", "unpublished", "readbackStructureHash", "observedAt", "reason"]);
+function receipt(value, attempt, plan, document) {
+  const current = plan.schemaVersion === 2;
+  fields(value, ["id", "attemptId", "planHash", "contentHash", "imagesHash", "status", "pageId", "path", "unpublished", "readbackStructureHash", "observedAt", "reason",
+    ...(current ? ["schemaVersion", "readback", "mediaBindings", "mediaBindingsHash", "recovery"] : [])]);
   identifier(value.id); date(value.observedAt);
   check(["saved-unpublished", "uncertain", "failed"].includes(value.status) && value.attemptId === attempt.id && value.planHash === plan.planHash
-    && value.contentHash === plan.contentHash && value.imagesHash === plan.imagesHash && value.path === plan.target.path && value.unpublished === true,
+    && value.contentHash === plan.contentHash && value.imagesHash === plan.imagesHash && value.path === plan.target.path
+    && (current ? value.schemaVersion === 2 : value.unpublished === true),
   "Die CMS-Quittung gehört nicht zum unveröffentlichten gebundenen Auftrag.");
   if (value.reason !== undefined) text(value.reason, 1000, true);
+  if (current) {
+    check(["schemaVersion", "readback", "mediaBindings", "readbackStructureHash", "mediaBindingsHash", "pageId", "unpublished"].every(key => Object.hasOwn(value, key)),
+      "Die CMS-Rücklesequittung benötigt ihre vollständigen Beobachtungsfelder.");
+    if (value.recovery !== undefined) {
+      const recovery = value.recovery;
+      fields(recovery, ["previousReceiptHash", "saveBindingHash"]);
+      check(value.status === "saved-unpublished" && value.readback !== null && Object.keys(recovery).length === 2,
+        "Nur eine vollständige CMS-Erfolgsquittung kann aus der lesenden Nachprüfung stammen.");
+      if (recovery.previousReceiptHash !== null) digest(recovery.previousReceiptHash);
+      digest(recovery.saveBindingHash);
+    }
+    if (value.readback === null) {
+      check(value.status !== "saved-unpublished" && value.pageId === null && value.unpublished === null && equal(value.mediaBindings, [])
+        && value.readbackStructureHash === null && value.mediaBindingsHash === null, "Eine unbestätigte CMS-Quittung darf keinen Teilbeleg oder gespeicherten Erfolg behaupten.");
+      return;
+    }
+    identifier(value.pageId);
+    const proof = verifyCmsReadbackProof({ document, structure: plan.structure, expected: plan.readback.expectation,
+      observation: value.readback, mediaBindings: value.mediaBindings });
+    check(value.unpublished === true && value.readback.page.id === value.pageId && value.readbackStructureHash === proof.observationHash
+      && value.mediaBindingsHash === proof.mediaBindingsHash, "Die CMS-Rücklesequittung stimmt nicht mit ihrer vollständigen Beobachtung und Bildzuordnung überein.");
+    return;
+  }
   if (value.status === "saved-unpublished") { identifier(value.pageId); check(value.readbackStructureHash === plan.structureHash, "Die CMS-Rückleseprüfung ist widersprüchlich."); }
   else {
     if (value.pageId) identifier(value.pageId);
@@ -127,9 +166,17 @@ function receipt(value, attempt, plan) {
 }
 
 /** Database/metadata verification only; external photo/audio bytes are not present in this repository. */
-export function validatePageAuthoringJournal(db, input) {
-  const context = checkedContext(input), projects = new Set(), heads = new Map(), versions = new Map(), artifacts = new Map(), attempts = new Map(), media = new Map();
-  schema(db, 0, 0x464e5041, AUTHORING_COLUMNS, context);
+function validateAuthoringCore(database, input, {suffix='',schemaChecked=false,scope=null}={}) {
+  const db=suffix?{prepare:sql=>database.prepare(sql.replace(/\b(drafts|versions|mutations|artifacts|cms_attempts|cms_receipts|workspace_links)\b/g,table=>`${table}_${suffix}`))}:database;
+  const context = checkedContext(input), projects = new Set(), heads = new Map(), versions = new Map(), artifacts = new Map(), attempts = new Map(), media = new Map(), scopedMedia = new Map();
+  const rememberMedia = (document, projectId) => {
+    for (const requirement of collectPageMediaRequirements(document, { projectId, origin: scope?.origin ?? null, actorId: scope?.actor_id ?? null })) {
+      const asset = requirement.asset;
+      media.set(tuple(asset.projectId, asset.id, asset.sha256), asset);
+      scopedMedia.set(fingerprint(requirement), requirement);
+    }
+  };
+  if(!schemaChecked)schema(db, 0, 0x464e5041, AUTHORING_COLUMNS, context);
   for (const row of db.prepare("SELECT * FROM drafts ORDER BY project_id,id").iterate()) {
     tick(context); bindProject(row.project_id, context, projects); identifier(row.id); digest(row.head);
     check(Number.isSafeInteger(row.sequence) && row.sequence >= 1, "Die Artseiten-Versionsfolge ist ungültig."); heads.set(tuple(row.project_id, row.id), row);
@@ -137,13 +184,12 @@ export function validatePageAuthoringJournal(db, input) {
   const lastVersions = new Map();
   for (const row of db.prepare("SELECT * FROM versions ORDER BY project_id,draft_id,sequence").iterate()) {
     tick(context); bindProject(row.project_id, context, projects); identifier(row.actor_id); date(row.created_at);
+    if(scope)check(row.actor_id===scope.actor_id,'Eine persönliche Seitenfassung gehört zu einer anderen Person.');
     const key = tuple(row.project_id, row.draft_id), prior = lastVersions.get(key), document = validateStoredDocument(json(row.body_json, 2 * 1024 * 1024));
     check(heads.has(key) && row.sequence === (prior?.sequence ?? 0) + 1 && row.parent_revision === (prior?.revision ?? null)
       && row.body_hash === fingerprint(document) && row.revision === fingerprint({ projectId: row.project_id, id: row.draft_id,
         sequence: row.sequence, parent: row.parent_revision, bodyHash: row.body_hash, actorId: row.actor_id }), "Der Artseitenverlauf ist unvollständig oder verändert.");
-    for (const asset of [...Object.values(document.species.normalAssets).filter(Boolean), ...document.images.map((image) => image.asset)]) {
-      normalizeAssetMetadata(asset, row.project_id); media.set(tuple(asset.projectId, asset.id, asset.sha256), asset);
-    }
+    rememberMedia(document, row.project_id);
     const metadata = { ...row, body_json: undefined };
     versions.set(tuple(row.project_id, row.draft_id, row.revision), metadata); lastVersions.set(key, metadata);
     const head = heads.get(key); if (head.head === row.revision) check(head.path === `${document.parentPath}/${document.slug}` && head.sequence === row.sequence,
@@ -165,7 +211,7 @@ export function validatePageAuthoringJournal(db, input) {
       const { reportHash, ...body } = payload; digest(payload.structureHash); digest(payload.previewHash);
       check(payload.schemaVersion === 1 && payload.revision === row.revision && payload.contentHash === value.contentHash && payload.imagesHash === pageImagesHash(value.document)
         && payload.templateHash === value.document.templateHash && payload.speciesBindingHash === fingerprint(value.document.species) && reportHash === fingerprint(body)
-        && payload.structureHash === fingerprint(composePage(value, new Map()).structure)
+        && retainedCompositionStructures(value).some(structure => payload.structureHash === fingerprint(structure))
         && Array.isArray(payload.findings) && payload.technicalReady === !payload.findings.some((finding) => finding.blocking)
         && payload.editorialReview === "human-required" && payload.modelReview === "not-performed" && payload.publicVerification === "not-performed",
       "Der Artseiten-Prüfbericht ist verändert.");
@@ -177,37 +223,62 @@ export function validatePageAuthoringJournal(db, input) {
       check([...artifacts.values()].some((other) => other.project_id === row.project_id && other.draft_id === row.draft_id && other.kind === "preview"
         && other.revision === row.revision && other.payload.reportHash === payload.reportHash && other.payload.previewHash === payload.previewHash), "Die menschliche Artseitenfreigabe besitzt keinen passenden gespeicherten Prüfbericht.");
     } else {
-      fields(payload, ["schemaVersion", "draftId", "revision", "contentHash", "imagesHash", "approvalHash", "reportHash", "structureHash", "structure", "target", "publish", "automaticRetry", "requiresObservedEditorAdapter", "steps", "planHash"]);
-      const { planHash, ...body } = payload, structure = composePage(value, new Map()).structure;
+      const currentPlan = payload.schemaVersion === 2;
+      fields(payload, ["schemaVersion", "draftId", "revision", "contentHash", "imagesHash", "approvalHash", "reportHash", "structureHash", "structure", "target", "publish", "automaticRetry", "requiresObservedEditorAdapter", "steps", "planHash", ...(currentPlan ? ["readback"] : [])]);
+      const { planHash, ...body } = payload;
+      const candidates = currentPlan ? [composePage(value, new Map()).structure] : retainedCompositionStructures(value);
+      const structure = candidates.find(candidate => equal(payload.structure, candidate) && payload.structureHash === fingerprint(candidate));
       fields(payload.target, ["path", "exists", "parentPath", "parentExists", "online", "observationId", "checkedAt"]); identifier(payload.target.observationId); date(payload.target.checkedAt);
-      check(payload.schemaVersion === 1 && payload.draftId === row.draft_id && payload.revision === row.revision && payload.contentHash === value.contentHash
+      check(structure && [1, 2].includes(payload.schemaVersion) && payload.draftId === row.draft_id && payload.revision === row.revision && payload.contentHash === value.contentHash
         && payload.imagesHash === pageImagesHash(value.document) && planHash === fingerprint(body) && equal(payload.structure, structure)
         && payload.structureHash === fingerprint(structure) && payload.target.path === structure.path && payload.target.parentPath === value.document.parentPath
         && payload.target.exists === false && payload.target.parentExists === true && payload.target.online === true && payload.publish === false
         && payload.automaticRetry === false && payload.requiresObservedEditorAdapter === true,
       "Der unveröffentlichte CMS-Plan ist nicht an die gespeicherte Artseite gebunden.");
+      if (currentPlan) {
+        const expectation = createCmsReadbackExpectation(value.document, structure);
+        check(equal(payload.readback, { schemaVersion: 1, expectation, expectationHash: fingerprint(expectation) }),
+          "Die CMS-Rückleseerwartung ist nicht vollständig an das gespeicherte Dokument gebunden.");
+      }
       const steps = [{ action: "confirm-new-target", path: payload.target.path, observationId: payload.target.observationId },
         { action: "create-unpublished-page", title: value.document.title, path: payload.target.path },
         ...structure.slots.map((slot, index) => ({ action: "insert-observed-editor-block", index, slot })),
-        { action: "save-unpublished" }, { action: "readback-and-compare", expectedStructureHash: payload.structureHash }, { action: "record-adapter-receipt" }];
+        { action: "save-unpublished" }, { action: "readback-and-compare", expectedStructureHash: payload.structureHash,
+          ...(currentPlan ? { expectedReadbackHash: payload.readback.expectationHash } : {}) }, { action: "record-adapter-receipt" }];
       check(equal(payload.steps, steps) && [...artifacts.values()].some((other) => other.project_id === row.project_id && other.draft_id === row.draft_id
         && other.kind === "approval" && other.revision === row.revision && other.payload.approvalHash === payload.approvalHash
-        && other.payload.reportHash === payload.reportHash), "Der CMS-Plan besitzt keine passende menschliche Freigabe oder Schrittbindung.");
+        && other.payload.reportHash === payload.reportHash)
+        && [...artifacts.values()].some(other => other.project_id === row.project_id && other.draft_id === row.draft_id
+          && other.kind === "preview" && other.revision === row.revision && other.payload.reportHash === payload.reportHash
+          && other.payload.structureHash === payload.structureHash), "Der CMS-Plan besitzt keine passende menschliche Freigabe oder Schrittbindung.");
     }
   }
   function attemptState(state, row) {
-    fields(state, ["id", "draftId", "revision", "planId", "actorId", "status", "createdAt", "receipt", "repeatAllowed", "dispatchedAt", "dispatchId", "receiptHash", "updatedAt", "uncertainty"]);
+    fields(state, ["id", "draftId", "revision", "planId", "actorId", "status", "createdAt", "receipt", "repeatAllowed", "dispatchedAt", "dispatchId", "receiptHash", "updatedAt", "uncertainty", "supersedesStateRevision", "saveBinding"]);
     date(state.createdAt);
     check(UUID.test(state.id) && state.id === row.id && state.draftId === row.draft_id && state.revision === row.revision
       && state.planId === row.plan_id && state.actorId === row.actor_id && CMS_STATES.has(state.status) && state.repeatAllowed === false,
     "Der gespeicherte CMS-Auftrag ist nicht eindeutig gebunden.");
     const plan = artifacts.get(tuple(row.project_id, row.plan_id));
     check(plan?.kind === "cms-plan" && plan.draft_id === row.draft_id && plan.revision === row.revision, "Der CMS-Auftrag besitzt keinen passenden gespeicherten Plan.");
+    if (state.supersedesStateRevision !== undefined) digest(state.supersedesStateRevision);
     if (state.dispatchedAt !== undefined || state.dispatchId !== undefined) { date(state.dispatchedAt); identifier(state.dispatchId); }
     if (["prepared", "dispatched"].includes(state.status)) check(state.receipt === null && state.receiptHash === undefined, "Ein noch offener CMS-Auftrag enthält eine widersprüchliche Quittung.");
     if (state.status === "prepared") check(state.dispatchedAt === undefined && state.dispatchId === undefined, "Ein vorbereiteter CMS-Auftrag behauptet bereits einen Start.");
     if (state.status === "dispatched" || state.status === "saved-unpublished") check(state.dispatchedAt !== undefined, "Der bestätigte CMS-Start fehlt.");
-    if (state.receipt !== null) { receipt(state.receipt, state, plan.payload); check(state.receiptHash === fingerprint(state.receipt), "Die CMS-Quittung wurde verändert."); date(state.updatedAt); }
+    if (state.saveBinding !== undefined) {
+      check(state.status !== "prepared" && state.dispatchedAt !== undefined && plan.payload.schemaVersion === 2,
+        "Die CMS-Speicherbindung benötigt einen gestarteten Auftrag mit vollständigem Rückleseplan.");
+      validateCmsSaveBinding(state.saveBinding, { attempt: state, plan: plan.payload });
+    }
+    if (state.receipt !== null) { receipt(state.receipt, state, plan.payload, version(row.project_id, row.draft_id, row.revision).document);
+      check(state.receiptHash === fingerprint(state.receipt), "Die CMS-Quittung wurde verändert."); date(state.updatedAt);
+      // Only the currently asserted success must agree with the write binding.
+      // Contradictory receipts in an uncertain attempt are preserved for review.
+      if (state.status === "saved-unpublished" && state.saveBinding !== undefined) {
+        assertCmsSaveReadback(state.saveBinding, state.receipt.readback, state.receipt.mediaBindings);
+      }
+    }
     else check(["prepared", "dispatched"].includes(state.status), "Der abgeschlossene CMS-Auftrag hat keine Quittung.");
     if (state.uncertainty !== undefined) check(["conflicting-receipts", "receipt-before-dispatch"].includes(state.uncertainty), "Unbekannter CMS-Klärungsgrund.");
     return plan;
@@ -223,12 +294,23 @@ export function validatePageAuthoringJournal(db, input) {
     tick(context); bindProject(row.project_id, context, projects);
     const attempt = attempts.get(tuple(row.project_id, row.attempt_id)), value = json(row.payload_json);
     check(attempt && value.id === row.receipt_id && row.payload_hash === fingerprint(value), "Eine CMS-Quittung gehört zu keinem passenden Auftrag.");
-    receipt(value, attempt.state, artifacts.get(tuple(row.project_id, attempt.plan_id)).payload); attempt.receipts.push({ id: row.receipt_id, hash: row.payload_hash, value });
+    receipt(value, attempt.state, artifacts.get(tuple(row.project_id, attempt.plan_id)).payload,
+      version(row.project_id, attempt.draft_id, attempt.revision).document); attempt.receipts.push({ id: row.receipt_id, hash: row.payload_hash, value });
   }
   for (const attempt of attempts.values()) {
     const state = attempt.state; let status = state.dispatchedAt === undefined ? "prepared" : "dispatched", previous = null, uncertainty;
     const seen = [];
     for (const item of attempt.receipts) {
+      if (item.value.recovery !== undefined) {
+        const { previousReceiptHash, saveBindingHash } = item.value.recovery;
+        check(canRecoverCmsSave({ ...state, status, uncertainty, receipt: previous?.value ?? null, receiptHash: previous?.hash })
+          && previousReceiptHash === (previous?.hash ?? null) && saveBindingHash === fingerprint(state.saveBinding)
+          && !seen.some(prior => prior.id === item.id), "Die lesende CMS-Nachprüfung passt nicht zur vorherigen Quittung und Speicherbindung.");
+        assertCmsSaveReadback(state.saveBinding, item.value.readback, item.value.mediaBindings);
+        status = "saved-unpublished";
+        seen.push(item); previous = item;
+        continue;
+      }
       const success = item.value.status === "saved-unpublished";
       const conflict = seen.some((prior) => prior.id === item.id && prior.hash !== item.hash)
         || previous && previous.hash !== item.hash && (status === "saved-unpublished" || success);
@@ -240,7 +322,7 @@ export function validatePageAuthoringJournal(db, input) {
     check(state.status === status && (previous ? state.receiptHash === previous.hash && equal(state.receipt, previous.value) : state.receipt === null)
       && state.uncertainty === uncertainty, "Der letzte CMS-Zustand passt nicht zum erhaltenen Quittungsverlauf.");
   }
-  const committedVersions = new Set(), committedArtifacts = new Set(), preparedAttempts = new Set(), dispatchedAttempts = new Set();
+  const committedVersions = new Set(), committedArtifacts = new Set(), preparedAttempts = new Map(), dispatchedAttempts = new Set();
   for (const row of db.prepare("SELECT * FROM mutations ORDER BY rowid").iterate()) {
     tick(context); bindProject(row.project_id, context, projects); identifier(row.actor_id); identifier(row.mutation_id); digest(row.intent_hash);
     const result = json(row.result_json); check(result?.idempotentReplay === false, "Eine lokale Auftragsquittung ist nicht lesbar gebunden.");
@@ -261,17 +343,59 @@ export function validatePageAuthoringJournal(db, input) {
       const key = tuple(row.project_id, value.id); check(!committedArtifacts.has(key), "Doppelte Entscheidungsquittung."); committedArtifacts.add(key);
     } else {
       fields(result, ["attempt", "idempotentReplay"]); const { stateRevision, ...value } = result.attempt, saved = attempts.get(tuple(row.project_id, value.id));
-      check(saved && value.actorId === row.actor_id && ["prepared", "dispatched"].includes(value.status) && stateRevision === fingerprint(value), "Die CMS-Auftragsquittung ist verändert.");
-      attemptState(value, saved);
-      const key = tuple(row.project_id, value.id), collection = value.status === "prepared" ? preparedAttempts : dispatchedAttempts;
-      check(!collection.has(key) && value.createdAt === saved.state.createdAt && (value.status !== "dispatched"
-        || value.dispatchId === saved.state.dispatchId && value.dispatchedAt === saved.state.dispatchedAt), "Doppelte oder fremde CMS-Ausführungsquittung."); collection.add(key);
+      check(saved && value.actorId === row.actor_id && ["prepared", "dispatched"].includes(value.status)
+        && value.saveBinding === undefined && stateRevision === fingerprint(value), "Die CMS-Auftragsquittung ist verändert.");
+      attemptState(value, { ...saved, revision: value.revision, plan_id: value.planId });
+      const key = tuple(row.project_id, value.id), previous = preparedAttempts.get(key);
+      check(!dispatchedAttempts.has(key), "Doppelte oder fremde CMS-Ausführungsquittung.");
+      if (value.status === "prepared") {
+        const sequence = version(row.project_id, value.draftId, value.revision).sequence;
+        check(value.supersedesStateRevision === previous?.stateRevision && (!previous || sequence > previous.sequence),
+          "Der vorbereitete CMS-Auftrag besitzt keine unveränderte frühere Vorbereitung.");
+        preparedAttempts.set(key, { value, stateRevision, sequence });
+      } else {
+        check(previous && equal(value, { ...previous.value, status: "dispatched", dispatchId: saved.state.dispatchId,
+          dispatchedAt: saved.state.dispatchedAt }), "Doppelte oder fremde CMS-Ausführungsquittung.");
+        dispatchedAttempts.add(key);
+      }
     }
   }
   check([...versions.keys()].every((key) => committedVersions.has(key)) && [...artifacts.keys()].every((key) => committedArtifacts.has(key))
-    && [...attempts.entries()].every(([key, value]) => preparedAttempts.has(key) && (value.state.dispatchedAt === undefined || dispatchedAttempts.has(key))),
+    && [...attempts.entries()].every(([key, value]) => {
+      const { status, receipt, dispatchId, dispatchedAt, receiptHash, updatedAt, uncertainty, saveBinding, ...binding } = value.state;
+      return equal(preparedAttempts.get(key)?.value ?? null, { ...binding, status: "prepared", receipt: null })
+        && (dispatchedAt === undefined || dispatchedAttempts.has(key));
+    }),
   "Ein gespeicherter Journalstand besitzt keine vollständigen dauerhaft gebundenen Auftragsquittungen.");
-  const pendingDrafts = new Set(); let unapproved = 0, openCms = 0, staleCms = 0, savedUnpublished = 0, currentSavedUnpublished = 0;
+  const pendingDrafts = new Set(); let unapproved = 0, openCms = 0, staleCms = 0, savedUnpublished = 0, currentSavedUnpublished = 0,workspaceLinks=0,workspaceOpen=0;
+  if(schemaChecked)for(const row of db.prepare('SELECT * FROM workspace_links ORDER BY project_id,draft_id').iterate()) {
+    tick(context);bindProject(row.project_id,context,projects);const value=validatePageWorkspaceBinding(json(row.state_json));
+    check(value.projectId===row.project_id && value.draftId===row.draft_id && row.state_revision===fingerprint(value)
+      && (scope===null || value.origin===scope.origin && value.actorId===scope.actor_id),'Die persönliche Seitenbasis ist verändert oder gehört zu einer anderen Anmeldung.');
+    check(heads.has(tuple(row.project_id,row.draft_id)),'Die persönliche Seitenbasis besitzt keinen lokalen Entwurf.');
+    for(const revision of [value.baseLocalRevision,value.frameLocalRevision].filter(Boolean))version(row.project_id,row.draft_id,revision);
+    for(const object of [value.remoteObject,value.confirmedObject].filter(Boolean)) {
+      check(object.kind==='page' && object.id===pageAuthoringObjectId(row.draft_id) && UUID.test(object.revision),'Die gemeinsame Seitenbasis besitzt keine gebundene Serverversion.');
+      validatePageAuthoringObject(object.data,object.id);validatePageAuthoringServerEvidence({objectId:object.id,objectRevision:object.revision,
+        objectOrdinal:object.ordinal,data:object.data,evidence:object.pageAuthoringEvidence});
+      rememberMedia(object.data.document,row.project_id);
+    }
+    if(value.frameLocalRevision) {
+      const local=version(row.project_id,row.draft_id,value.frameLocalRevision),approval=value.approvalId?artifacts.get(tuple(row.project_id,value.approvalId)):null;
+      check(!value.approvalId || approval?.kind==='approval' && approval.revision===local.revision,'Die vorgemerkte Seitenfreigabe besitzt keinen lokalen Nachweis.');
+      if(value.state==='queued' || value.remoteDataHash===value.frameHash && value.baseLocalRevision===value.frameLocalRevision) {
+        check(value.remoteDataHash===value.frameHash && value.baseLocalRevision===value.frameLocalRevision
+          && value.remoteObject.data.revision===local.revision && value.remoteObject.data.contentHash===local.contentHash
+          && (value.remoteObject.data.approval?.approvalHash||null)===(approval?.payload.approvalHash||null),'Der Queuebeleg gehört nicht zur vorgemerkten Fassung.');
+      }
+      else {
+        const history=value.remoteObject?importPageAuthoringAsDraft(value.remoteObject.data).history:[];
+        const frame=encodePageAuthoringDraft(local,{history,approval:approval?.payload||null,adoptUnlinkedApprovals:Boolean(approval)});
+        check(fingerprint(frame)===value.frameHash,'Der vorbereitete Seitentransport ist verändert.');
+      }
+    }
+    workspaceLinks++;if(value.state!=='synced' || heads.get(tuple(row.project_id,row.draft_id)).head!==value.baseLocalRevision){workspaceOpen++;pendingDrafts.add(tuple(row.project_id,row.draft_id));}
+  }
   for (const [key, head] of heads) {
     if (![...artifacts.values()].some((entry) => entry.project_id === head.project_id && entry.draft_id === head.id && entry.kind === "approval" && entry.revision === head.head)) {
       pendingDrafts.add(key); unapproved++;
@@ -285,8 +409,34 @@ export function validatePageAuthoringJournal(db, input) {
   }
   return { projectIds: [...projects].sort(), pending: pendingDrafts.size, counts: { drafts: heads.size, versions: versions.size,
     draftsWithoutCurrentApproval: unapproved, openCmsAttempts: openCms, staleCmsAttempts: staleCms,
-    savedUnpublished, currentSavedUnpublished, unpublishedDrafts: heads.size, referencedMedia: media.size },
+    savedUnpublished, currentSavedUnpublished, unpublishedDrafts: heads.size, referencedMedia: media.size,...(schemaChecked?{workspaceLinks,workspaceOpen}:{}) },
   coverage: { scope: "authoring-database-and-media-references-only", mediaBytesIncluded: false, sharedSyncKnown: false,
     authorityRevalidated: false, publicVerificationPerformed: false },
-  requiredMedia: [...media.values()].map(({ projectId, id, sha256, bytes, mimeType }) => ({ projectId, id, sha256, bytes, mimeType })) };
+  requiredMedia: [...media.values()].map(({ projectId, id, sha256, bytes, mimeType }) => ({ projectId, id, sha256, bytes, mimeType })),
+  scopedRequiredMedia: [...scopedMedia].sort(([a], [b]) => a.localeCompare(b)).map(([, value]) => value) };
+}
+
+/** v0 remains unassigned history; v1 includes every registered personal/Origin namespace in the same database. */
+export function validatePageAuthoringJournal(db,input) {
+  const version=db.prepare('PRAGMA user_version').get().user_version;
+  if(version===0)return validateAuthoringCore(db,input);
+  check(version===1,'Unbekannte Journalversion oder Anwendungskennung.');
+  const context=checkedContext(input),columns={...PAGE_AUTHORING_CORE_COLUMNS,workspace_links:PAGE_WORKSPACE_COLUMNS,workspace_scopes:PAGE_SCOPE_COLUMNS};
+  const scopes=db.prepare('SELECT * FROM workspace_scopes ORDER BY scope_id').all();
+  check(scopes.length<=1000,'Zu viele persönliche Entwurfsablagen.');
+  for(const scope of scopes) {
+    identifier(scope.actor_id);const url=new URL(scope.origin);
+    check(scope.scope_id===pageWorkspaceScope(scope.origin,scope.actor_id) && !url.username && !url.password && !url.search && !url.hash
+      && (url.protocol==='https:' || url.protocol==='http:' && ['127.0.0.1','localhost','[::1]'].includes(url.hostname)),'Die persönliche Entwurfsregistrierung ist ungültig.');
+    for(const [table,names]of Object.entries({...PAGE_AUTHORING_CORE_COLUMNS,workspace_links:PAGE_WORKSPACE_COLUMNS}))columns[`${table}_${scope.scope_id}`]=names;
+  }
+  schema(db,1,0x464e5041,columns,context);
+  const values=[validateAuthoringCore(db,input,{schemaChecked:true}),...scopes.map(scope=>validateAuthoringCore(db,input,{schemaChecked:true,suffix:scope.scope_id,scope}))];
+  const projects=new Set(),media=new Map(),scopedMedia=new Map(),counts={};let pending=0;
+  for(const value of values){pending+=value.pending;for(const id of value.projectIds)projects.add(id);for(const [key,n]of Object.entries(value.counts))counts[key]=(counts[key]||0)+n;
+    for(const asset of value.requiredMedia)media.set(tuple(asset.projectId,asset.id,asset.sha256),asset);
+    for(const requirement of value.scopedRequiredMedia)scopedMedia.set(fingerprint(requirement),requirement);}
+  counts.referencedMedia=media.size;counts.personalScopes=scopes.length;
+  return {projectIds:[...projects].sort(),pending,counts,coverage:{...values[0].coverage,personalScopesIncluded:true,legacyScopeAssigned:false},requiredMedia:[...media.values()],
+    scopedRequiredMedia:[...scopedMedia].sort(([a],[b])=>a.localeCompare(b)).map(([,value])=>value)};
 }

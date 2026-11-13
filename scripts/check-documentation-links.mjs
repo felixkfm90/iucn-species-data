@@ -41,7 +41,7 @@ function relativeFromRoot(absolutePath) {
 
 const moduleDirectories = ["installer", "nas", "mobile", "species-explorer/shared-project",
   "species-explorer/species-content", "species-explorer/update-completion", "species-explorer/local-ai",
-  "species-explorer/page-authoring", "species-explorer/desktop/assets"];
+  "species-explorer/page-authoring", "species-explorer/language-check", "species-explorer/desktop/assets"];
 // Only direct project documentation, never generated builds, SDK caches, model
 // downloads or dependency READMEs beneath a module.
 const moduleFiles = moduleDirectories.flatMap((relative) => {

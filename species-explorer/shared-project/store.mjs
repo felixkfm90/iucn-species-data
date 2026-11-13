@@ -4,15 +4,29 @@ import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { canonicalJson, objectJson, transportJson, digest, hashPassword, newToken, tokenHash, verifyPassword } from "./security.mjs";
 import { buildCatalog } from "./catalog.mjs";
-import { validateSharedSpecies, guardSpeciesRecordTransition, projectSpeciesRecordToCatalog, sharedSpeciesScientificIdentity } from "./species-record.mjs";
+import { validateSharedSpecies, guardSpeciesRecordTransition, projectSpeciesRecordToCatalog, sharedSpeciesCollisionKeys } from "./species-record.mjs";
 import { check, fail } from "./errors.mjs";
 import { WEBSITE_ALT_TYPE, guardWebsiteAltTransition, websiteAltServerEvidence } from "./website-alt-sync.mjs";
 import { PAGE_AUTHORING_TYPE, guardPageAuthoringTransition, pageAuthoringServerEvidence } from "../page-authoring/shared.mjs";
+import { assertProjectMediaSchema, installImageMediaSchema } from "./image-media.mjs";
+import { createImageMediaStore } from "./image-media-store.mjs";
+import { validatePageEditorialIntent } from "./species-editorial-intent.mjs";
+import { verifyPageEditorialAdoption } from "./species-editorial-adoption.mjs";
+import { createReaderCatalogService } from "./reader-service.mjs";
+import { assertNormalMediaSchema, enableSpeciesEnrichmentSchema, installNormalMediaSchema } from "./normal-media-schema.mjs";
+import { createNormalMediaStore } from "./normal-media-store.mjs";
+import { normalMediaBinding, NORMAL_MEDIA_SLOTS } from "./normal-media.mjs";
+import { projectSpeciesEnrichment, validateSpeciesEnrichmentChange } from "./species-enrichment.mjs";
+import { validateImageDecode } from "../../scripts/image-validation.mjs";
+import { validateAudioDecode } from "../../scripts/audio-validation.mjs";
 
 export const ROLES = Object.freeze(["admin", "publisher", "contributor", "reader"]);
 const writers = ["admin", "publisher", "contributor"];
 const releasers = ["admin", "publisher"];
 const hours = 60 * 60 * 1000;
+const pairingLifetime = 2 * 60 * 1000;
+const maxPairings = 128;
+const enrichmentMediaKey = (id, slot, sha256) => `species_enrichment_media:${id}:${slot}:${sha256}`;
 
 function short(value, max, label) {
   check(typeof value === "string" && value.trim() && value.length <= max && !/[\u0000-\u001f]/.test(value),
@@ -31,7 +45,13 @@ function identifier(kind, id) {
 }
 function payload(kind, id, data) {
   check(data && typeof data === "object" && !Array.isArray(data), 400, "invalid_data", "Ein Datensatz muss ein Objekt sein.");
-  if (kind === "species") return canonicalJson(validateSharedSpecies(data, id));
+  if (kind === "species") {
+    try { return objectJson(validateSharedSpecies(data, id)); }
+    catch (error) {
+      if (error.name === "PageAuthoringError") fail(error.status, error.code, error.message);
+      throw error;
+    }
+  }
   short(data.title, 500, "Seitentitel");
   return objectJson(data);
 }
@@ -54,14 +74,17 @@ function safeDatabasePath(filename, localStorageConfirmed) {
 }
 
 /** Isolated shared project. No repository/catalog discovery and no external publication. */
-export function createSharedProjectStore({ filename, localStorageConfirmed = false, clock = Date.now } = {}) {
+export function createSharedProjectStore({ filename, localStorageConfirmed = false, clock = Date.now, imageDecode, audioDecode } = {}) {
   const databasePath = safeDatabasePath(filename, localStorageConfirmed);
   const db = new DatabaseSync(databasePath);
   fs.chmodSync(databasePath, 0o600);
   db.exec("PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA trusted_schema=OFF;");
   const schema = db.prepare("PRAGMA user_version").get().user_version;
-  if (![0, 1, 2, 3, 4].includes(schema)) {
+  if (![0, 1, 2, 3, 4, 5, 6, 7].includes(schema)) {
     db.close(); fail(409, "unsupported_schema", "Die Projektdatenbank hat eine unbekannte Version.");
+  }
+  if (schema >= 4) {
+    try { if (schema >= 6) assertNormalMediaSchema(db); else assertProjectMediaSchema(db, schema); } catch (error) { db.close(); throw error; }
   }
   db.exec(`
     CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -108,8 +131,15 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
       UPDATE meta SET value=CAST(value AS INTEGER)+1 WHERE key='objects_generation'; END;
     CREATE TRIGGER IF NOT EXISTS objects_update_generation AFTER UPDATE ON objects BEGIN
       UPDATE meta SET value=CAST(value AS INTEGER)+1 WHERE key='objects_generation'; END;
-    PRAGMA user_version=4;
   `);
+  try {
+    if (schema < 5) installImageMediaSchema(db);
+    if (schema < 6) installNormalMediaSchema(db);
+    // Development stores can already contain guarded files from before the format boundary.
+    if (schema === 6 && db.prepare("SELECT 1 FROM meta WHERE key GLOB 'species_enrichment_media:*' LIMIT 1").get()) {
+      transaction(() => enableSpeciesEnrichmentSchema(db));
+    }
+  } catch (error) { db.close(); throw error; }
   function now() { return Number(clock()); }
   function iso() { return new Date(now()).toISOString(); }
   function transaction(fn, { readOnly = false } = {}) {
@@ -124,13 +154,52 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
   function audit(actor, action, target = null) {
     db.prepare("INSERT INTO audit(actor_id,action,target,created_at) VALUES (?,?,?,?)").run(actor?.id ?? null, action, target, iso());
   }
-  function actor(token, roles = ROLES, { write = false } = {}) {
-    const row = db.prepare(`SELECT u.*, s.scope, s.device_id, s.token_hash AS session_hash FROM sessions s JOIN users u ON u.id=s.user_id
+  function guardNewSpeciesIdentity(data) {
+    const candidate = sharedSpeciesCollisionKeys(data);
+    for (const row of db.prepare("SELECT v.data FROM objects o JOIN versions v ON v.revision=o.current_revision WHERE o.kind='species'").iterate()) {
+      const prior = sharedSpeciesCollisionKeys(JSON.parse(row.data));
+      check(candidate.scientific !== prior.scientific, 409, "species_identity_exists", "Diese strukturierte Artidentität besteht bereits unter einer anderen Kennung.");
+      check(!candidate.german || candidate.german !== prior.german, 409, "species_name_exists", "Dieser deutsche Artname ist bereits vorhanden.");
+      check(!candidate.asset || candidate.asset !== prior.asset, 409, "species_asset_exists", "Dieser Assetname wird bereits von einer anderen Art verwendet.");
+      check(!candidate.slugs.some(slug => prior.slugs.includes(slug)), 409, "species_slug_exists", "Dieser URL-Slug wird bereits von einer anderen Art verwendet.");
+    }
+  }
+  function sessionUser(sessionHash) {
+    return db.prepare(`SELECT u.*, s.scope, s.device_id, s.token_hash AS session_hash FROM sessions s JOIN users u ON u.id=s.user_id
       LEFT JOIN devices d ON d.id=s.device_id WHERE s.token_hash=? AND s.expires_at>? AND u.blocked=0
-      AND (s.device_id IS NULL OR (d.revoked=0 AND d.expires_at>?))`).get(tokenHash(token, "s"), now(), now());
+      AND (s.device_id IS NULL OR (d.revoked=0 AND d.expires_at>?))`).get(sessionHash, now(), now());
+  }
+  function actor(token, roles = ROLES, { write = false } = {}) {
+    const row = sessionUser(tokenHash(token, "s"));
     check(row, 401, "authentication_required", "Bitte erneut anmelden.");
     check(roles.includes(row.role) && (!write || row.scope === "full"), 403, "forbidden", "Für diese Aktion fehlt die Berechtigung.");
     return row;
+  }
+  let decodingMedia = false;
+  const exclusiveDecode = decode => async (...args) => {
+    check(!decodingMedia, 429, "media_busy", "Eine Mediendatei wird bereits geprüft. Bitte diesen Abschluss abwarten.");
+    decodingMedia = true;
+    try { return await decode(...args); } finally { decodingMedia = false; }
+  };
+  const decodeImage = exclusiveDecode(imageDecode ?? validateImageDecode);
+  const imageMedia = createImageMediaStore({ db, actor, transaction, audit, iso, decode: decodeImage });
+  const normalMedia = createNormalMediaStore({ db, actor, transaction, audit, iso,
+    imageDecode: decodeImage, audioDecode: exclusiveDecode(audioDecode ?? validateAudioDecode) });
+  const readerCatalog = createReaderCatalogService({ db, actor, transaction, imageMedia, normalMedia, iso });
+  // Older approval clients may still use catalog version 1. Keep the media
+  // prerequisite attached to the affected bytes across later draft revisions.
+  function requireEnrichmentMedia(token, data) {
+    if (data.type !== "fn-species-record") return;
+    for (const slot of NORMAL_MEDIA_SLOTS) {
+      const file = data.assets.files[slot];
+      if (!file || file.url || !db.prepare("SELECT 1 FROM meta WHERE key=?").get(enrichmentMediaKey(data.id, slot, file.sha256))) continue;
+      const projectId = db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value;
+      const binding = normalMediaBinding(data, { projectId, slot });
+      let ready = false;
+      try { ready = normalMedia.get(token, binding.contentId).complete; }
+      catch (error) { if (error.code !== "normal_media_not_found") throw error; }
+      check(ready, 409, "reader_media_required", "Die Leserfassung benötigt zuerst ihre tatsächlich bereitgestellten Bild- und Tondateien.");
+    }
   }
   function session(user, { deviceId = null, scope = "full", expiresAt = now() + 12 * hours } = {}) {
     const token = newToken("s");
@@ -148,6 +217,9 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
     db.prepare("INSERT INTO devices VALUES (?,?,?,?,?,0,?)").run(id, user.id, tokenHash(token, "d"), short(label, 80, "Gerätename"), expiresAt, iso());
     return { id, token, expiresAt: new Date(expiresAt).toISOString() };
   }
+  // A project process restart invalidates invitations. Issued device credentials
+  // still use the normal persistent device/session lifecycle.
+  const pairings = new Map();
   function version(kind, id, revision) {
     const row = db.prepare("SELECT * FROM versions WHERE kind=? AND id=? AND revision=?").get(kind, id, revision);
     check(row, 404, "revision_not_found", "Die Objektversion ist nicht vorhanden.");
@@ -164,6 +236,7 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
     try { return fn(); } catch (error) { if (error.name === "PageAuthoringError") fail(error.status, error.code, error.message); throw error; }
   }
   function altGuard(user, id, before, next) {
+    imageMedia.assertReferences(next);
     return { website: guardWebsiteAltTransition({ objectId: id, before, next, actorRole: user.role, receipts: altReceipts(id) }),
       authoring: authoringCheck(() => guardPageAuthoringTransition({ objectId: id, before, next, actorRole: user.role,
         projectId: db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value, receipts: authoringReceipts(id) })) };
@@ -194,6 +267,7 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
       approval: row.approved_revision === revision ? "approved" : "draft" };
   }
   function insertVersion(user, row, serialized) {
+    imageMedia.assertReferences(JSON.parse(serialized));
     const previous = row.current_revision ? version(row.kind, row.id, row.current_revision) : null;
     const revision = randomUUID();
     db.prepare("INSERT INTO versions VALUES (?,?,?,?,?,?,?,?)").run(row.kind, row.id, revision,
@@ -209,6 +283,23 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
   }
 
   return {
+    speciesCreation: 1,
+    pageEditorialAdoption: 1,
+    speciesEnrichment: 1,
+    readerCatalogVersions: Object.freeze([1, 2]),
+    readerCatalog: (token) => readerCatalog.catalog(token),
+    readerCatalogPage: (token, options) => readerCatalog.page(token, options),
+    previewReaderApproval: (token, id, options) => readerCatalog.preview(token, id, options),
+    declareImageMedia: (token, input) => imageMedia.declare(token, input),
+    getImageMedia: (token, id) => imageMedia.get(token, id),
+    readImageMedia: (token, id) => imageMedia.content(token, id),
+    putImageMedia: (token, id, bytes, options) => imageMedia.put(token, id, bytes, options),
+    assertImageMediaWriteAccess: (token, binding, id) => imageMedia.assertWrite(token, binding, id),
+    declareNormalMedia: (token, input) => normalMedia.declare(token, input),
+    getNormalMedia: (token, id) => normalMedia.get(token, id),
+    readNormalMedia: (token, id) => normalMedia.content(token, id),
+    putNormalMedia: (token, id, bytes, options) => normalMedia.put(token, id, bytes, options),
+    assertNormalMediaWriteAccess: (token, binding, id) => normalMedia.assertWrite(token, binding, id),
     assertWriteAccess(token) { actor(token, writers, { write: true }); return true; },
     async bootstrap({ confirmed, users }) {
       check(confirmed === true && Array.isArray(users) && users.length >= 2 && users.length <= 20,
@@ -264,6 +355,41 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         check(row, 401, "authentication_required", "Bitte erneut anmelden.");
         return session(row, { deviceId: row.device_id, scope: "read", expiresAt: Math.min(now() + 12 * hours, row.expires_at) });
       });
+    },
+    issueReadPairing(token) {
+      const user = actor(token, ROLES, { write: true });
+      const timestamp = now();
+      for (const [hash, grant] of pairings) {
+        if (grant.expiresAt <= timestamp || grant.userId === user.id) pairings.delete(hash);
+      }
+      check(pairings.size < maxPairings, 429, "pairing_limit", "Es sind bereits zu viele Einladungen offen. Bitte kurz warten.");
+      const code = newToken("p"), expiresAt = timestamp + pairingLifetime;
+      const projectId = db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value;
+      pairings.set(tokenHash(code, "p"), { projectId, expiresAt, userId: user.id, userVersion: user.version, sessionHash: user.session_hash });
+      return { schemaVersion: 1, code, projectId, expiresAt: new Date(expiresAt).toISOString() };
+    },
+    redeemReadPairing(input) {
+      check(input && Object.keys(input).length === 3
+        && ["code", "projectId", "deviceLabel"].every(key => Object.hasOwn(input, key))
+        && typeof input.projectId === "string" && /^[a-f0-9-]{36}$/.test(input.projectId),
+      400, "invalid_pairing", "Die Geräteeinladung ist ungültig.");
+      const label = short(input.deviceLabel, 80, "Gerätename");
+      const hash = tokenHash(input.code, "p"), grant = pairings.get(hash);
+      const unavailable = "Diese Einladung ist nicht mehr gültig. Bitte am PC eine neue erstellen.";
+      check(grant && grant.projectId === input.projectId, 401, "pairing_unavailable", unavailable);
+      const result = transaction(() => {
+        check(grant.expiresAt > now(), 401, "pairing_unavailable", unavailable);
+        const user = sessionUser(grant.sessionHash);
+        check(user && user.scope === "full" && user.id === grant.userId && user.version === grant.userVersion
+          && db.prepare("SELECT value FROM meta WHERE key='project_id'").get()?.value === grant.projectId,
+        401, "pairing_unavailable", unavailable);
+        const device = addDevice(user, label);
+        const sessionResult = session(user, { deviceId: device.id, scope: "read" });
+        audit(user, "device-paired", device.id);
+        return { ...sessionResult, device };
+      });
+      pairings.delete(hash);
+      return result;
     },
     me(token) { return { ...publicUser(actor(token)), projectId: db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value }; },
     logout(token, { revokeDevice = false } = {}) {
@@ -385,7 +511,10 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         for (const row of rows) {
           if (result.objects.length === limit) { result.complete = false; break; }
           const value = objectFor(user, row), size = Buffer.byteLength(JSON.stringify(value));
-          check(size <= 3 * 1024 * 1024, 413, "object_response_too_large", "Die einzelne Objektfassung überschreitet die Übertragungsgrenze.");
+          const rich = value.data?.type === "fn-species-record" && value.data.schemaVersion === 2;
+          check(size <= (rich ? 4 * 1024 * 1024 + 16 * 1024 : 3 * 1024 * 1024), 413, "object_response_too_large", "Die einzelne Objektfassung überschreitet die Übertragungsgrenze.");
+          // A rich record can fill its whole 4MiB data budget. It travels alone
+          // with a bounded envelope; ordinary pages retain their 4MiB budget.
           if (bytes + size > 4 * 1024 * 1024 && result.objects.length) { result.complete = false; break; }
           result.objects.push(value); bytes += size;
         }
@@ -397,21 +526,25 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
       }, { readOnly: true });
     },
     getObject(token, kind, id) { return objectFor(actor(token), objectRow(kind, id)); },
-    createObject(token, { kind, id, data, requireAdmin = false, expectedProjectId, expectedUserId } = {}) {
+    createObject(token, { kind, id, data, requireAdmin = false, boundSpeciesCreation = false, expectedProjectId, expectedUserId, expectedRole, expectedUserVersion } = {}) {
       check(typeof requireAdmin === "boolean", 400, "invalid_input", "Die Importberechtigung muss ausdrücklich angegeben sein.");
+      check(typeof boundSpeciesCreation === "boolean" && (!boundSpeciesCreation || kind === "species" && data?.type === "fn-species-record" && data.schemaVersion === 1),
+        400, "invalid_species_creation", "Die gebundene Artanlage benötigt einen vollständigen neuen Artentwurf.");
       identifier(kind, id); const serialized = payload(kind, id, data);
       return transaction(() => {
         const user = actor(token, requireAdmin ? ["admin"] : writers, { write: true });
         if (requireAdmin) check(expectedUserId === user.id && expectedProjectId === db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value,
           409, "import_project_changed", "Die Projekt- und Personenbindung des Imports stimmt nicht mehr überein.");
+        if (boundSpeciesCreation) check(expectedUserId === user.id && expectedProjectId === db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value
+          && expectedRole === user.role && Number.isSafeInteger(expectedUserVersion) && expectedUserVersion === user.version,
+        409, "species_creation_changed", "Projekt, Person oder Berechtigung wurden seit der Artvorschau geändert. Es wurde keine Art angelegt.");
         check(!db.prepare("SELECT id FROM objects WHERE kind=? AND id=?").get(kind, id), 409, "object_exists", "Das Objekt ist bereits vorhanden.");
-        if (requireAdmin && kind === "species" && data.type === "fn-species-record") {
-          const identity = sharedSpeciesScientificIdentity(data);
-          for (const row of db.prepare("SELECT o.id,v.data FROM objects o JOIN versions v ON v.revision=o.current_revision WHERE o.kind='species'").iterate()) {
-            check(sharedSpeciesScientificIdentity(JSON.parse(row.data)) !== identity, 409, "species_identity_exists", "Diese strukturierte Artidentität besteht bereits unter einer anderen Kennung.");
-          }
+        if (kind === "species") {
+          check(!(data.type === "fn-species-record" && data.schemaVersion === 2), 409, "species_record_adoption_required",
+            "Eine redaktionelle Leserfassung wird ausschließlich aus einer vorhandenen Art und einem gespeicherten Seitenentwurf übernommen.");
+          if (data.type === "fn-species-record") guardNewSpeciesIdentity(data);
+          guardSpeciesRecordTransition({ objectId: id, before: null, next: JSON.parse(serialized) }); imageMedia.assertReferences(JSON.parse(serialized));
         }
-        if (kind === "species") guardSpeciesRecordTransition({ objectId: id, before: null, next: JSON.parse(serialized) });
         const evidence = kind === "page" ? altGuard(user, id, null, JSON.parse(serialized)) : [];
         const row = { kind, id, current_revision: null }, revision = insertVersion(user, row, serialized);
         db.prepare("INSERT INTO objects VALUES (?,?,?,NULL)").run(kind, id, revision);
@@ -420,11 +553,18 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         return objectFor(user, objectRow(kind, id));
       });
     },
-    submitChange(token, { changeId, kind, id, baseRevision, data } = {}) {
+    submitChange(token, input = {}) {
+      const enrichmentRequest = Object.hasOwn(input, "enrichment") ? validateSpeciesEnrichmentChange(input) : null;
+      const { changeId, kind, id, baseRevision, data, intent, enrichment } = enrichmentRequest?.change ?? input;
       identifier(kind, id);
       check(typeof changeId === "string" && /^[A-Za-z0-9_-]{8,120}$/.test(changeId), 400, "invalid_change", "Eine stabile Änderungskennung ist erforderlich.");
       check(typeof baseRevision === "string" && baseRevision.length <= 80, 400, "invalid_revision", "Eine Ausgangsversion ist erforderlich.");
-      const serialized = payload(kind, id, data), hash = digest(transportJson({ kind, id, baseRevision, data: JSON.parse(serialized) }));
+      const proof = intent === undefined ? undefined : validatePageEditorialIntent(intent);
+      check(proof === undefined || kind === "species" && proof.sourceBindings.species.id === id
+        && proof.sourceBindings.species.objectRevision === baseRevision, 400, "invalid_editorial_intent", "Die Übernahme ist nicht an diese Artfassung gebunden.");
+      const submitted = enrichment ? null : payload(kind, id, data);
+      const hash = enrichmentRequest?.requestHash
+        ?? digest(transportJson({ kind, id, baseRevision, data: JSON.parse(submitted), ...(proof ? { intent: proof } : {}) }));
       return transaction(() => {
         const user = actor(token, writers, { write: true });
         const prior = db.prepare("SELECT * FROM changes WHERE author_id=? AND change_id=?").get(user.id, changeId);
@@ -434,8 +574,27 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         }
         // Offline changes deliberately cannot create an absent object.
         const row = objectRow(kind, id);
+        if (enrichment) {
+          const projectId = db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value;
+          check(enrichment.actor.projectId === projectId && enrichment.actor.userId === user.id
+            && enrichment.actor.role === user.role && enrichment.actor.userVersion === user.version && row.current_revision === baseRevision,
+          409, "species_enrichment_changed", "Artfassung, Projekt oder Benutzerbindung wurde geändert. Der Vorschlag bleibt zur erneuten Prüfung erhalten.");
+        }
         const base = version(kind, id, baseRevision);
-        if (kind === "species") guardSpeciesRecordTransition({ objectId: id, before: base.data, next: JSON.parse(serialized) });
+        const projection = enrichment ? projectSpeciesEnrichment({ speciesObject: base, projectId: enrichment.actor.projectId,
+          expectedSourceBindings: enrichment.sourceBindings, result: enrichment.result }) : null;
+        if (projection) check(projection.complete && projection.changes.length > 0 && digest(objectJson(projection.data)) === enrichment.targetDataHash,
+          409, "species_enrichment_review_changed", "Der Vorschlag entspricht nicht vollständig der geprüften Zielfassung. Bitte erneut prüfen.");
+        const serialized = projection ? objectJson(projection.data) : submitted, proposed = JSON.parse(serialized);
+        if (kind === "species") {
+          if (proof) {
+            const pageRow = objectRow("page", proof.sourceBindings.page.objectId);
+            const projectId = db.prepare("SELECT value FROM meta WHERE key='project_id'").get().value;
+            verifyPageEditorialAdoption({ pageObject: objectFor(user, pageRow), speciesObject: base, projectId,
+              actor: { id: user.id, projectId, role: user.role }, data: proposed, intent: proof });
+          } else if (!projection) guardSpeciesRecordTransition({ objectId: id, before: base.data, next: proposed });
+          imageMedia.assertReferences(proposed);
+        }
         const evidence = kind === "page" ? altGuard(user, id, base.data, JSON.parse(serialized)) : [];
         let result;
         if (row.current_revision !== baseRevision) {
@@ -445,18 +604,49 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
           result = { status: "conflict", conflictId, currentRevision: row.current_revision };
           audit(user, "conflict-created", conflictId);
         } else {
+          if (projection) enableSpeciesEnrichmentSchema(db);
           const revision = insertVersion(user, row, serialized);
           db.prepare("UPDATE objects SET current_revision=? WHERE kind=? AND id=?").run(revision, kind, id);
+          if (projection) for (const slot of NORMAL_MEDIA_SLOTS) {
+            const file = proposed.assets.files[slot];
+            const before = base.data.assets.files[slot];
+            if (file && !file.url && (file.sha256 !== before?.sha256 || file.bytes !== before.bytes)) {
+              db.prepare("INSERT OR IGNORE INTO meta VALUES (?,'1')").run(enrichmentMediaKey(id, slot, file.sha256));
+            }
+          }
           saveAltReceipts(user, id, revision, evidence);
           result = { status: "applied", object: objectFor(user, objectRow(kind, id)) };
-          audit(user, "object-updated", `${kind}/${id}`);
+          audit(user, projection ? "species-enrichment-applied" : "object-updated", `${kind}/${id}`);
         }
         db.prepare("INSERT INTO changes VALUES (?,?,?,?)").run(user.id, changeId, hash, transportJson(result));
         return result;
       });
     },
-    approveObject(token, kind, id, { expectedRevision, requireAdmin = false, expectedProjectId, expectedUserId, expectedReview } = {}) {
+    cancelChange(token, { changeId, requestHash } = {}) {
+      check(typeof changeId === "string" && /^[A-Za-z0-9_-]{8,120}$/.test(changeId)
+        && typeof requestHash === "string" && /^[a-f0-9]{64}$/.test(requestHash),
+      400, "invalid_change", "Das Abschließen benötigt die genaue Änderungs- und Inhaltskennung.");
+      return transaction(() => {
+        const user = actor(token, writers, { write: true });
+        const prior = db.prepare("SELECT * FROM changes WHERE author_id=? AND change_id=?").get(user.id, changeId);
+        if (prior) {
+          check(prior.request_hash === requestHash, 409, "change_id_reused", "Diese Änderungskennung gehört zu einem anderen Inhalt.");
+          return { ...JSON.parse(prior.result), replayed: true };
+        }
+        // A durable tombstone and submitChange share the same write lock. Either
+        // the original write wins, or every later exact retry remains cancelled.
+        const result = { status: "cancelled", changeId };
+        db.prepare("INSERT INTO changes VALUES (?,?,?,?)").run(user.id, changeId, requestHash, canonicalJson(result));
+        audit(user, "change-cancelled", changeId);
+        return result;
+      });
+    },
+    approveObject(token, kind, id, { expectedRevision, requireAdmin = false, expectedProjectId, expectedUserId, expectedReview, readerCatalogVersion = 1, expectedReaderHash } = {}) {
       check(typeof requireAdmin === "boolean", 400, "invalid_input", "Die Importberechtigung muss ausdrücklich angegeben sein.");
+      check(readerCatalogVersion === 1 || kind === "species" && readerCatalogVersion === 2,
+        400, "invalid_approval_binding", "Die Leserfassung benötigt eine ausdrücklich unterstützte Katalogversion.");
+      check(readerCatalogVersion !== 2 || expectedReview && typeof expectedReaderHash === "string" && /^[a-f0-9]{64}$/.test(expectedReaderHash),
+        400, "invalid_approval_binding", "Die erweiterte Leserfreigabe benötigt ihre genaue Personenbindung und geprüfte Leserfassung.");
       check(expectedReview === undefined || expectedReview && typeof expectedReview === "object" && !Array.isArray(expectedReview)
         && Object.keys(expectedReview).sort().join(",") === "projectId,role,userId"
         && [expectedReview.projectId, expectedReview.userId, expectedReview.role].every((value) => typeof value === "string" && value.length > 0)
@@ -470,7 +660,17 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
           409, "import_project_changed", "Die Projekt- und Personenbindung der internen Freigabe stimmt nicht mehr überein.");
         check(row.current_revision === expectedRevision, 409, "object_changed", "Vor der Freigabe bitte die neue Version prüfen.");
         const current = version(kind, id, row.current_revision);
-        if (kind === "species") projectSpeciesRecordToCatalog(current.data);
+        if (kind === "species") {
+          if (readerCatalogVersion === 2) {
+            const reader = readerCatalog.requireReady(token, current.data);
+            check(digest(canonicalJson(reader, { maxBytes: 4 * 1024 * 1024, maxNodes: 300000 })) === expectedReaderHash,
+              409, "approval_review_changed", "Die Leserfassung oder Medienbereitstellung wurde seit der Vorschau geändert. Bitte neu prüfen.");
+          }
+          else {
+            projectSpeciesRecordToCatalog(current.data);
+            requireEnrichmentMedia(token, current.data);
+          }
+        }
         if (current.data.type === WEBSITE_ALT_TYPE) check(current.websiteAltEvidence?.trusted === true, 409, "website_alt_adoption_required", "Unverknüpfte Bildtextfreigaben müssen vor einer internen Lesefreigabe ausdrücklich übernommen werden.");
         if (current.data.type === PAGE_AUTHORING_TYPE) check(current.data.approval && current.pageAuthoringEvidence?.trusted === true,
           409, "page_approval_required", "Ein Artseitenentwurf benötigt seine aktive serverbelegte fachliche Endfreigabe.");
@@ -509,8 +709,14 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         let revision = row.current_revision;
         if (strategy !== "current") {
           const serialized = strategy === "proposed" ? conflict.proposed_data : payload(row.kind, row.id, data);
-          if (row.kind === "species") guardSpeciesRecordTransition({ objectId: row.id,
-            before: version(row.kind, row.id, row.current_revision).data, next: JSON.parse(serialized) });
+          if (row.kind === "species") {
+            const before = version(row.kind, row.id, row.current_revision).data, next = JSON.parse(serialized);
+            check(!(next?.type === "fn-species-record" && next.schemaVersion === 2)
+              || before.schemaVersion === 2 && canonicalJson(before.editorial, { maxBytes: 4 * 1024 * 1024, maxNodes: 300000 })
+                === canonicalJson(next.editorial, { maxBytes: 4 * 1024 * 1024, maxNodes: 300000 }),
+            409, "editorial_adoption_review_required", "Die redaktionelle Übernahme muss mit der aktuellen Art und Seite neu geprüft werden. Alle Fassungen bleiben erhalten.");
+            guardSpeciesRecordTransition({ objectId: row.id, before, next });
+          }
           const evidence = row.kind === "page" ? altGuard(user, row.id, version(row.kind, row.id, row.current_revision).data, JSON.parse(serialized)) : [];
           revision = insertVersion(user, row, serialized);
           db.prepare("UPDATE objects SET current_revision=? WHERE kind=? AND id=?").run(revision, row.kind, row.id);
@@ -530,6 +736,6 @@ export function createSharedProjectStore({ filename, localStorageConfirmed = fal
         return buildCatalog({ revision: db.prepare("SELECT value FROM meta WHERE key='catalog_revision'").get().value, generatedAt: iso(), species });
       }, { readOnly: true });
     },
-    close() { db.close(); }
+    close() { pairings.clear(); db.close(); }
   };
 }

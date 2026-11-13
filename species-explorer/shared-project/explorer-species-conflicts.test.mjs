@@ -16,6 +16,24 @@ function record() {
     assets: { assetName: "Testkauz", files: {}, overrides: { map: { protectedFromPipeline: true } }, credits: { private: "Private credits" }, portraitMetadata: { prompt: "Private synthetic prompt" } },
     editorial: { websiteUrl: null, sections: [{ id: "appearance", title: "Aussehen", text: "Private article original", intentionallyEmpty: false }], gallery: [], generalSectionId: null, embeddedGeneralText: null } };
 }
+function richRecord() {
+  const original = record(), sha = digest('editorial-conflict-fixture');
+  return { ...original, schemaVersion: 2, editorial: {
+    websiteUrl: null, title: 'Redaktioneller Testkauz', introduction: [{ type: 'paragraph', text: 'Private rich introduction' }],
+    sections: [
+      { id: 'general', kind: 'general-module', title: 'Allgemein', requested: false, blocks: [], sources: [], emptyDecision: null },
+      { id: 'appearance', kind: 'editorial', title: 'Aussehen', requested: true,
+        blocks: [{ type: 'bullet-list', items: ['Private rich first', 'Private rich second'] }],
+        sources: [{ id: 'field-source', label: 'Private rich source', url: 'https://example.org/source', sha256: sha }], emptyDecision: null },
+      { id: 'map', kind: 'map-module', title: 'Verbreitungskarte', requested: false, blocks: [], sources: [], emptyDecision: null },
+    ], sources: [], galleryRequested: false, gallery: [],
+    normalAssets: { portrait: null, map: null, sound: null, credits: null, spectrogram: null },
+    sourceBindings: { projectId: 'project-a',
+      page: { objectId: `fn-species-page-${sha}`, objectRevision: '11111111-1111-4111-8111-111111111111',
+        dataRevision: sha, contentHash: sha, imagesHash: sha, dataHash: sha },
+      species: { id: original.id, objectRevision: '22222222-2222-4222-8222-222222222222', dataHash: sha, sourceHash: sha } },
+  } };
+}
 const copy = (value) => structuredClone(value);
 const changed = (source, values) => { const next = copy(source); Object.assign(next.input, values); return next; };
 const reviewed = (shown, choices) => ({ sourceScope: shown.sourceScope, expectedReviewRevision: shown.reviewRevision, choices });
@@ -40,6 +58,99 @@ function synthetic(options = {}) {
   const adapter = createExplorerSpeciesConflicts({ withClient: queueWith(client, () => copy(source.state)), clock: () => now, ...options });
   return { adapter, client, source, reads, dispatches, setNow: (value) => { now = value; } };
 }
+function richSynthetic() {
+  const result = synthetic(), original = richRecord(), proposed = changed(original, { weight: '450 g' });
+  result.source.conflict.base = original;
+  result.source.conflict.current = changed(original, { size: '21 cm' });
+  result.source.conflict.proposed = copy(proposed);
+  result.source.conflict.localVersions[0].data = copy(proposed);
+  result.source.object.data = copy(result.source.conflict.current);
+  return result;
+}
+
+test('a Record 1 to 2 editorial-only adoption cannot become a no-op four-field resolution', async () => {
+  const { adapter, source, dispatches } = synthetic();
+  const proposed = richRecord(); proposed.input = copy(source.object.data.input);
+  source.conflict.proposed = copy(proposed); source.conflict.localVersions[0].data = copy(proposed);
+  const before = copy(source), list = await adapter.list(), shown = await adapter.get('conflict-a');
+  assert.equal(shown.fields.some(field => field.requiresChoice), false);
+  assert.equal(shown.canResolve, false); assert.equal(list.conflicts[0].canResolve, false);
+  assert.equal(shown.resolutionBlock.code, 'editorial_adoption_review_required');
+  assert.deepEqual(list.conflicts[0].resolutionBlock, shown.resolutionBlock);
+  assert.match(shown.resolutionBlock.message, /aktuelle Art.*Seitenentwurf frisch prüfen/);
+  assert.ok(shown.warnings.includes(shown.resolutionBlock.message));
+  await assert.rejects(adapter.preview(shown.id, reviewed(shown, {})), { status: 409, code: 'editorial_adoption_review_required' });
+  await assert.rejects(adapter.resolve(shown.id, {}), { status: 409, code: 'editorial_adoption_review_required' });
+  assert.deepEqual(source, before); assert.equal(dispatches.length, 0);
+  assert.ok(!JSON.stringify([list, shown]).includes('Private')); adapter.close();
+});
+
+test('Record 2 to 2 rich changes are detected in the proposal and every retained local follow-up', async () => {
+  for (const slot of ['proposed', 'local-followup']) {
+    const { adapter, source, dispatches } = richSynthetic();
+    if (slot === 'proposed') source.conflict.proposed.editorial.introduction[0].text = 'Private changed introduction';
+    else {
+      const followup = copy(source.conflict.localVersions[0]); followup.changeId = 'editorial-followup'; followup.state = 'queued';
+      followup.data.editorial.sections[1].sources[0].label = 'Private changed reference';
+      source.conflict.localVersions.push(followup);
+    }
+    const before = copy(source), shown = await adapter.get('conflict-a');
+    assert.equal(shown.canResolve, false); assert.equal(shown.resolutionBlock.code, 'editorial_adoption_review_required');
+    await assert.rejects(adapter.preview(shown.id, reviewed(shown, serverChoices(shown))), { code: 'editorial_adoption_review_required' });
+    await assert.rejects(adapter.resolve(shown.id, { token: 'nonexistent' }), { code: 'editorial_adoption_review_required' });
+    assert.deepEqual(source, before); assert.equal(dispatches.length, 0); adapter.close();
+  }
+});
+
+test('an editorial follow-up arriving after a valid manual preview consumes that token and preserves every draft', async () => {
+  const { adapter, source, dispatches } = richSynthetic(), shown = await adapter.get('conflict-a');
+  const preview = await adapter.preview(shown.id, reviewed(shown, serverChoices(shown)));
+  const followup = copy(source.conflict.localVersions[0]); followup.changeId = 'late-editorial'; followup.state = 'queued';
+  followup.data.editorial.title = 'Private later editorial title'; source.conflict.localVersions.push(followup);
+  const before = copy(source);
+  await assert.rejects(adapter.resolve(shown.id, { token: preview.token }), { code: 'editorial_adoption_review_required' });
+  assert.equal(dispatches.length, 0); assert.deepEqual(source, before);
+  source.conflict.localVersions.pop();
+  await assert.rejects(adapter.resolve(shown.id, { token: preview.token }), { code: 'review_required' }); adapter.close();
+});
+
+test('a Record 2 conflict changing only manual fields still supports the ordinary explicit four-field review', async () => {
+  const { adapter, source, dispatches } = richSynthetic(), before = copy(source), shown = await adapter.get('conflict-a');
+  assert.equal(shown.canResolve, true); assert.equal(shown.resolutionBlock, null);
+  const preview = await adapter.preview(shown.id, reviewed(shown, { size: { kind: 'server' }, weight: { kind: 'local', changeId: 'change-a' } }));
+  await adapter.resolve(shown.id, { token: preview.token });
+  assert.deepEqual(dispatches[0].input.data, changed(before.object.data, { weight: '450 g' }));
+  assert.deepEqual(dispatches[0].input.data.editorial, before.object.data.editorial);
+  assert.deepEqual(source, before); adapter.close();
+});
+
+test('a remote-only editorial change does not misclassify an unchanged local editorial source as an adoption', async () => {
+  const { adapter, source, dispatches } = richSynthetic();
+  source.object.data.editorial.title = 'Aktuell bestätigter redaktioneller Serverstand';
+  const shown = await adapter.get('conflict-a'); assert.equal(shown.canResolve, true);
+  const preview = await adapter.preview(shown.id, reviewed(shown, { size: { kind: 'server' }, weight: { kind: 'local', changeId: 'change-a' } }));
+  await adapter.resolve(shown.id, { token: preview.token });
+  assert.equal(dispatches[0].input.data.editorial.title, source.object.data.editorial.title); adapter.close();
+});
+
+test('large Record 2 objects bind incrementally within the 4 MiB object budget without exposing rich text', async () => {
+  const { adapter, source, dispatches } = richSynthetic();
+  const introduction = Array.from({ length: 3 }, () => ({ type: 'paragraph', text: 'x'.repeat(100000) }));
+  for (const record of [source.conflict.base, source.conflict.current, source.conflict.proposed,
+    source.conflict.localVersions[0].data, source.object.data]) record.editorial.introduction = copy(introduction);
+  const shown = await adapter.get('conflict-a'); assert.equal(shown.canResolve, true);
+  assert.ok(JSON.stringify(shown).length < 10000);
+  const preview = await adapter.preview(shown.id, reviewed(shown, serverChoices(shown)));
+  await adapter.resolve(shown.id, { token: preview.token });
+  assert.deepEqual(dispatches[0].input.data.editorial.introduction, introduction); adapter.close();
+});
+
+test('canonical property insertion order alone is not an editorial adoption', async () => {
+  const { adapter, source } = richSynthetic();
+  source.conflict.proposed.editorial = Object.fromEntries(Object.entries(source.conflict.proposed.editorial).reverse());
+  source.conflict.localVersions[0].data.editorial = Object.fromEntries(Object.entries(source.conflict.localVersions[0].data.editorial).reverse());
+  assert.equal((await adapter.get('conflict-a')).canResolve, true); adapter.close();
+});
 
 test("conflict construction/list/get are local curated reads without private records or inferred choices", async () => {
   const { adapter, reads } = synthetic(); assert.equal(reads.length, 0);

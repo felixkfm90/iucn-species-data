@@ -381,7 +381,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /indicator\.addEventListener\("click"/);
   assert.match(
     appNewSpeciesWorkflowSource,
-    /beforeClose: \(\) => \{\s*if \(busy \|\| pipelineBusy \|\| namePreferencePreparing \|\| abortPending\) return false;\s*discardDraft\(\);[\s\S]*?form\.reset\(\);[\s\S]*?resetAll\(\);/,
+    /beforeClose: \(\) => \{\s*if \(busy \|\| pipelineBusy \|\| namePreferencePreparing \|\| abortPending\) return false;[\s\S]*?discardDraft\(\);[\s\S]*?form\.reset\(\);[\s\S]*?resetAll\(\);/,
   );
   assert.match(appNewSpeciesWorkflowSource, /class="new-species-map-file-input" type="file"/);
   assert.match(appNewSpeciesWorkflowSource, /mapReview\.addEventListener\(eventName/);
@@ -414,13 +414,14 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.doesNotMatch(appSource, /mit „Weiter“ folgt jeweils die nächste/);
   assert.doesNotMatch(appSource, /\/api\/portraits\/missing/);
   assert.match(appDashboardSource, /soundCareHint/);
-  assert.match(appDashboardSource, /Sound fehlt oder wird manuell gepflegt/);
+  assert.match(appDashboardSource, /soundMissingKnown[\s\S]*sound-care/);
+  assert.match(appDashboardSource, /isManualSound[\s\S]*sound-manual/);
+  assert.match(appDashboardSource, /Sound wird manuell gepflegt/);
   assert.match(htmlSource, /id="pipeline-run-notice"/);
-  assert.match(htmlSource, /pipeline-dialog-close-button/);
+  assert.match(htmlSource, /class="pipeline-cancel pipeline-dialog-close-button"[^>]*>Fenster schließen<\/button>/);
   assert.match(appPipelineSource, /Pipeline-Lauf läuft gerade/);
   assert.match(appPipelineSource, /Pipeline-Lauf abgeschlossen/);
   assert.match(appPipelineSource, /Das Fenster kann geschlossen werden; der Lauf läuft im Hintergrund weiter/);
-  assert.match(modularAppSource, /footerCloseButton\.textContent = active \? "Fenster schließen" : "Abbrechen"/);
   assert.match(modularAppSource, /renderPersistentPipelineStatus\(status\)/);
   assert.match(cssSource, /\.pipeline-run-notice\.completed/);
   assert.match(cssSource, /\.pipeline-dialog-status\.running/);
@@ -442,8 +443,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(appPipelineSource, /Datenbank aktuell/);
   assert.match(modularAppSource, /Datenbank-Aktionen/);
-  assert.match(appLifecycleSource, /Bearbeitungsmodus 🔓/);
-  assert.match(appLifecycleSource, /Lesemodus 🔒/);
+  assert.match(appLifecycleSource, /label: enabled \? "Bearbeitungsmodus" : "Lesemodus"/);
+  assert.match(appLifecycleSource, /icon: enabled \? "🔓" : "🔒"/);
   assert.match(appLifecycleSource, /function monitorProjectRevision\(/);
   assert.match(appFoundationSource, /revision: "\/api\/revision"/);
   assert.match(appLifecycleSource, /const current = await fetchRevision\(\)/);
@@ -575,8 +576,9 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(assetWorkflowSource, /restoreSpeciesAsset\(id, assetType\)/);
   assert.match(projectPublicationSource, /"docs\/manual-map-overrides\.md"/);
   assert.match(iucnMapAdapterSource, /isManualAsset\(safeName, "map"\)/);
-  assert.match(updateSource, /isManualAsset\(safeGerman, "sound"\)/);
-  assert.match(updateSource, /\{ force: true, allowManual: true, recordAssessment: false \}/);
+  assert.match(updateSource, /createSpeciesSoundPipeline\(/);
+  assert.match(updateSource, /readAssetOverrides: \(\) => assetOverrides/);
+  assert.match(updateSource, /createSpeciesPipeline\(/);
   assert.match(iucnDataAdapterSource, /createIucnDataAdapter/);
   assert.match(iucnMapAdapterSource, /function requestHeaders\(url\)/);
   assert.match(iucnMapAdapterSource, /headers\.Authorization = `Bearer \$\{token\}`/);
@@ -595,10 +597,8 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(inaturalistAdapterSource, /createINaturalistAudioAdapter/);
   assert.match(updateSource, /args\.mode === "manual-maps"/);
   assert.match(updateSource, /args\.mode === "nc-sounds"/);
-  assert.match(updateSource, /rejectedSoundKeys/);
-  assert.match(updateSource, /isRejectedSoundCandidate/);
-  assert.match(updateSource, /rejectionKey/);
-  assert.match(updateSource, /forceAlternativeSearch[\s\S]*fallbackStages[\s\S]*Weitere Soundalternative gefunden/);
+  // Sound rejection/order and map/sound mode behavior are exercised through
+  // the actual extracted providers in scripts/species-*-pipeline.test.mjs.
   assert.match(updateSource, /--species=/);
   assert.equal(assetOverrides.assets.Blaukehlchen.map.manual, true);
   assert.match(appSpeciesActionsSource, /function setupSpeciesDelete\(species\)/);
@@ -624,7 +624,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(modularAppSource, /form\.elements\.weightSexed/);
   assert.match(modularAppSource, /name="lifeExpectancyUnit"/);
   assert.match(speciesModelSource, /function formatTaxonomyName\(value\)/);
-  assert.match(updateSource, /function normalizeTaxonomyFields\(entry\)/);
+  assert.match(updateSource, /createSpeciesDataPipeline\(/);
   assert.doesNotMatch(appSource, /Taxonomie und Name sind in Phase 7\.4 gesperrt\./);
   assert.match(modularAppSource, /class="map-edit-section"/);
   assert.match(modularAppSource, /class="map-file-status" role="status" aria-live="polite"/);
@@ -737,7 +737,7 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
     modularAppSource,
     /await state\.openPipelinePreview\?\.\("missing",\s*\{\s*targetSlugs:\s*\[savedSpeciesId\],\s*autoStart:\s*true\s*\}\)/,
   );
-  assert.match(htmlSource, /Lesemodus 🔒\s*<\/button>/);
+  assert.match(htmlSource, /id="edit-mode-toggle"[^>]*>🔒<\/button>/);
   assert.match(htmlSource, /id="new-species-button"/);
   assert.match(htmlSource, /id="new-species-dialog"/);
   assert.match(htmlSource, /new-species-steps/);
@@ -802,7 +802,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   assert.match(htmlSource, /data-pipeline-mode="cleanup"/);
   assert.match(htmlSource, /id="pipeline-dialog"/);
   assert.match(htmlSource, /id="edit-mode-toggle"/);
-  assert.match(htmlSource, /Lesemodus 🔒/);
+  assert.match(htmlSource, /id="edit-mode-toggle"[^>]*>🔒<\/button>/);
+  assert.match(htmlSource, /id="edit-mode-status">Lesemodus<\/span>/);
+  assert.match(htmlSource, /<div id="database-status"[^>]*role="status"/);
+  assert.match(htmlSource, /id="inspection-dialog"/);
   assert.match(htmlSource, /id="pipeline-menu-button"/);
   assert.match(htmlSource, /Datenbank aktualisieren/);
   assert.match(modularAppSource, /Änderungen übertragen/);
@@ -834,7 +837,10 @@ test("Explorer-Oberflaeche zeigt Medien kompakt und kennzeichnet Datenquellen", 
   );
   assert.match(cssSource, /\.validation-grid\s*\{[^}]*grid-template-columns/s);
   assert.match(cssSource, /html,\s*body\s*\{[^}]*height:\s*100%[^}]*overflow:\s*hidden/s);
-  assert.match(cssSource, /\.app-shell\s*\{[^}]*height:\s*100vh[^}]*grid-template-rows:\s*auto\s+auto\s+auto\s+auto\s+minmax\(0,\s*1fr\)[^}]*overflow:\s*hidden/s);
+  assert.match(cssSource, /\.app-shell\s*\{[^}]*height:\s*100vh[^}]*display:\s*flex[^}]*flex-direction:\s*column[^}]*overflow:\s*hidden/s);
+  const headerCssSource = await readFile(new URL("./public/header.css", import.meta.url), "utf8");
+  assert.match(headerCssSource, /\.app-shell > \.workspace\s*\{[^}]*flex:\s*1\s+1\s+0[^}]*min-height:\s*0/s);
+  assert.match(headerCssSource, /\.inspection-dialog \.validation-card small\s*\{[^}]*display:\s*block/s);
   assert.match(cssSource, /\.workspace\s*\{[^}]*min-height:\s*0[^}]*overflow:\s*hidden/s);
   assert.match(cssSource, /\.detail-panel\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s);
   assert.match(cssSource, /\.species-list\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s);

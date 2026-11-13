@@ -57,7 +57,7 @@ static class Setup {
         form.Text += " - Pruefpaket";
         title.Text += " - Pruefpaket";
 #endif
-        var explanation = new Label { Text = "Windows 11 · FN Wildlife & Travel\nProgramme und Lightroom-Plug-in werden bereitgestellt.\nIhre Anmeldungen und privaten Daten werden nicht mitgeliefert.", Left = 24, Top = 73, Width = 580, Height = 70 };
+        var explanation = new Label { Text = "Windows 11 · FN Wildlife & Travel\nNode, Git, FFmpeg und die lokale Sprachprüfung sind enthalten.\nFür das mitgelieferte Plug-in brauchst du Lightroom Classic.\nAnmeldungen und Arbeitsdaten richtest du danach ein.", Left = 24, Top = 73, Width = 580, Height = 70 };
         var pathBox = new TextBox { Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "FN Wildlife Travel", "Arten-Explorer"), Left = 24, Top = 155, Width = 570 };
         var action = new ComboBox { Left = 24, Top = 200, Width = 570, DropDownStyle = ComboBoxStyle.DropDownList };
         action.Items.AddRange(new object[] { "Installieren oder aktualisieren", "Reparieren", "Deinstallieren und Arbeitsordner behalten" }); action.SelectedIndex = 0;
@@ -65,8 +65,28 @@ static class Setup {
         var status = new Label { Text = "Ein neuer, leerer Zielordner schuetzt vorhandene Installationen.\nFuer die gemeinsame Nutzung ist danach die Dienstanmeldung erforderlich.", Left = 24, Top = 278, Width = 570, Height = 60 };
         var button = new Button { Text = "Einrichten", Left = 420, Top = 355, Width = 174, Height = 34 };
         var cancel = new Button { Text = "Schliessen", Left = 24, Top = 355, Width = 130, Height = 34 };
+        var pluginPath = new Button { Text = "Lightroom-Pfad kopieren", Left = 166, Top = 355, Width = 218, Height = 34, Enabled = false };
+        bool installing = false;
+        string installedPluginPath = null;
         cancel.Click += (sender, evt) => form.Close();
+        form.FormClosing += (sender, evt) => {
+            if (installing && evt.CloseReason == CloseReason.UserClosing) evt.Cancel = true;
+        };
+        pathBox.TextChanged += (sender, evt) => { installedPluginPath = null; pluginPath.Enabled = false; };
+        pluginPath.Click += (sender, evt) => {
+            if (installedPluginPath == null || !Directory.Exists(installedPluginPath)) {
+                status.Text = "Der bereitgestellte Lightroom-Plug-in-Ordner ist nicht erreichbar.";
+                return;
+            }
+            try {
+                Clipboard.SetText(installedPluginPath);
+                status.Text = "Pfad kopiert. In Lightroom Classic unter Datei → Zusatzmodul-Manager → Hinzufügen einfügen.";
+            } catch (System.Runtime.InteropServices.ExternalException) {
+                status.Text = "Die Zwischenablage ist gerade belegt. Bitte den Pfad erneut kopieren.";
+            }
+        };
         button.Click += async (sender, evt) => {
+            installing = true; installedPluginPath = null; pluginPath.Enabled = false;
             button.Enabled = false; cancel.Enabled = false; pathBox.Enabled = false; action.Enabled = false; desktop.Enabled = false;
             string stage = Path.Combine(Path.GetTempPath(), "FN-ArtenExplorer-Setup-" + Guid.NewGuid().ToString("N"));
             string basis = pathBox.Text;
@@ -77,25 +97,35 @@ static class Setup {
                 basis = Path.GetFullPath(basis).TrimEnd('\\', '/');
                 await Task.Run(() => {
                     Extract(stage);
+                    string integration = Path.Combine(stage, "program", "windows-integration.ps1");
+                    string powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
+                    string integrationCommand = "-NoProfile -ExecutionPolicy Bypass -File " + Quote(integration) + " -Action ";
+                    string integrationTarget = " -Base " + Quote(basis) + (desktopRequested ? " -DesktopShortcut" : "");
+                    if (operation != "uninstall") Run(powershell, integrationCommand + "Preflight" + integrationTarget);
                     string options = Path.Combine(stage, "options.json");
                     File.WriteAllText(options, new JavaScriptSerializer().Serialize(new { packageRoot = stage, @base = basis, operation = operation, testMode = false }));
                     string node = Path.Combine(stage, "workspace", "runtime", "node", "node.exe");
                     Run(node, Quote(Path.Combine(stage, "program", "install-engine.mjs")) + " " + Quote(options));
-                    string integration = Path.Combine(stage, "program", "windows-integration.ps1");
-                    Run(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe"),
-                        "-NoProfile -ExecutionPolicy Bypass -File " + Quote(integration) + " -Action " + (operation == "uninstall" ? "Remove" : "Install") + " -Base " + Quote(basis) + (desktopRequested ? " -DesktopShortcut" : ""));
+                    Run(powershell, integrationCommand + (operation == "uninstall" ? "Remove" : "Install") + integrationTarget);
                 });
-                status.Text = operation == "uninstall" ? "Deinstalliert. Der gesamte Arbeitsordner bleibt erhalten." : "Erfolgreich eingerichtet. Starten Sie Arten-Explorer im Startmenue.\nDienst-/Git-/Squarespace-Anmeldung und Lightroom-Einrichtung folgen im Programm.";
+                if (operation == "uninstall") {
+                    status.Text = "Deinstalliert. Der gesamte Arbeitsordner bleibt erhalten.";
+                } else {
+                    installedPluginPath = Path.Combine(basis, "workspace", "lightroom-plugin", "FNWildlifeTaxonomy.lrplugin");
+                    pluginPath.Enabled = Directory.Exists(installedPluginPath);
+                    status.Text = "Eingerichtet. Arten-Explorer ist im Startmenü verfügbar.\nLightroom Classic: Datei → Zusatzmodul-Manager → Hinzufügen.\nÜber „Lightroom-Pfad kopieren“ steht der Ordnerpfad zum Einfügen bereit.";
+                }
                 MessageBox.Show(status.Text, "Arten-Explorer", MessageBoxButtons.OK, MessageBoxIcon.Information);
             } catch (Exception error) {
                 status.Text = "Einrichtung angehalten. Vorhandene Daten bleiben erhalten.";
                 MessageBox.Show(error.Message, "Arten-Explorer", MessageBoxButtons.OK, MessageBoxIcon.Error);
             } finally {
                 try { if (Directory.Exists(stage)) Directory.Delete(stage, true); } catch { }
+                installing = false;
                 button.Enabled = true; cancel.Enabled = true; pathBox.Enabled = true; action.Enabled = true; desktop.Enabled = true;
             }
         };
-        form.Controls.AddRange(new Control[] { title, explanation, pathBox, action, desktop, status, button, cancel });
+        form.Controls.AddRange(new Control[] { title, explanation, pathBox, action, desktop, status, button, cancel, pluginPath });
         Application.Run(form);
         return 0;
     }

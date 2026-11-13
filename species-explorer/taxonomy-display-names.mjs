@@ -32,9 +32,11 @@ const DISPLAY_NAMES = Object.freeze({
   order: Object.freeze({
     Accipitriformes: "Greifvögel",
     Anseriformes: "Gänsevögel",
+    Anura: "Froschlurche",
     Artiodactyla: "Paarhufer",
     Carnivora: "Raubtiere",
     Charadriiformes: "Regenpfeiferartige",
+    Ciconiiformes: "Schreitvögel",
     Coraciiformes: "Rackenvögel",
     Falconiformes: "Falkenartige",
     Galliformes: "Hühnervögel",
@@ -59,13 +61,16 @@ const DISPLAY_NAMES = Object.freeze({
     Ardeidae: "Reiher",
     Atelidae: "Klammerschwanzaffen",
     Balaenopteridae: "Furchenwale",
+    Bovidae: "Hornträger",
     Canidae: "Hunde",
     Cebidae: "Kapuzinerartige",
     Cervidae: "Hirsche",
     Charadriidae: "Regenpfeifer",
+    Ciconiidae: "Störche",
     Coraciidae: "Racken",
     Corvidae: "Rabenvögel",
     Cricetidae: "Wühler",
+    Dendrobatidae: "Baumsteigerfrösche",
     Falconidae: "Falkenartige",
     Felidae: "Katzen",
     Fringillidae: "Finken",
@@ -81,9 +86,11 @@ const DISPLAY_NAMES = Object.freeze({
     Phalacrocoracidae: "Kormorane",
     Phasianidae: "Fasanenartige",
     Picidae: "Spechte",
+    Phyllomedusidae: "Greiffrösche",
     Psittacidae: "Eigentliche Papageien",
     Rallidae: "Rallen",
     Ramphastidae: "Tukane",
+    Regulidae: "Goldhähnchen",
     Sciuridae: "Hörnchen",
     Scolopacidae: "Schnepfenvögel",
     Sittidae: "Kleiber",
@@ -108,6 +115,7 @@ const DISPLAY_NAMES = Object.freeze({
     Coracias: "Racken",
     Cyanistes: "Blaumeisen",
     Dendrocopos: "Buntspechte",
+    Dendrobates: "Baumsteiger",
     Erithacus: "Rotkehlchen",
     Eumomota: "Brauenmotmots",
     Falco: "Falken",
@@ -117,6 +125,7 @@ const DISPLAY_NAMES = Object.freeze({
     Garrulus: "Eichelhäher",
     Glaucidium: "Sperlingskäuze",
     Haematopus: "Austernfischer",
+    Hippotragus: "Pferdeantilopen",
     Iguana: "Grüne Leguane",
     Linaria: "Hänflinge",
     Lophophanes: "Haubenmeisen",
@@ -126,6 +135,7 @@ const DISPLAY_NAMES = Object.freeze({
     Milvus: "Milane",
     Motacilla: "Stelzen",
     Ondatra: "Bisamratten",
+    Oophaga: "Eierfressende Baumsteiger",
     Otis: "Großtrappen",
     Panthera: "Eigentliche Großkatzen",
     Panurus: "Bartmeisen",
@@ -151,6 +161,14 @@ export function germanTaxonomyDisplayName(rank, scientificName) {
   const normalizedRank = String(rank ?? "").trim().toLocaleLowerCase("en");
   const normalizedName = String(scientificName ?? "").trim();
   return DISPLAY_NAMES[normalizedRank]?.[normalizedName] ?? "";
+}
+
+export function germanTaxonomyFamilyNames() {
+  return DISPLAY_NAMES.family;
+}
+
+export function germanTaxonomyDisplayNames() {
+  return DISPLAY_NAMES;
 }
 
 export function taxonomyHierarchyDisplayEntry(entry = {}) {

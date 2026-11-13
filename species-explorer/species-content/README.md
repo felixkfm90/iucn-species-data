@@ -20,6 +20,9 @@ Der Export verwendet den produktiven, begrenzten und nicht ausführenden
 `parseWebsiteEditorialPage` sowie `parseWebsiteAltPage`. Er bewahrt Überschriften, Absatz- und Listenfolge
 und die tatsächliche Galeriereihenfolge. Dynamisch leeres `Allgemein` wird aus den vorhandenen JSON-Werten
 ergänzt. Eine leere Kartenrubrik mit vorhandenem `media.map` zählt als mediengestützter Abschnitt.
+Die Paritätsprüfung behandelt `Subphylum`, `Taxon ID` und `IUCN-Zuordnung` als Quelldaten.
+Der öffentliche Katalog verwendet sieben Taxonomieränge und stellt diese technischen Felder nicht
+unter **Allgemein** dar. Andere nicht abgebildete Quellfelder bleiben als Prüfabweichung sichtbar.
 Die einleitende Artüberschrift bleibt erhalten. Andere leere oder nicht zugeordnete Fachtexte verhindern
 einen vollständigen Abschluss. Wissenschaftlicher Name und Species-Rang enthalten den vollständigen Namen.
 
@@ -29,6 +32,11 @@ SHA256-Werte. Fehlendes Porträt oder fehlende Karte bleibt ein offener Befund. 
 bleibt eine leere `sounds`-Liste; daraus wird keine biologische Aussage über Lautäußerungen abgeleitet.
 Vorhandene Spektrogramme sind als abgeleitete Quelldateien gebunden. Das Katalogschema 1 besitzt dafür
 keinen gesonderten Medienslot; sie werden weder als zweite Aufnahme noch als Galeriefoto ausgegeben.
+Die separate [öffentliche App-Freigabe](../../mobile/CATALOG.md#neue-arten-automatisch-übernehmen)
+ergänzt den Spektrogrammverweis anhand des veröffentlichten Hashregisters und prüft die ausgelieferten
+Bytes. Mit ausdrücklich übergebenem veröffentlichtem Fehlstellenbericht erlauben Export und
+Paritätsprüfung die dort dokumentierten Medienlücken. Der Standardexport für den Desktopimport
+prüft Karte und Porträt weiterhin als vollständige Bestandteile.
 
 Die Medienattribution übernimmt ausschließlich vorhandene ausgewählte Werte: bei Aufnahmen `recordist`,
 `license`, `source`, `url`; bei Illustrationen `type`, `source`, `generation_method`. Interne Auftragsnotizen,

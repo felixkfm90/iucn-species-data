@@ -6,7 +6,11 @@ import { SPECIES_RECORD_TYPE, validateSpeciesRecord, guardSpeciesRecordTransitio
 const editable = [["english", "englishName", "Englischer Name", 160], ["size", "size", "Größe", 240],
   ["weight", "weight", "Gewicht", 240], ["life_expectancy", "lifeExpectancy", "Lebenserwartung", 240]];
 const locked = [["german", "germanName", "Deutscher Name"], ["genus", "genus", "Gattung"], ["species", "species", "Art-Epitheton"]];
-const jsonClone = (value) => JSON.parse(canonicalJson(value));
+const recordLimits = { maxBytes: 4 * 1024 * 1024, maxNodes: 300000 };
+const recordJson = (value) => canonicalJson(value, recordLimits);
+const jsonClone = (value) => JSON.parse(recordJson(value));
+const editorialCode = "editorial_adoption_review_required";
+const editorialMessage = "Dieser Konflikt enthält eine redaktionelle Seitenübernahme. Die vier Grunddatenfelder können diese Fachtexte, Quellen und Bildfolge nicht entscheiden. Bitte die aktuelle Art und den zugehörigen Seitenentwurf frisch prüfen. Alle Fassungen bleiben erhalten.";
 const scope = (status) => digest(canonicalJson([status.baseUrl || "", status.projectId || "", status.user?.id || ""]));
 const presence = (input, key) => Object.hasOwn(input, key) ? { present: true, value: input[key] } : { present: false };
 const equal = (left, right) => canonicalJson(left) === canonicalJson(right);
@@ -14,10 +18,19 @@ const full = (conflict) => conflict?.kind === "species" && Array.isArray(conflic
   && [conflict.base, conflict.current, conflict.proposed, ...conflict.localVersions.map((version) => version?.data)]
     .every((record) => record?.type === SPECIES_RECORD_TYPE);
 
+function editorialAdoption(conflict) {
+  const baseEditorial = recordJson(conflict.base.editorial);
+  return [conflict.proposed, ...conflict.localVersions.map(version => version.data)].some(record =>
+    record.schemaVersion !== conflict.base.schemaVersion || recordJson(record.editorial) !== baseEditorial);
+}
+function requireFieldConflict(conflict) {
+  check(!editorialAdoption(conflict), 409, editorialCode, editorialMessage);
+}
+
 function fingerprint(conflict, server, state) {
   const hash = createHash("sha256");
   function add(key, value) {
-    const json = canonicalJson(value);
+    const json = recordJson(value);
     hash.update(`${key.length}:${key}:${Buffer.byteLength(json)}:`).update(json);
   }
   const metadata = (value, excluded) => Object.fromEntries(Object.entries(value).filter(([key, entry]) => !excluded.includes(key) && entry !== undefined));
@@ -41,16 +54,19 @@ function fieldView([key, uiKey, label], conflict, server) {
 }
 
 function reviewView(conflict, server, state) {
+  const needsEditorialReview = editorialAdoption(conflict);
   const lockedFields = locked.map((field) => fieldView(field, conflict, server)).filter((field) => field.requiresChoice)
     .map((field) => ({ ...field, readonly: true }));
-  const warnings = ["Nur die vier angezeigten Grunddatenfelder können übernommen werden. Originalquellen, Bilder und Fachtexte bleiben in der Serverfassung erhalten."];
+  const warnings = [needsEditorialReview ? editorialMessage
+    : "Nur die vier angezeigten Grunddatenfelder können übernommen werden. Originalquellen, Bilder und Fachtexte bleiben in der Serverfassung erhalten."];
   if (lockedFields.length) warnings.push("Abweichende deutsche oder wissenschaftliche Namen benötigen den gekoppelten Umbenennungsweg. Diese lokalen Namensänderungen werden hier nicht übernommen; die ursprünglichen Entwürfe bleiben erhalten.");
   if (conflict.localVersions.length > 1) warnings.push("Alle erhaltenen lokalen Fassungen werden angezeigt. Keine davon wird automatisch ausgewählt.");
   if (conflict.resolvedAt) warnings.push("Der ursprüngliche Konflikt wurde bereits auf einem anderen Gerät entschieden. Die erhaltenen lokalen Fassungen benötigen weiterhin deine ausdrückliche Entscheidung.");
   return { id: conflict.id, objectId: conflict.objectId, germanName: server.data.input.german,
     scientificName: `${server.data.input.genus} ${server.data.input.species}`, source: "shared-project", sourceScope: scope(state.status),
     reviewRevision: fingerprint(conflict, server, state), serverRevision: server.revision, connection: state.status.connection,
-    canResolve: state.permissions.canEdit === true && state.status.connection === "online",
+    canResolve: !needsEditorialReview && state.permissions.canEdit === true && state.status.connection === "online",
+    resolutionBlock: needsEditorialReview ? { code: editorialCode, message: editorialMessage } : null,
     localVersions: conflict.localVersions.map(({ changeId, state: versionState }) => ({ changeId, state: versionState })),
     fields: editable.map((field) => fieldView(field, conflict, server)), lockedFields, warnings, externalPublication: "not-performed" };
 }
@@ -128,7 +144,8 @@ export function createExplorerSpeciesConflicts({ withClient, clock = Date.now, t
       for (const entry of all.filter((value) => full(value))) {
         const { conflict, server } = await current(client, entry.id), review = reviewView(conflict, server, state);
         conflicts.push({ id: review.id, objectId: review.objectId, germanName: review.germanName, scientificName: review.scientificName,
-          localVersionCount: review.localVersions.length, canResolve: review.canResolve });
+          localVersionCount: review.localVersions.length, canResolve: review.canResolve,
+          resolutionBlock: review.resolutionBlock, warnings: review.resolutionBlock ? [review.resolutionBlock.message] : [] });
       }
       active();
       return { source: "shared-project", sourceScope: scope(state.status), connection: state.status.connection, conflicts,
@@ -141,6 +158,7 @@ export function createExplorerSpeciesConflicts({ withClient, clock = Date.now, t
       const input = jsonClone(rawInput);
       return withClient(async (client, state) => {
         active(); access(state, true); const { conflict, server } = await current(client, id), review = reviewView(conflict, server, state);
+        requireFieldConflict(conflict);
         check(input.sourceScope === review.sourceScope && input.expectedReviewRevision === review.reviewRevision,
           409, "conflict_review_changed", "Artfassungen oder Projektanmeldung wurden geändert. Bitte neu vergleichen; alle Entwürfe bleiben erhalten.");
         const target = targetFor(conflict, server, review, input), changes = editable.flatMap(([key, uiKey, label]) => {
@@ -158,12 +176,22 @@ export function createExplorerSpeciesConflicts({ withClient, clock = Date.now, t
       const token = input?.token;
       return withClient(async (client, state) => {
         active(); const preview = previews.get(token);
+        if ((!preview || preview.id !== id) && state.permissions.canRead === true && state.permissions.canEdit === true
+          && ["admin", "publisher", "contributor"].includes(state.status.user?.role)
+          && state.status.readOnlySession !== true && state.status.connection === "online") {
+          // A blocked editorial conflict cannot produce a field-preview token.
+          // Still return its explicit boundary; never manufacture a no-op token
+          // or alter the ordinary consumed/missing-token behavior for other work.
+          const conflict = (await client.listConflicts()).find(entry => entry.id === id);
+          active(); if (full(conflict)) requireFieldConflict(conflict);
+        }
         check(preview && preview.id === id, 409, "review_required", "Die Konfliktvorschau ist ungültig, bereits verwendet oder abgelaufen. Bitte neu vergleichen.");
         previews.delete(token);
         access(state, true);
         check(preview.sourceScope === scope(state.status), 409, "conflict_review_changed",
           "Die Projektanmeldung wurde seit der Vorschau geändert. Bitte neu vergleichen; alle Entwürfe bleiben erhalten.");
         const { conflict, server } = await current(client, id);
+        requireFieldConflict(conflict);
         check(preview.reviewRevision === fingerprint(conflict, server, state),
           409, "conflict_review_changed", "Artfassungen oder Projektanmeldung wurden seit der Vorschau geändert. Bitte neu vergleichen; alle Entwürfe bleiben erhalten.");
         active();

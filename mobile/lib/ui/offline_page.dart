@@ -4,51 +4,250 @@ import '../app.dart';
 import '../app_controller.dart';
 import '../domain/catalog.dart';
 import '../data/website_photo.dart';
+import '../data/offline_estimate.dart';
 
 class OfflinePage extends StatefulWidget {
   final ExplorerController controller;
-  const OfflinePage({super.key, required this.controller});
+  final bool startUpdate;
+  const OfflinePage({
+    super.key,
+    required this.controller,
+    this.startUpdate = false,
+  });
   @override
   State<OfflinePage> createState() => _OfflinePageState();
 }
 
 class _OfflinePageState extends State<OfflinePage> {
-  late OfflineSelection _selection;
+  OfflineSelection? _draft;
+  OfflineSelection get _selection =>
+      widget.controller.activeDownloadJob?.selection ??
+      _draft ??
+      widget.controller.offline?.selection ??
+      const OfflineSelection();
+  late final _photoSizes = Map<String, int>.of(
+    widget.controller.bundledPhotoSizes,
+  );
+  int _estimateGeneration = 0;
+  bool _estimating = false, _starting = false;
   @override
   void initState() {
     super.initState();
-    _selection =
-        widget.controller.offline?.selection ?? const OfflineSelection();
+    if (widget.startUpdate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.controller.shouldOfferOfflineUpdate) {
+          _startDownload();
+        }
+      });
+    }
+    Future.microtask(_estimatePhotos);
   }
 
-  void _change(String field, bool enabled) => setState(
-    () => _selection = OfflineSelection(
-      texts: field == 'texts' ? enabled : _selection.texts,
-      portraits: field == 'portraits' ? enabled : _selection.portraits,
-      maps: field == 'maps' ? enabled : _selection.maps,
-      sounds: field == 'sounds' ? enabled : _selection.sounds,
-      gallery: field == 'gallery' ? enabled : _selection.gallery,
-    ),
-  );
+  Future<void> _estimatePhotos() async {
+    final catalog = widget.controller.catalog;
+    final generation = ++_estimateGeneration;
+    final photos = widget.controller.offlineInventory?[MediaKind.gallery];
+    if (catalog == null ||
+        widget.controller.downloading ||
+        !mounted ||
+        (photos != null &&
+            photos.verifiedFiles > 0 &&
+            photos.missingFiles == 0)) {
+      return;
+    }
+    final missing = catalog.species
+        .expand((entry) => entry.media)
+        .any(
+          (entry) =>
+              WebsitePhotoPolicy.canObserve(entry) &&
+              !_photoSizes.containsKey(
+                WebsitePhotoPolicy.offlineUrl(entry.media.url!).toString(),
+              ),
+        );
+    if (!missing) return;
+    final network = await widget.controller.downloadNetwork();
+    if (!mounted || !network.connected || network.metered) return;
+    setState(() => _estimating = true);
+    await estimateWebsitePhotos(
+      catalog,
+      widget.controller.transport,
+      _photoSizes,
+      cancelled: () => !mounted || generation != _estimateGeneration,
+      onProgress: (_, _) {},
+    );
+    if (mounted && generation == _estimateGeneration) {
+      setState(() => _estimating = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _estimateGeneration++;
+    super.dispose();
+  }
+
+  Future<void> _startDownload() async {
+    if (_starting) return;
+    setState(() => _starting = true);
+    final controller = widget.controller, catalog = widget.controller.catalog;
+    final selection = _selection;
+    try {
+      if (catalog == null) return;
+      if (controller.hasCurrentOfflineSelection(selection)) {
+        await controller.download(selection);
+        if (mounted && controller.error.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Offlineinhalte geprüft.')),
+          );
+        }
+        return;
+      }
+      final wanted = selection
+          .select(catalog)
+          .map((entry) => entry.key)
+          .toSet();
+      final removed =
+          controller.offline?.verifiedFiles.keys
+              .where((key) => !wanted.contains(key))
+              .length ??
+          0;
+      if (removed > 0) {
+        final accepted = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Offlineauswahl ändern?'),
+            content: Text(
+              '$removed bisher gespeicherte Inhalte sind abgewählt. Sie werden erst nach dem erfolgreichen Abschluss dieser neuen Auswahl entfernt.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Zurück'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Auswahl anwenden'),
+              ),
+            ],
+          ),
+        );
+        if (accepted != true || !mounted) return;
+      }
+      final network = await controller.downloadNetwork();
+      if (!mounted) return;
+      var allowMetered = controller.offlineSettings.allowMetered;
+      final estimate = OfflineEstimate.selection(
+        catalog,
+        selection,
+        _photoSizes,
+        alreadyAvailable: {
+          ...?controller.offlineInventory?.verifiedKeys,
+          ...?controller.offlineInventory?.resumableKeys,
+        },
+      );
+      if (network.connected && network.metered && !allowMetered) {
+        final choice = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Mobile oder begrenzte Datenverbindung'),
+            content: Text(
+              'Noch zu laden: ${formatBytes(estimate.knownBytes)}${estimate.unknownFiles > 0 ? ' und ${estimate.unknownFiles} Dateien mit noch unbekannter Größe' : ''}. Für größere Downloads empfehlen wir WLAN.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Zurück'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'wifi'),
+                child: const Text('Auf WLAN warten'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, 'metered'),
+                child: const Text('Jetzt laden'),
+              ),
+            ],
+          ),
+        );
+        if (choice == null || !mounted) return;
+        allowMetered = choice == 'metered';
+      }
+      // A dialog result cannot authorize an accidentally changed catalog or selection.
+      if (!identical(catalog, controller.catalog) ||
+          !identical(selection, _selection)) {
+        return;
+      }
+      await controller.download(
+        selection,
+        allowMetered: allowMetered,
+        photoSizes: _photoSizes,
+      );
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  void _change(String field, bool enabled) {
+    setState(
+      () => _draft = OfflineSelection(
+        texts: field == 'texts' ? enabled : _selection.texts,
+        portraits: field == 'portraits' ? enabled : _selection.portraits,
+        maps: field == 'maps' ? enabled : _selection.maps,
+        sounds: field == 'sounds' ? enabled : _selection.sounds,
+        gallery: field == 'gallery' ? enabled : _selection.gallery,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.controller,
     builder: (context, _) {
-      final controller = widget.controller, catalog = controller.catalog;
+      final controller = widget.controller;
+      final catalog =
+          controller.activeDownloadJob?.catalog ?? controller.catalog;
+      final paused = controller.downloadTask?.status == 'paused';
+      final showResumable = !controller.downloading || paused;
+      final canVerify =
+          !controller.downloading &&
+          controller.hasCurrentOfflineSelection(_selection);
       final media = catalog == null
           ? <MediaReference>[]
           : _selection.select(catalog);
       final missingHash = media
-          .where((entry) => entry.media.sha256 == null && !WebsitePhotoPolicy.canObserve(entry))
+          .where(
+            (entry) =>
+                entry.media.sha256 == null &&
+                !WebsitePhotoPolicy.canObserve(entry),
+          )
           .length;
-      final observedPhotos=media.where(WebsitePhotoPolicy.canObserve).length;
-      final knownBytes = media
-          .where((entry) => entry.media.bytes != null)
-          .fold<int>(0, (sum, entry) => sum + entry.media.bytes!);
-      final unknownSize = media
-          .where((entry) => entry.media.bytes == null)
-          .length;
+      final estimate = catalog == null
+          ? const OfflineEstimate(0, 0)
+          : OfflineEstimate.selection(catalog, _selection, _photoSizes);
+      final inventory = controller.offlineInventory;
       final progress = controller.progress;
+      final verifiedSelected = media
+          .where((entry) => inventory?.verifiedKeys.contains(entry.key) == true)
+          .length;
+      final resumableSelected = media
+          .where(
+            (entry) => inventory?.resumableKeys.contains(entry.key) == true,
+          )
+          .length;
+      final remaining = !paused && progress != null && progress.totalFiles > 0
+          ? progress.totalFiles - progress.completeFiles
+          : null;
+      final prepared = remaining == null
+          ? resumableSelected
+          : (media.length - verifiedSelected - remaining).clamp(
+              0,
+              media.length,
+            );
+      final disableSettings =
+          controller.savingOfflineSettings ||
+          controller.downloading ||
+          controller.busy ||
+          _starting;
       Widget choice(
         String field,
         String title,
@@ -62,22 +261,127 @@ class _OfflinePageState extends State<OfflinePage> {
                   .expand((entry) => entry.media)
                   .where((entry) => entry.kind == kind)
                   .toList();
-        final size = entries.every((entry) => entry.media.bytes != null)
+        final category = kind == null ? null : inventory?.categories[kind];
+        final photoLengths = entries
+            .map(
+              (entry) => WebsitePhotoPolicy.canObserve(entry)
+                  ? _photoSizes[WebsitePhotoPolicy.offlineUrl(entry.media.url!)
+                        .toString()]
+                  : entry.media.bytes,
+            )
+            .toList();
+        final size = photoLengths.every((length) => length != null)
             ? formatBytes(
-                entries.fold<int>(0, (sum, entry) => sum + entry.media.bytes!),
+                photoLengths.fold<int>(0, (sum, length) => sum + length!),
               )
-            : 'Größe teilweise unbekannt';
-        return CheckboxListTile(
+            : null;
+        final photos = kind == MediaKind.gallery;
+        final spectrograms = kind == MediaKind.sound
+            ? entries
+                  .where((entry) => entry.media.mimeType == 'image/webp')
+                  .toList()
+            : <MediaReference>[];
+        final recordings = entries.length - spectrograms.length;
+        final soundFiles = kind == MediaKind.sound;
+        final storedPhotoSize =
+            photos &&
+                category != null &&
+                category.totalFiles == entries.length &&
+                category.missingFiles == 0 &&
+                category.verifiedFiles > 0
+            ? formatBytes(category.storedBytes)
+            : null;
+        final description = [
+          if (soundFiles)
+            '$recordings ${recordings == 1 ? 'Aufnahme' : 'Aufnahmen'}'
+          else
+            '${entries.length} ${photos ? 'Fotos' : 'Dateien'}',
+          if (spectrograms.isNotEmpty)
+            '${spectrograms.length} ${spectrograms.length == 1 ? 'Spektrogramm' : 'Spektrogramme'}',
+          if (storedPhotoSize != null)
+            '$storedPhotoSize auf dem Gerät'
+          else if (size != null)
+            photos ? 'ca. $size' : size
+          else if (photos && entries.isNotEmpty && _estimating)
+            'Größe wird ermittelt …',
+        ].join(' · ');
+        final loading =
+            !showResumable &&
+            value &&
+            (category == null || category.missingFiles > 0);
+        final verifiedSpectrograms = spectrograms
+            .where(
+              (entry) => inventory?.verifiedKeys.contains(entry.key) == true,
+            )
+            .length;
+        final soundState =
+            category != null &&
+                category.missingFiles > 0 &&
+                spectrograms.isNotEmpty
+            ? '${category.verifiedFiles - verifiedSpectrograms}/$recordings Aufnahmen · $verifiedSpectrograms/${spectrograms.length} Spektrogramme offline'
+            : null;
+        final available =
+            soundState ??
+            (loading
+                ? 'Wird geladen'
+                : category == null || category.verifiedFiles == 0
+                ? 'Noch nicht heruntergeladen'
+                : category.missingFiles == 0
+                ? 'Vollständig verfügbar'
+                : '${category.verifiedFiles}/${category.totalFiles} verfügbar');
+        final resumable = showResumable ? category?.resumableFiles ?? 0 : 0;
+        final state = category == null && !loading
+            ? ''
+            : '\n$available${resumable == 0 ? '' : ' · $resumable zum Fortsetzen'}';
+        final tile = CheckboxListTile(
           value: field == 'texts' && controller.viewingPublic ? true : value,
           onChanged:
               controller.downloading ||
+                  _starting ||
                   controller.busy ||
                   field == 'texts' && controller.viewingPublic
               ? null
               : (value) => _change(field, value!),
           title: Text(title),
-          subtitle: Text(subtitle ?? '${entries.length} Dateien · $size'),
+          subtitle: Text(subtitle ?? '$description$state'),
           contentPadding: EdgeInsets.zero,
+        );
+        final saved = controller.offline;
+        if (kind == null ||
+            value ||
+            saved == null ||
+            !saved.selection.includes(kind) ||
+            !saved.selection
+                .select(saved.catalog)
+                .any(
+                  (entry) =>
+                      entry.kind == kind &&
+                      saved.verifiedFiles.containsKey(entry.key),
+                )) {
+          return tile;
+        }
+        return Row(
+          children: [
+            Expanded(child: tile),
+            IconButton(
+              color: Theme.of(context).colorScheme.error,
+              icon: const Icon(Icons.delete_outline),
+              tooltip: '$title von diesem Gerät entfernen',
+              onPressed: controller.downloading || controller.busy || _starting
+                  ? null
+                  : () async {
+                      if (!await controller.removeOfflineCategory(kind) ||
+                          !context.mounted) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('$title von diesem Gerät entfernt.'),
+                        ),
+                      );
+                    },
+            ),
+          ],
         );
       }
 
@@ -92,30 +396,50 @@ class _OfflinePageState extends State<OfflinePage> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Download über mobile Daten erlauben'),
+                value: controller.offlineSettings.allowMetered,
+                onChanged: disableSettings
+                    ? null
+                    : (value) =>
+                          controller.saveOfflineSettings(allowMetered: value),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Daten automatisch aktualisieren'),
+                subtitle: const Text(
+                  'Lädt Änderungen für deine gespeicherte Offlineauswahl.',
+                ),
+                value: controller.offlineSettings.autoUpdate,
+                onChanged: disableSettings
+                    ? null
+                    : (value) =>
+                          controller.saveOfflineSettings(autoUpdate: value),
+              ),
+              const SizedBox(height: 12),
               Text(
                 controller.viewingPublic
                     ? 'Arttexte und Taxonomie sind bereits mit der App verfügbar. Wähle zusätzliche Medien für die Verwendung ohne Verbindung.'
                     : 'Die Artenliste bleibt auf dem Gerät. Wähle die zusätzlichen Inhalte, die ohne Verbindung verfügbar sein sollen.',
               ),
               const SizedBox(height: 12),
-              if (controller.offline != null)
+              const Text(
+                'Die Haken legen fest, was offline verfügbar sein soll. Beim Abwählen wird noch nichts gelöscht.',
+              ),
+              if (controller.offline != null) ...[
+                const SizedBox(height: 12),
                 Notice(
                   controller.offline!.healthy
-                      ? controller.packageIsCurrent
+                      ? controller.hasCurrentOfflineSelection(
+                              controller.offline!.selection,
+                            )
                             ? 'Offlinepaket geprüft · aktueller Katalog'
-                            : 'Offlinepaket geprüft · älterer Katalog. Für neue Inhalte erneut laden.'
+                            : 'Offlinepaket geprüft · neuer Katalog verfügbar.'
                       : '${controller.offline!.missingFiles.length} Offlinedateien fehlen oder sind beschädigt.',
                   error: !controller.offline!.healthy,
                 ),
-              OutlinedButton(
-                onPressed: controller.downloading || catalog == null
-                    ? null
-                    : () => setState(
-                        () => _selection =
-                            const OfflineSelection.withoutWebsitePhotos(),
-                      ),
-                child: const Text('Alles ohne Websitefotos auswählen'),
-              ),
+              ],
               choice(
                 'texts',
                 'Arttexte und Taxonomie',
@@ -132,7 +456,7 @@ class _OfflinePageState extends State<OfflinePage> {
               ),
               choice(
                 'sounds',
-                'Tonaufnahmen',
+                'Tierstimmen',
                 _selection.sounds,
                 kind: MediaKind.sound,
               ),
@@ -144,25 +468,31 @@ class _OfflinePageState extends State<OfflinePage> {
               ),
               choice(
                 'gallery',
-                'Zusätzliche Websitefotos',
+                'Fotopaket',
                 _selection.gallery,
                 kind: MediaKind.gallery,
               ),
               const Divider(),
               Text(
-                '${media.length} Mediendateien · ${formatBytes(knownBytes)}${unknownSize == 0 ? '' : ' + $unknownSize mit unbekannter Größe'}',
+                '${controller.downloading ? 'Downloadauswahl' : 'Ausgewählt'}: ${media.length} Dateien${estimate.unknownFiles == 0 && !controller.downloading ? ' · ca. ${formatBytes(estimate.knownBytes)}' : ''}',
               ),
+              if (inventory != null)
+                Text(
+                  'Im nutzbaren Offlinepaket: $verifiedSelected von ${media.length} ausgewählten Dateien',
+                ),
+              if (prepared > 0)
+                Text(
+                  showResumable
+                      ? 'Für die Fortsetzung gespeichert: $prepared Dateien'
+                      : 'Zusätzlich für dieses Paket vorbereitet: $prepared Dateien',
+                ),
               Text(
-                'Bereits auf dem Gerät: ${formatBytes(controller.occupiedBytes)}',
+                '${controller.downloading ? 'Zuletzt gemessener Offline-Speicher' : 'Offline-Speicher belegt'}: ${formatBytes(inventory?.appDataBytes ?? controller.occupiedBytes)}',
               ),
               const SizedBox(height: 8),
               const Text(
                 'Beim Laden wird kurz zusätzlicher Speicher benötigt. Der vorherige Paketstand bleibt bis zum vollständigen Abschluss erhalten.',
               ),
-              if(observedPhotos>0) Padding(padding:const EdgeInsets.only(top:12),child:Text(
-                '$observedPhotos Websitefotos werden als öffentlich sichtbare Fassung vom Downloadzeitpunkt gespeichert. Sie können sich später auf der Website ändern.')),
-              if((controller.offline?.observedPhotoCount ?? 0)>0)
-                Padding(padding:const EdgeInsets.only(top:8),child:Text('${controller.offline!.observedPhotoCount} gespeicherte Websitefassungen · Dateien auf diesem Gerät geprüft')),
               if (missingHash > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -185,22 +515,83 @@ class _OfflinePageState extends State<OfflinePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  progress == null
+                  paused || controller.downloadTask?.status == 'queued'
+                      ? controller.downloadTask!.message
+                      : progress == null
                       ? 'Download wird vorbereitet …'
-                      : '${progress.message} · ${progress.completeFiles}/${progress.totalFiles} Dateien · ${formatBytes(progress.receivedBytes)}',
+                      : progress.totalFiles == 0
+                      ? progress.message
+                      : 'Neu geladen: ${progress.completeFiles} · Noch zu laden: ${progress.totalFiles - progress.completeFiles} · ${formatBytes(progress.receivedBytes)}',
                 ),
                 TextButton(
                   onPressed: controller.cancelDownload,
                   child: const Text('Download abbrechen'),
                 ),
+                if (paused)
+                  OutlinedButton(
+                    onPressed: controller.busy
+                        ? null
+                        : () async {
+                            final network = await controller.downloadNetwork();
+                            if (!context.mounted) return;
+                            // Resuming never silently broadens the original Wi-Fi permission.
+                            if (network.metered) {
+                              final allow = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text(
+                                    'Mit mobilen Daten fortsetzen?',
+                                  ),
+                                  content: const Text(
+                                    'Der noch offene Download kann größere Datenmengen übertragen.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('Zurück'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text('Fortsetzen'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (allow != true || !mounted) return;
+                              await controller.resumeDownload(
+                                allowMetered: true,
+                              );
+                            } else {
+                              await controller.resumeDownload();
+                            }
+                          },
+                    child: const Text('Download fortsetzen'),
+                  ),
               ] else
                 FilledButton.icon(
                   onPressed:
-                      catalog == null || controller.busy || missingHash > 0
+                      catalog == null ||
+                          controller.busy ||
+                          _starting ||
+                          (!canVerify && missingHash > 0)
                       ? null
-                      : () => controller.download(_selection),
-                  icon: const Icon(Icons.download_outlined),
-                  label: const Text('Auswahl laden und prüfen'),
+                      : _startDownload,
+                  icon: Icon(
+                    canVerify
+                        ? Icons.check_circle_outline
+                        : Icons.download_outlined,
+                  ),
+                  label: Text(
+                    canVerify
+                        ? _starting
+                              ? 'Offlineinhalte werden geprüft …'
+                              : 'Offlineinhalte prüfen'
+                        : (inventory?.resumableFiles ?? 0) > 0
+                        ? 'Auswahl fortsetzen'
+                        : 'Auswahl laden und prüfen',
+                  ),
                 ),
               if (!controller.downloading && controller.offline != null)
                 TextButton(

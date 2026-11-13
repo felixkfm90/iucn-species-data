@@ -6,9 +6,13 @@
     queued: "Gespeicherte Änderungen warten auf Abgleich", conflict: "Beide Fassungen brauchen eine Entscheidung", "local-changed": "Lokale Änderungen noch nicht gesendet", pulled: "Gemeinsame Fassung geladen · lokale Übernahme offen" });
   const IMAGE_STATES = Object.freeze({ unknown: "Noch nicht erfasst", missing: "Text fehlt", unreviewed: "Noch ungeprüft", draft: "Entwurf", approved: "Freigegeben", verified: "Öffentlich bestätigt", changed: "Erneut prüfen", removed: "Bild nicht mehr gefunden" });
   const ERRORS = Object.freeze({ authentication_required: "Bitte zuerst im gemeinsamen Projekt anmelden.", forbidden: "Für diese Aktion fehlt die Berechtigung oder eine volle Anmeldung.",
-    offline: "Der gemeinsame Dienst ist nicht erreichbar. Gespeicherte Texte bleiben erhalten.", website_alt_local_changed: "Die lokale Seite wurde geändert. Bitte neu vergleichen.",
+    offline: "Der gemeinsame Dienst ist nicht erreichbar. Gespeicherte Texte bleiben erhalten.", website_alt_online_required: "Für diesen Schritt ist eine Verbindung zum gemeinsamen Projekt erforderlich.",
+    website_alt_local_changed: "Die lokale Seite wurde geändert. Bitte neu vergleichen.",
     website_alt_stale_scan: "Die Bildgrundlage ist älter als der gemeinsame Stand. Bitte die Seite erneut erfassen und vergleichen.", object_changed: "Die gemeinsame Fassung hat sich geändert. Bitte neu vergleichen.",
-    objects_snapshot_changed: "Bestand oder Berechtigung wurde geändert. Bitte den Stand neu laden.", website_alt_adoption_required: "Vorhandene Freigaben brauchen eine ausdrückliche Übernahme mit Freigaberecht.",
+    objects_snapshot_changed: "Bestand oder Berechtigung wurde geändert. Bitte den Stand neu laden.", website_alt_binding_changed: "Projekt, Person oder Redaktionsrechte haben sich geändert. Bitte den Stand neu laden.",
+    conflict_review_changed: "Die Projektanmeldung oder die verglichenen Fassungen haben sich geändert. Bitte neu vergleichen.",
+    conflict_binding_server_required: "Der gemeinsame Dienst muss die geprüfte Konfliktentscheidung unterstützen. Beide Fassungen bleiben erhalten.",
+    website_alt_adoption_required: "Vorhandene Freigaben brauchen eine ausdrückliche Übernahme mit Freigaberecht.",
     website_alt_review_required: "Bitte beide Fassungen vor dem nächsten Schritt vergleichen.", website_alt_untrusted_record: "Diese Fassung besitzt keinen passenden gemeinsamen Herkunftsnachweis." });
   function pageUrl(value) {
     try { const url = new URL(value); return url.origin === "https://www.fnwildlifetravel.de" && !url.username && !url.password && !url.search && !url.hash ? url.href : ""; }
@@ -184,7 +188,8 @@
         } else result = await call(`/${action}`, { ...body,
           ...(["link", "import", "resolve"].includes(action) ? { confirmed: true } : {}),
           ...(["link", "resolve"].includes(action) ? { adoptUnlinkedApprovals: adoptApproved } : {}),
-          ...(action === "resolve" ? { strategy, expectedRemoteRevision, ...(conflict?.id ? { conflictId: conflict.id } : {}) } : {}) });
+          ...(["import", "resolve"].includes(action) ? { expectedRemoteRevision } : {}),
+          ...(action === "resolve" ? { strategy, ...(conflict?.id ? { conflictId: conflict.id } : {}) } : {}) });
         if (!alive(ticket)) return false;
         if (!result || action === "link" && result.linked !== true || action === "import" && result.imported !== true
           || action === "send" && typeof result.synced !== "boolean" || ["pull", "resolve"].includes(action) && result.requiresExplicitImport !== true) throw new Error("action not acknowledged");
@@ -201,7 +206,8 @@
         if (alive(ticket)) {
           hideDenied(error);
           uncertain = true;
-          say(`${ERRORS[error?.code] || "Die Aktion wurde nicht bestätigt. Gespeicherte Texte bleiben erhalten."} Bitte den Stand neu lesen; es wird nichts automatisch wiederholt.`);
+          const hint = error?.code === "object_changed" && action === "import" ? "Lade danach den gemeinsamen Stand für einen neuen Vergleich." : "";
+          say(`${ERRORS[error?.code] || "Die Aktion wurde nicht bestätigt. Gespeicherte Texte bleiben erhalten."} Bitte den Stand neu lesen; es wird nichts automatisch wiederholt.${hint ? ` ${hint}` : ""}`);
         }
         return false;
       } finally { if (alive(ticket)) { busy = false; render(); } }

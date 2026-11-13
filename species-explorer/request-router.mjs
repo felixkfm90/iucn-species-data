@@ -4,8 +4,11 @@ import {
   assertWriteRequest,
 } from "./request-security.mjs";
 import { matchProjectFeatureRoute } from "./project-feature-routes.mjs";
+import { readPageImageScope } from "./page-authoring/routes.mjs";
+import { readPageAiPayload } from "./local-ai/page-routes.mjs";
 import {
   MAX_JSON_BODY_BYTES,
+  parseByteRange,
   readJsonBody,
   safeAssetPath,
   safeGraphicsPath,
@@ -251,17 +254,81 @@ export function createExplorerRequestHandler({
         assertWriteRequest(request, { expectedOrigin, sessionToken, sessionProtection });
       }
 
-      if (["shared-project", "update-completion", "local-ai", "website-alt-sync"].includes(route.name)) {
+      if (route.name === "page-authoring" && route.action === "image-content") {
+        assertBrowserReadContext(request, expectedOrigin);
+        const sourceScope = readPageImageScope(url.searchParams);
+        const { metadata, buffer } = await operations.pageAuthoringImage(route.id, { sourceScope });
+        if (!Buffer.isBuffer(buffer) || !["image/jpeg", "image/png", "image/webp"].includes(metadata?.mimeType)) {
+          throw Object.assign(new Error("Das Bild ist nicht vollständig bereitgestellt."), { statusCode: 409 });
+        }
+        response.writeHead(200, { "Content-Type": metadata.mimeType, "Content-Length": buffer.length,
+          "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
+          "Content-Security-Policy": "default-src 'none'; sandbox" });
+        response.end(request.method === "HEAD" ? undefined : buffer);
+        return;
+      }
+
+      if (route.name === "shared-project" && ["species-enrichment-file", "species-normal-content"].includes(route.action)) {
+        assertBrowserReadContext(request, expectedOrigin);
+        let payload;
+        if (route.action === "species-enrichment-file") payload = { sourceScope: readPageImageScope(url.searchParams) };
+        else {
+          const sourceScope = url.searchParams.get("scope"), expectedRevision = url.searchParams.get("revision"), expectedEditRevision = url.searchParams.get("stamp");
+          if (url.searchParams.size !== 3 || ![sourceScope, expectedEditRevision].every(value => /^[a-f0-9]{64}$/.test(value || ""))
+            || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(expectedRevision || "")) {
+            throw Object.assign(new Error("Die Artdatei benötigt ihre genaue Projekt- und Artfassung."), { statusCode: 400, code: "invalid_media_scope" });
+          }
+          payload = { sourceScope, expectedRevision, expectedEditRevision };
+        }
+        const cancellation = new AbortController(), cancelled = () => { if (!response.writableEnded) cancellation.abort(); };
+        response.once("close", cancelled);
+        let metadata, buffer;
+        try { ({ metadata, buffer } = await operations.sharedProject({ ...route, payload, signal: cancellation.signal })); }
+        finally { response.removeListener("close", cancelled); }
+        if (cancellation.signal.aborted) return;
+        if (!Buffer.isBuffer(buffer) || !["image/jpeg", "image/webp", "audio/mpeg"].includes(metadata?.mimeType)) {
+          throw Object.assign(new Error("Die Artdatei ist nicht vollständig verfügbar."), { statusCode: 409 });
+        }
+        const headers = { "Content-Type": metadata.mimeType, "Cache-Control": "no-store", "Accept-Ranges": "bytes",
+          "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'none'; sandbox" };
+        const range = request.headers.range && parseByteRange(request.headers.range, buffer.length);
+        if (request.headers.range && !range) {
+          response.writeHead(416, { ...headers, "Content-Range": `bytes */${buffer.length}` }); response.end(); return;
+        }
+        const bytes = range ? buffer.subarray(range.start, range.end + 1) : buffer;
+        response.writeHead(range ? 206 : 200, { ...headers, "Content-Length": bytes.length,
+          ...(range ? { "Content-Range": `bytes ${range.start}-${range.end}/${buffer.length}` } : {}) });
+        response.end(request.method === "HEAD" ? undefined : bytes);
+        return;
+      }
+
+      if (["shared-project", "update-completion", "local-ai", "website-alt-sync", "page-authoring", "language-check"].includes(route.name)) {
         assertBrowserReadContext(request, expectedOrigin);
         const payload = request.method === "POST" ? await readJsonBody(request, {
-          maxBytes: route.name === "local-ai" ? 32 * 1024
+          maxBytes: route.name === "page-authoring" && route.action === "import-image" ? Math.ceil(20 * 1024 * 1024 / 3) * 4 + 64 * 1024
+            : route.name === "page-authoring" && route.action === "save" ? 2 * 1024 * 1024 + MAX_JSON_BODY_BYTES
+            : route.name === "page-authoring" && route.action === "approve" ? 64 * 1024
+            : route.name === "local-ai" ? 32 * 1024
+            : route.name === "language-check" ? 128 * 1024
             : (route.name === "shared-project" && ["create", "editExisting", "resolve"].includes(route.action)
               || route.name === "website-alt-sync" && route.action === "resolve")
               ? 2 * 1024 * 1024 + MAX_JSON_BODY_BYTES : MAX_JSON_BODY_BYTES,
-        }) : {};
+        }) : route.name === "page-authoring" && route.action === "image-metadata"
+          ? { sourceScope: readPageImageScope(url.searchParams) } : {};
         const operation = route.name === "shared-project" ? operations.sharedProject
-          : route.name === "local-ai" ? operations.localAi : route.name === "website-alt-sync" ? operations.websiteAltSync : operations.updateCompletion;
-        sendJson(response, 200, await operation({ ...route, payload, searchParams: url.searchParams }));
+          : route.name === "local-ai" ? operations.localAi : route.name === "website-alt-sync" ? operations.websiteAltSync
+            : route.name === "page-authoring" ? operations.pageAuthoring
+              : route.name === "language-check" ? operations.languageCheck : operations.updateCompletion;
+        const operationPayload = route.name === "local-ai" && route.pageAuthoring ? readPageAiPayload(route, payload, url.searchParams) : payload;
+        if (typeof operation !== "function") throw Object.assign(new Error("Diese lokale Funktion ist noch nicht verfügbar."), { statusCode: 503 });
+        const cancellation = route.name === "language-check" || route.action === "species-enrichment-prepare" ? new AbortController() : null;
+        const cancelled = () => { if (!response.writableEnded) cancellation?.abort(); };
+        if (cancellation) response.once("close", cancelled);
+        try {
+          const result = await operation({ ...route, payload: operationPayload, searchParams: url.searchParams,
+            ...(cancellation ? { signal: cancellation.signal } : {}) });
+          if (!cancellation?.signal.aborted) sendJson(response, 200, result);
+        } finally { if (cancellation) response.removeListener("close", cancelled); }
         return;
       }
 

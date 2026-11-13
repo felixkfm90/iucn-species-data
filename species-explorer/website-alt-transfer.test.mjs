@@ -6,7 +6,8 @@ import test from "node:test";
 import { tmpdir, assertTestTempPath } from "../scripts/test-temp.mjs";
 import { createWebsiteAltStore } from "./website-alt-store.mjs";
 import { createWebsiteAltTextsService } from "./website-alt-service.mjs";
-import { buildWebsiteAltTransferPlan, loadWebsiteAltTransferReceipt } from "./website-alt-transfer.mjs";
+import { buildWebsiteAltTransferPlan, loadWebsiteAltTransferReceipt, runWebsiteAltTransfer } from "./website-alt-transfer.mjs";
+import { assessSquarespaceGalleryField } from "./desktop/squarespace-gallery-driver.mjs";
 
 const pageUrl = "https://www.fnwildlifetravel.de/reisen/2019-griechenland/athen";
 const now = () => new Date("2026-10-29T18:00:00.000Z");
@@ -61,6 +62,52 @@ async function settled(service) {
   }
   throw new Error("Übernahmejob wurde nicht beendet");
 }
+
+test("legacy coupled approvals over 250 characters stop before connection and keep their full text", () => fixture(async ({ state, calls }) => {
+  const saved = await state.snapshot(), original = clone(saved);
+  original.pages[0].images[0].approval.text = "L".repeat(251);
+  const unchanged = JSON.stringify(original);
+  assert.throws(() => buildWebsiteAltTransferPlan(original, { revision: original.revision, pageUrl }), /251.*250|250.*251/);
+  assert.equal(JSON.stringify(original), unchanged);
+  original.pages[0].images[0].approval.text = "L".repeat(250);
+  assert.equal(buildWebsiteAltTransferPlan(original, { revision: original.revision, pageUrl }).images[0].text.length, 250);
+  assert.equal(calls.length, 0);
+}));
+
+test("Dyrholaey: Übernahmeplan bindet rohen Alttext trotz kollabierter öffentlicher Caption bis zur Bestätigung", () => fixture(async ({ state, service, adapter, calls, payload, getPublished, setPublished }) => {
+  const raw = "...  um hier ihre Nester zu bauen ...", caption = "... um hier ihre Nester zu bauen ...";
+  const published = getPublished();
+  Object.assign(published.images[0], { alt: raw, caption }); setPublished(published);
+  let saved = await state.mergeScan({ pages: [published], discoveredUrls: [pageUrl], complete: true });
+  saved = await state.approve({ revision: saved.revision, pageUrl, imageKey: saved.pages[0].images[0].key,
+    text: caption, decorative: false });
+  const transfer = adapter.transfer;
+  adapter.transfer = async (plan, options) => {
+    assert.equal(plan.images[0].expectedAlt, raw); assert.equal(plan.images[0].expectedCaption, caption);
+    assert.equal(assessSquarespaceGalleryField(plan.images[0], { sourceUrl: plan.images[0].sourceUrl,
+      description: raw, plainText: true }).status, "ready");
+    return transfer(plan, options);
+  };
+  await service.transfer(await payload());
+  const result = await settled(service), image = result.pages[0].images[0];
+  assert.equal(result.transfer.status, "completed"); assert.equal(result.transfer.results[0].status, "verified");
+  assert.equal(image.alt, caption); assert.equal(image.caption, caption); assert.equal(image.approval.text, caption);
+  assert.equal(calls.filter(([name]) => name === "transfer").length, 1);
+}));
+
+test("public text mismatch stays verification-pending instead of claiming the human approval changed", () => fixture(async ({ root, state, adapter, discovery, calls }) => {
+  const saved = await state.snapshot(), plan = buildWebsiteAltTransferPlan(saved, { revision: saved.revision, pageUrl });
+  let checks = 0;
+  const checkingState = { ...state, async verify() {
+    checks++;
+    throw Object.assign(new Error("Squarespace zeigt noch eine abweichende öffentliche Fassung."), { statusCode: 409, code: "website_alt_public_mismatch" });
+  } };
+  const result = await runWebsiteAltTransfer({ plan, state: checkingState, adapter, discovery, dataRoot: root,
+    signal: new AbortController().signal, now, verificationIntervalMs: 1 });
+  assert.equal(result.results[0].status, "verification-pending");
+  assert.equal(checks, 5); assert.equal(calls.filter(([name]) => name === "transfer").length, 1);
+  assert.equal((await state.snapshot()).pages[0].images[0].approval.revision, saved.pages[0].images[0].approval.revision);
+}));
 
 async function waitingForLogin(service) {
   for (let index = 0; index < 100; index += 1) {
@@ -209,7 +256,8 @@ test("Geschriebener Alttext mit noch falscher Reise-Caption bleibt offen ohne au
   await service.transfer(await payload());
   const result = await settled(service);
   assert.equal(result.transfer.status, "partial");
-  assert.equal(result.transfer.results[0].status, "conflict");
+  assert.equal(result.transfer.results[0].status, "verification-pending");
+  assert.match(result.transfer.results[0].error, /Bildunterschrift.*öffentlich|öffentlich.*Bildunterschrift/);
   assert.equal((await state.snapshot()).summary.verified, 0);
   assert.equal((await state.snapshot()).summary.approved, 1);
   assert.equal(calls.filter(([name]) => name === "transfer").length, 1);

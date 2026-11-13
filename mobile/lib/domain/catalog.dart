@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import 'art_editorial.dart';
+import 'project_media.dart';
+import 'taxonomy_names.dart';
+
 String requiredText(Object? value, String field, {int maximum = 200000}) {
   if (value is! String || value.trim().isEmpty || value.length > maximum) {
     throw FormatException(
@@ -39,12 +43,174 @@ Uri httpsUri(Object? value, String field) {
   return uri;
 }
 
+String _germanDictionaryKey(String value) => value
+    .trim()
+    .toLowerCase()
+    .replaceAll('ä', 'a')
+    .replaceAll('ö', 'o')
+    .replaceAll('ü', 'u')
+    .replaceAll('ß', 'ss');
+
+class SpeciesGroup {
+  final String id, label;
+  final int count;
+  const SpeciesGroup({
+    required this.id,
+    required this.label,
+    required this.count,
+  });
+}
+
+// Follow the Wildlife menu order, including its reserved Asien entry.
+const _regionLabels = <String, String>{
+  'heimische-tierwelt': 'Heimische Tierwelt',
+  'afrika': 'Afrika',
+  'costarica': 'Costa Rica',
+  'island': 'Island',
+  'asien': 'Asien',
+  'unassigned': 'Ohne Regionszuordnung',
+};
+final _wildlifeSpeciesPath = RegExp(
+  r'^/wildlife/([a-z0-9]+(?:-[a-z0-9]+)*)/[a-z0-9]+(?:-[a-z0-9]+)*/?$',
+);
+
+String _speciesRegionId(Species species) {
+  final url = species.websiteUrl;
+  if (url == null ||
+      url.scheme != 'https' ||
+      url.host != 'www.fnwildlifetravel.de' ||
+      url.port != 443 ||
+      url.userInfo.isNotEmpty ||
+      url.hasQuery ||
+      url.hasFragment) {
+    return 'unassigned';
+  }
+  final id = _wildlifeSpeciesPath.firstMatch(url.path)?.group(1);
+  return id != null && _regionLabels.containsKey(id) ? id : 'unassigned';
+}
+
+MapEntry<String, String>? _uniqueTaxon(Species species, Set<String> ranks) {
+  final values = <String, String>{};
+  for (final taxon in species.taxonomy) {
+    final rank = taxon.rank.trim().toLowerCase();
+    if (!ranks.contains(rank)) continue;
+    final name = taxon.name.trim();
+    if (name.isEmpty) continue;
+    final key = name.toLowerCase();
+    final previous = values[key];
+    if (previous == null || name.compareTo(previous) < 0) {
+      values[key] = name;
+    }
+  }
+  return values.length == 1 ? values.entries.single : null;
+}
+
+String taxonomyDisplayName(String rank, String name) =>
+    germanTaxonomyNames[rank.trim().toLowerCase()]?[name
+        .trim()
+        .toLowerCase()] ??
+    name;
+
+({String id, String label}) _speciesClass(Species species) {
+  final entry = _uniqueTaxon(species, const {'class', 'klasse'});
+  if (entry == null) {
+    return (id: 'unassigned', label: 'Nicht zugeordnet');
+  }
+  const labels = {
+    'aves': 'Vögel',
+    'mammalia': 'Säugetiere',
+    'reptilia': 'Reptilien',
+    'amphibia': 'Amphibien',
+  };
+  return (id: 'class:${entry.key}', label: labels[entry.key] ?? entry.value);
+}
+
+List<({String id, String label, List<Species> species})> speciesClasses(
+  Iterable<Species> sortedSpecies,
+) {
+  final grouped = <String, ({String label, List<Species> species})>{};
+  for (final entry in sortedSpecies) {
+    final group = _speciesClass(entry), previous = grouped[group.id];
+    final label = previous == null || group.label.compareTo(previous.label) < 0
+        ? group.label
+        : previous.label;
+    final members = previous?.species ?? <Species>[];
+    members.add(entry);
+    grouped[group.id] = (label: label, species: members);
+  }
+  return grouped.entries
+      .map(
+        (group) => (
+          id: group.key,
+          label: group.value.label,
+          species: group.value.species,
+        ),
+      )
+      .toList()
+    ..sort((a, b) {
+      if (a.id == 'unassigned') return b.id == 'unassigned' ? 0 : 1;
+      if (b.id == 'unassigned') return -1;
+      final label = _germanDictionaryKey(a.label)
+          .compareTo(_germanDictionaryKey(b.label));
+      return label != 0 ? label : a.id.compareTo(b.id);
+    });
+}
+
+List<({String id, String label, List<Species> species})> speciesFamilies(
+  Iterable<Species> sortedSpecies,
+) {
+  final grouped = <String, ({String label, List<Species> species})>{};
+  for (final entry in sortedSpecies) {
+    final taxon = _uniqueTaxon(entry, const {'family', 'familie'});
+    final id = taxon?.key ?? '';
+    grouped
+        .putIfAbsent(
+          id,
+          () => (
+            label: taxon == null
+                ? 'Familie nicht zugeordnet'
+                : taxonomyDisplayName('family', taxon.value),
+            species: [],
+          ),
+        )
+        .species
+        .add(entry);
+  }
+  return grouped.entries
+      .map(
+        (entry) => (
+          id: entry.key,
+          label: entry.value.label,
+          species: entry.value.species,
+        ),
+      )
+      .toList()
+    ..sort((a, b) {
+      if (a.id.isEmpty) return b.id.isEmpty ? 0 : 1;
+      if (b.id.isEmpty) return -1;
+      final label = _germanDictionaryKey(a.label)
+          .compareTo(_germanDictionaryKey(b.label));
+      return label != 0 ? label : a.id.compareTo(b.id);
+    });
+}
+
+int _compareSpecies(Species a, Species b) {
+  final display = _germanDictionaryKey(a.displayName)
+      .compareTo(_germanDictionaryKey(b.displayName));
+  if (display != 0) return display;
+  final scientific = _germanDictionaryKey(a.scientificName)
+      .compareTo(_germanDictionaryKey(b.scientificName));
+  return scientific != 0 ? scientific : a.id.compareTo(b.id);
+}
+
 class Catalog {
   final String revision;
+  final String? projectId;
   final DateTime generatedAt;
   final List<Species> species;
   const Catalog({
     required this.revision,
+    this.projectId,
     required this.generatedAt,
     required this.species,
   });
@@ -68,30 +234,75 @@ class Catalog {
     if (species.map((entry) => entry.id).toSet().length != species.length) {
       throw const FormatException('Doppelte Artkennung im Katalog.');
     }
+    final projectId = json.containsKey('projectId')
+        ? requiredText(json['projectId'], 'Projektkennung', maximum: 160)
+        : null;
+    if (species.expand((entry) => entry.media).any((entry) {
+      final file = entry.media.projectFile;
+      return file != null && file.projectId != projectId;
+    })) {
+      throw const FormatException(
+        'Eine Mediendatei gehört zu einem anderen Projekt.',
+      );
+    }
     return Catalog(
       revision: requiredText(json['revision'], 'revision', maximum: 256),
+      projectId: projectId,
       generatedAt: generatedAt,
       species: List.unmodifiable(species),
     );
   }
 
-  List<Species> search(String query) {
+  List<SpeciesGroup> get regions {
+    final counts = <String, int>{};
+    for (final entry in species) {
+      final id = _speciesRegionId(entry);
+      counts.update(id, (count) => count + 1, ifAbsent: () => 1);
+    }
+    return List.unmodifiable([
+      for (final region in _regionLabels.entries)
+        if (counts[region.key] case final count?)
+          SpeciesGroup(id: region.key, label: region.value, count: count),
+    ]);
+  }
+
+  Iterable<Species> _speciesInRegion(String? regionId) => regionId == null
+      ? species
+      : species.where((entry) => _speciesRegionId(entry) == regionId);
+
+  List<SpeciesGroup> get groups => groupsForRegion(null);
+
+  List<SpeciesGroup> groupsForRegion(String? regionId) {
+    return List.unmodifiable(
+      speciesClasses(_speciesInRegion(regionId)).map(
+        (group) => SpeciesGroup(
+          id: group.id,
+          label: group.label,
+          count: group.species.length,
+        ),
+      ),
+    );
+  }
+
+  List<Species> search(String query, {String? groupId, String? regionId}) {
     final terms = query
         .toLowerCase()
         .trim()
         .split(RegExp(r'\s+'))
         .where((part) => part.isNotEmpty);
-    return species.where((entry) {
+    return _speciesInRegion(regionId).where((entry) {
+      if (groupId != null && _speciesClass(entry).id != groupId) return false;
       final value =
           '${entry.commonName} ${entry.scientificName} ${entry.taxonomy.map((rank) => rank.name).join(' ')}'
               .toLowerCase();
       return terms.every(value.contains);
-    }).toList();
+    }).toList()..sort(_compareSpecies);
   }
 
   Map<String, dynamic> toJson({bool includeDetails = true}) => {
     'schemaVersion': 1,
     'revision': revision,
+    if (projectId != null) 'projectId': projectId,
     'generatedAt': generatedAt.toUtc().toIso8601String(),
     'species': species
         .map((entry) => entry.toJson(includeDetails: includeDetails))
@@ -146,14 +357,15 @@ enum MediaKind { portrait, map, sound, gallery }
 
 class ArtMedia {
   final String id;
-  final Uri url;
+  final Uri? url;
+  final ProjectMediaFile? projectFile;
   final int? bytes;
   final String? sha256, mimeType;
   final String alt, caption, attribution;
   final int order;
   const ArtMedia({
     required this.id,
-    required this.url,
+    required Uri this.url,
     this.bytes,
     this.sha256,
     this.mimeType,
@@ -161,7 +373,20 @@ class ArtMedia {
     this.caption = '',
     this.attribution = '',
     this.order = 0,
-  });
+  }) : projectFile = null;
+
+  ArtMedia._project({
+    required this.id,
+    required ProjectMediaFile file,
+    required this.alt,
+    required this.caption,
+    required this.order,
+  }) : projectFile = file,
+       url = null,
+       bytes = file.bytes,
+       sha256 = file.sha256,
+       mimeType = file.mimeType,
+       attribution = file.attribution;
 
   factory ArtMedia.fromJson(Map<String, dynamic> value) {
     final attribution = value['attribution'];
@@ -181,14 +406,41 @@ class ArtMedia {
     if (order != null && order is! int) {
       throw const FormatException('Ungültige Bildreihenfolge.');
     }
+    final id = requiredText(value['id'], 'Medienkennung', maximum: 512);
+    final alt = value['alt'] as String? ?? '';
+    final caption =
+        value['caption'] as String? ?? value['title'] as String? ?? '';
+    if (value.containsKey('projectFile')) {
+      if (value.keys.any(
+        (key) => !const {
+          'id',
+          'projectFile',
+          'alt',
+          'caption',
+          'order',
+        }.contains(key),
+      )) {
+        throw const FormatException('Ungültige Projektmedienbindung.');
+      }
+      final file = ProjectMediaFile.fromJson(
+        object(value['projectFile'], 'Projektdatei'),
+      );
+      return ArtMedia._project(
+        id: id,
+        file: file,
+        alt: alt,
+        caption: caption,
+        order: order as int? ?? 0,
+      );
+    }
     return ArtMedia(
-      id: requiredText(value['id'], 'Medienkennung', maximum: 512),
+      id: id,
       url: httpsUri(value['url'], 'Medienadresse'),
       bytes: size as int?,
       sha256: (hash as String?)?.toLowerCase(),
       mimeType: value['mimeType'] as String?,
-      alt: value['alt'] as String? ?? '',
-      caption: value['caption'] as String? ?? value['title'] as String? ?? '',
+      alt: alt,
+      caption: caption,
       attribution: attribution as String? ?? '',
       order: order as int? ?? 0,
     );
@@ -208,21 +460,32 @@ class ArtMedia {
         RegExp(
               r'\.(svg|png|jpg|jpeg|webp|mp3|m4a|ogg|wav)$',
               caseSensitive: false,
-            ).firstMatch(url.path)?.group(0)?.toLowerCase() ??
+            ).firstMatch(url?.path ?? '')?.group(0)?.toLowerCase() ??
             '.bin',
     };
   }
 
   bool get isSvg => extension == '.svg';
+  String get sourceIdentity {
+    final file = projectFile;
+    return file == null
+        ? url!.toString()
+        : 'project:${file.projectId}:${file.contentId ?? file.id}';
+  }
+
   Map<String, dynamic> toJson() => {
     'id': id,
-    'url': url.toString(),
-    if (bytes != null) 'bytes': bytes,
-    if (sha256 != null) 'sha256': sha256,
-    if (mimeType != null) 'mimeType': mimeType,
+    if (projectFile case final file?)
+      'projectFile': file.toJson()
+    else ...{
+      'url': url!.toString(),
+      if (bytes != null) 'bytes': bytes,
+      if (sha256 != null) 'sha256': sha256,
+      if (mimeType != null) 'mimeType': mimeType,
+      if (attribution.isNotEmpty) 'attribution': attribution,
+    },
     'alt': alt,
     'caption': caption,
-    if (attribution.isNotEmpty) 'attribution': attribution,
     'order': order,
   };
 }
@@ -239,8 +502,9 @@ class Species {
   final String id, scientificName, commonName;
   final List<Taxon> taxonomy;
   final List<ArtSection> sections;
+  final ArtEditorial? editorial;
   final Uri? websiteUrl;
-  final ArtMedia? portrait, map;
+  final ArtMedia? portrait, map, spectrogram;
   final List<ArtMedia> sounds, gallery;
   const Species({
     required this.id,
@@ -248,9 +512,11 @@ class Species {
     required this.commonName,
     required this.taxonomy,
     required this.sections,
+    this.editorial,
     this.websiteUrl,
     this.portrait,
     this.map,
+    this.spectrogram,
     required this.sounds,
     required this.gallery,
   });
@@ -269,6 +535,15 @@ class Species {
       media['sounds'],
       'Ton',
     ).map((entry) => ArtMedia.fromJson(object(entry, 'Ton'))).toList();
+    final spectrogram = media['spectrogram'] == null
+        ? null
+        : ArtMedia.fromJson(object(media['spectrogram'], 'Spektrogramm'));
+    if (spectrogram != null &&
+        (sounds.isEmpty ||
+            spectrogram.mimeType != 'image/webp' ||
+            sounds.any((sound) => sound.id == spectrogram.id))) {
+      throw const FormatException('Ungültige Zuordnung des Spektrogramms.');
+    }
     for (final group in [sounds, gallery]) {
       if (group.map((entry) => entry.id).toSet().length != group.length) {
         throw const FormatException(
@@ -306,6 +581,9 @@ class Species {
         ).map((entry) => Taxon.fromJson(object(entry, 'Taxonomie'))),
       ),
       sections: List.unmodifiable(sections),
+      editorial: value.containsKey('editorial')
+          ? ArtEditorial.fromJson(value['editorial'])
+          : null,
       websiteUrl: value['websiteUrl'] == null
           ? null
           : httpsUri(value['websiteUrl'], 'Website'),
@@ -315,11 +593,36 @@ class Species {
       map: media['map'] == null
           ? null
           : ArtMedia.fromJson(object(media['map'], 'Karte')),
+      spectrogram: spectrogram,
       sounds: List.unmodifiable(sounds),
       gallery: List.unmodifiable(indexed.map((entry) => entry.$2)),
     );
   }
-  String get displayName => commonName.isEmpty ? scientificName : commonName;
+  String get displayName =>
+      commonName.trim().isEmpty ? scientificName : commonName;
+
+  ({ArtSection section, String subtitle})? get websiteHeading {
+    if (websiteUrl == null || sections.isEmpty) return null;
+    final section = sections.first;
+    if (section.text.trim().isNotEmpty) return null;
+    final separator = RegExp(r'\s+[-–—]\s+').firstMatch(section.title);
+    if (separator == null) return null;
+    final name = section.title.substring(0, separator.start).trim();
+    final subtitle = section.title.substring(separator.end).trim();
+    final importedHeading =
+        RegExp(r'^section-001-[a-f0-9]{12}$').hasMatch(section.id) &&
+        section.intentionallyEmpty &&
+        sections.length > 1 &&
+        sections[1].title == 'Allgemein';
+    if (name.isEmpty ||
+        subtitle.isEmpty ||
+        (!importedHeading &&
+            _germanDictionaryKey(name) != _germanDictionaryKey(displayName))) {
+      return null;
+    }
+    return (section: section, subtitle: subtitle);
+  }
+
   Iterable<MediaReference> get media sync* {
     if (portrait != null) {
       yield MediaReference(id, MediaKind.portrait, portrait!);
@@ -327,6 +630,9 @@ class Species {
     if (map != null) yield MediaReference(id, MediaKind.map, map!);
     for (final entry in sounds) {
       yield MediaReference(id, MediaKind.sound, entry);
+    }
+    if (spectrogram != null) {
+      yield MediaReference(id, MediaKind.sound, spectrogram!);
     }
     for (final entry in gallery) {
       yield MediaReference(id, MediaKind.gallery, entry);
@@ -343,10 +649,12 @@ class Species {
     'sections': includeDetails
         ? sections.map((entry) => entry.toJson()).toList()
         : [],
+    if (includeDetails && editorial != null) 'editorial': editorial!.toJson(),
     if (websiteUrl != null) 'websiteUrl': websiteUrl.toString(),
     'media': {
       if (portrait != null) 'portrait': portrait!.toJson(),
       if (map != null) 'map': map!.toJson(),
+      if (spectrogram != null) 'spectrogram': spectrogram!.toJson(),
       'sounds': sounds.map((entry) => entry.toJson()).toList(),
       'gallery': gallery.map((entry) => entry.toJson()).toList(),
     },
@@ -382,6 +690,13 @@ class OfflineSelection {
     MediaKind.sound => sounds,
     MediaKind.gallery => gallery,
   };
+  OfflineSelection without(MediaKind kind) => OfflineSelection(
+    texts: texts,
+    portraits: portraits && kind != MediaKind.portrait,
+    maps: maps && kind != MediaKind.map,
+    sounds: sounds && kind != MediaKind.sound,
+    gallery: gallery && kind != MediaKind.gallery,
+  );
   List<MediaReference> select(Catalog catalog) => catalog.species
       .expand((entry) => entry.media)
       .where((entry) => includes(entry.kind))

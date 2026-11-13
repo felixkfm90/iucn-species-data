@@ -35,6 +35,19 @@ async function scoped(fn, { clock } = {}) {
   }
 }
 
+test("desktop issues a phone invitation only for the currently displayed project and person", () => scoped(async ({ a, b, f, store, client, connect }) => {
+  const value = client();
+  const { baseUrl, projectId } = await connect(value);
+  assert.equal((await value.capabilities()).devicePairing, 1);
+  await assert.rejects(value.issueReadPairing({ projectId, userId: b.user.id }), denied("project_changed"));
+  const invite = await value.issueReadPairing({ projectId, userId: a.user.id });
+  assert.equal(invite.server, baseUrl);
+  assert.equal(invite.projectId, projectId);
+  assert.ok(!JSON.stringify(await value.status()).includes(invite.code));
+  assert.ok(!fs.readFileSync(path.join(f.root, "cache.sqlite")).includes(invite.code));
+  assert.equal(store.redeemReadPairing({ code: invite.code, projectId, deviceLabel: "Test phone" }).user.id, a.user.id);
+}));
+
 test("desktop online connection/edit/sync returns no credentials and persists none in SQLite", () => scoped(async ({ f, store, a, original, client, connect }) => {
   const persisted = new Map(), credentialStore = { async get(key) { return persisted.get(key); },
     async set(key, value) { persisted.set(key, structuredClone(value)); }, async delete(key) { persisted.delete(key); } };
@@ -93,25 +106,33 @@ test("reading server state recovers a lost conflict-resolution acknowledgement w
   assert.equal(rebased.localPending, true); assert.equal(store.getObject(a.token, "page", original.id).revision, committed.revision);
 }));
 
-test("a late read refresh cannot resurrect a conflict already settled by another local cache writer", () => scoped(async ({ f, store, b, original, client, connect }) => {
-  let peer, intercept = false, conflict;
-  const value = client({ fetchImpl: async (url, options) => {
-    const response = await fetch(url, options);
-    if (intercept && (!options?.method || options.method === "GET") && String(url).endsWith(`/conflicts/${conflict.id}`)) {
-      intercept = false; const resolved = store.resolveConflict(b.token, conflict.id, { strategy: "current", expectedRevision: conflict.currentRevision });
-      peer.resolve(peer.active().id, conflict.id, resolved);
-    }
-    return response;
-  } });
-  await connect(value); await value.editExistingObject("page", original.id, page("Local conflict"));
-  store.submitChange(b.token, { changeId: "server-before-local-resolution-race", kind: "page", id: original.id, baseRevision: original.revision, data: page("Server version") });
-  await value.sync(); conflict = (await value.listConflicts())[0];
-  try {
-    peer = createSharedProjectClientStore({ filename: path.join(f.root, "cache.sqlite"), localStorageConfirmed: true }); intercept = true;
-    await value.refresh(); assert.equal((await value.listConflicts()).length, 0);
-    assert.equal((await value.status()).pending, 0);
-  } finally { peer?.close(); }
-}));
+test("a late conflict read cannot undo another local writer's decision", async (t) => {
+  for (const method of ["refresh", "sync"]) await t.test(method, () => scoped(async ({ f, store, b, original, client, connect }) => {
+    let peer, intercept = false, conflict;
+    const value = client({ fetchImpl: async (url, options) => {
+      const response = await fetch(url, options);
+      if (intercept && (!options?.method || options.method === "GET") && String(url).endsWith(`/conflicts/${conflict.id}`)) {
+        intercept = false;
+        const resolved = store.resolveConflict(b.token, conflict.id, {
+          strategy: "merged", data: page("Reviewed resolution"), expectedRevision: conflict.currentRevision,
+        });
+        peer.resolve(peer.active().id, conflict.id, resolved);
+      }
+      return response;
+    } });
+    await connect(value); await value.editExistingObject("page", original.id, page("Local conflict"));
+    store.submitChange(b.token, { changeId: "server-before-local-resolution-race", kind: "page", id: original.id, baseRevision: original.revision, data: page("Server version") });
+    await value.sync(); conflict = (await value.listConflicts())[0];
+    try {
+      peer = createSharedProjectClientStore({ filename: path.join(f.root, "cache.sqlite"), localStorageConfirmed: true }); intercept = true;
+      await value[method](); assert.equal(intercept, false);
+      assert.deepEqual(await value.listConflicts(), []);
+      assert.equal((await value.status()).pending, 0);
+      assert.equal((await value.getObject("page", original.id)).data.title, "Reviewed resolution");
+      assert.equal(store.getObject(b.token, "page", original.id).data.title, "Reviewed resolution");
+    } finally { peer?.close(); }
+  }));
+});
 
 test("offline existing edits coalesce safely and replay after reconnection; absent objects cannot be created", () => scoped(async ({ store, a, original, client, connect }) => {
   let offline = false;

@@ -10,8 +10,14 @@ import { sourceAllowed } from "../../installer/build.mjs";
 test("Desktop und Android verwenden dieselbe gebundene öffentliche Quelle ohne Medienbeigabe", async () => {
   const root = fileURLToPath(new URL("../../", import.meta.url));
   const bytes = await readBundledSpeciesCatalog(root), catalog = JSON.parse(bytes);
+  const manifest = JSON.parse(await fs.readFile(path.join(root, "mobile", "assets", "catalog-manifest.json"), "utf8"));
   assert.equal(catalog.species.length, BUNDLED_SPECIES_SOURCE.speciesCount);
   assert.equal(bytes.length, BUNDLED_SPECIES_SOURCE.bytes);
+  assert.equal(manifest.catalogSha256, BUNDLED_SPECIES_SOURCE.sha256);
+  assert.equal(manifest.catalogBytes, bytes.length);
+  assert.equal(manifest.revision, catalog.revision);
+  assert.equal(catalog.species.find(art => art.id === "cebusimitator").sections[0].title,
+    "Panama-Kapuzineraffe – Kluger Akrobat des Regenwaldes");
   assert.equal(sourceAllowed("mobile/assets/catalog.json"), true);
   assert.equal(sourceAllowed("mobile/assets/catalog-manifest.json"), true);
   assert.equal(sourceAllowed("mobile/artifacts/arten-explorer-0.1.1-debug-arm64.apk"), false);

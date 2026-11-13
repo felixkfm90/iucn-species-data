@@ -116,3 +116,17 @@ Reparaturentscheidungen, gemeinsame Paarprüfbelege und andere noch benötigte D
 `npm.cmd run test:temp` prüft Eigentum, aktive/unbekannte Prozesse, Links, Pfadgrenzen, Hilfsprozessende,
 Abbruch/Wiederholung, Umzug und Rückfall. Echte SDK-/Windows-Bedienabnahme bleibt von diesen isolierten
 Gegenproben getrennt. Keine produktive Bereinigung alter ungebundener Review- oder Reparaturbestände zur Umsetzung.
+
+## Speicherentlastung am 11. November 2026
+
+Zwei beendete Flutter-Zwischenablagen (`mobile/build/test_cache` und
+`mobile/.dart_tool/flutter_build`) wurden entfernt. Die Android-SDK-Installation, der ausdrücklich
+wiederverwendete Gradle-/Pub-Cache und die aktuellen Build-Ausgaben sind weiterhin lokal verfügbar.
+
+Acht ältere Installer-Prüfprogramme und zwei Modell-Dateien aus einer beendeten Machbarkeitsprobe
+wurden unter `Projekte/Arten-Explorer/Archiv/Speicherentlastung-2026-11-11` auf das NAS ausgelagert.
+Das Archiv behält die relativen Ursprungsdateipfade. Vor dem Entfernen der lokalen Dateien wurden
+Größe und SHA-256 jeder NAS-Kopie verglichen. Die genaue Zuordnung steht in `AUSLAGERUNG.json` im
+Archiv und in `data/operational-checks/nas-auslagerung-2026-11-11.json` im Explorer. Historische
+Installer- und Modellbelege verwenden weiterhin ihre ursprünglichen Pfade. Die beiden jüngeren
+Installer-Prüfstände vom 9. und 10. November stehen lokal zur Verfügung.

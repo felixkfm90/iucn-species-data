@@ -29,6 +29,50 @@ function transferSeed(values = {}) {
   initial.transfer = { available: true, connected: true, windowOpen: true, running: false, status: "ready", message: "Bereit", results: [], ...values };
   return initial;
 }
+function constrainedGallerySeed(text = "Vorhandener kurzer Entwurf") {
+  const initial = transferSeed(), page = initial.pages[0], image = page.images[0];
+  page.url = "https://www.fnwildlifetravel.de/reisen/2024-costa-rica/cordillera-fixture";
+  page.title = "Synthetische Reisegalerie";
+  Object.assign(image, { textCoupled: true, textConstraint: { maxLength: 250, reason: "coupled-gallery-public-alt-limit" },
+    status: "draft", draftText: text, draftSavedAt: "2026-11-01T12:00:00Z", approval: null });
+  initial.summary.approved = 0; return initial;
+}
+test("automatische Feldprüfung bindet ungespeicherte Bildtexte ohne modalen Startknopf oder Schreibanfrage", async () => {
+  const reviews = [], h = harness({ inline: true, reviewLanguage: async (text, options) => { reviews.push({ text, options }); return { findings: [] }; } });
+  await h.controller.open(); h.input("Der vogel sitzt hier");
+  const input = h.inline.at(-1), before = h.calls.length;
+  assert.ok(input); assert.equal(typeof h.controller.reviewLanguage, "undefined");
+  assert.doesNotMatch(h.nodes.get("[data-alt-page]").innerHTML, /Sprache prüfen|data-alt-action="review-language"/);
+  assert.equal(reviews.length, 0); assert.equal(input.isCurrent({ text: input.textarea.value }), true);
+  const signal = new AbortController().signal; await input.review(input.textarea.value, { signal });
+  assert.equal(reviews[0].text, "Der vogel sitzt hier"); assert.equal(reviews[0].options.context, "caption"); assert.equal(reviews[0].options.signal, signal);
+  assert.equal(input.onApply({ text: input.textarea.value, nextText: "Der Vogel sitzt hier" }), true);
+  h.input("Der Vogel sitzt hier"); assert.equal(h.calls.length, before); assert.equal(h.controller.hasUnsavedDrafts(), true);
+  h.controller.stop(); assert.equal(input.disposed, true);
+});
+
+test("automatische Bildtextprüfung verwirft späte Ergebnisse nach Eingabe, neuer Beobachtung und Lesemodus", async () => {
+  const gate = deferred(); let editing = true;
+  const h = harness({ inline: true, canEdit: () => editing, reviewLanguage: () => gate.promise }); await h.controller.open();
+  h.input("Der vogel sitzt hier"); const input = h.inline.at(-1), original = input.textarea.value, pending = input.review(original);
+  h.input("Mein inzwischen selbst bearbeiteter Text"); gate.resolve({ findings: [] }); await assert.rejects(pending, { name: "AbortError" });
+  assert.equal(input.onApply({ text: original, nextText: "Der Vogel sitzt hier" }), false);
+  editing = false; assert.equal(input.isCurrent({ text: input.textarea.value }), false); editing = true;
+  const next = seed(); next.revision = "fresh-revision"; next.pages[0].images[0].observationHash = "new-observation";
+  h.replace(next); await h.controller.refresh(); assert.equal(input.disposed, true);
+  assert.equal(input.onApply({ text: input.textarea.value, nextText: "Später Vorschlag" }), false); h.controller.stop();
+});
+
+test("automatische Bildtextkorrektur wahrt Feldgrenze und dekorative Entscheidung; fehlender Prüfer lässt die Eingabe nutzbar", async () => {
+  const h = harness({ inline: true, reviewLanguage: async () => ({ findings: [] }) }); await h.controller.open(); h.input("Kurzer Text");
+  const input = h.inline.at(-1);
+  assert.equal(input.onApply({ text: "Kurzer Text", nextText: "a".repeat(2001) }), false);
+  assert.equal(input.onApply({ text: "Kurzer Text", nextText: "bad\0text" }), false);
+  h.decorate(true); assert.equal(input.isCurrent({ text: input.textarea.value }), false); h.controller.stop();
+  const plain = harness(); await plain.controller.open(); plain.input("Eigener Text");
+  assert.equal(plain.controller.hasUnsavedDrafts(), true); assert.equal(plain.inline.length, 0); plain.controller.stop();
+});
+
 test("Lesemodus öffnet keine Bildtextbearbeitung und startet keine Anfrage", async () => {
   const h = harness({ canEdit: () => false });
   await h.controller.open(); h.openButton.emit("click");
@@ -81,15 +125,31 @@ function element() {
     querySelectorAll() { return []; }, contains() { return true; }, focus() { this.focused = true; },
   };
 }
-function harness({ initial = seed(), fetch, confirm = true, now, bootstrap = false, openImageSuggestion, canEdit, sharedTextsController, sharedFactory, actualShared = false } = {}) {
+function harness({ initial = seed(), fetch, confirm = true, now, bootstrap = false, openImageSuggestion, reviewLanguage, getLanguageBinding, inline: withInline = false, canEdit, sharedTextsController, sharedFactory, actualShared = false } = {}) {
   let stored = copy(initial), version = 1;
   const dialog = element(), openButton = element(), nodes = new Map(), timers = new Map(), calls = [], confirmations = [];
   let nextTimer = 0, dialogOptions, confirmPending;
+  const inline = [], textFields = new Map(); let fieldHtml = "";
+  const decode = value => value.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&quot;", '"').replaceAll("&#39;", "'").replaceAll("&amp;", "&");
   for (const name of ["message", "summary", "coverage", "pages", "page", "search", "filter", "connection", "transfer", "counts", "scan-status", "transfer-details", "transfer-summary"]) nodes.set(`[data-alt-${name}]`, element());
   dialog.querySelector = (selector) => nodes.get(selector);
+  if (withInline) nodes.get("[data-alt-page]").querySelectorAll = selector => {
+    if (selector !== "[data-alt-text]") return [];
+    const html = nodes.get("[data-alt-page]").innerHTML;
+    if (fieldHtml !== html) {
+      fieldHtml = html; textFields.clear();
+      for (const match of html.matchAll(/<textarea([^>]*data-alt-text="([^"]+)"[^>]*)>([\s\S]*?)<\/textarea>/g)) {
+        const field = element(); field.dataset.altText = match[2]; field.value = decode(match[3]); field.disabled = / disabled/.test(match[1]);
+        textFields.set(match[2], field);
+      }
+    }
+    return [...textFields.values()];
+  };
   const windowHandlers = new Map();
   const body = element();
   const context = vm.createContext({ URL, AbortController, document: { body, createElement: () => element(), querySelector: (selector) => selector === "#website-alt-texts-dialog" ? dialog : openButton },
+    SpeciesExplorerLanguageCheck: withInline ? { createInlineLanguageCheck(input) { const entry = { ...input, disposed: false }; inline.push(entry);
+      return { refresh() {}, dispose() { entry.disposed = true; } }; } } : undefined,
     SpeciesExplorerWebsiteAltSync: sharedFactory ? { createWebsiteAltSyncController: sharedFactory } : undefined,
     addEventListener: (name, handler) => windowHandlers.set(name, handler),
     setTimeout: (fn, delay) => { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; }, clearTimeout: (id) => timers.delete(id) });
@@ -98,7 +158,7 @@ function harness({ initial = seed(), fetch, confirm = true, now, bootstrap = fal
   const api = context.SpeciesExplorerWebsiteAltTexts;
   const controller = (bootstrap ? api.setupWebsiteAltTexts : api.createWebsiteAltTextsController)({ dialog, openButton, escapeHtml,
     ...(now ? { now } : {}),
-    openImageSuggestion, canEdit, sharedTextsController,
+    openImageSuggestion, reviewLanguage, getLanguageBinding, canEdit, sharedTextsController,
     createDialogController(options) {
       dialogOptions = options;
       return { open() { options.dialog.open = true; }, isOpen() { return options.dialog.open; },
@@ -129,11 +189,11 @@ function harness({ initial = seed(), fetch, confirm = true, now, bootstrap = fal
       }
       return copy(stored);
     } });
-  function input(text, key = imageKey) { dialog.emit("input", { target: { dataset: { altText: key }, value: text } }); }
+  function input(text, key = imageKey) { const field = textFields.get(key) || { dataset: { altText: key } }; field.value = text; dialog.emit("input", { target: field }); }
   function decorate(checked = true) { dialog.emit("change", { target: { dataset: { altDecorative: imageKey }, checked } }); }
   function imageEvent(type = "load", src = `${imageUrl}?format=750w`) { dialog.emit(type, { target: { dataset: { altPreview: imageKey }, getAttribute: () => src } }); }
   function click(action, key) { dialog.emit("click", { target: { closest: (selector) => selector === "[data-alt-action]" ? { dataset: { altAction: action, altKey: key } } : null } }); }
-  return { api, controller, dialog, body, openButton, nodes, timers, calls, confirmations, input, decorate, imageEvent, click, windowHandlers,
+  return { api, controller, dialog, body, openButton, nodes, timers, calls, confirmations, inline, input, decorate, imageEvent, click, windowHandlers, documentRef: context.document,
     replace(value) { stored = copy(value); }, nativeClose() { dialog.open = false; dialogOptions.afterClose(); },
     requestClose() { return dialogOptions.beforeClose(); }, setConfirmPending(value) { confirmPending = value; } };
 }
@@ -1443,4 +1503,172 @@ test("Neue Such- und Filterauswahl beginnt die linke Liste oben; weitere Aktuali
   filter.value = "open"; h.dialog.emit("change", { target: filter });
   assert.equal(list.scrollTop, 0);
   h.controller.stop();
+});
+
+test("Seitenwechsel beginnt rechts oben; gleicher Seitenstand behält rechts und links die unabhängigen Positionen", async () => {
+  const initial = seed(), second = copy(initial.pages[0]);
+  second.url = `${pageUrl}-zweite-scrollseite`; second.title = "Zweite Scrollseite"; initial.pages.push(second);
+  const h = harness({ initial, now: () => Date.parse(initial.pages[0].checkedAt) + 1000 });
+  const list = h.nodes.get("[data-alt-pages]"), page = h.nodes.get("[data-alt-page]");
+  let listMarkup = "", pageMarkup = "";
+  Object.defineProperty(list, "innerHTML", { get: () => listMarkup, set(value) { listMarkup = value; list.scrollTop = 0; } });
+  Object.defineProperty(page, "innerHTML", { get: () => pageMarkup, set(value) { pageMarkup = value; page.scrollTop = 0; } });
+  await h.controller.open(); list.scrollTop = 428; page.scrollTop = 945;
+  await h.controller.selectPage(second.url);
+  assert.equal(page.scrollTop, 0); assert.equal(list.scrollTop, 428); assert.match(page.innerHTML, /Zweite Scrollseite/);
+  page.scrollTop = 612; const updated = copy(h.controller.snapshot()); updated.revision = "same-page-poll";
+  h.replace(updated); await h.controller.refresh();
+  assert.equal(page.scrollTop, 612); assert.equal(list.scrollTop, 428);
+  h.input("Eigene Eingabe auf der zweiten Seite");
+  assert.equal(page.scrollTop, 612); assert.equal(await h.controller.saveDraft(imageKey), true);
+  assert.equal(page.scrollTop, 612); assert.equal(list.scrollTop, 428);
+  await h.controller.selectPage(second.url); assert.equal(page.scrollTop, 612);
+  await h.controller.selectPage(pageUrl); assert.equal(page.scrollTop, 0); assert.equal(list.scrollTop, 428);
+  h.controller.stop();
+});
+
+test("gekoppelte Galerie zählt 250 vollständig und sperrt 251 vor der Freigabe, erhält aber den ganzen Entwurf", async () => {
+  for (const length of [250, 251]) {
+    const text = 'L'.repeat(length), initial = constrainedGallerySeed(text), h = harness({ initial });
+    await h.controller.open(); h.imageEvent();
+    const image = h.controller.snapshot().pages[0].images[0], html = h.api.renderAltImageCard(image, { escapeHtml, loaded: true });
+    const approve = html.match(/<button[^>]*data-alt-action="approve"[^>]*>/)[0];
+    assert.match(html, new RegExp(`${length}/250 Zeichen`));
+    assert.match(html, /maxlength="2000"/); assert.doesNotMatch(html, /maxlength="250"/);
+    assert.ok(html.includes(`>${text}</textarea>`), 'der vollständige Text bleibt im Eingabefeld');
+    if (length === 250) {
+      assert.doesNotMatch(approve, / disabled/); assert.equal(await h.controller.approve(imageKey), true);
+      const writes = h.calls.filter((call) => call.url.endsWith('/approve'));
+      assert.equal(writes.length, 1); assert.equal(writes[0].body.text, text);
+    } else {
+      assert.match(approve, / disabled/); assert.match(html, /1 Zeichen zu viel.*Squarespace kürzt den öffentlichen Alternativtext/);
+      assert.equal(await h.controller.approve(imageKey), false);
+      assert.equal(h.calls.filter((call) => call.url.endsWith('/approve')).length, 0);
+      assert.match(h.nodes.get('[data-alt-message]').textContent, /251\/250.*bewusst kürzen/);
+      assert.equal(await h.controller.saveDraft(imageKey), true);
+      const writes = h.calls.filter((call) => call.url.endsWith('/draft'));
+      assert.equal(writes.length, 1); assert.equal(writes[0].body.text, text);
+      assert.equal(h.controller.snapshot().pages[0].images[0].draftText, text);
+      assert.equal(h.controller.snapshot().pages[0].images[0].approval, null);
+    }
+    h.controller.stop();
+  }
+});
+
+test("der Zeichenzähler und Freigabeschalter reagieren ohne Neuaufbau oder Kürzung auf Eingabe und dekorative Auswahl", async () => {
+  const h = harness({ initial: constrainedGallerySeed('Start') }); await h.controller.open();
+  assert.match(h.nodes.get('[data-alt-page]').innerHTML, /5\/250 Zeichen/);
+  const counter = element(), approve = element(), unsaved = element(), text = element(), decorative = element(), next = element();
+  counter.dataset.altLength = imageKey; approve.dataset.altAction = 'approve'; approve.dataset.altKey = imageKey;
+  unsaved.dataset.altUnsaved = imageKey; text.dataset.altText = imageKey; decorative.dataset.altDecorative = imageKey;
+  const selected = new Map([['[data-alt-length]', [counter]], ['[data-alt-action=approve]', [approve]], ['[data-alt-unsaved]', [unsaved]],
+    ['[data-alt-text]', [text]], ['[data-alt-decorative]', [decorative]], ['[data-alt-next]', [next]]]);
+  h.dialog.querySelectorAll = (selector) => selected.get(selector) || [];
+  h.nodes.get('[data-alt-page]').querySelectorAll = (selector) => selected.get(selector) || [];
+  h.imageEvent(); assert.equal(approve.disabled, false);
+  const markup = h.nodes.get('[data-alt-page]').innerHTML;
+  const prefix = 'Eigener bewusst ungekürzter Text: ';
+  text.value = prefix + 'B'.repeat(261 - prefix.length);
+  assert.equal(text.value.length, 261); h.dialog.emit('input', { target: text });
+  assert.equal(h.nodes.get('[data-alt-page]').innerHTML, markup, 'laufende Eingabe ersetzt weder Karte noch Textfeld');
+  assert.equal(text.value.length, 261); assert.match(counter.textContent, /261\/250 Zeichen.*11 Zeichen zu viel/);
+  assert.equal(counter.className, 'website-alt-warning'); assert.equal(approve.disabled, true); assert.equal(unsaved.hidden, false);
+  assert.match(unsaved.textContent, /Entwurf speichern.*vollständigen Text/);
+  assert.match(next.innerHTML, /Bild 1.*261\/250/);
+  assert.equal(await h.controller.approve(imageKey), false); assert.equal(h.calls.filter((call) => call.url.endsWith('/approve')).length, 0);
+  text.value = 'C'.repeat(250); h.dialog.emit('input', { target: text });
+  assert.match(counter.textContent, /^250\/250 Zeichen/); assert.doesNotMatch(counter.textContent, /zu viel/);
+  assert.equal(counter.className, 'website-alt-note'); assert.equal(approve.disabled, false);
+  decorative.checked = true; h.dialog.emit('change', { target: decorative });
+  assert.equal(text.value, ''); assert.match(counter.textContent, /^0\/250 Zeichen/); assert.equal(approve.disabled, false);
+  h.controller.stop();
+});
+
+test("eine vorhandene überlange Freigabe sperrt die gesamte Seite vor Anmeldung und nennt die konkrete Bildnummer", async () => {
+  const initial = constrainedGallerySeed(), page = initial.pages[0], original = copy(page.images[0]);
+  initial.transfer.connected = false; initial.transfer.windowOpen = false;
+  page.images = Array.from({ length: 14 }, (_value, index) => {
+    const image = { ...copy(original), key: `gallery-image-${index + 1}`, src: imageUrl.replace('bird.jpg', `bird-${index + 1}.jpg`),
+      status: 'unreviewed', draftText: '', draftSavedAt: null, approval: null };
+    image.previewSrc = `${image.src}?format=750w`;
+    if (index === 10 || index === 13) {
+      const text = 'A'.repeat(index === 10 ? 251 : 261);
+      Object.assign(image, { status: 'approved', draftText: text, approval: { revision: `saved-approval-${index}`, text, decorative: false } });
+    }
+    return image;
+  });
+  initial.summary.images = 14; initial.summary.approved = 2;
+  const h = harness({ initial }); await h.controller.open();
+  assert.match(h.nodes.get('[data-alt-page]').innerHTML, /Bild 11:.*251\/250 Zeichen.*gesamten Seite gesperrt/);
+  assert.match(h.nodes.get('[data-alt-page]').innerHTML, /data-alt-action="transfer" disabled/);
+  assert.equal(await h.controller.transfer(), false); assert.equal(h.confirmations.length, 0);
+  assert.equal(h.calls.some((call) => /\/(?:connect-transfer|transfer)$/.test(call.url)), false);
+  assert.match(h.nodes.get('[data-alt-message]').textContent, /Bild 11:.*251\/250/);
+  assert.equal(h.controller.snapshot().pages[0].images[10].approval.text.length, 251);
+  const firstCorrected = copy(h.controller.snapshot()); firstCorrected.revision = 'first-human-correction';
+  firstCorrected.pages[0].images[10].approval.text = 'B'.repeat(250); firstCorrected.pages[0].images[10].draftText = 'B'.repeat(250);
+  h.replace(firstCorrected); await h.controller.refresh();
+  assert.match(h.nodes.get('[data-alt-page]').innerHTML, /Bild 14:.*261\/250 Zeichen.*11 Zeichen zu viel/);
+  assert.equal(await h.controller.transfer(), false); assert.equal(h.confirmations.length, 0);
+  assert.equal(h.calls.some((call) => /\/(?:connect-transfer|transfer)$/.test(call.url)), false);
+  const corrected = copy(h.controller.snapshot()); corrected.revision = 'second-human-correction';
+  corrected.pages[0].images[13].approval.text = 'C'.repeat(250); corrected.pages[0].images[13].draftText = 'C'.repeat(250);
+  h.replace(corrected); await h.controller.refresh();
+  assert.equal(await h.controller.transfer(), true); assert.equal(h.confirmations.length, 1);
+  assert.equal(h.calls.filter((call) => call.url.endsWith('/transfer')).length, 1);
+  assert.equal(h.calls.some((call) => call.url.endsWith('/connect-transfer')), false);
+  h.controller.stop();
+});
+
+test("unabhängige Bildtexte behalten 2000-Zeichen-Entwürfe und Freigaben ohne Galeriegrenze", async () => {
+  const initial = transferSeed(), image = initial.pages[0].images[0], text = 'N'.repeat(2000);
+  Object.assign(image, { textCoupled: false, textConstraint: null, status: 'draft', draftText: text, approval: null });
+  const h = harness({ initial }); await h.controller.open(); h.imageEvent();
+  const html = h.api.renderAltImageCard(h.controller.snapshot().pages[0].images[0], { escapeHtml, loaded: true });
+  assert.doesNotMatch(html, /data-alt-length|250 Zeichen|zu viel/);
+  assert.doesNotMatch(html.match(/<button[^>]*data-alt-action="approve"[^>]*>/)[0], / disabled/);
+  assert.equal(await h.controller.saveDraft(imageKey), true); assert.equal(h.calls.at(-1).body.text, text);
+  assert.equal(await h.controller.approve(imageKey), true); assert.equal(h.calls.at(-1).body.text, text);
+  assert.equal(await h.controller.transfer(), true); assert.equal(h.calls.filter((call) => call.url.endsWith('/transfer')).length, 1);
+  h.controller.stop();
+});
+
+test("Konflikte behaupten keine geänderte Freigabe und offene öffentliche Prüfung bleibt unbestätigt", async () => {
+  for (const status of ['conflict', 'verification-pending']) {
+    const initial = transferSeed({ status: 'partial', pageUrl, results: [{ imageKey, status, error: 'Öffentliche Bildunterschrift stimmt noch nicht überein.' }] });
+    const h = harness({ initial }); await h.controller.open();
+    const visible = h.nodes.get('[data-alt-page]').innerHTML + h.nodes.get('[data-alt-transfer]').textContent;
+    assert.match(visible, status === 'conflict' ? /Übernahme nicht bestätigt/ : /Öffentliche Bestätigung offen/);
+    assert.doesNotMatch(visible, /Freigabe geändert/); assert.match(visible, /Öffentliche Bildunterschrift stimmt noch nicht überein/);
+    assert.equal(h.controller.snapshot().pages[0].images[0].status, 'approved'); assert.equal(h.controller.snapshot().summary.verified, 0);
+    assert.equal(h.calls.some((call) => call.url.endsWith('/transfer')), false);
+    h.controller.stop();
+  }
+});
+
+
+test("persönliche Inlinebindung entwertet eine frühere Bildtextkorrektur bei gleicher Seite und weiter erlaubtem Bearbeiten", async () => {
+  let identity = "person-one:admin:1";
+  const h = harness({ inline: true, reviewLanguage: async () => ({ findings: [] }), getLanguageBinding: () => identity });
+  await h.controller.open(); h.input("Der vogel sitzt hier"); const input = h.inline.at(-1), text = input.textarea.value;
+  assert.equal(input.isCurrent({ text }), true); identity = "person-one:publisher:2";
+  assert.equal(input.isCurrent({ text }), false); assert.equal(input.onApply({ text, nextText: "Der Vogel sitzt hier" }), false);
+  h.controller.stop();
+});
+
+
+test("persönlicher Bindungswechsel erneuert nur die Inlineinstanzen und erhält offenen Text, Auswahl und Scrollposition", async () => {
+  let identity = "person-one:admin:1";
+  const h = harness({ inline: true, reviewLanguage: async () => ({ findings: [] }), getLanguageBinding: () => identity });
+  await h.controller.open(); h.input("Meine offene Bildbeschriftung"); const first = h.inline.at(-1), field = first.textarea;
+  h.documentRef.activeElement = field; field.selectionStart = 5; field.selectionEnd = 11; field.selectionDirection = "backward"; field.scrollTop = 27; field.scrollLeft = 3;
+  const html = h.nodes.get("[data-alt-page]").innerHTML, calls = h.calls.length;
+  const instances = h.inline.length; h.controller.languageBindingChanged();
+  assert.equal(first.disposed, false); assert.equal(h.inline.length, instances, "Unveränderter Status startet und beendet keine Feldprüfung");
+  identity = "person-two:publisher:2"; h.controller.languageBindingChanged(); const next = h.inline.at(-1);
+  assert.equal(first.disposed, true); assert.equal(next.disposed, false); assert.equal(next.textarea, field);
+  assert.equal(first.isCurrent({ text: field.value }), false); assert.equal(next.isCurrent({ text: field.value }), true);
+  assert.equal(field.value, "Meine offene Bildbeschriftung"); assert.equal(field.selectionStart, 5); assert.equal(field.selectionEnd, 11);
+  assert.equal(field.scrollTop, 27); assert.equal(field.scrollLeft, 3); assert.equal(h.nodes.get("[data-alt-page]").innerHTML, html);
+  assert.equal(h.calls.length, calls); assert.equal(h.controller.hasUnsavedDrafts(), true); h.controller.stop();
 });

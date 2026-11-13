@@ -152,6 +152,8 @@ test("a main-form change after durable queueing stops before network sync and le
 test("public proof and local reload callbacks are not invented by pull/resolve/sync; only acknowledged import invokes onImported", async () => {
   const h = harness(); await h.open(); await h.click("Gemeinsamen Stand laden"); assert.equal(h.imported.length, 0);
   await h.click("Geladene Fassung auf diesem PC übernehmen"); assert.equal(h.imported.length, 1); assert.equal(h.imported[0].pageUrl, PAGE);
+  assert.deepEqual(h.posts().find(call => call.url.endsWith("/import")).body, { pageUrl: PAGE, expectedPageRevision: "a".repeat(64),
+    expectedRemoteRevision: "displayed-server-version", confirmed: true });
   assert.equal(h.posts().some(call => /squarespace|publish|approve/.test(call.url)), false);
 });
 

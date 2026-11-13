@@ -72,6 +72,67 @@ function createOperations(calls, previewPath = null) {
   };
 }
 
+test("Artseiten-KI-Routen bewahren Browser-/Sitzungsschutz und lehnen mehrdeutige Bindungen vor der Operation ab", async context => {
+  const root = await createTemporaryRoot(context), calls = [];
+  const baseUrl = await createTestServer(context, { host: "127.0.0.1", sessionToken: "ai-session", sessionProtection: true,
+    repoRoot: root, publicDir: root, operations: { ...createOperations(calls),
+      localAi: async input => { calls.push(input); return { accepted: input.payload }; } } });
+  const scope = "a".repeat(64), revision = "b".repeat(64);
+  const query = new URLSearchParams({ scope, revision, draftId: "draft-1", sectionId: "habitat" });
+  const sourceUrl = `${baseUrl}/api/local-ai/page-authoring/sources?${query}`;
+  assert.equal((await fetch(sourceUrl, { headers: { Origin: "https://foreign.invalid" } })).status, 403);
+  assert.equal((await fetch(`${sourceUrl}&scope=${scope}`)).status, 400); assert.equal(calls.length, 0);
+  const source = await fetch(sourceUrl); assert.equal(source.status, 200);
+  assert.deepEqual((await source.json()).accepted, { type: "page-authoring", sourceScope: scope, expectedRevision: revision,
+    draftId: "draft-1", sectionId: "habitat" });
+  const url = `${baseUrl}/api/local-ai/page-authoring/suggest-alt`, headers = { "Content-Type": "application/json" };
+  const request = { type: "page-authoring", sourceScope: scope, draftId: "draft-1", expectedRevision: revision, imageId: "image-1" };
+  const count = calls.length;
+  assert.equal((await fetch(url, { method: "POST", headers, body: JSON.stringify(request) })).status, 403);
+  assert.equal(calls.length, count); headers["X-Species-Explorer-Session"] = "ai-session";
+  assert.equal((await fetch(url, { method: "POST", headers, body: JSON.stringify({ ...request, type: "website" }) })).status, 400);
+  assert.equal(calls.length, count);
+  const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(request) });
+  assert.equal(response.status, 200); assert.deepEqual((await response.json()).accepted, request);
+});
+
+test("automatische Sprachprüfung nutzt ausschließlich die geschützte lokale POST-Route mit begrenztem Textkörper", async context => {
+  const root = await createTemporaryRoot(context), calls = [];
+  const baseUrl = await createTestServer(context, { host: "127.0.0.1", sessionToken: "language-session", sessionProtection: true,
+    repoRoot: root, publicDir: root, operations: { ...createOperations(calls),
+      languageCheck: async input => { calls.push(input); return { available: true, accepted: input.payload }; } } });
+  assert.deepEqual(matchExplorerRoute("POST", "/api/language-check/check"), { name: "language-check", action: "check" });
+  assert.notEqual(matchExplorerRoute("GET", "/api/language-check/check").name, "language-check");
+  assert.deepEqual(matchExplorerRoute("GET", "/api/language-check"), { name: "language-check", action: "status" });
+  const url = `${baseUrl}/api/language-check/check`, input = { text: "Der schöne Vogel 🐦", context: "caption" };
+  const headers = { "Content-Type": "application/json" };
+  assert.equal((await fetch(url, { method: "POST", headers, body: JSON.stringify(input) })).status, 403);
+  headers["X-Species-Explorer-Session"] = "language-session";
+  assert.equal((await fetch(url, { method: "POST", headers: { ...headers, Origin: "https://external.invalid" }, body: JSON.stringify(input) })).status, 403);
+  assert.equal(calls.length, 0);
+  const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(input) });
+  assert.equal(response.status, 200); assert.deepEqual((await response.json()).accepted, input);
+  assert.equal(calls.length, 1); assert.equal(calls[0].signal.aborted, false);
+  assert.equal((await fetch(url, { method: "POST", headers, body: JSON.stringify({ text: "x".repeat(140000) }) })).status, 413);
+  assert.equal(calls.length, 1);
+});
+
+test("abgebrochene Inlineanfrage signalisiert dem lokalen Prüfer das Ende der Browseranfrage", async context => {
+  const root = await createTemporaryRoot(context); let entered, ended;
+  const started = new Promise(resolve => { entered = resolve; }), finished = new Promise(resolve => { ended = resolve; });
+  const baseUrl = await createTestServer(context, { host: "127.0.0.1", sessionToken: "language-session", sessionProtection: true,
+    repoRoot: root, publicDir: root, operations: { ...createOperations([]), languageCheck: async ({ signal }) => {
+      entered(signal);
+      await new Promise(resolve => signal.addEventListener("abort", resolve, { once: true }));
+      ended(); return { available: true, findings: [] };
+    } } });
+  const controller = new AbortController(), pending = fetch(`${baseUrl}/api/language-check/check`, { method: "POST",
+    headers: { "Content-Type": "application/json", "X-Species-Explorer-Session": "language-session" },
+    body: JSON.stringify({ text: "Text" }), signal: controller.signal });
+  const inner = await started; controller.abort(); await assert.rejects(pending, { name: "AbortError" });
+  await finished; assert.equal(inner.aborted, true);
+});
+
 test("Routen werden eindeutig und mit Vorrang für Neue-Art-Aktionen erkannt", () => {
   for (const action of ["sequence-start", "sequence-resume", "sequence-pause", "sequence-restart-preview", "sequence-restart-build", "lightroom-close"]) {
     assert.deepEqual(matchExplorerRoute("POST", `/api/taxonomy/update/${action}`), { name: "taxonomy-maintenance", action });

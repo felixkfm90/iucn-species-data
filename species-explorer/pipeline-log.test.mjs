@@ -109,7 +109,7 @@ test("Explorer unterdrückt nur doppelte Berichte und prüft Medien vor Git-Akti
   assert.match(publication, /if \(!preflight.ok\).*return 1/s);
   assert.equal((controller.match(/"--quiet-report"/g) || []).length, 3);
   assert.equal((update.match(/if \(!args.quietReport\) printReportToConsole\(report\)/g) || []).length, 2);
-  assert.match(update, /args.mode === "nc-sounds" \? "nicht geprüft"/);
+  // The unchanged mode labels are covered by the single-species behavior tests.
 });
 
 test("Während asynchroner Bildprüfung geänderte Karte entwertet Freigabe, ohne die Fremdänderung zu überschreiben", async (t) => {

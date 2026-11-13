@@ -526,10 +526,8 @@ Umgesetzt:
 - Git bleibt getrennt
 - der zuvor separate Bereich `Phase 7.6 · Prozesssteuerung` wurde wieder entfernt, damit er keinen dauerhaften
   vertikalen Platz belegt
-- die Kopfzeile enthält ein klickbares Datenbankfeld; rot bedeutet `Änderungen übertragen`, gruen bedeutet
-  `Datenbank aktuell`; bei roten Eingabeabweichungen oder lokal gespeicherten Assetaenderungen öffnet ein Klick
-  direkt den Transferlauf ohne Karten- oder Soundsuche. Dieser Status- und Übertragungsbutton bleibt auch im
-  Lesemodus sichtbar; ohne offene Änderungen öffnet er dort keine Wartungsaktionen.
+- die Kopfzeile zeigt den Datenbankstatus. Im Bearbeitungsmodus öffnet `Änderungen offen` beim lokalen Bestand
+  direkt die Übertragungsvorschau. Bedienung und Bestätigung stehen im [Pipeline-Vertrag](pipeline-control-plan.md#bedienoberfläche).
 - die Transfer-Vorschau zeigt die betroffenen Arten auch dann korrekt, wenn nur lokale Assetdateien geändert wurden
   und keine manuellen Eingabefelder offen sind.
 - `Art aktualisieren` fragt je Art nur kurz nach und startet den gezielten Lauf direkt im Hintergrund, ohne den

@@ -12,6 +12,7 @@
       composeManualSexedMeasurement,
       formatManualMeasurement,
       stripManualMeasureInput,
+      parseManualMeasurement,
       MANUAL_SIZE_UNITS,
       MANUAL_WEIGHT_UNITS,
       MANUAL_AGE_UNITS,
@@ -106,6 +107,24 @@
       let abortRetryTimer = null;
       let dialogGeneration = 0;
       const isCurrentDialog = (generation) => generation === dialogGeneration;
+      let creationWorkspace = "local", sharedScope = "", sharedEpoch = 0, sharedSignature = "", sharedCandidate = null, sharedAttempted = false;
+      let sharedControlValues = [];
+      const pendingSharedCreations = new Map();
+      const pendingSharedNotice = "Die letzte gemeinsame Artanlage ist noch nicht bestätigt. Über „Neue Art“ kann die Serverprüfung wieder geöffnet werden.";
+      const introduction = dialog.querySelector(".new-species-introduction"), previewWarning = preview.querySelector(".edit-warning");
+      const jsonLabel = dialog.querySelector(".new-species-json-label");
+      const sharedFields = dialog.querySelector(".new-species-fields");
+      const sameSharedSource = () => creationWorkspace === "shared-project" && state.workspace === "shared-project"
+        && (state.workspaceEpoch || 0) === sharedEpoch && state.workspaceStatus?.sourceScope === sharedScope;
+      const sharedAllowed = (recovery = false) => sameSharedSource() && state.editMode === true && !state.dataLoading
+        && state.workspaceStatus?.available !== false && state.workspaceStatus?.permissions?.canRead === true
+        && state.workspaceStatus?.permissions?.canEdit === true && (recovery || state.workspaceStatus?.connection === "online"
+          && state.workspaceStatus?.permissions?.canCreate === true);
+      const currentInputSignature = () => JSON.stringify([speciesValues(), selectedTaxonomyMasterId(), selectedTaxonomyReference()]);
+      const rememberSharedAttempt = () => {
+        if (!sharedAttempted || !previewToken || !sharedCandidate) return;
+        pendingSharedCreations.set(sharedScope, { token: previewToken, candidate: { ...sharedCandidate }, signature: sharedSignature, controls: sharedControlValues });
+      };
 
       const setMessage = createMessageSetter(message, "edit-message new-species-message");
       const setPortraitMessage = createMessageSetter(
@@ -142,12 +161,21 @@
         if (!previewToken || savedSpeciesId) return;
         const token = previewToken;
         previewToken = "";
+        if (creationWorkspace === "shared-project") return;
         void fetchJson("/api/species/new/discard", {
           method: "POST", body: JSON.stringify({ token }),
         }).catch(() => {});
       };
 
       const markSpeciesInputsChanged = () => {
+        if (savedSpeciesId) {
+          setMessage("Diese Art ist bereits gespeichert. Namen und Grunddaten können in der normalen Artbearbeitung korrigiert werden.", "info");
+          updateButtons(); return;
+        }
+        if (creationWorkspace === "shared-project" && (sharedAttempted || completed)) {
+          setMessage("Bitte den offenen Serverstand zuerst prüfen oder das Fenster schließen. Es wird keine zweite Anlage gesendet.", "info");
+          updateButtons(); return;
+        }
         discardDraft();
         previewToken = "";
         maxStepReached = 1;
@@ -188,6 +216,7 @@
           host: portraitOptionsHost,
           className: "",
           onChange: () => {
+            if (savedSpeciesId) return;
             resetPortraitPrompt();
             resetPortraitPreview();
           },
@@ -213,7 +242,9 @@
         if (!finalPortraitState) return;
         finalPortraitState.hidden = currentStep >= 3;
         if (finalPortraitState.hidden) return;
-        finalPortraitState.textContent = portraitPreviewToken
+        finalPortraitState.textContent = savedSpeciesId
+          ? newSpeciesData()?.assets?.portrait?.exists ? "Gespeichertes Artportrait ist vorhanden." : "Für diese Art ist noch kein Artportrait gespeichert."
+          : portraitPreviewToken
           ? "Geprüftes Artportrait wird beim Abschluss lokal übernommen."
           : "Artportrait wird übersprungen.";
       };
@@ -233,6 +264,42 @@
       };
 
       const newSpeciesData = () => state.species.find((entry) => entry.id === savedSpeciesId) ?? null;
+
+      const restoreSavedCreation = () => {
+        const species = newSpeciesData();
+        if (!species) throw new Error("Die gespeicherte Art konnte nicht geladen werden. Bitte das Fenster schließen und den Projektstatus erneut prüfen.");
+        const setValue = (name, value) => { if (form.elements[name]) form.elements[name].value = value ?? ""; };
+        setValue("german", species.germanName);
+        setValue("english", species.englishName);
+        setValue("scientificName", species.scientificName);
+        for (const [field, raw, units, unit, age] of [
+          ["size", species.manual?.size, MANUAL_SIZE_UNITS, "cm", false],
+          ["weight", species.manual?.weight, MANUAL_WEIGHT_UNITS, "g", false],
+          ["lifeExpectancy", species.manual?.lifeExpectancy, MANUAL_AGE_UNITS, "Jahre", true],
+        ]) {
+          if (!raw) continue;
+          const value = parseManualMeasurement(raw, units, unit, { age });
+          setValue(field, value.value); setValue(`${field}Unit`, value.unit);
+          if (form.elements[`${field}Sexed`]) form.elements[`${field}Sexed`].checked = value.sexed;
+          for (const sex of ["Male", "Female"]) {
+            setValue(`${field}${sex}`, value[`${sex.toLowerCase()}Value`]);
+            setValue(`${field}${sex}Unit`, value[`${sex.toLowerCase()}Unit`]);
+          }
+        }
+        updateMeasurementMode("size"); updateMeasurementMode("weight");
+        setMessage("Gespeicherte Artdaten. Änderungen sind nach Abschluss in der normalen Artbearbeitung möglich.", "info");
+        const portrait = species.assets?.portrait;
+        if (portrait?.exists && portrait.url) {
+          portraitPreviewImage.src = typeof versionedAssetUrl === "function" ? versionedAssetUrl(portrait.url, portrait) : portrait.url;
+          portraitPreviewImage.alt = `Gespeichertes Artportrait ${species.germanName}`;
+          portraitPreviewMeta.textContent = `Gespeichertes Artportrait${portrait.bytes ? ` · ${formatBytes(portrait.bytes)}` : ""}`;
+          const caption = portraitPreview.querySelector("figcaption");
+          if (caption) caption.textContent = "Gespeichertes Artportrait";
+          portraitPreview.hidden = false;
+          setPortraitMessage("Das Artportrait ist bereits gespeichert.", "success");
+        } else setPortraitMessage("Für diese Art ist noch kein Artportrait gespeichert. Es kann in der normalen Artbearbeitung ergänzt werden.", "info");
+        updateButtons();
+      };
 
       const continueAfterMapDecision = async () => {
         const soundAsset = inlineReviewAssets.find((entry) => entry.type === "sound");
@@ -502,10 +569,11 @@
       };
 
       const updateButtons = () => {
+        const shared = creationWorkspace === "shared-project";
         abortButton.hidden = !creationId || !abortAvailable;
         abortButton.disabled = busy || namePreferencePreparing || abortPending;
         abortButton.textContent = abortPending ? "Abbruch wird ausgeführt …" : "Artanlage abbrechen";
-        previewButton.hidden = currentStep !== 1;
+        previewButton.hidden = currentStep !== 1 || Boolean(savedSpeciesId);
         backButton.hidden = currentStep === 1 || currentStep >= 3 || completed;
         nextButton.hidden = currentStep >= 3 || completed;
         saveButton.hidden = !completed;
@@ -514,13 +582,31 @@
         resetSoundsButton.disabled = busy || pipelineBusy || namePreferencePreparing;
         previewButton.disabled = busy || pipelineBusy;
         backButton.disabled = busy || pipelineBusy;
-        nextButton.disabled = busy || pipelineBusy || (currentStep === 1 ? !previewToken : !canAdvanceFromPortrait());
+        nextButton.disabled = busy || pipelineBusy || (!savedSpeciesId && (currentStep === 1 ? !previewToken : !canAdvanceFromPortrait()));
         saveButton.disabled = busy || pipelineBusy;
         portraitPromptButton.disabled = busy || pipelineBusy || !previewToken;
         portraitCopyButton.disabled = busy || pipelineBusy || !portraitPromptText;
         portraitPreviewButton.disabled = busy || pipelineBusy || !previewToken;
         portraitSkipButton.disabled = busy || pipelineBusy || !previewToken;
+        portraitOptions?.setBusy?.(busy || pipelineBusy || Boolean(savedSpeciesId));
+        portraitFileInput.disabled = busy || pipelineBusy || Boolean(savedSpeciesId);
+        portraitInstructions.disabled = busy || pipelineBusy || Boolean(savedSpeciesId);
         openButton.disabled = busy || pipelineBusy;
+        if (state.workspace === "shared-project") openButton.disabled ||= checkingAvailability || state.dataLoading || state.editMode !== true
+          || state.workspaceStatus?.available === false || state.workspaceStatus?.connection !== "online" || state.workspaceStatus?.permissions?.canCreate !== true;
+        if (shared) {
+          previewButton.hidden = completed || sharedAttempted;
+          previewButton.disabled ||= !sharedAllowed();
+          nextButton.hidden = completed;
+          nextButton.textContent = sharedAttempted ? "Serverstand prüfen" : "Art im gemeinsamen Projekt anlegen";
+          nextButton.disabled = busy || pipelineBusy || !previewToken || !sharedAllowed(sharedAttempted);
+          backButton.hidden = true; abortButton.hidden = true; resetSoundsButton.hidden = true;
+          saveButton.hidden = !completed;
+          if (sharedFields) sharedFields.inert = busy || sharedAttempted || completed || !sharedAllowed();
+        } else {
+          nextButton.textContent = "Nächster Schritt";
+          if (sharedFields) sharedFields.inert = Boolean(savedSpeciesId);
+        }
         for (const input of mapReview.querySelectorAll("input, textarea, select, button")) input.disabled = busy || pipelineBusy;
         const saveMap = mapReview.querySelector('[data-new-species-map-action="save"]');
         if (saveMap) saveMap.disabled = busy || pipelineBusy || !inlineManualMapPreviewToken;
@@ -547,6 +633,7 @@
           indicator.classList.toggle("active", active);
           indicator.classList.toggle("done", indicatorStep < step);
           indicator.classList.toggle("reachable", indicatorStep <= maxStepReached && !active);
+          indicator.hidden = creationWorkspace === "shared-project" && indicatorStep !== 1;
         }
         updateFinalPortraitState();
         if (step === 2) portraitOptions?.setClassName?.(selectedTaxonomyClass());
@@ -566,6 +653,8 @@
         portraitPreview.hidden = true;
         portraitPreviewImage.removeAttribute("src");
         portraitPreviewMeta.textContent = "";
+        const caption = portraitPreview.querySelector("figcaption");
+        if (caption) caption.textContent = "Neue KI-Vorschau";
         updateFinalPortraitState();
         updateButtons();
       };
@@ -579,6 +668,13 @@
         abortPending = false;
         abortAvailable = false;
         previewToken = "";
+        creationWorkspace = "local"; sharedScope = ""; sharedEpoch = 0; sharedSignature = ""; sharedCandidate = null; sharedAttempted = false;
+        sharedControlValues = [];
+        if (introduction) introduction.textContent = "Erst allgemeine Daten prüfen, danach optional ein Artportrait vorbereiten.";
+        if (previewWarning) previewWarning.textContent = "Nach dem Artportrait-Schritt wird die Art lokal angelegt und der Suchlauf gestartet.";
+        if (jsonLabel) jsonLabel.hidden = false;
+        jsonPreview.hidden = false;
+        if (sharedFields) sharedFields.inert = false;
         portraitPromptText = "";
         portraitPreviewToken = "";
         portraitSkipped = false;
@@ -618,6 +714,30 @@
         updateMeasurementMode("size");
         updateMeasurementMode("weight");
         showStep(1);
+      };
+
+      const showSharedDialog = (sourceScope, epoch, pending = null) => {
+        form.reset(); resetAll(); creationWorkspace = "shared-project"; sharedScope = sourceScope; sharedEpoch = epoch;
+        if (introduction) introduction.textContent = "Allgemeine Daten prüfen und anschließend als Entwurf im gemeinsamen Projekt anlegen. Fachinformationen und Artdateien folgen separat.";
+        if (previewWarning) previewWarning.textContent = "Die Bestätigung legt einen gemeinsamen Entwurf an. Fachinformationen und Artdateien sind noch offen; die Website bleibt unverändert.";
+        if (jsonLabel) jsonLabel.hidden = true;
+        jsonPreview.hidden = true;
+        if (pending) {
+          previewToken = pending.token; sharedCandidate = { ...pending.candidate }; sharedSignature = pending.signature;
+          sharedAttempted = true; sharedControlValues = pending.controls;
+          for (const item of sharedControlValues) {
+            if (item.control.isConnected === false) continue;
+            item.control.value = item.value; item.control.checked = item.checked;
+          }
+          updateMeasurementMode("size"); updateMeasurementMode("weight");
+          for (const field of derivedFields) field.textContent = ({ scientificName: sharedCandidate.scientificName, slug: sharedCandidate.id,
+            assetDirectory: `${sharedCandidate.assetName} · noch keine Dateien` })[field.dataset.derived] ?? "";
+          preview.hidden = false;
+          setMessage("Die frühere Speicherantwort ist noch offen. „Serverstand prüfen“ vergleicht ausschließlich den vorhandenen Stand; es wird nichts angelegt.", "info");
+        }
+        state.holdNewSpeciesBackground = true; showStep(1); dialogController.open();
+        if (!pending) { void taxonomyReference.initialize(); form.elements.german.focus(); }
+        else nextButton.focus();
       };
 
       const setBusy = (value) => {
@@ -803,7 +923,55 @@
         }
       }
 
+      const saveSharedSpecies = async () => {
+        if (busy || pipelineBusy || completed || !previewToken || !sharedCandidate || !sharedAllowed(sharedAttempted)) return;
+        if (!sharedAttempted && currentInputSignature() !== sharedSignature) {
+          markSpeciesInputsChanged(); return;
+        }
+        const generation = dialogGeneration, candidate = sharedCandidate, token = previewToken;
+        const recovery = sharedAttempted;
+        const current = () => isCurrentDialog(generation) && sameSharedSource() && state.editMode === true;
+        setBusy(true);
+        setMessage(sharedAttempted ? "Serverstand wird gelesen und mit deiner geprüften Fassung verglichen…" : "Art wird als gemeinsamer Entwurf angelegt…", "info");
+        try {
+          if (recovery) {
+            await fetchJson("/api/shared-project/refresh", { method: "POST", body: "{}" });
+            if (!current()) throw new Error("Projekt oder Berechtigung wurden geändert. Bitte den Bestand im ursprünglichen Projekt prüfen.");
+          }
+          if (!current()) throw new Error("Das gemeinsame Projekt wurde geändert. Es wurde kein Anlageauftrag gesendet.");
+          sharedAttempted = true; updateButtons();
+          const result = await fetchJson(`/api/shared-project/species/new/${recovery ? "recover" : "create"}`, { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }) });
+          if (!current()) throw new Error("Die Antwort gehört zum zuvor gewählten Projekt. Bitte dessen Bestand prüfen; es wird kein weiterer Auftrag gesendet.");
+          if (result.source !== "shared-project" || result.sourceScope !== sharedScope || result.serverConfirmed !== true
+              || result.approvalPerformed !== false || result.externalPublication !== "not-performed"
+              || typeof result.created !== "boolean" || typeof result.recovered !== "boolean" || result.created === result.recovered
+              || result.species?.id !== candidate.id || result.species.germanName !== candidate.germanName
+              || result.species.scientificName !== candidate.scientificName || result.species.assetName !== candidate.assetName
+              || typeof result.species.revision !== "string" || result.created && result.species.approval !== "draft")
+            throw new Error("Die Artanlage ist noch nicht eindeutig bestätigt.");
+          savedSpeciesId = candidate.id; savedSpeciesName = candidate.germanName;
+          pendingSharedCreations.delete(sharedScope);
+          if (state.notice === pendingSharedNotice) state.notice = "";
+          previewToken = ""; completed = true; sharedAttempted = false;
+          setMessage(result.recovered ? "Die geprüfte Artfassung ist im gemeinsamen Projekt vorhanden. Es wurde keine zweite Anlage gesendet."
+            : "Art als Entwurf im gemeinsamen Projekt angelegt. Fachinformationen, Artdateien und Freigabe sind noch offen.", "success");
+          state.selectedId = candidate.id;
+          elements.search.value = ""; elements.statusFilter.value = ""; elements.flagFilter.value = "";
+          const snapshot = await loadData({ reload: true });
+          if (!current()) return;
+          if (snapshot === null || state.workspaceStatus?.available === false)
+            setMessage("Die Artanlage ist bestätigt. Die Ansicht konnte anschließend nicht aktualisiert werden. Bitte später den Serverstand laden; nicht erneut anlegen.", "info");
+        } catch (error) {
+          rememberSharedAttempt();
+          if (isCurrentDialog(generation)) setMessage(`${error.message} ${sharedAttempted
+            ? "Über „Serverstand prüfen“ wird ausschließlich die vorhandene Fassung verglichen. Bei geänderter Anmeldung bitte im ursprünglichen Projekt nachsehen."
+            : "Bitte die Eingaben und Projektverbindung prüfen."}`, "error");
+        } finally { if (isCurrentDialog(generation)) setBusy(false); }
+      };
+
       const saveAndStartPipeline = async () => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project") return;
         if (!previewToken || pipelineBusy || namePreferencePreparing) return;
         const speciesPreviewToken = previewToken;
         let namePreference = null;
@@ -920,6 +1088,9 @@
         closeButtons,
         beforeClose: () => {
           if (busy || pipelineBusy || namePreferencePreparing || abortPending) return false;
+          if (creationWorkspace === "shared-project" && sharedAttempted && !completed) {
+            rememberSharedAttempt(); state.notice = pendingSharedNotice;
+          }
           discardDraft();
           form.reset();
           state.holdNewSpeciesBackground = false;
@@ -973,12 +1144,37 @@
 
       const openCreator = async (resumeSnapshot = null) => {
         if (checkingAvailability || busy || pipelineBusy) return;
+        if (state.workspace === "shared-project") {
+          if (resumeSnapshot || state.editMode !== true || state.dataLoading || state.workspaceStatus?.connection !== "online"
+              || state.workspaceStatus?.permissions?.canCreate !== true || state.workspaceStatus?.permissions?.canRead !== true
+              || state.workspaceStatus?.permissions?.canEdit !== true || state.workspaceStatus?.available === false) return;
+          const sourceScope = state.workspaceStatus?.sourceScope, epoch = state.workspaceEpoch || 0;
+          if (typeof sourceScope !== "string" || !/^[a-f0-9]{64}$/.test(sourceScope)) return;
+          const current = () => state.workspace === "shared-project" && state.workspaceStatus?.sourceScope === sourceScope
+            && (state.workspaceEpoch || 0) === epoch && state.editMode === true && !state.dataLoading && state.workspaceStatus?.available !== false
+            && state.workspaceStatus?.connection === "online" && state.workspaceStatus?.permissions?.canCreate === true;
+          checkingAvailability = true; openButton.disabled = true;
+          try {
+            const pending = pendingSharedCreations.get(sourceScope);
+            if (pending) { showSharedDialog(sourceScope, epoch, pending); return; }
+            if (pendingSharedCreations.size >= 100) throw new Error("Bitte offene Artanlageprüfungen zuerst abschließen.");
+            const result = await fetchJson("/api/shared-project/species/new/availability");
+            if (!current()) throw new Error("Projekt oder Berechtigung wurden während der Prüfung geändert. Bitte erneut öffnen.");
+            if (result.available !== true || result.source !== "shared-project" || result.sourceScope !== sourceScope)
+              throw new Error("Der gemeinsame Dienst hat die Artanlage nicht eindeutig bestätigt.");
+            showSharedDialog(sourceScope, epoch);
+          } catch (error) {
+            await showQuickConfirm({ title: "Gemeinsame Artanlage nicht verfügbar", message: error.message, confirmLabel: "Verstanden", cancelLabel: "" });
+          } finally { checkingAvailability = false; updateButtons(); }
+          return;
+        }
         const resumeCreationId = resumeSnapshot?.creationId || "";
         const matchesResume = (status) => status?.status === "awaiting-review"
           && status.guidedSpeciesCreation === true && status.creationId === resumeCreationId
           && status.runId === resumeSnapshot.runId && status.targets?.length === 1
           && status.targets[0].slug === resumeSnapshot.targets[0].slug;
         const documentRef = openButton.ownerDocument || global.document;
+        const localEpoch = state.workspaceEpoch || 0;
         const ownedFocus = documentRef?.activeElement === openButton;
         let generation = dialogGeneration;
         checkingAvailability = true;
@@ -986,6 +1182,10 @@
         try {
           const availability = await fetchJson("/api/species/new/availability");
           if (!isCurrentDialog(generation)) return;
+          if (state.workspace === "shared-project" || (state.workspaceEpoch || 0) !== localEpoch) {
+            await showQuickConfirm({ title: "Artbestand wurde gewechselt", message: "Bitte die Artanlage im jetzt gewählten Bestand erneut öffnen.", confirmLabel: "Verstanden", cancelLabel: "" });
+            return;
+          }
           if (resumeCreationId && !matchesResume(state.pipelineStatusSnapshot)) {
             await showQuickConfirm({ title: "Artanlage kann nicht fortgesetzt werden",
               message: "Der gespeicherte Auftrag hat sich geändert. Bitte den aktuellen Status erneut prüfen.",
@@ -1005,7 +1205,7 @@
           return;
         } finally {
           checkingAvailability = false;
-          openButton.disabled = busy || pipelineBusy;
+          openButton.disabled = busy || pipelineBusy || state.dataLoading || state.workspace === "shared-project";
           if (ownedFocus && isCurrentDialog(generation) && openButton.isConnected && !openButton.disabled
               && documentRef && (documentRef.activeElement === documentRef.body
                 || documentRef.activeElement === documentRef.documentElement)) openButton.focus();
@@ -1056,6 +1256,7 @@
               savedSpeciesName = fresh.targets[0].germanName;
               await loadData({ reload: true });
               if (!isCurrentDialog(generation)) return;
+              restoreSavedCreation();
               inlineManualMapHandled = newSpeciesData()?.assets?.map?.exists === true;
               await handleInlineReviewStatus(fresh, generation);
               return;
@@ -1066,6 +1267,14 @@
           }
         }
         if (creationId) {
+          try {
+            await loadData({ reload: true });
+            if (!isCurrentDialog(generation)) return;
+            restoreSavedCreation();
+          } catch (error) {
+            if (isCurrentDialog(generation)) showWorkflowError(error.message);
+            return;
+          }
           showStep(4);
           showWorkflowError("Der gespeicherte Auftrag wurde wieder geöffnet.");
           return;
@@ -1109,6 +1318,7 @@
           return;
         }
         if (event.target.closest(".new-species-sound-review")) return;
+        if (savedSpeciesId) return;
         if (event.target.closest(".new-species-portrait")) {
           if (event.target === portraitInstructions) resetPortraitPrompt();
           resetPortraitPreview();
@@ -1119,6 +1329,7 @@
       });
 
       portraitFileInput.addEventListener("change", () => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project" || savedSpeciesId) return;
         resetPortraitPreview();
         if (portraitFileInput.files?.[0]) {
           setPortraitMessage("Bild ausgewählt. Bitte mit „Bild prüfen“ validieren.", "info");
@@ -1129,7 +1340,12 @@
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (savedSpeciesId) return;
         if (currentStep !== 1) return;
+        if ((state.workspace || "local") !== creationWorkspace) {
+          setMessage("Der Artbestand wurde gewechselt. Bitte das Fenster schließen und im gewünschten Bestand erneut öffnen.", "error"); return;
+        }
+        if (creationWorkspace === "shared-project" && (busy || completed || sharedAttempted || !sharedAllowed())) return;
         const localErrors = localFieldErrors();
         if (Object.keys(localErrors).length) {
           applyFieldErrors(localErrors);
@@ -1143,11 +1359,32 @@
         setBusy(true);
         setMessage("Neue Art und mögliche Kollisionen werden geprüft…", "info");
         try {
-          const result = await fetchJson("/api/species/new/preview", {
+          const shared = creationWorkspace === "shared-project", generation = dialogGeneration, signature = shared ? currentInputSignature() : "";
+          const result = await fetchJson(shared ? "/api/shared-project/species/new/preview" : "/api/species/new/preview", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ values: speciesValues(), masterTaxonId: selectedTaxonomyMasterId(), taxonomyReference: selectedTaxonomyReference() }),
+            body: JSON.stringify({ ...(shared ? { sourceScope: sharedScope } : {}), values: speciesValues(), masterTaxonId: selectedTaxonomyMasterId(), taxonomyReference: selectedTaxonomyReference() }),
           });
+          if (shared) {
+            if (!isCurrentDialog(generation) || !sharedAllowed() || signature !== currentInputSignature()) {
+              setMessage("Eingaben oder Projekt wurden während der Prüfung geändert. Bitte erneut prüfen.", "info"); return;
+            }
+            if (result.source !== "shared-project" || result.sourceScope !== sharedScope || typeof result.token !== "string"
+                || !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,159}$/.test(result.token)
+                || typeof result.species?.id !== "string" || result.species.id.length > 120 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(result.species.id)
+                || typeof result.species.scientificName !== "string" || !result.species.scientificName.trim() || result.species.scientificName.length > 201
+                || typeof result.species.assetName !== "string" || !result.species.assetName.trim() || result.species.assetName.length > 512
+                || result.species.germanName !== String(speciesValues().german ?? "").trim())
+              throw new Error("Die gemeinsame Artvorschau wurde nicht eindeutig bestätigt.");
+            previewToken = result.token; sharedSignature = signature; sharedCandidate = { ...result.species };
+            sharedControlValues = [...form.querySelectorAll("input, select, textarea")].filter(control => control.type !== "file")
+              .map(control => ({ control, value: control.value, checked: control.checked }));
+            for (const field of derivedFields) field.textContent = ({ scientificName: result.species.scientificName, slug: result.species.id,
+              assetDirectory: `${result.species.assetName} · noch keine Dateien` })[field.dataset.derived] ?? "";
+            preview.hidden = false;
+            setMessage("Eingaben geprüft. Mit „Art im gemeinsamen Projekt anlegen“ bestätigst du diesen Entwurf.", "success");
+            showStep(1); return;
+          }
           previewToken = result.token;
           maxStepReached = Math.max(maxStepReached, 2);
           for (const field of derivedFields) {
@@ -1166,6 +1403,9 @@
       });
 
       nextButton.addEventListener("click", () => {
+        if (creationWorkspace === "shared-project") { void saveSharedSpecies(); return; }
+        if (state.workspace === "shared-project") return;
+        if (savedSpeciesId && currentStep < 3 && !busy && !pipelineBusy) { showStep(currentStep + 1); return; }
         if (currentStep === 1 && previewToken) showStep(2);
         else if (currentStep === 2 && canAdvanceFromPortrait()) void saveAndStartPipeline();
       });
@@ -1177,12 +1417,13 @@
       for (const indicator of stepIndicators) {
         indicator.addEventListener("click", () => {
           const targetStep = Number(indicator.dataset.newSpeciesStepIndicator);
-          if (!targetStep || targetStep > maxStepReached || busy || pipelineBusy) return;
+          if (!targetStep || targetStep > maxStepReached || busy || pipelineBusy || creationWorkspace === "shared-project") return;
           showStep(targetStep);
         });
       }
 
       portraitPromptButton.addEventListener("click", async () => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project") return;
         if (!previewToken) return;
         const options = validatedPortraitOptions();
         if (!options) return;
@@ -1236,6 +1477,7 @@
       });
 
       portraitPreviewButton.addEventListener("click", async () => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project") return;
         if (!previewToken) return;
         const options = validatedPortraitOptions();
         if (!options) return;
@@ -1290,6 +1532,7 @@
       });
 
       portraitSkipButton.addEventListener("click", () => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project" || savedSpeciesId) return;
         resetPortraitPreview();
         portraitSkipped = true;
         setPortraitMessage(
@@ -1301,6 +1544,7 @@
       });
 
       const selectInlineMapFile = async (files) => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project") return;
         if (busy || pipelineBusy) return;
         inlineManualMapPreviewToken = "";
         inlineManualMapFile = null;
@@ -1335,6 +1579,7 @@
       };
 
       mapReview.addEventListener("change", (event) => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project") return;
         if (event.target.matches(".new-species-map-file-input")) return selectInlineMapFile(event.target.files);
         if (event.target.matches(".new-species-map-care-mode-input")) {
           inlineManualMapPreviewToken = "";
@@ -1354,6 +1599,7 @@
       }
 
       mapReview.addEventListener("click", (event) => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project") return;
         if (busy || pipelineBusy) return;
         const zoomButton = event.target.closest("[data-new-species-map-zoom]");
         if (zoomButton) {
@@ -1394,6 +1640,7 @@
       });
 
       soundReview.addEventListener("click", (event) => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project") return;
         if (busy || pipelineBusy) return;
         if (event.target.closest("[data-new-species-sound-finish]")) {
           if (inlineRunId && state.pipelineStatusSnapshot?.status === "awaiting-review") void submitInlineAssetReview();
@@ -1414,6 +1661,7 @@
       });
 
       resetSoundsButton.addEventListener("click", async () => {
+        if (creationWorkspace === "shared-project" || state.workspace === "shared-project") return;
         if (!savedSpeciesId || busy || pipelineBusy) return;
         setBusy(true);
         let resetSaved = false;

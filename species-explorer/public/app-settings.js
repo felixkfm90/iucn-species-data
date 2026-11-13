@@ -27,6 +27,7 @@
     elements,
     fetchJson,
     createDialogController,
+    canEdit = () => true,
   } = {}) {
     if (!state || !elements) {
       throw new TypeError("Backup-Einstellungen benötigen Zustand und Elemente.");
@@ -40,8 +41,35 @@
     if (!dialog || !form) return null;
 
     const cancelButtons = [...dialog.querySelectorAll(".settings-cancel")];
-    const dialogController = createDialogController({ dialog, closeButtons: cancelButtons });
-    let bound = false;
+    const footerCloseButton = cancelButtons.find((button) => !button.classList?.contains("edit-close"));
+    const dialogController = createDialogController({
+      dialog,
+      closeButtons: cancelButtons,
+      afterClose: () => {
+        elements.backupRootInput.value = savedBackupRoot();
+        renderCloseLabel();
+      },
+    });
+    let bound = false, loading = false, saving = false;
+
+    function savedBackupRoot() {
+      return String(state.settingsSnapshot?.backupRoot || "");
+    }
+
+    function renderCloseLabel() {
+      if (!footerCloseButton) return;
+      const dirty = canEdit() && !loading && !saving
+        && String(elements.backupRootInput.value || "").trim() !== savedBackupRoot().trim();
+      footerCloseButton.textContent = dirty ? "Änderungen verwerfen" : "Fenster schließen";
+    }
+
+    function editingModeChanged() {
+      const disabled = !canEdit() || loading || saving;
+      elements.backupRootInput.disabled = disabled;
+      elements.settingsResetButton.disabled = disabled;
+      elements.settingsSaveButton.disabled = disabled;
+      renderCloseLabel();
+    }
 
     function setMessage(text = "", type = "") {
       elements.settingsMessage.textContent = text;
@@ -54,6 +82,7 @@
       state.settingsSnapshot = settings;
       elements.backupRootInput.value = presentation.backupRoot;
       elements.backupRootDefault.textContent = presentation.defaultBackupRoot;
+      renderCloseLabel();
       return presentation;
     }
 
@@ -65,29 +94,32 @@
 
     async function openSettings() {
       setMessage("Einstellungen werden geladen...", "info");
-      elements.settingsSaveButton.disabled = true;
+      loading = true; editingModeChanged();
       dialogController.open();
       try {
         const settings = await loadSettings();
         const presentation = backupSettingsPresentation(settings);
-        setMessage(presentation.statusMessage, "info");
+        setMessage(canEdit() ? presentation.statusMessage : `${presentation.statusMessage} Lesemodus: Der Pfad wird nur angezeigt; die Projektanmeldung bleibt möglich.`, "info");
         return settings;
       } catch (error) {
         setMessage([error.message, ...(error.details || [])].join(" · "), "error");
         return null;
       } finally {
-        elements.settingsSaveButton.disabled = false;
+        loading = false; editingModeChanged();
       }
     }
 
     function resetToDefault() {
+      if (!canEdit() || loading || saving) return;
       const defaultBackupRoot = state.settingsSnapshot?.defaultBackupRoot || DEFAULT_BACKUP_ROOT;
       elements.backupRootInput.value = defaultBackupRoot;
+      renderCloseLabel();
       setMessage("Standardpfad wird beim Speichern verwendet.", "info");
     }
 
     async function saveSettings() {
-      elements.settingsSaveButton.disabled = true;
+      if (!canEdit() || loading || saving) return null;
+      saving = true; editingModeChanged();
       setMessage("Backup-Pfad wird gespeichert...", "info");
       const payload = backupSettingsSavePayload(
         elements.backupRootInput.value,
@@ -106,7 +138,7 @@
         setMessage([error.message, ...(error.details || [])].join(" · "), "error");
         return null;
       } finally {
-        elements.settingsSaveButton.disabled = false;
+        saving = false; editingModeChanged();
       }
     }
 
@@ -116,6 +148,7 @@
       for (const button of elements.settingsButtons) {
         button.addEventListener("click", openSettings);
       }
+      elements.backupRootInput.addEventListener("input", renderCloseLabel);
       elements.settingsResetButton.addEventListener("click", resetToDefault);
       form.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -129,6 +162,7 @@
       applySettings,
       loadSettings,
       openSettings,
+      editingModeChanged,
       resetToDefault,
       saveSettings,
     });

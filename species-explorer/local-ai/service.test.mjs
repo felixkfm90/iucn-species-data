@@ -4,6 +4,8 @@ import { sha256 } from "./files.mjs";
 import { createLocalAiService } from "./service.mjs";
 import { bindImageInput, bindTextInput, normalizeAltProposal, validateContentResponse } from "./content.mjs";
 import { pixel, waitJob } from "./test-fixtures.mjs";
+import { fingerprint } from "../page-authoring/contract.mjs";
+import { createTestJpeg } from "../server-test-fixtures.mjs";
 
 function inputs() {
   return { image: { bytes: pixel, mimeType: "image/png", sha256: sha256(pixel),
@@ -22,6 +24,29 @@ function fixture(t, options = {}) {
     isBindingCurrent: async () => true, setTimer: (callback) => { const id = timers.size + 1; timers.set(id, callback); return id; }, clearTimer: (id) => timers.delete(id), ...options });
   t.after(() => service.close());
   return { service, data, calls, timers, worker };
+}
+
+function pageData(kind = "alt-text") {
+  const origin = "https://project.invalid", projectId = "project-a", userId = "person-a", revision = sha256(Buffer.from("page-revision"));
+  const common = { type: "page-authoring", kind, origin, projectId, userId, role: "publisher", sourceScope: fingerprint([origin, projectId, userId]),
+    documentId: "draft-a", revision, authorizationHash: "1".repeat(64), snapshotHash: "2".repeat(64), targetHash: "3".repeat(64), inputProof: "4".repeat(64) };
+  const request = { type: "page-authoring", sourceScope: common.sourceScope, draftId: common.documentId, expectedRevision: revision };
+  if (kind === "review-language") {
+    const draft = "das ist ein text";
+    return { request: { ...request, sectionId: "appearance" }, raw: { draft, target: { sectionId: "appearance", title: "Aussehen", intentionallyEmpty: false },
+      binding: { ...common, sectionId: "appearance", draftSha256: sha256(Buffer.from(draft)) } } };
+  }
+  if (kind === "alt-text") {
+    const bytes = createTestJpeg(3, 2), hash = sha256(bytes);
+    return { request: { ...request, imageId: "position-a" }, raw: { bytes, mimeType: "image/jpeg", sha256: hash, sourceSha256: "5".repeat(64),
+      context: { pageType: "species", title: "Testart", commonName: "Testart", coupledCaption: false },
+      binding: { ...common, imageId: "position-a", assetId: "asset-a", sourceSha256: "5".repeat(64), imageSha256: hash, metadataHash: "6".repeat(64) } } };
+  }
+  const sourceId = "source-" + "a".repeat(64), normalized = bindTextInput({ binding: { documentId: common.documentId, revision },
+    target: { sectionId: "appearance", title: "Aussehen", intentionallyEmpty: false },
+    sources: [{ id: sourceId, title: "Gelieferter Text", text: "Eine blaue Oberseite.", revision: "7".repeat(64) }], draft: "Eine grüne Oberseite." }, kind);
+  return { request: { ...request, sectionId: "appearance", sourceIds: [sourceId], expectedSourcesRevision: "8".repeat(64) },
+    raw: { ...normalized, binding: { ...common, ...normalized.binding, sourceIds: [sourceId], sourceCatalogRevision: "8".repeat(64), selectedSourcesHash: fingerprint(normalized.sources) } } };
 }
 
 test("Fotovorschlag verwendet nur gebundene Bytes als dataURL, bleibt unfreigegeben und normalisiert den Punkt deterministisch", async (t) => {
@@ -160,4 +185,117 @@ test("flache Root-Bildlader-Rückgabe und observationHash bleiben bis zum Vorsch
   assert.equal(result.result.binding.sourceSha256, "b".repeat(64));
   const stale = await waitJob(f.service, f.service.suggestAltText({ ownerId: "felix", imageKey: "image-1", observationHash: "observed-old" }));
   assert.equal(stale.status, "failed");
+});
+
+test("typisierter Pageauftrag läuft durch denselben Worker und bewahrt seinen vollständigen Quellenbeleg", async (t) => {
+  const page = pageData(), checked = [], f = fixture(t, { loadImage: async () => page.raw, isBindingCurrent: async (binding) => { checked.push(structuredClone(binding)); return true; } });
+  const request = { ...page.request, ownerId: "page-owner", requestId: "page-image-request" }, job = f.service.suggestAltText(request);
+  const done = await waitJob(f.service, job, "page-owner"); assert.equal(done.status, "completed"); assert.deepEqual(done.result.binding, page.raw.binding);
+  assert.equal(f.calls.length, 1); assert.equal(checked.length, 2); assert.equal(done.result.approved, false); assert.equal(done.result.transferred, false);
+  assert.equal(f.service.suggestAltText(request).jobId, job.jobId); assert.equal(f.calls.length, 1);
+});
+
+test("Page-Quellenrequest ist nur IDs und unveränderliche Auswahl; Inlineentwurf und unbekannte Felder werden nicht angenommen", async (t) => {
+  const page = pageData("review-text"), f = fixture(t, { loadTextContext: async () => page.raw });
+  for (const extra of [{ draft: "Eigener Inlineentwurf" }, { pageUrl: "https://example.org/" }, { modelPath: "C:\\private" }, { imageId: "wrong-kind" }])
+    assert.throws(() => f.service.reviewText({ ...page.request, ...extra, ownerId: "page-owner" }));
+  assert.throws(() => f.service.reviewText({ ...page.request, ownerId: "page-owner", sourceIds: Array(21).fill(page.request.sourceIds[0]) }));
+  assert.equal(f.calls.length, 0);
+});
+
+test("Page-Revision und Gesamtkatalogrevision werden gegen den geladenen Input geprüft statt nur syntaktisch akzeptiert", async (t) => {
+  const page = pageData("source-text"), f = fixture(t, { loadTextContext: async () => page.raw });
+  for (const change of [{ expectedRevision: "0".repeat(64) }, { expectedSourcesRevision: "0".repeat(64) }, { draftId: "another-draft" }, { sectionId: "habitat" }]) {
+    const result = await waitJob(f.service, f.service.suggestSourceText({ ...page.request, ...change, ownerId: "page-owner" }), "page-owner");
+    assert.equal(result.status, "failed"); assert.equal(result.result, null);
+  }
+  assert.equal(f.calls.length, 0);
+});
+
+test("fehlende Quelle und bewusste Leerstelle werden vor und nach der Terminalentscheidung auf aktuelle Bindung geprüft", async (t) => {
+  for (const mode of ["missing", "empty"]) {
+    let checks = 0; const f = fixture(t, { isBindingCurrent: async () => ++checks === 1 });
+    if (mode === "missing") f.data.text.sources = []; else f.data.text.target.intentionallyEmpty = true;
+    const done = await waitJob(f.service, f.service.suggestSourceText({ ownerId: "felix", documentId: "doc-1", sectionId: "appearance" }));
+    assert.equal(checks, 2); assert.equal(done.status, "stale"); assert.equal(done.result, null); assert.equal(f.calls.length, 0);
+  }
+});
+
+test("veraltete Grundlage stoppt vor dem Modellstart; Drift nach Modellantwort liefert keinen fremden Vorschlag", async (t) => {
+  for (const staleAt of [1, 2]) {
+    let checks = 0; const page = pageData(), f = fixture(t, { loadImage: async () => page.raw, isBindingCurrent: async () => ++checks < staleAt });
+    const done = await waitJob(f.service, f.service.suggestAltText({ ...page.request, ownerId: "page-owner" }), "page-owner");
+    assert.equal(done.status, "stale"); assert.equal(done.result, null); assert.equal(f.calls.length, staleAt - 1);
+  }
+});
+
+test("Pageauswahl wird bei Admission kopiert und kann über das ursprüngliche Array nicht nachträglich geändert werden", async (t) => {
+  const page = pageData("review-text"), received = [], f = fixture(t, { loadTextContext: async (request) => { received.push(request); return page.raw; },
+    worker: { complete: async () => ({ findings: [] }), stop: async () => {}, close: async () => {} } });
+  const request = { ...page.request, sourceIds: [...page.request.sourceIds], ownerId: "page-owner" }, job = f.service.reviewText(request);
+  request.sourceIds[0] = "source-" + "b".repeat(64);
+  const done = await waitJob(f.service, job, "page-owner"); assert.equal(done.status, "completed"); assert.deepEqual(received[0].sourceIds, page.request.sourceIds);
+});
+
+test("Node-Ownerinvalidierung bricht nur eigene laufende und queued Jobs in der bestehenden Queue ab", async (t) => {
+  let enter, release; const started = new Promise((resolve) => { enter = resolve; }), gate = new Promise((resolve) => { release = resolve; });
+  const f = fixture(t, { worker: { complete: async () => { enter(); await gate; return { text: "Vogel auf einem Ast.", uncertainties: [] }; }, stop: async () => { release(); }, close: async () => { release(); } } });
+  const first = f.service.suggestAltText({ ownerId: "old-owner", imageKey: "one" }); await started;
+  const queued = f.service.suggestAltText({ ownerId: "old-owner", imageKey: "two" }), other = f.service.suggestAltText({ ownerId: "other-owner", imageKey: "three" });
+  await f.service.cancelOwner("old-owner"); assert.equal((await waitJob(f.service, first, "old-owner")).status, "cancelled");
+  assert.equal(f.service.get(queued.jobId, "old-owner").status, "cancelled"); assert.equal((await waitJob(f.service, other, "other-owner")).status, "completed");
+  assert.throws(() => f.service.get(first.jobId, "other-owner"));
+});
+
+test("bestehender draftRevision-Eingang prüft die tatsächlich geladene Fassung", async (t) => {
+  const f = fixture(t), done = await waitJob(f.service, f.service.suggestSourceText({ ownerId: "felix", documentId: "doc-1", sectionId: "appearance", draftRevision: "old-document" }));
+  assert.equal(done.status, "failed"); assert.equal(f.calls.length, 0);
+});
+
+test("review-language uses the existing queue without factual sources or image loads and preserves exact original text", async (t) => {
+  const page = pageData("review-language"); let imageReads = 0;
+  const f = fixture(t, { loadImage: async () => { imageReads++; throw new Error("No images for language"); }, loadTextContext: async () => page.raw,
+    worker: { complete: async () => ({ draftSha256: page.raw.binding.draftSha256, findings: [{ kind: "capitalization", draftQuote: "das", replacement: "Das", explanation: "Satzanfang großschreiben." }] }), stop: async () => {}, close: async () => {} } });
+  const done = await waitJob(f.service, f.service.reviewLanguage({ ...page.request, ownerId: "page-owner", requestId: "language-page" }), "page-owner");
+  assert.equal(done.status, "completed"); assert.equal(done.result.originalText, page.raw.draft); assert.equal(done.result.correctedText, "Das ist ein text");
+  assert.equal(done.result.languageGuarantee, false); assert.equal(done.result.factualGuarantee, false); assert.equal(imageReads, 0); assert.equal(page.raw.draft, "das ist ein text");
+});
+
+test("a contradictory language kind returns a clear static failure and never retries or exposes model prose", async (t) => {
+  const page=pageData("review-language");let models=0;
+  const f=fixture(t,{loadTextContext:async()=>page.raw,worker:{complete:async()=>{models++;return {draftSha256:page.raw.binding.draftSha256,
+    findings:[{kind:"capitalization",draftQuote:page.raw.draft,replacement:page.raw.draft+",",explanation:"PRIVATE_MODEL_EXPLANATION"}]};},stop:async()=>{},close:async()=>{}}});
+  const request={...page.request,ownerId:"page-owner",requestId:"contradictory-language-kind"},job=f.service.reviewLanguage(request);
+  const done=await waitJob(f.service,job,"page-owner");assert.equal(done.status,"failed");assert.equal(done.result,null);
+  assert.match(done.error,/widersprüchliche Korrektur/);assert.doesNotMatch(done.error,/PRIVATE_MODEL_EXPLANATION/);
+  assert.equal(f.service.reviewLanguage(request).jobId,job.jobId);assert.equal(models,1);
+});
+
+test("language empty and deliberately empty targets do not call a model and retain both exact text views", async (t) => {
+  for (const intentional of [false, true]) {
+    const page = pageData("review-language"); page.raw.draft = intentional ? "" : "  \n "; page.raw.binding.draftSha256 = sha256(Buffer.from(page.raw.draft)); page.raw.target.intentionallyEmpty = intentional;
+    const f = fixture(t, { loadTextContext: async () => page.raw });
+    const done = await waitJob(f.service, f.service.reviewLanguage({ ...page.request, ownerId: "page-owner" }), "page-owner");
+    assert.equal(done.status, "completed"); assert.equal(done.result.status, intentional ? "intentionally-empty" : "empty-text"); assert.equal(f.calls.length, 0);
+    assert.equal(done.result.originalText, page.raw.draft); assert.equal(done.result.correctedText, page.raw.draft); assert.deepEqual(done.result.findings, []);
+  }
+});
+
+test("language rejects sources, inline page text and unknown request kinds rather than falling into factual review", async (t) => {
+  const f = fixture(t), page = pageData("review-language");
+  for (const extra of [{ sourceIds: [] }, { draftText: "Inline page text" }, { expectedSourcesRevision: "0".repeat(64) }])
+    assert.throws(() => f.service.reviewLanguage({ ...page.request, ...extra, ownerId: "page-owner" }));
+  assert.throws(() => f.service.reviewLanguage({ ownerId: "page-owner", documentId: "doc-1", sectionId: "appearance" }));
+  assert.equal(f.calls.length, 0);
+});
+
+test("a stale language owner or revision never produces a model result and invalid findings do not retry", async (t) => {
+  for (const invalid of ["stale", "foreign-hash"]) {
+    const page = pageData("review-language"); let models = 0;
+    const f = fixture(t, { loadTextContext: async () => page.raw, isBindingCurrent: async () => invalid !== "stale",
+      worker: { complete: async () => { models++; return { draftSha256: "0".repeat(64), findings: [] }; }, stop: async () => {}, close: async () => {} } });
+    const request = { ...page.request, ownerId: "page-owner", requestId: `language-${invalid}` }, job = f.service.reviewLanguage(request), done = await waitJob(f.service, job, "page-owner");
+    assert.equal(done.status, invalid === "stale" ? "stale" : "failed"); assert.equal(done.result, null); assert.equal(models, invalid === "stale" ? 0 : 1);
+    assert.equal(f.service.reviewLanguage(request).jobId, job.jobId); assert.equal(models, invalid === "stale" ? 0 : 1);
+  }
 });

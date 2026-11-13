@@ -8,14 +8,16 @@
 
     if (validation.source === "shared-project") {
       const clean = validation.pending === 0 && validation.conflicts === 0;
-      return { isOk: clean, overallText: validation.conflicts ? `${validation.conflicts} Konflikt(e) prüfen`
+      const detailItems = validation.legacyCount
+        ? ["Für vorhandene Arten ohne vollständige Grunddaten ist die kontrollierte Bestandsübernahme noch offen."] : [];
+      return { isOk: clean && validation.connection === "online", hasErrors: validation.conflicts > 0, overallText: validation.conflicts ? `${validation.conflicts} Konflikt(e) prüfen`
         : validation.connection === "online" ? validation.pending ? "Lokale Änderungen warten auf Abgleich" : "Gemeinsamer Stand auf diesem Gerät"
           : "Offline · gespeicherter gemeinsamer Stand",
       data: { ok: true, value: `${validation.speciesCount} Arten`, detail: validation.legacyCount ? `${validation.legacyCount} weitere Arten benötigen vollständige Grunddaten` : "Vollständige gemeinsame Arbeitsdatensätze" },
       assets: { ok: validation.missingMediaCount === 0, value: `${validation.availableMediaCount} Medienverweise`, detail: "Medien benötigen eine Internetverbindung, solange sie nicht auf diesem Gerät heruntergeladen sind." },
       report: { ok: clean, value: validation.conflicts ? `${validation.conflicts} Konflikte` : validation.pending ? `${validation.pending} lokale Änderungen` : "Kein Abgleich offen",
         detail: "Interne Freigabe und Websiteübernahme bleiben eigene Schritte." }, specialText: "Gemeinsamer FN-Bestand",
-      detailItems: validation.legacyCount ? ["Für vorhandene Arten ohne vollständige Grunddaten ist die kontrollierte Bestandsübernahme noch offen."] : [] };
+      detailItems, detailEntries: detailItems.map((text) => ({ text, severity: "info" })) };
     }
 
     const isOk = validation.status === "ok";
@@ -24,36 +26,37 @@
     const missingPortraitCount = validation.special.missingPortraitCount ?? 0;
     const missingSoundKnownCount = validation.special.missingSoundKnownCount ?? 0;
     const manualSoundCount = validation.special.manualSoundCount ?? 0;
-    const detailItems = [];
+    const detailItems = [], detailEntries = [];
+    const addDetail = (text, severity) => { detailItems.push(text); detailEntries.push(Object.freeze({ text, severity })); };
 
     if (!dataOk) {
-      detailItems.push(
-        `Daten: ${validation.data.inputOnlyCount} nur in der Eingabeliste, `
-        + `${validation.data.generatedOnlyCount} nur in speciesData.json, `
-        + `${validation.data.mismatchSpeciesCount} Art(en) mit Feldabweichung`,
+      addDetail(
+        `Daten: ${pluralize(validation.data.inputOnlyCount, "angelegte Art", "angelegte Arten")} ohne zugehörige abgerufene Artdaten, `
+        + `${pluralize(validation.data.generatedOnlyCount, "abgerufener Artdatensatz", "abgerufene Artdatensätze")} ohne zugehörige Artanlage, `
+        + `${pluralize(validation.data.mismatchSpeciesCount, "Art", "Arten")} mit abweichenden Angaben`, "error",
       );
     }
 
     if (!assetsOk) {
       const available = validation.assets.available;
-      detailItems.push(
+      addDetail(
         `Assets vorhanden: ${available.maps} Karten, ${available.sounds} Sounds, `
         + `${available.credits} Credits, ${available.spectrograms} Spektrogramme, `
-        + `${available.portraits} Artporträts`,
+        + `${available.portraits} Artporträts`, "error",
       );
       if (missingPortraitCount) {
-        detailItems.push(`Artporträts: ${missingPortraitCount} von ${validation.data.inputCount} fehlen`);
+        addDetail(`Artporträts: ${missingPortraitCount} von ${validation.data.inputCount} fehlen`, "error");
       }
     }
 
     if (missingSoundKnownCount) {
-      detailItems.push(
-        `Sound fehlt: ${missingSoundKnownCount} Art(en) ohne verwendbare automatische Tonquelle`,
+      addDetail(
+        `Sound fehlt: ${missingSoundKnownCount} Art(en) ohne verwendbare automatische Tonquelle`, "care",
       );
     }
     if (manualSoundCount) {
-      detailItems.push(
-        `Manuelle Sounds: ${manualSoundCount} Art(en) mit manuell gepflegter Tonquelle`,
+      addDetail(
+        `Manuelle Sounds: ${manualSoundCount} Art(en) mit manuell gepflegter Tonquelle`, "info",
       );
     }
 
@@ -65,19 +68,20 @@
       if (check.staleInReport.length) {
         parts.push(`${check.staleInReport.length} stehen nur im Report: ${check.staleInReport.join(", ")}`);
       }
-      detailItems.push(`${check.label}: ${parts.join("; ")}`);
+      addDetail(`${check.label}: ${parts.join("; ")}`, "error");
     }
-    detailItems.push(...validation.report.counterIssues.map((issue) => `Report-Zähler: ${issue}`));
+    for (const issue of validation.report.counterIssues) addDetail(`Report-Zähler: ${issue}`, "error");
 
     return Object.freeze({
       isOk,
+      hasErrors: !dataOk || !assetsOk || !validation.report.consistent,
       overallText: isOk ? "Alle Prüfungen bestanden" : `${validation.issueCount} Prüfhinweis(e)`,
       data: Object.freeze({
         ok: dataOk,
-        value: `${validation.data.inputCount} / ${validation.data.generatedCount}`,
+        value: `${validation.data.inputCount} angelegt · ${validation.data.generatedCount} abgerufen`,
         detail: dataOk
-          ? "Eingabe und Pipeline stimmen überein"
-          : `${validation.data.issueSpeciesCount} Art(en) mit Datenabweichung`,
+          ? "Angelegte Arten und abgerufene Artdaten stimmen überein"
+          : `${validation.data.issueSpeciesCount} Art(en) mit offenen oder abweichenden Artdaten`,
       }),
       assets: Object.freeze({
         ok: assetsOk,
@@ -107,6 +111,7 @@
         + `${manualSoundCount ? ` · ${pluralize(manualSoundCount, "manueller Sound", "manuelle Sounds")}` : ""}`
         + `${missingSoundKnownCount ? ` · ${pluralize(missingSoundKnownCount, "fehlender Sound", "fehlende Sounds")}` : ""}`,
       detailItems: Object.freeze(detailItems),
+      detailEntries: Object.freeze(detailEntries),
     });
   }
 
@@ -154,8 +159,12 @@
     if (species.isManualMap) {
       flags.push({ label: "K", className: "map", title: "Manuell gepflegte Karte" });
     }
-    if (species.soundCareHint) {
-      flags.push({ label: "S", className: "sound", title: "Sound fehlt oder wird manuell gepflegt" });
+    if (species.soundMissingKnown) {
+      flags.push({ label: "S", className: "sound-care", title: "Keine geeignete automatische Soundquelle gefunden · Pflegehinweis" });
+    } else if (species.isManualSound) {
+      flags.push({ label: "S", className: "sound-manual", title: "Sound wird manuell gepflegt" });
+    } else if (species.soundCareHint) {
+      flags.push({ label: "S", className: "sound-care", title: "Soundhinweis prüfen" });
     }
     if (species.missingPortrait) {
       flags.push({ label: "P", className: "portrait", title: "Artporträt fehlt" });
@@ -221,14 +230,35 @@
     }
 
     function renderDatabaseStatus(stateName = "") {
+      const showStatus = (status, label, detail = label) => {
+        const transferAvailable = status === "outdated" && state.editMode === true && state.workspace !== "shared-project";
+        elements.databaseStatus.className = `database-status ${status}`;
+        if (elements.databaseTransferButton) {
+          elements.databaseTransferButton.hidden = !transferAvailable;
+          if (transferAvailable) elements.databaseStatus.className += " visually-hidden";
+        }
+        elements.pipelineStatus.className = `pipeline-status-text ${status}`;
+        elements.pipelineStatus.textContent = label;
+        elements.databaseStatus.title = detail;
+        elements.databaseStatus.setAttribute("aria-label", detail);
+      };
+      if (state.dataLoadError) {
+        showStatus("failed", "Daten nicht verfügbar", "Der ausgewählte Artbestand konnte nicht geladen werden.");
+        if (elements.validationIssueNotice) { elements.validationIssueNotice.hidden = false;
+          elements.validationIssueNotice.textContent = "Der ausgewählte Artbestand konnte nicht geladen werden. Angezeigte Daten sind nicht frisch bestätigt."; }
+        return;
+      }
       if (state.workspace === "shared-project" && !state.taxonomyDatabaseBusy && !state.taxonomyMaintenanceSnapshot?.active
         && !state.taxonomyMasterSnapshot?.active && !["running", "awaiting-review", "failed"].includes(state.pipelineStatusSnapshot?.status)
         && !["running", "failed"].includes(state.backupStatusSnapshot?.status)) {
-        elements.pipelineMenuButton.className = "header-action header-edit-slot database-status";
-        elements.pipelineStatus.className = "pipeline-status-text";
-        elements.pipelineStatus.textContent = "Datenbank & Einstellungen";
-        elements.pipelineMenuButton.title = "Lokale Datenbank, Sicherung und Projekteinstellungen";
-        elements.pipelineMenuButton.setAttribute("aria-label", "Datenbank-Aktionen öffnen"); return;
+        const shared = state.workspaceStatus;
+        if (state.dataLoading) showStatus("review", "Bestand wird geladen");
+        else if (!shared || shared.available === false) showStatus("failed", "Projektverbindung prüfen");
+        else if (shared.connection !== "online") showStatus("review", "Gemeinsamer Stand offline", "Gespeicherter gemeinsamer Bestand auf diesem Gerät; Serverstand nicht frisch bestätigt.");
+        else if (shared.conflicts) showStatus("review", `${shared.conflicts} Konflikt(e) prüfen`);
+        else if (shared.pending) showStatus("review", "Abgleich offen", `${shared.pending} lokale Änderung(en) warten auf ausdrücklichen Abgleich.`);
+        else showStatus("current", "Gemeinsamer Bestand geladen", "Gemeinsamer FN-Bestand auf diesem Gerät. Interne Freigabe und Websiteübernahme sind eigene Schritte.");
+        return;
       }
       const taxonomyProgress = global.SpeciesExplorerTaxonomyProgress.taxonomyProgressPresentation({
         master: state.taxonomyMasterSnapshot, reference: state.taxonomyMaintenanceSnapshot,
@@ -239,21 +269,18 @@
         || state.taxonomyMasterSnapshot?.active,
       );
       const otherWork = ["running", "awaiting-review", "failed"].includes(state.pipelineStatusSnapshot?.status)
-        || state.backupStatusSnapshot?.status === "running" || state.databaseNeedsUpdate;
+        || ["running", "failed"].includes(state.backupStatusSnapshot?.status) || state.databaseNeedsUpdate;
       const showTaxonomy = taxonomyProgress && (taxonomyActive || !otherWork
         || ["failed", "review"].includes(taxonomyProgress.className));
       const status = showTaxonomy ? taxonomyProgress.className : resolveDatabaseStatus({
-        explicitStatus: taxonomyActive ? "taxonomy" : stateName,
+        explicitStatus: taxonomyActive ? "taxonomy" : state.backupStatusSnapshot?.status === "failed" ? "failed" : stateName,
         backupStatus: state.backupStatusSnapshot?.status,
         pipelineStatus: state.pipelineStatusSnapshot?.status,
         databaseNeedsUpdate: state.databaseNeedsUpdate,
       });
-      elements.pipelineMenuButton.className = `header-action header-edit-slot database-status ${status}`;
-      elements.pipelineStatus.className = `pipeline-status-text ${status}`;
-      elements.pipelineStatus.textContent = showTaxonomy ? taxonomyProgress.compact : databaseStatusLabel(status);
-      elements.pipelineMenuButton.title = showTaxonomy ? taxonomyProgress.detail : "Datenbank-Aktionen öffnen";
-      elements.pipelineMenuButton.setAttribute("aria-label", showTaxonomy
-        ? `Datenbank-Aktionen öffnen. ${taxonomyProgress.detail}` : "Datenbank-Aktionen öffnen");
+      if (showTaxonomy) showStatus(status, taxonomyProgress.compact, taxonomyProgress.detail);
+      else if (state.dataLoading && !["running", "backup", "review", "taxonomy", "failed"].includes(status)) showStatus("review", "Bestand wird geladen");
+      else showStatus(status, ({ outdated: "Änderungen offen", failed: "Aktualisierung fehlgeschlagen" })[status] || databaseStatusLabel(status));
     }
 
     const setValidationCardState = (card, ok) => {
@@ -304,7 +331,15 @@
 
       elements.validationOverall.textContent = presentation.overallText;
       elements.validationOverall.classList.toggle("ok", presentation.isOk);
-      elements.validationOverall.classList.toggle("error", !presentation.isOk);
+      elements.validationOverall.classList.toggle("error", presentation.hasErrors);
+      elements.validationOverall.classList.toggle("warning", !presentation.isOk && !presentation.hasErrors);
+      if (elements.validationIssueNotice) {
+        elements.validationIssueNotice.hidden = !presentation.hasErrors;
+        elements.validationIssueNotice.textContent = presentation.hasErrors
+          ? validation.source === "shared-project"
+            ? `${validation.conflicts} Versionskonflikt(e) im gemeinsamen Bestand prüfen · Einzelheiten unter ⋮ → Prüfung & Hinweise`
+            : "Daten- oder Dateifehler prüfen · Einzelheiten unter ⋮ → Prüfung & Hinweise" : "";
+      }
 
       elements.validationData.textContent = presentation.data.value;
       elements.validationDataDetail.textContent = presentation.data.detail;
@@ -321,7 +356,7 @@
       elements.validationSpecial.textContent = presentation.specialText;
       elements.validationDetails.hidden = presentation.detailItems.length === 0;
       elements.validationDetails.innerHTML = presentation.detailItems.length
-        ? `<ul>${presentation.detailItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+        ? `<ul>${presentation.detailEntries.map(({ text, severity }) => `<li class="validation-detail ${severity}">${escapeHtml(text)}</li>`).join("")}</ul>`
         : "";
     }
 

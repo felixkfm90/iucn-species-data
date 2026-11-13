@@ -1,4 +1,5 @@
 import { validateSpeciesRecord } from "./species-record.mjs";
+import { readerEditorialSectionsAsText } from "./species-editorial-data.mjs";
 
 const UNKNOWN = "Unbekannt";
 const isHash = (value) => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
@@ -31,11 +32,13 @@ function metadata(value, keys) {
   return Object.fromEntries(keys.map((key) => [key, key === "url" ? publicUrl(value[key]) : publicText(value[key])]));
 }
 function backup() { return { exists: false, path: "", updatedAt: "", bytes: 0 }; }
-function asset(file, assetName) {
+function asset(file, assetName, managed = false) {
   const url = publicUrl(file?.url), available = Boolean(url);
-  return { exists: available, availableOnline: available, localExists: false, bytes: file?.bytes ?? 0,
+  const projectFileBound = managed && !available && file?.bytes > 0 && isHash(file.sha256);
+  return { exists: available, availableOnline: available, projectFileBound, localExists: false, bytes: file?.bytes ?? 0,
     declaredBytes: file?.bytes ?? 0, sha256: isHash(file?.sha256) ? file.sha256 : "", hashVerified: false,
-    storage: file ? "public-https-reference" : "not-provided", availability: available ? "online-only" : file ? "not-provided" : "missing-reference",
+    storage: available ? "public-https-reference" : projectFileBound ? "project-file-reference" : "not-provided",
+    availability: available ? "online-only" : projectFileBound ? "project-unchecked" : file ? "not-provided" : "missing-reference",
     bytesVerified: false, assetName, url, mimeType: file?.mimeType ?? "", backup: backup() };
 }
 function mapCare(override) {
@@ -55,17 +58,17 @@ export function projectSpeciesRecordToExplorer(object, { permissions = {}, statu
   const mapOverride = overrides.map || {}, soundOverride = overrides.sound || {}, spectrumOverride = overrides.spectrogram || {}, portraitOverride = overrides.portrait || {};
   const care = mapCare(mapOverride), credits = metadata(record.assets.credits, ["source", "recordist", "quality", "country", "license", "url"]);
   const portraitMetadata = metadata(record.assets.portraitMetadata, ["type", "source", "generation_method", "imported_at", "approved_at", "prompt_version"]);
-  const map = { ...asset(files["map.jpg"], assetName), manuallyAdded: care.protectedFromPipeline,
+  const map = { ...asset(files["map.jpg"], assetName, true), manuallyAdded: care.protectedFromPipeline,
     browserImported: care.browserImported, ownCare: care.ownCare, careMode: care.careMode, provenance: care.provenance,
     protectFromPipeline: care.protectedFromPipeline, manualReason: publicText(mapOverride.reason),
     source: publicText(mapOverride.source ?? mapOverride.provenance?.source) };
-  const sound = { ...asset(files["sound.mp3"], assetName), manuallyAdded: soundOverride.manual === true, manualReason: publicText(soundOverride.reason) };
-  const spectrum = { ...asset(files["spectrogram.webp"], assetName), stale: spectrumOverride.stale === true,
+  const sound = { ...asset(files["sound.mp3"], assetName, true), manuallyAdded: soundOverride.manual === true, manualReason: publicText(soundOverride.reason) };
+  const spectrum = { ...asset(files["spectrogram.webp"], assetName, true), stale: spectrumOverride.stale === true,
     staleReason: publicText(spectrumOverride.reason), hashTracked: isHash(spectrumOverride.soundSha256) && isHash(spectrumOverride.spectrogramSha256),
     soundSha256: isHash(spectrumOverride.soundSha256) ? spectrumOverride.soundSha256 : "",
     spectrogramSha256: isHash(spectrumOverride.spectrogramSha256) ? spectrumOverride.spectrogramSha256 : "",
     actualSoundSha256: "", actualSpectrogramSha256: "", generatedAt: publicText(spectrumOverride.generatedAt) };
-  const portrait = { ...asset(files["portrait.webp"], assetName), metadataExists: Boolean(portraitMetadata), metadataAvailable: Boolean(portraitMetadata),
+  const portrait = { ...asset(files["portrait.webp"], assetName, true), metadataExists: Boolean(portraitMetadata), metadataAvailable: Boolean(portraitMetadata),
     metadataStorage: portraitMetadata ? "record-metadata" : "not-provided", metadataLocalExists: false, metadataError: "", metadata: portraitMetadata,
     hashTracked: isHash(portraitOverride.sha256) && isHash(portraitOverride.metadataSha256),
     metadataSha256: isHash(portraitOverride.metadataSha256) ? portraitOverride.metadataSha256 : "", actualSha256: "", actualMetadataSha256: "",
@@ -91,16 +94,17 @@ export function projectSpeciesRecordToExplorer(object, { permissions = {}, statu
       if (!publicText(generated[key]).trim() || String(generated[key]).trim().toLocaleLowerCase("de") === "n/a") dataIssues.push(`${label} fehlt in der gebundenen erzeugten Fassung`);
     }
   }
+  const referenced = value => value.availableOnline || value.projectFileBound;
   for (const [value, label] of [[map, "die Verbreitungskarte"], [sound, "den Sound"], [portrait, "das Artporträt"]]) {
-    if (!value.availableOnline) assetIssues.push(`Für ${label} ist noch kein öffentlicher Medienverweis zur Ansicht bereitgestellt.`);
+    if (!referenced(value)) assetIssues.push(`Für ${label} ist noch keine Artdatei gebunden.`);
   }
-  if (sound.availableOnline && !spectrum.availableOnline) assetIssues.push("Für das Spektrogramm ist noch kein öffentlicher Medienverweis zur Ansicht bereitgestellt.");
-  if (sound.availableOnline && !credits) assetIssues.push("Für den bereitgestellten Sound sind noch keine Quellen-/Lizenzmetadaten gebunden.");
+  if (referenced(sound) && !referenced(spectrum)) assetIssues.push("Für das Spektrogramm ist noch keine Artdatei gebunden.");
+  if (referenced(sound) && !credits) assetIssues.push("Für den bereitgestellten Sound sind noch keine Quellen-/Lizenzmetadaten gebunden.");
   if (spectrum.stale) assetIssues.push("Das gebundene Spektrogramm ist als veraltet markiert.");
-  const careHints = ["Gemeinsamer Projektstand: Medien sind ausschließlich über ausdrücklich gebundene öffentliche HTTPS-Verweise sichtbar. Lokale Dateien, Erreichbarkeit und Dateihashes wurden nicht geprüft."];
+  const careHints = ["Gemeinsamer Projektstand: Artdateien verwenden öffentliche Verweise oder eine geschützte Projektbindung. Lokale Dateien, Erreichbarkeit und Dateihashes wurden nicht geprüft."];
   if (care.protectedFromPipeline) careHints.push("Die gebundene Karte ist gegen automatische Übernahme geschützt.");
   if (sound.manuallyAdded) careHints.push("Die gebundene Tonquelle wird manuell gepflegt.");
-  if (!sound.availableOnline) careHints.push("In dieser gemeinsamen Ansicht ist keine Tondatei bereitgestellt; daraus folgt keine Aussage über frühere Suchläufe.");
+  if (!referenced(sound)) careHints.push("Für diese gemeinsame Artfassung ist keine Tondatei gebunden.");
   const automatic = record.taxonomyOverride?.automaticFields;
   const automaticFields = automatic && typeof automatic === "object" && !Array.isArray(automatic)
     ? Object.fromEntries(["kingdom", "phylum", "subphylum", "className", "class", "order", "family", "genus", "species", ...["Kingdom", "Phylum", "Subphylum", "Class", "Order", "Family", "Genus", "Species"]]
@@ -110,7 +114,8 @@ export function projectSpeciesRecordToExplorer(object, { permissions = {}, statu
     safeName: assetName, slug: typeof generated.URLSlug === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(generated.URLSlug) ? generated.URLSlug : record.id,
     inInput: true, inGenerated: record.generated !== null,
     manual: { size: display(input.size), weight: display(input.weight), lifeExpectancy: display(input.life_expectancy) },
-    iucn: { assessmentId: display(generated["Assessment ID"]), status: display(generated.Status), category: display(generated.Kategorie), trend: display(generated.Trend),
+    iucn: { assessmentId: display(generated["Assessment ID"]), taxonId: display(generated["Taxon ID"] ?? generated["IUCN-Zuordnung"]?.taxonId),
+      status: display(generated.Status), category: display(generated.Kategorie), trend: display(generated.Trend),
       population: display(generated["Populationgröße"]), generationLength: display(generated.Generationsdauer), lastUpdate: display(generated["Letztes IUCN Update"]), fetchedAt: display(generated["Daten abgerufen"]) },
     taxonomy: { kingdom: taxon(generated.Kingdom), phylum: taxon(generated.Phylum), subphylum: taxon(generated.Subphylum), className: taxon(generated.Class),
       order: taxon(generated.Order), family: taxon(generated.Family), genus: display(generated.Genus ?? input.genus), species: display(generated.Species ?? input.species),
@@ -118,14 +123,17 @@ export function projectSpeciesRecordToExplorer(object, { permissions = {}, statu
     assets: { map, sound, credits: creditsAsset, spectrogram: spectrum, portrait }, credits, creditsError: "",
     isNcSound: /\/by-nc(?:-|\/)|\bby[-\s]*nc\b|non[-\s]*commercial/i.test(credits?.license || ""), reportNcSound: false,
     isManualMap: care.protectedFromPipeline, isManualSound: sound.manuallyAdded, soundMissingKnown: false,
-    soundCareHint: sound.manuallyAdded || !sound.availableOnline, careHints, missingPortrait: !portrait.availableOnline,
+    soundCareHint: sound.manuallyAdded || !referenced(sound), careHints, missingPortrait: !referenced(portrait),
     fieldMismatches, dataIssues, assetIssues, inconsistencies: [...dataIssues, ...assetIssues],
-    editorial: { sections: record.editorial.sections.map(({ id, title, text, intentionallyEmpty }) => ({ id, title, text, intentionallyEmpty })),
-      gallery: record.editorial.gallery.map(({ id, url, alt, caption, order }) => ({ id, url, alt, caption, order })).sort((a, b) => a.order - b.order) },
+    editorial: { sections: record.schemaVersion === 2 ? readerEditorialSectionsAsText(record.editorial)
+      : record.editorial.sections.map(({ id, title, text, intentionallyEmpty }) => ({ id, title, text, intentionallyEmpty })),
+      gallery: record.schemaVersion === 2 ? record.editorial.gallery.map(({ id, asset, alt, caption, order }) => ({ id, assetId: asset.id,
+        url: "", alt, caption, order, availableOnline: false }))
+        : record.editorial.gallery.map(({ id, url, alt, caption, order }) => ({ id, url, alt, caption, order })).sort((a, b) => a.order - b.order) },
     sourcePermissions: { canEditManual: permissions.canEdit === true, canRename: false, canEditTaxonomy: false, canEditMedia: false,
       canRefresh: false, canDelete: false, canRestore: false },
-    sourceInfo: { type: "shared-project-record", recordSchemaVersion: 1, generatedBound: record.generated !== null,
-      localFilesInspected: false, remoteFilesVerified: false, mediaStorage: "public-https-reference",
+    sourceInfo: { type: "shared-project-record", recordSchemaVersion: record.schemaVersion, generatedBound: record.generated !== null,
+      localFilesInspected: false, remoteFilesVerified: false, mediaStorage: "project-or-public-reference",
       connection: ["online", "offline", "disconnected", "authentication-required", "forbidden", "checking", "closed"].includes(status.connection) ? status.connection : "checking",
       localPending: object.localPending === true, localConflict: object.localConflict === true,
       approval: ["approved", "draft", "local-draft"].includes(object.approval) ? object.approval : "draft" },

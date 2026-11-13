@@ -5,8 +5,13 @@ import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { tmpdir, assertTestTempPath } from '../../scripts/test-temp.mjs';
+import { readBundledSpeciesCatalog } from '../../species-explorer/species-content/bundled.mjs';
+import { assertCatalogTitleQuality } from './catalog-editorial.mjs';
+import { checkMobileTaxonomyNames } from './taxonomy-names.mjs';
 
 const mobile = fileURLToPath(new URL('../', import.meta.url));
+assertCatalogTitleQuality(JSON.parse(await readBundledSpeciesCatalog(path.resolve(mobile, '..'))));
+checkMobileTaxonomyNames();
 const evidence = path.join(mobile, 'build-evidence');
 const previousChecks = fs.existsSync(path.join(evidence, 'checks.json'))
   ? JSON.parse(fs.readFileSync(path.join(evidence, 'checks.json'), 'utf8')) : null;
@@ -27,8 +32,10 @@ const sdk = process.env.ARTEN_ANDROID_SDK || 'C:\\Users\\felix\\AppData\\Local\\
 const jdk = process.env.ARTEN_JAVA_HOME || 'C:\\Program Files\\Android\\Android Studio\\jbr';
 const dart = path.join(flutter, 'bin/cache/dart-sdk/bin/dart.exe');
 const snapshot = path.join(flutter, 'bin/cache/flutter_tools.snapshot');
-for (const item of [dart, snapshot, path.join(sdk, 'platforms/android-36/android.jar'), path.join(jdk, 'bin/java.exe')]) {
-  if (!fs.existsSync(item)) throw new Error(`Vorhandenes Werkzeug fehlt: ${item}. Keine Installation gestartet.`);
+const sdkTools = ['platforms/android-36/android.jar', 'build-tools/36.0.0/aapt2.exe', 'ndk/28.2.13676358/source.properties',
+  'platform-tools/adb.exe', 'cmake/3.22.1/bin/cmake.exe', 'cmake/3.22.1/bin/ninja.exe'];
+for (const item of [dart, snapshot, path.join(jdk, 'bin/java.exe'), ...sdkTools.map(file => path.join(sdk, file))]) {
+  if (!fs.statSync(item, { throwIfNoEntry: false })?.isFile()) throw new Error(`Vorhandenes Werkzeug fehlt: ${item}. Keine Installation gestartet.`);
 }
 const env = { ...process.env, JAVA_HOME: jdk, ANDROID_HOME: sdk, ANDROID_SDK_ROOT: sdk,
   PUB_CACHE: path.join(cacheRoot, 'pub'), GRADLE_USER_HOME: path.join(cacheRoot, 'gradle'),

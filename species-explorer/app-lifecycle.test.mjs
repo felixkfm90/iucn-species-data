@@ -64,6 +64,7 @@ function createFixture({
 } = {}) {
   const elements = {
     editModeToggle: new FakeElement(),
+    editModeStatus: new FakeElement(),
     search: new FakeElement(),
     statusFilter: new FakeElement(),
     flagFilter: new FakeElement(),
@@ -162,8 +163,8 @@ function createFixture({
 }
 
 test("Lebenszyklus beschreibt Bearbeitungsmodus und Schließwarnung eindeutig", () => {
-  assert.equal(lifecycleModule.editModePresentation(false).label, "Lesemodus 🔒");
-  assert.equal(lifecycleModule.editModePresentation(true).label, "Bearbeitungsmodus 🔓");
+  assert.equal(lifecycleModule.editModePresentation(false).label, "Lesemodus");
+  assert.equal(lifecycleModule.editModePresentation(true).label, "Bearbeitungsmodus");
   assert.equal(lifecycleModule.shouldWarnBeforeUnload({
     pendingChanges: { hasPendingChanges: true },
   }), true);
@@ -206,12 +207,16 @@ test("Lebenszyklus bindet Oberfläche einmal und schaltet den Bearbeitungsmodus"
   assert.equal(fixture.elements.search.listeners.get("input").length, 1);
   assert.equal(fixture.windowRef.listeners.get("beforeunload").length, 1);
   assert.equal(fixture.state.editMode, false);
-  assert.equal(fixture.elements.editModeToggle.textContent, "Lesemodus 🔒");
+  assert.equal(fixture.elements.editModeToggle.textContent, "🔒");
+  assert.equal(fixture.elements.editModeStatus.textContent, "Lesemodus");
+  assert.equal(fixture.elements.editModeToggle.attributes.get("aria-label"), "Bearbeitungsfunktionen einblenden");
 
   await fixture.elements.editModeToggle.emit("click");
   assert.equal(fixture.state.editMode, true);
   assert.equal(fixture.elements.editModeToggle.attributes.get("aria-pressed"), "true");
   assert.equal(fixture.documentRef.body.classes.has("edit-mode"), true);
+  assert.equal(fixture.elements.editModeStatus.textContent, "Bearbeitungsmodus");
+  assert.equal(fixture.elements.editModeToggle.attributes.get("aria-label"), "In den Lesemodus wechseln");
 });
 
 test("Modellaktualisierung verteilt einen konsistenten Schnappschuss", async () => {
@@ -257,6 +262,18 @@ test("Ladefehler werden maskiert angezeigt und geben Aktualisieren wieder frei",
   assert.equal(fixture.elements.reloadButton.disabled, false);
   assert.equal(fixture.elements.reloadButton.textContent, "Aktualisieren");
   assert.equal(fixture.state.dataLoading, false);
+});
+
+test("Ein frischer gebundener Modellrefresh hebt einen früheren Ladefehler auf; fremde Quellenantworten tun das nicht", async () => {
+  let failing = true;
+  const f = createFixture({ loadSnapshot: async () => { if (failing) throw new Error("Datei vorübergehend unlesbar"); return createSnapshot(); } });
+  await f.controller.loadData(); assert.equal(f.state.dataLoadError, "Datei vorübergehend unlesbar");
+  failing = false; await f.controller.refreshExplorerModelOnly(); assert.equal(f.state.dataLoadError, "");
+  let release;
+  const stale = createFixture({ loadSnapshot: () => new Promise((resolve) => { release = resolve; }) });
+  stale.state.dataLoadError = "Aktueller Fehler bleibt";
+  const pending = stale.controller.refreshExplorerModelOnly(); stale.state.workspaceEpoch = 1; release(createSnapshot());
+  await assert.rejects(pending, /während des Ladens gewechselt/); assert.equal(stale.state.dataLoadError, "Aktueller Fehler bleibt");
 });
 
 test("Zugangsverlust des gemeinsamen Bestands entfernt zuvor sichtbare Arten statt lokal auszuweichen", async () => {

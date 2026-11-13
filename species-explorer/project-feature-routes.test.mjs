@@ -35,6 +35,16 @@ test("Projekt- und Abschlussrouten bleiben hinter lokalen Sitzungs-/Originprüfu
     headers: { "content-type": "application/json", "x-species-explorer-session": "fixture-token", origin },
     body: JSON.stringify({ password: "x".repeat(30000) }) });
   assert.equal(response.status, 413, "control and login requests retain the small limit"); await response.text();
+  const pairing = `${origin}/api/shared-project/devices/pairing`;
+  response = await fetch(pairing, { method: "POST", headers: { "content-type": "application/json", origin }, body: "{}" });
+  assert.equal(response.status, 403); await response.text();
+  response = await fetch(pairing, { method: "POST", headers: {
+    "content-type": "application/json", "x-species-explorer-session": "fixture-token", origin },
+  body: JSON.stringify({ projectId: "project", userId: "user" }) });
+  assert.equal(response.status, 200); await response.text();
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.equal(calls.at(-1).action, "issueReadPairing");
+  assert.deepEqual(calls.at(-1).payload, { projectId: "project", userId: "user" });
 });
 
 test("lokale Routen stellen keine freie Bindungs-, Claim- oder native Ausführungsaktion bereit", () => {
@@ -67,6 +77,27 @@ test("normaler gemeinsamer Arteditor erhält benannte Lese-/Vorschau-/Speicherro
   const calls = [], editor = Object.fromEntries(["list", "get", "preview", "save"].map((method) => [method, (...args) => { calls.push([method, ...args]); return { ok: true }; }]));
   for (const action of ["list", "get", "preview", "save"]) await invokeSharedProjectOperation({ speciesEditor: editor }, { action: `species-${action}`, id: "testkauz", payload: { token: "reviewed" } });
   assert.deepEqual(calls, [["list"], ["get", "testkauz"], ["preview", "testkauz", { token: "reviewed" }], ["save", "testkauz", { token: "reviewed" }]]);
+});
+
+test("gemeinsame Neuanlage hat ausschließlich ihre benannten bestätigungspflichtigen POST-Routen", async () => {
+  const calls = [], service = { speciesCreation: Object.fromEntries(["preview", "create", "recover"].map(operation => [operation, payload => calls.push([operation, payload])])) };
+  for (const operation of ["preview", "create", "recover"]) {
+    const route = matchExplorerRoute("POST", `/api/shared-project/species/new/${operation}`);
+    assert.deepEqual(route, { name: "shared-project", action: `species-create-${operation}` });
+    await invokeSharedProjectOperation(service, { ...route, payload: { token: "own-preview" } });
+    assert.notEqual(matchExplorerRoute("GET", `/api/shared-project/species/new/${operation}`).name, "shared-project");
+  }
+  assert.deepEqual(calls, [["preview", { token: "own-preview" }], ["create", { token: "own-preview" }], ["recover", { token: "own-preview" }]]);
+});
+
+test("Verfügbarkeit der gemeinsamen Artanlage ist ausdrücklich lesend und erhält keine Rendererquellen", async () => {
+  const calls = [], service = { speciesCreation: { availability: (...args) => { calls.push(args); return { available: true }; } } };
+  for (const method of ["GET", "HEAD"]) {
+    assert.deepEqual(matchExplorerRoute(method, "/api/shared-project/species/new/availability"), { name: "shared-project", action: "species-create-availability" });
+  }
+  assert.notEqual(matchExplorerRoute("POST", "/api/shared-project/species/new/availability").name, "shared-project");
+  await invokeSharedProjectOperation(service, { action: "species-create-availability", payload: { untrustedSource: "ignored" } });
+  assert.deepEqual(calls, [[]]);
 });
 
 test("gemeinsame Artenansicht und Revision werden vor dem Art-ID-Matcher ausschließlich lesend zugeordnet", async () => {

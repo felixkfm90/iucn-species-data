@@ -113,7 +113,7 @@
         if (archivesController.isOpen()) return;
         archiveGeneration += 1;
         archiveLoading = false;
-        elements.pipelineMenuButton?.focus?.();
+        (elements.appMenuButton || elements.pipelineMenuButton)?.focus?.();
       },
     });
 

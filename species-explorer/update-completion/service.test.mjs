@@ -165,6 +165,21 @@ test("rechtzeitige Abwahl während des Countdowns bleibt auch nach mehrfachen Ab
   assert.equal(f.calls.length, 0);
 });
 
+test("Abwahl zeigt keinen vorherigen Sichtbarkeitsfehler mehr, auch nach dem Wiederöffnen", async (t) => {
+  const f = await fixture(t), countdown = await f.countdown();
+  // During the cancel request the visible button is briefly disabled.
+  f.guard.countdownVisible = false;
+  const blocked = await f.service.evaluate();
+  assert.equal(blocked.status, "blocked");
+  assert.match(blocked.error, /Countdown ist nicht sichtbar bestätigt/);
+  const cancelled = await f.service.cancel(countdown);
+  assert.equal(cancelled.status, "cancelled");
+  assert.equal(cancelled.error, "");
+  assert.equal((await f.create().status()).error, "");
+  assert.equal(await f.service.readClaim(countdown.selectionId), null);
+  assert.deepEqual(f.calls, []);
+});
+
 test("ohne sichtbare Countdownanzeige und frische Bestätigung keine Aktion", async (t) => {
   const f = await fixture(t);
   await f.bind();

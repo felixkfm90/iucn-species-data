@@ -113,6 +113,37 @@ test("password change and device revocation clear credentials without revealing 
   await value.revokeDevice(current.id); assert.equal((await value.snapshot()).permissions.canRead, false);
 }));
 
+test("a confirmed account switch with an interrupted catalog load never shows the first account's management lists", () => scoped(async ({ service, connect, a, b, f, store }) => {
+  let interrupt = false;
+  const value = service({ fetchImpl: async (url, options) => {
+    if (interrupt && new URL(url).pathname.endsWith("/objects/page")) throw new Error("synthetic interrupted catalog read");
+    return fetch(url, options);
+  } });
+  await connect(value); const loaded = await value.refresh({ users: true, devices: true });
+  assert.equal(loaded.users.length, 2); assert.equal(loaded.devices.length, 1);
+  const originalDevice = loaded.devices[0].id, current = await value.get("species", "fixture-owl");
+  await value.editExisting(current.kind, current.id, { expectedEditRevision: current.editRevision, data: species(current.id, "First person's offline draft") });
+  interrupt = true;
+  await assert.rejects(connect(value, b.user.username), denied("offline"));
+  const second = await value.snapshot();
+  assert.equal(second.status.user.id, b.user.id); assert.equal(second.status.connection, "offline");
+  assert.deepEqual(second.devices, []); assert.deepEqual(second.users, []);
+  assert.equal(second.status.pending, 0); assert.equal(second.status.otherProjectPending, 1);
+  interrupt = false;
+  const recovered = await value.refresh();
+  assert.deepEqual(recovered.users, []); assert.deepEqual(recovered.devices, []);
+  const fresh = await value.refresh({ users: true, devices: true });
+  assert.equal(fresh.devices.length, 1); assert.notEqual(fresh.devices[0].id, originalDevice);
+  await assert.rejects(value.connect({ baseUrl: fresh.status.baseUrl, username: a.user.username, password: `${f.password}-wrong` }), denied("authentication_required"));
+  const afterFailedLogin = await value.snapshot();
+  assert.equal(afterFailedLogin.status.user.id, b.user.id); assert.equal(afterFailedLogin.status.connection, "online");
+  assert.equal(afterFailedLogin.permissions.canManageUsers, true);
+  await connect(value, a.user.username);
+  assert.equal((await value.snapshot()).status.pending, 1);
+  assert.equal((await value.get("species", "fixture-owl")).data.sections[0].text, "First person's offline draft");
+  assert.equal(store.getObject(a.token, "species", "fixture-owl").data.commonName, "Testkauz");
+}));
+
 test("a rejected secure credential write must not leave a silently usable RAM login", () => scoped(async ({ service, connect }) => {
   const value = service({ credentialStore: { async get() { return null; }, async set() { throw new Error("synthetic OS encryption failure"); }, async delete() {} } });
   await assert.rejects(connect(value), denied("credential_store_unavailable"));
@@ -150,16 +181,18 @@ class Element {
   replaceChildren(...children) { this.children = []; this._text = ""; this.append(...children); }
   setAttribute(key, value) { this.attributes.set(key, String(value)); }
   addEventListener(key, callback) { const list = this.handlers.get(key) || []; list.push(callback); this.handlers.set(key, list); }
+  getContext() { this.paintedModules = 0; return { fillRect: () => { this.paintedModules++; } }; }
   querySelectorAll(selector) { const names = selector.split(",").map((part) => part.trim().toUpperCase()); return all(this).filter((node) => names.includes(node.tagName)); }
   async emit(key) { for (const fn of this.handlers.get(key) || []) await fn({ target: this, preventDefault() {} }); }
 }
 function all(root) { return root.children.flatMap((child) => [child, ...all(child)]); }
-async function renderer(seed, { speciesReviewFactory = null } = {}) {
+async function renderer(seed, { speciesReviewFactory = null, canEdit = () => true, onProjectState = () => {}, confirmAction, pairing } = {}) {
   const root = new Element("div"), calls = [], confirmations = [];
   let stored = structuredClone(seed);
   const document = { createElement: (tag) => new Element(tag) }, context = { document, URL, Date, console, setTimeout, clearTimeout };
   context.window = context;
   if (speciesReviewFactory) context.SpeciesExplorerSpeciesConflicts = { createSpeciesConflictReview: speciesReviewFactory };
+  if (pairing) vm.runInNewContext(await fs.readFile(fileURLToPath(new URL("../public/vendor/qrcode-generator-2.0.4.js", import.meta.url)), "utf8"), context);
   vm.runInNewContext(await fs.readFile(fileURLToPath(new URL("../public/app-shared-project.js", import.meta.url)), "utf8"), context);
   const api = { snapshot: async () => structuredClone(stored), connect: async (input) => { calls.push(["connect", input]); return structuredClone(stored); },
     editExisting: async (...args) => { calls.push(["edit", ...args]); const object = stored.objects.find((item) => item.kind === args[0] && item.id === args[1]); object.data = structuredClone(args[2].data); object.localPending = true; return structuredClone(object); },
@@ -167,19 +200,207 @@ async function renderer(seed, { speciesReviewFactory = null } = {}) {
     approve: async (...args) => { calls.push(["approve", ...args]); return {}; }, sync: async () => { calls.push(["sync"]); return structuredClone(stored); },
     refresh: async (input) => { calls.push(["refresh", input]); return structuredClone(stored); }, disconnect: async () => structuredClone(stored),
     resolve: async (...args) => { calls.push(["resolve", ...args]); return stored.objects[0]; } };
+  if (pairing) api.issueReadPairing = async (input) => { calls.push(["pairing", input]); return pairing(input); };
   const controller = context.SpeciesExplorerSharedProject.createSharedProjectController({ elements: { sharedProjectRoot: root }, documentImpl: document, api,
+    canEdit, onProjectState,
     ...(speciesReviewFactory ? { fetchJson: async () => ({}) } : {}),
-    confirmAction: async (input) => { confirmations.push(input); return true; } });
+    confirmAction: async (input) => { confirmations.push(input); return confirmAction ? confirmAction(input) : true; } });
   await controller.open();
   const findButton = (text) => all(root).find((node) => node.tagName === "BUTTON" && node.textContent === text);
   const findInput = (label) => all(root).find((node) => node.tagName === "LABEL" && node._text === label)?.children[0];
   return { root, controller, api, calls, confirmations, findButton, findInput, module: context.SpeciesExplorerSharedProject, replace: (value) => { stored = structuredClone(value); } };
 }
+
+test("renderer draws an invitation locally and hides it on close or loss of edit mode", async () => {
+  const seed = rendererSeed(), server = "https://project.invalid:5443";
+  seed.status.baseUrl = server;
+  const code = "p1_" + "A".repeat(43);
+  let editing = true;
+  const h = await renderer(seed, { canEdit: () => editing, pairing: async () => ({
+    schemaVersion: 1, code, projectId: seed.status.projectId, server, expiresAt: new Date(Date.now() + 120000).toISOString(),
+  }) });
+  try {
+    const node = h.findButton("Handy koppeln");
+    node.parentElement.parentElement.open = true;
+    await node.emit("click");
+    assert.deepEqual(h.calls.map(([operation, args]) => [operation, args.projectId, args.userId]), [["pairing", seed.status.projectId, seed.status.user.id]]);
+    const canvas = all(h.root).find(element => element.tagName === "CANVAS");
+    assert.ok(canvas.paintedModules > 100 && canvas.width === canvas.height);
+    assert.ok(!h.root.textContent.includes(code));
+    await h.findButton("QR-Code ausblenden").emit("click");
+    assert.equal(canvas.width, 0);
+    assert.equal(all(h.root).filter(element => element.tagName === "CANVAS").length, 0);
+    await node.emit("click");
+    assert.ok(all(h.root).some(element => element.tagName === "CANVAS"));
+    editing = false; h.controller.editingModeChanged();
+    assert.ok(!h.findButton("Handy koppeln"));
+    assert.ok(!all(h.root).some(element => element.tagName === "CANVAS"));
+    await node.emit("click");
+    assert.equal(h.calls.length, 2);
+  } finally { h.controller.destroy(); }
+});
 function rendererSeed({ role = "admin" } = {}) {
   return { schemaVersion: 1, status: { connection: "online", pending: 0, conflicts: 0, projectId: "fixture-project", user: { id: "fixture-user", displayName: "Fixture", role }, readOnlySession: false },
     permissions: { canRead: true, canEdit: role !== "reader", canCreate: role !== "reader", canApprove: ["admin", "publisher"].includes(role), canManageUsers: false, canManageDevices: true, canChangePassword: false },
     objects: [{ kind: "species", id: "fixture-owl", revision: "displayed-revision", editRevision: "displayed-local-hash", ordinal: 2, approval: "draft",
       data: { ...species(), commonName: "<script>foreign text</script>", media: { sounds: [], gallery: [{ id: "photo", url: "https://images.squarespace-cdn.com/content/fixture.jpg", alt: "Original alt", caption: "Original caption", order: 0 }] } } }], conflicts: [], users: [], devices: [] };
+}
+
+test("renderer global read mode permits login and reads but not editing, sync or stale mutation events, without masking server roles", async () => {
+  let editing = true; const received = [], seed = rendererSeed();
+  const h = await renderer(seed, { canEdit: () => editing, onProjectState: (project) => received.push(project) });
+  await h.controller.select("species", "fixture-owl");
+  const field = h.findInput("Fachtext"), form = field.parentElement.parentElement.parentElement.parentElement;
+  const sync = h.findButton("Lokale Änderungen abgleichen"), create = h.findButton("Neue Art vorbereiten"), approve = h.findButton("Aktuelle Version intern freigeben");
+  editing = false; h.controller.editingModeChanged?.();
+  field.value = "Alte Eingabe darf nicht übernehmen"; await field.emit("input");
+  await sync.emit("click"); await create.emit("click"); await approve.emit("click");
+  await form.emit("submit"); await settled();
+  assert.equal(h.controller.hasUnsavedChanges(), false); assert.deepEqual(h.calls, []);
+  assert.equal(h.findInput("Fachtext").disabled, true);
+  const password = h.findInput("Passwort"); password.value = "synthetic only";
+  await password.parentElement.parentElement.emit("submit"); await settled();
+  assert.equal(h.calls.filter(([kind]) => kind === "connect").length, 1);
+  assert.equal(received.at(-1).permissions.canEdit, true, "Serverrechte bleiben unverändert für andere Fachcontroller");
+  assert.equal(received.at(-1).status.user.role, "admin");
+  await h.findButton("Serverstand lesen").emit("click"); await settled();
+  assert.equal(h.calls.filter(([kind]) => kind === "refresh").length, 1);
+});
+
+test("renderer async approval confirmation cannot write after a global read-mode change", async () => {
+  for (const returnToEditing of [false, true]) {
+    let editing = true, release;
+    const h = await renderer(rendererSeed(), { canEdit: () => editing, confirmAction: () => new Promise((resolve) => { release = resolve; }) });
+    await h.controller.select("species", "fixture-owl");
+    const pending = h.findButton("Aktuelle Version intern freigeben").emit("click");
+    editing = false; h.controller.editingModeChanged?.();
+    if (returnToEditing) { editing = true; h.controller.editingModeChanged(); }
+    release(true); await pending; await settled();
+    assert.equal(h.calls.filter(([kind]) => kind === "approve").length, 0);
+  }
+});
+
+test("renderer binds approval to the displayed revision before confirmation instead of a subsequently refreshed version", async () => {
+  let release;
+  const seed = rendererSeed(), h = await renderer(seed, { confirmAction: () => new Promise((resolve) => { release = resolve; }) });
+  await h.controller.select("species", "fixture-owl");
+  const pending = h.findButton("Aktuelle Version intern freigeben").emit("click");
+  const next = structuredClone(seed); next.objects[0].revision = "later-unreviewed-version";
+  h.replace(next); await h.controller.refresh(); release(true); await pending; await settled();
+  assert.equal(h.calls.filter(([kind]) => kind === "approve").length, 0);
+});
+
+test("renderer disables old admin and password forms after local mode loss while preserving actual administration rights", async () => {
+  let editing = true; const seed = rendererSeed();
+  seed.permissions.canManageUsers = true; seed.permissions.canChangePassword = true;
+  seed.users = [{ id: "other", username: "other", displayName: "Andere Person", role: "reader", version: 1 }];
+  seed.devices = [{ id: "device", label: "Anderes Gerät", revoked: false, expiresAt: "2030-01-01T00:00:00Z" }];
+  const h = await renderer(seed, { canEdit: () => editing });
+  const oldUserButton = h.findButton("Rechteänderung bestätigen"), oldDeviceButton = h.findButton("Gerät abmelden");
+  const userForm = h.findInput("Benutzername").parentElement.parentElement;
+  const old = h.findInput("Bisheriges Passwort"), next = h.findInput("Neues Passwort · mindestens 12 Zeichen"), repeated = h.findInput("Neues Passwort wiederholen");
+  old.value = "synthetic current"; next.value = repeated.value = "synthetic longer password";
+  const passwordForm = old.parentElement.parentElement;
+  for (const key of ["updateUser", "createUser", "revokeDevice", "changePassword"]) h.api[key] = async () => { h.calls.push([key]); return {}; };
+  editing = false; h.controller.editingModeChanged();
+  await oldUserButton.emit("click"); await oldDeviceButton.emit("click"); await userForm.emit("submit"); await passwordForm.emit("submit"); await settled();
+  assert.deepEqual(h.calls, []); assert.equal(h.findButton("Rechteänderung bestätigen"), undefined);
+  editing = true; h.controller.editingModeChanged(); assert.ok(h.findButton("Rechteänderung bestätigen"));
+});
+
+test("renderer confirms the named person and exact rights and stops if the proposed rights change", async () => {
+  let release;
+  const seed = rendererSeed(); seed.permissions.canManageUsers = true;
+  seed.users = [{ id: "target", username: "target", displayName: "Testperson", role: "reader", version: 1 }];
+  const h = await renderer(seed, { confirmAction: () => new Promise(resolve => { release = resolve; }) });
+  h.api.updateUser = async (...args) => { h.calls.push(["updateUser", ...args]); return {}; };
+  const role = h.findInput("Benutzerstufe"), button = h.findButton("Rechteänderung bestätigen");
+  role.value = "contributor"; await role.emit("change");
+  const first = button.emit("click");
+  assert.match(h.confirmations[0].message, /Testperson.*Mitarbeit/);
+  role.value = "admin"; await role.emit("change");
+  release(true); await first;
+  assert.deepEqual(h.calls, []);
+  assert.match(h.root.textContent, /ausgewählten Rechte.*erneut/);
+  const second = button.emit("click");
+  assert.match(h.confirmations[1].message, /Testperson.*Administration/);
+  release(true); await second;
+  assert.deepEqual(JSON.parse(JSON.stringify(h.calls)), [["updateUser", "target", { expectedVersion: 1, role: "admin", blocked: false }]]);
+});
+
+test("renderer suspends a dirty draft across a foreign service origin and restores it only for the original service identity", async () => {
+  const seed = rendererSeed(); seed.status.baseUrl = "https://first.example.org";
+  const h = await renderer(seed); await h.controller.select("species", "fixture-owl");
+  const field = h.findInput("Fachtext"); field.value = "Privater ungespeicherter Fachtext"; await field.emit("input");
+  const other = structuredClone(seed); other.status.baseUrl = "https://second.example.org"; h.replace(other); await h.controller.refresh();
+  assert.equal(h.findInput("Fachtext"), undefined); assert.equal(h.controller.hasUnsavedChanges(), true);
+  h.replace(seed); await h.controller.refresh(); assert.equal(h.findInput("Fachtext").value, "Privater ungespeicherter Fachtext");
+  assert.equal(h.controller.hasUnsavedChanges(), true); assert.deepEqual(h.calls, []);
+});
+
+for (const [label, method, title] of [["admin-right", "updateUser", "Rechteänderung bestätigen"], ["device", "revokeDevice", "Gerät abmelden"]]) {
+  test(`renderer ${label} confirmation cannot reuse old consent after another authorized account, project or service takes over`, async () => {
+    for (const drift of ["account", "project", "service"]) {
+      let release;
+      const seed = rendererSeed(); seed.status.baseUrl = "https://first.example.org"; seed.permissions.canManageUsers = true;
+      seed.users = [{ id: "target-person", username: "target", displayName: "Zielperson", role: "reader", version: 1 }];
+      seed.devices = [{ id: "target-device", label: "Zielgerät", revoked: false, expiresAt: "2030-01-01T00:00:00Z" }];
+      const h = await renderer(seed, { confirmAction: () => new Promise((resolve) => { release = resolve; }) });
+      h.api[method] = async (...args) => { h.calls.push([method, ...args]); return {}; };
+      await h.controller.select("species", "fixture-owl");
+      const field = h.findInput("Fachtext"); field.value = "Erhaltene private Eingabe"; await field.emit("input");
+      const pending = h.findButton(title).emit("click");
+      assert.equal(typeof release, "function");
+      const other = structuredClone(seed);
+      if (drift === "account") other.status.user.id = "another-authorized-admin";
+      else if (drift === "project") other.status.projectId = "another-project";
+      else other.status.baseUrl = "https://second.example.org";
+      h.replace(other); await h.controller.refresh();
+      release(true); await pending; await settled();
+      assert.equal(h.calls.filter(([kind]) => kind === method).length, 0, drift);
+      assert.equal(h.controller.hasUnsavedChanges(), true, "Die ursprüngliche Eingabe bleibt erhalten");
+      h.replace(seed); await h.controller.refresh();
+      assert.equal(h.findInput("Fachtext").value, "Erhaltene private Eingabe");
+    }
+  });
+}
+
+test("renderer keeps rebuilt draft fields locked through read-edit cycling while an accepted save is still running", async () => {
+  let editing = true, release;
+  const h = await renderer(rendererSeed(), { canEdit: () => editing }); await h.controller.select("species", "fixture-owl");
+  const input = h.findInput("Fachtext"); input.value = "Gestartete Speicherfassung"; await input.emit("input");
+  const original = h.api.editExisting, gate = new Promise((resolve) => { release = resolve; });
+  h.api.editExisting = async (...args) => { await gate; return original(...args); };
+  await input.parentElement.parentElement.parentElement.parentElement.emit("submit");
+  assert.equal(h.controller.getState().busy, true);
+  editing = false; h.controller.editingModeChanged(); editing = true; h.controller.editingModeChanged();
+  try { assert.equal(h.findInput("Fachtext").disabled, true, "Der Neuaufbau darf während des Saves keine Fachfelder freigeben"); }
+  finally { release(); await settled(); }
+  assert.equal(h.controller.getState().busy, false); assert.equal(h.findInput("Fachtext").disabled, false);
+  assert.equal(h.findInput("Fachtext").value, "Gestartete Speicherfassung");
+  assert.equal(h.controller.hasUnsavedChanges(), true, "Die alte Antwort bestätigt nicht still den neuen Moduskontext");
+  assert.equal(h.calls.filter(([kind]) => kind === "edit").length, 1, "Die bereits gestartete Speicherung bleibt bestehen");
+});
+
+for (const stage of ["save-response", "snapshot-response"]) {
+  test(`renderer preserves a later queued draft edit instead of adopting the older ${stage}`, async () => {
+    let release, entered = false;
+    const h = await renderer(rendererSeed()); await h.controller.select("species", "fixture-owl");
+    const input = h.findInput("Fachtext"); input.value = "Ursprüngliche Speicherfassung"; await input.emit("input");
+    const method = stage === "save-response" ? "editExisting" : "snapshot", original = h.api[method];
+    const gate = new Promise((resolve) => { release = resolve; });
+    h.api[method] = async (...args) => { entered = true; await gate; return original(...args); };
+    await input.parentElement.parentElement.parentElement.parentElement.emit("submit"); await settled();
+    assert.equal(entered, true); assert.equal(h.controller.getState().busy, true);
+    // A native input event already queued before disabling its original field
+    // still belongs to the unchanged owner and must not be silently discarded.
+    input.value = "Spätere noch ungespeicherte Eingabe"; await input.emit("input");
+    release(); await settled();
+    assert.equal(h.findInput("Fachtext").value, "Spätere noch ungespeicherte Eingabe");
+    assert.equal(h.controller.hasUnsavedChanges(), true); assert.equal(h.findInput("Fachtext").disabled, false);
+    const writes = h.calls.filter(([kind]) => kind === "edit"); assert.equal(writes.length, 1);
+    assert.equal(writes[0][3].data.sections[0].text, "Ursprüngliche Speicherfassung");
+  });
 }
 async function settled() { for (let i = 0; i < 8; i++) await new Promise((resolve) => setImmediate(resolve)); }
 
@@ -203,6 +424,32 @@ test("Bildtextkonflikte erhalten ihren eigenen Vergleich und werden nicht im all
   assert.match(h.root.textContent, /Website-Bildtexte → Seitenaktionen → Bildtexte gemeinsam abgleichen/);
   for (const label of ["Serverfassung wählen", "Eigenen Vorschlag wählen", "Fassungen zusammenführen"]) assert.equal(h.findButton(label), undefined);
   assert.deepEqual(h.calls, []);
+});
+
+test("Artseitenkonflikte zeigen Abschnittstexte und Bildreihenfolge und bieten eine gebundene Auswahl", async () => {
+  const seed = rendererSeed();
+  const makePage = (title, text) => ({ type: "fn-species-page", title, document: { title, slug: "testkauz", parentPath: "/wildlife/heimische-tierwelt",
+    sections: [{ id: "habitat", title: "Lebensraum", blocks: [{ type: "paragraph", text }] }],
+    images: [{ alt: "Kauz am Höhleneingang", caption: "Erstes Bild" }, { alt: "Kauz im Flug", caption: "Zweites Bild" }] } });
+  const current = makePage("Gemeinsam", "Gemeinsamer Lebensraumtext");
+  const first = makePage("Erster Entwurf", "Erster lokaler Lebensraumtext"), second = makePage("Zweiter Entwurf", "Zweiter lokaler Lebensraumtext");
+  seed.objects = [{ kind: "page", id: "page-id", data: first, revision: "r0", editRevision: "e1", ordinal: 1 }];
+  seed.conflicts = [{ id: "page-conflict", kind: "page", objectId: "page-id", base: current, current, proposed: first,
+    latestServer: { revision: "r2", ordinal: 2, data: current },
+    localVersions: [{ changeId: "first", data: first }, { changeId: "second", data: second }], pageReview: { hash: "a".repeat(64) } }];
+  const h = await renderer(seed);
+  assert.match(h.root.textContent, /Gemeinsamer Lebensraumtext/);
+  assert.match(h.root.textContent, /Erster lokaler Lebensraumtext/);
+  assert.match(h.root.textContent, /Zweiter lokaler Lebensraumtext/);
+  assert.match(h.root.textContent, /Bild 1.*Kauz am Höhleneingang.*Bild 2.*Kauz im Flug/s);
+  assert.equal(h.findButton("Fassungen zusammenführen"), undefined);
+  assert.equal(h.findButton("Aktuelle Serverfassung wählen").disabled, false);
+  assert.equal(h.findButton("Lokale Fassung 2 wählen").disabled, false);
+  await h.controller.select("page", "page-id");
+  assert.equal(h.findInput("Seitentitel"), undefined);
+  await h.findButton("Lokale Fassung 2 wählen").emit("click");
+  assert.deepEqual(structuredClone(h.calls.filter(([action]) => action === "resolve").at(-1)), ["resolve", "page-conflict",
+    { expectedRevision: "r2", pageChoice: { reviewHash: "a".repeat(64), changeId: "second" } }]);
 });
 
 test("vollständige Art-Arbeitsdatensätze und ihre Konflikte werden nicht durch das schmalere Katalogformular reduziert", async () => {
@@ -240,7 +487,7 @@ test("the project panel opens typed conflicts in their own review and preserves 
   h.controller.destroy(); assert.equal(destroyed, 1);
 });
 
-test("shared-project setup preserves edit-mode gating, dialog busy guard, importer drafts and teardown", async () => {
+test("shared-project setup permits read-mode login while preserving edit guards, dialog busy guard, importer drafts and teardown", async () => {
   const nodes = new Map(["root", "dialog", "close", "import-root", "open"].map((id) => [`#shared-project-${id}`, new Element("div")]));
   const root = nodes.get("#shared-project-root"), windowHandlers = new Map();
   const document = { createElement: (tag) => new Element(tag), querySelector: (selector) => nodes.get(selector) };
@@ -259,17 +506,20 @@ test("shared-project setup preserves edit-mode gating, dialog busy guard, import
   assert.equal(dialogOptions.dialog, nodes.get("#shared-project-dialog")); assert.equal(dialogOptions.closeButtons[0], nodes.get("#shared-project-close"));
   assert.equal(reads, 0, "setup does not start a connection or read");
   await nodes.get("#shared-project-open").emit("click");
-  assert.equal(dialogOpens, 0); assert.equal(reads, 0, "read mode does not open or load the project");
+  assert.equal(dialogOpens, 1); assert.equal(reads, 1, "read mode can open login and read the existing project");
+  assert.equal(importerOptions.canEdit(), false); assert.equal(dialogOptions.beforeClose(), false);
+  release(rendererSeed()); await settled(); assert.equal(imported, 1);
   editing = true; dialogAllowed = false; await nodes.get("#shared-project-open").emit("click");
-  assert.equal(reads, 0, "a refused dialog open does not load the project");
+  controller.editingModeChanged();
+  assert.equal(reads, 1, "a refused dialog open does not load the project");
   dialogAllowed = true; await nodes.get("#shared-project-open").emit("click");
-  assert.equal(reads, 1); assert.equal(imported, 0); assert.equal(dialogOptions.beforeClose(), false);
-  release(rendererSeed()); await settled(); assert.equal(imported, 1); assert.equal(dialogOptions.beforeClose(), undefined);
+  assert.equal(reads, 2); assert.equal(imported, 1); assert.equal(dialogOptions.beforeClose(), false);
+  release(rendererSeed()); await settled(); assert.equal(imported, 2); assert.equal(dialogOptions.beforeClose(), undefined);
   await controller.select("species", "fixture-owl");
   const text = all(root).find((node) => node.tagName === "LABEL" && node._text === "Fachtext").children[0];
   text.value = "Unsent private form input"; await text.emit("input");
   assert.equal(importerOptions.hasUnsavedChanges(), true, "the importer still sees unsaved private inputs");
-  const refresh = importerOptions.refreshProject(); assert.equal(reads, 2); release(rendererSeed()); await refresh;
+  const refresh = importerOptions.refreshProject(); assert.equal(reads, 3); release(rendererSeed()); await refresh;
   const refreshedText = all(root).find((node) => node.tagName === "LABEL" && node._text === "Fachtext").children[0];
   assert.equal(refreshedText.value, "Unsent private form input"); assert.equal(controller.hasUnsavedChanges(), true);
   windowHandlers.get("pagehide")();
@@ -334,6 +584,25 @@ function importPlan(seed, state = "planned") {
   return { projectId: seed.status.projectId, baseUrl: seed.status.baseUrl, planId: "fixture-plan", state, releaseForReaders: false, canApply: state !== "complete",
     counts: { willCreate: 1, skippedExisting: 0, created: 0, approved: 0 }, items: [] };
 }
+
+test("initial import preview distinguishes matching and differing retained project records", async () => {
+  const admin = rendererSeed(); admin.permissions.canManageUsers = true;
+  const h = await importPanel(admin);
+  try {
+    const plan = importPlan(admin);
+    plan.counts = { ...plan.counts, skippedExisting: 2, existingDifferent: 1 };
+    plan.items = [
+      { id: "existing-match", commonName: "Eisvogel", state: "skipped", existingMatchesSource: true },
+      { id: "existing-different", commonName: "Graureiher", state: "skipped", existingMatchesSource: false },
+    ];
+    h.importState({ available: true, busy: false, plan });
+    await h.importer.refresh();
+    assert.match(h.importRoot.textContent, /Abweichende vorhandene Artfassungen: 1/);
+    assert.match(h.importRoot.textContent, /Eisvogel · vorhanden, bleibt erhalten/);
+    assert.match(h.importRoot.textContent, /Graureiher · abweichende Projektfassung bleibt erhalten/);
+    assert.equal(h.calls.filter(([url, method]) => url.startsWith("/api/shared-project/import/") && method === "POST").length, 0);
+  } finally { h.close(); }
+});
 
 test("actual project panel enables import after first login in the already open panel", async () => {
   const offline = rendererSeed(); offline.status.connection = "disconnected"; offline.status.user = null;
@@ -452,6 +721,7 @@ test("full import clearly identifies its source and requires confirmation to rep
     const plan = { ...importPlan(admin), canReplace: true, source: { kind: "public-catalog", version: 1 } };
     h.importState({ available: true, busy: false, source: { kind: "working-records", version: 1 }, plan }); await h.importer.refresh();
     assert.match(h.importRoot.textContent, /Vollständige Art-Datensätze übernehmen/);
+    assert.match(h.importRoot.textContent, /öffentlicher Anfangsbestand, keine vollständigen Arbeitsdaten/);
     assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true);
     await h.findImportButton("Übernahme zuerst prüfen").emit("click"); await settled();
     assert.equal(h.confirmations.length, 1); assert.equal(h.confirmations[0].title, "Vorbereitung erneuern?");
@@ -459,6 +729,23 @@ test("full import clearly identifies its source and requires confirmation to rep
     assert.equal(request[2].replaceUnstartedPlanId, plan.planId);
     assert.equal(h.calls.filter(([url]) => url === "/api/shared-project/import/start").length, 0);
   } finally { h.close(); }
+});
+
+test("begonnener oder abgeschlossener öffentlicher Altplan wird nicht als fertiger Vollimport angezeigt", async () => {
+  const admin = rendererSeed(); admin.permissions.canManageUsers = true;
+  for (const state of ["stopped", "complete"]) {
+    const h = await importPanel(admin);
+    try {
+      const plan = { ...importPlan(admin), state, canReplace: false, source: { kind: "public-catalog", version: 1 } };
+      h.importState({ available: true, busy: false, source: { kind: "working-records", version: 1 }, plan }); await h.importer.refresh();
+      assert.match(h.importRoot.textContent, /öffentlicher Anfangsbestand, keine vollständigen Arbeitsdaten/);
+      assert.match(h.importRoot.textContent, /Anschluss vollständiger Arbeitsdaten ist noch offen/);
+      assert.doesNotMatch(h.importRoot.textContent, /Übernahme abgeschlossen/);
+      assert.equal(h.findImportButton("Übernahme zuerst prüfen").disabled, true);
+      assert.equal(h.findImportButton("Geprüfte Übernahme starten").disabled, true);
+      assert.equal(h.calls.filter(([url, method]) => url.startsWith("/api/shared-project/import/") && method === "POST").length, 0);
+    } finally { h.close(); }
+  }
 });
 
 test("cancelled replan preserves the previous plan without sending a replacement", async () => {
@@ -563,6 +850,7 @@ test("renderer shows preserved conflict versions and sends a reviewed merged tar
   const h = await renderer(seed);
   for (const value of ["Base version", "Server version", "Original proposal", "Latest server text", "Own further draft"]) assert.ok(h.root.textContent.includes(value));
   assert.equal(h.findButton("Serverfassung wählen").disabled, true);
+  assert.equal(h.findButton("Fassungen zusammenführen").disabled, false);
   await h.findButton("Fassungen zusammenführen").emit("click");
   const field = h.findInput("Fachtext"); assert.equal(field.value, "Own further draft"); field.value = "Reviewed merged content"; await field.emit("input");
   await h.findButton("Zusammengeführten Zieltext bestätigen").parentElement.emit("submit"); await settled();

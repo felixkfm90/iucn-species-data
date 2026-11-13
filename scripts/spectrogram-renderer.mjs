@@ -63,7 +63,13 @@ export async function renderSpectrogram({
   outputPath,
   ffmpegPath = resolveFfmpegPath(),
   options = {},
+  signal,
+  timeoutMs = 60_000,
+  spawnProcess = spawn,
 }) {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 120_000 || typeof spawnProcess !== "function"
+      || signal !== undefined && !(signal instanceof AbortSignal)) throw new TypeError("Ungültige Spektrogramm-Laufzeitgrenze.");
+  if (signal?.aborted) throw Object.assign(new Error("Spektrogrammerzeugung wurde abgebrochen."), { code: "SPECTROGRAM_CANCELLED" });
   const settings = { ...DEFAULT_SPECTROGRAM_OPTIONS, ...options };
   validateSettings(settings);
   await mkdir(dirname(outputPath), { recursive: true });
@@ -103,12 +109,12 @@ export async function renderSpectrogram({
   }
   ffmpegArgs.push(outputPath);
 
-  const run = await runProcess(ffmpegPath, ffmpegArgs);
+  const run = await runProcess(ffmpegPath, ffmpegArgs, { signal, timeoutMs, spawnProcess });
   if (run.status !== 0) {
     const error = new Error(
       `Spektrogramm konnte nicht erzeugt werden: ${run.stderr.trim() || `ffmpeg exit ${run.status}`}`,
     );
-    error.code = "SPECTROGRAM_GENERATION_FAILED";
+    error.code = run.code || "SPECTROGRAM_GENERATION_FAILED";
     error.ffmpegStatus = run.status;
     throw error;
   }
@@ -141,26 +147,34 @@ function validateSettings(settings) {
   }
 }
 
-function runProcess(command, args) {
+function runProcess(command, args, { signal, timeoutMs, spawnProcess }) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, {
+    const child = spawnProcess(command, args, {
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
-
-    let stdout = "";
-    let stderr = "";
+    let stdout = "", stderr = "", code = null, failed = false;
+    const terminate = (reason, message) => {
+      if (code) return;
+      code = reason; stderr = `${stderr}\n${message}`.slice(-65_536);
+      try { child.kill(); } catch (error) { stderr = `${stderr}\n${error.message}`.slice(-65_536); }
+    };
+    const abort = () => terminate("SPECTROGRAM_CANCELLED", "Spektrogrammerzeugung wurde abgebrochen.");
+    const timer = setTimeout(() => terminate("SPECTROGRAM_TIMEOUT", "Die Spektrogrammerzeugung hat ihre Laufzeitgrenze überschritten."), timeoutMs);
+    signal?.addEventListener("abort", abort, { once: true });
     child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
+      stdout = (stdout + chunk.toString()).slice(-65_536);
     });
     child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
+      stderr = (stderr + chunk.toString()).slice(-65_536);
     });
     child.on("error", (error) => {
-      resolve({ status: 1, stdout, stderr: stderr + error.message });
+      failed = true; stderr = (stderr + error.message).slice(-65_536);
     });
     child.on("close", (status) => {
-      resolve({ status: Number.isInteger(status) ? status : 1, stdout, stderr });
+      clearTimeout(timer); signal?.removeEventListener("abort", abort);
+      resolve({ status: code || failed ? 1 : Number.isInteger(status) ? status : 1, stdout, stderr, code });
     });
+    if (signal?.aborted) abort();
   });
 }

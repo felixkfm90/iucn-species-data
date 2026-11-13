@@ -35,13 +35,15 @@ class FakeTarget {
   }
 }
 
-test("IUCN-Kartenlink wird nur aus einer numerischen Assessment-ID aufgebaut", () => {
+test("IUCN-Browserkarte benötigt die numerische Taxon- und Assessment-ID", () => {
   assert.equal(
-    editorFiles.iucnDistributionMapUrl({ iucn: { assessmentId: " 264548442 " } }),
-    "https://www.iucnredlist.org/api/v4/assessments/264548442/distribution_map/jpg",
+    editorFiles.iucnDistributionMapUrl({ iucn: { taxonId: "22681114", assessmentId: " 132055069 " } }),
+    "https://www.iucnredlist.org/species/22681114/132055069/distribution_map",
   );
   assert.equal(editorFiles.iucnDistributionMapUrl({ iucn: { assessmentId: "A-12" } }), "");
   assert.equal(editorFiles.iucnDistributionMapUrl(null), "");
+  assert.equal(editorFiles.iucnDistributionMapUrl({ iucn: { assessmentId: "132055069" } }), "");
+  assert.equal(editorFiles.iucnDistributionMapUrl({ iucn: { taxonId: "22681114/other", assessmentId: "132055069" } }), "");
 });
 
 test("Dateileser liefert ausschließlich den Base64-Nutzinhalt", async () => {

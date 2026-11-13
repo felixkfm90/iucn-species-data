@@ -10,8 +10,8 @@
           .some((dialog) => dialog.id !== "pipeline-dialog");
         uiDrafts = values.every((value) => typeof value === "boolean") ? values.some(Boolean) || editingDialog : undefined;
       } catch { uiDrafts = undefined; }
-      const countdownVisible = documentRef.visibilityState === "visible" && statusContainer?.isConnected === true
-        && !statusContainer.hidden && statusContainer.getClientRects().length > 0
+      const accessible = global.SpeciesExplorerUpdateCompletion?.isCountdownAccessible;
+      const countdownVisible = typeof accessible === "function" && accessible({ documentRef, statusContainer }) === true
         && statusContainer.dataset.selectionId === context.selectionId
         && statusContainer.dataset.updateRunId === context.updateRunId;
       return { uiDrafts, countdownVisible: Boolean(countdownVisible) };
@@ -46,9 +46,14 @@
             hasUnsavedDrafts: () => readPresentation().uiDrafts, onError,
           });
         }
-        statusContainer.dataset.selectionId = snapshot.selectionId || "";
-        statusContainer.dataset.updateRunId = snapshot.updateRunId || "";
-        statusContainer.hidden = ["inactive", "disarmed", "cancelled"].includes(snapshot.status);
+        const selectionId = snapshot.selectionId || "";
+        const updateRunId = snapshot.updateRunId || "";
+        const visibleSelection = !statusContainer.hidden && selectionId
+          && statusContainer.dataset.selectionId === selectionId && statusContainer.dataset.updateRunId === updateRunId;
+        statusContainer.dataset.selectionId = selectionId;
+        statusContainer.dataset.updateRunId = updateRunId;
+        statusContainer.hidden = ["inactive", "disarmed"].includes(snapshot.status)
+          || snapshot.status === "cancelled" && !visibleSelection;
         await controller.render(snapshot);
       } catch (error) { onError(error); }
       finally {

@@ -8,6 +8,8 @@ import { validateCatalogSpecies } from "./catalog.mjs";
 import { validateEditableValues, sanitizeAssetName } from "../species-model.mjs";
 import { SPECIES_RECORD_TYPE, validateSpeciesRecord, validateSharedSpecies, guardSpeciesRecordTransition,
   normalizeSpeciesManualValues, applySpeciesManualEdit, projectSpeciesRecordToCatalog } from "./species-record.mjs";
+import { emptySectionHash } from "../page-authoring/model.mjs";
+import { readerEditorialFromProjection } from "./species-editorial-data.mjs";
 
 function working(id = "fixture-owl") {
   return { type: SPECIES_RECORD_TYPE, schemaVersion: 1, id,
@@ -38,6 +40,36 @@ function values(record, changes = {}) {
     size: String(record.input.size), weight: String(record.input.weight), lifeExpectancy: String(record.input.life_expectancy), ...changes };
 }
 const denied = (code) => (error) => error.code === code;
+function richWorking() {
+  const original = working(), projectId = "record2-fixture-project", hash = "e".repeat(64);
+  const normalAssets = Object.fromEntries(Object.entries({ portrait: "portrait.webp", map: "map.jpg", sound: "sound.mp3", credits: "credits.json", spectrogram: "spectrogram.webp" })
+    .map(([role, filename]) => {
+      const file = original.assets.files[filename];
+      return [role, file?.bytes > 0 ? { id: file.id, projectId, sha256: file.sha256, bytes: file.bytes, mimeType: file.mimeType, attribution: `Gebundene Quelle ${role}` } : null];
+    }));
+  const sections = [
+    { id: "general", kind: "general-module", title: "Allgemein", requested: false, blocks: [], sources: [], emptyDecision: null },
+    { id: "habitat", kind: "editorial", title: "Lebensraum", requested: true,
+      blocks: [{ type: "heading", level: 5, text: "Strukturierter Fachtext" }, { type: "numbered-list", items: ["Erster Lebensraum", "Zweiter Lebensraum"] }],
+      sources: [{ id: "source-1", label: "Gemeinsame Fachquelle", url: "https://example.org/field-source" }], emptyDecision: null },
+    { id: "food", kind: "editorial", title: "Nahrung", requested: true, blocks: [], sources: [], emptyDecision: null },
+    { id: "map", kind: "map-module", title: "Verbreitung", requested: false, blocks: [], sources: [], emptyDecision: null },
+  ];
+  sections[2].emptyDecision = { sectionHash: emptySectionHash(sections[2]), actorId: "fixture-admin",
+    confirmedAt: "2026-11-01T12:00:00.000Z", reason: "Bewusste Leerstelle" };
+  const asset = { id: "image-11111111-1111-4111-8111-111111111111", projectId, sha256: hash, bytes: 321,
+    mimeType: "image/png", attribution: "Eigene Aufnahme" };
+  const editorial = readerEditorialFromProjection({ kind: "page-editorial-projection", schemaVersion: 1, websiteUrl: original.editorial.websiteUrl,
+    title: "Testkauz – Fachseite", introduction: [{ type: "paragraph", text: "Unveränderte Einleitung" }], sections,
+    sources: [{ id: "whole-source", label: "Gesamtquelle", sha256: hash }], galleryRequested: true,
+    gallery: [{ id: "usage-a", asset: structuredClone(asset), alt: "Ansicht des Testkauzes", caption: "Erste Verwendung", decorative: false, order: 0 },
+      { id: "usage-b", asset: structuredClone(asset), alt: "", caption: "Weitere Verwendung derselben Datei", decorative: true, order: 1 }],
+    normalAssets, sourceBindings: { projectId, page: { objectId: `fn-species-page-${hash}`, objectRevision: "11111111-1111-4111-8111-111111111111",
+      dataRevision: hash, contentHash: hash, imagesHash: hash, dataHash: hash },
+    species: { id: original.id, objectRevision: "22222222-2222-4222-8222-222222222222", dataHash: hash, sourceHash: hash } },
+    readerApproved: false, externalPublication: "not-performed" });
+  return { ...original, schemaVersion: 2, editorial };
+}
 async function scoped(fn) {
   const f = fixture(); let http; const clients = [];
   try {
@@ -51,6 +83,99 @@ async function scoped(fn) {
     await fn(context);
   } finally { for (const client of clients) await client.close(); await http?.close(); f.cleanup(); }
 }
+
+test("record2 preserves rich editorial and every original private field with exact independent nested structures", () => {
+  const original = richWorking(), before = structuredClone(original), checked = validateSpeciesRecord(original, original.id);
+  assert.deepEqual(checked, before); assert.deepEqual(validateSharedSpecies(original, original.id), before);
+  for (const field of ["input", "generated", "taxonomyOverride", "assessmentBinding", "assets"]) assert.deepEqual(checked[field], working()[field]);
+  assert.equal(checked.schemaVersion, 2); assert.equal(checked.assets.assetName, "Testkauz");
+  assert.equal(checked.editorial.gallery[0].asset.id, checked.editorial.gallery[1].asset.id);
+  checked.editorial.gallery[0].asset.attribution = "Andere Quelle";
+  checked.editorial.sections[2].emptyDecision.reason = "Andere Entscheidung";
+  assert.notEqual(checked.editorial.gallery[0].asset.attribution, checked.editorial.gallery[1].asset.attribution);
+  assert.deepEqual(original, before);
+});
+
+test("record2 manual edits retain immutable historical adoption evidence without requiring old source hashes to match new input", () => {
+  const original = richWorking(), historical = structuredClone(original.editorial.sourceBindings);
+  const next = applySpeciesManualEdit(original, values(original, { englishName: "New editorial owl", size: "42 cm" }));
+  assert.equal(next.input.size, "42 cm"); assert.equal(next.schemaVersion, 2);
+  assert.deepEqual(next.editorial, original.editorial); assert.deepEqual(next.editorial.sourceBindings, historical);
+  assert.deepEqual(next.assets, original.assets); assert.deepEqual(next.generated, original.generated);
+  assert.deepEqual(validateSpeciesRecord(next).editorial.sourceBindings, historical);
+});
+
+test("generic transitions never adopt or remove record2 and cannot alter rich editorial or protected assets", () => {
+  const original = richWorking(), old = working();
+  for (const [before, next] of [[old, original], [original, old]]) {
+    assert.throws(() => guardSpeciesRecordTransition({ objectId: original.id, before, next }), denied("species_record_adoption_required"));
+  }
+  for (const mutate of [item => { item.editorial.title = "Ungeprüfte neue Redaktion"; },
+    item => { item.editorial.gallery[0].alt = "Anderer Alternativtext"; },
+    item => { item.editorial.sourceBindings.page.dataHash = "f".repeat(64); },
+    item => { item.input.additionalUserField.unknown.push("Changed opaque input"); },
+    item => { item.generated.privateGeneratedNote = "Changed original"; },
+    item => { item.assets.portraitMetadata.prompt = "Changed private prompt"; }]) {
+    const next = structuredClone(original); mutate(next);
+    assert.throws(() => guardSpeciesRecordTransition({ objectId: original.id, before: original, next }), denied("species_record_protected"));
+  }
+});
+
+test("record2 requires current complete normal-file bindings while preserving absent normal roles", () => {
+  const original = richWorking(); assert.equal(validateSpeciesRecord(original).editorial.normalAssets.credits, null);
+  for (const mutate of [item => { item.editorial.normalAssets.portrait.id = "wrong-file-id"; },
+    item => { item.editorial.normalAssets.map.sha256 = "f".repeat(64); }, item => { item.editorial.normalAssets.sound.bytes++; },
+    item => { item.editorial.normalAssets.portrait = null; }, item => { delete item.assets.files["map.jpg"]; },
+    item => { item.editorial.normalAssets.credits = { ...item.editorial.normalAssets.sound, id: "invented-credits", mimeType: "application/json" }; },
+    item => { item.editorial.sourceBindings.species.id = "wrong-species"; }]) {
+    const next = structuredClone(original); mutate(next); assert.throws(() => validateSpeciesRecord(next));
+  }
+  const missing = richWorking(); delete missing.assets.files["map.jpg"]; missing.editorial.normalAssets.map = null;
+  missing.assets.files["sound.mp3"].bytes = 0; missing.editorial.normalAssets.sound = null;
+  assert.deepEqual(validateSpeciesRecord(missing).editorial.normalAssets, missing.editorial.normalAssets);
+});
+
+test("record2 preserves role order and rejects stale empty proofs instead of reducing rich content to old flat sections", () => {
+  const original = richWorking();
+  const order = original.editorial.sections.map(section => section.id);
+  assert.deepEqual(validateSpeciesRecord(original).editorial.sections.map(section => section.id), order);
+  const stale = structuredClone(original); stale.editorial.sections[2].title = "Geänderte Überschrift";
+  assert.throws(() => validateSpeciesRecord(stale), denied("invalid_reader_editorial"));
+  const swapped = structuredClone(original); swapped.editorial.sections.reverse();
+  assert.throws(() => validateSpeciesRecord(swapped), denied("invalid_reader_editorial"));
+  const oldShape = { ...original, editorial: working().editorial };
+  assert.throws(() => validateSpeciesRecord(oldShape), denied("invalid_reader_editorial"));
+});
+
+test("record2 cannot be accidentally emitted through catalog1 or treated as already Reader approved", () => {
+  const original = richWorking();
+  assert.throws(() => projectSpeciesRecordToCatalog(original), error => error.code === "reader_catalog_version_required" && error.status === 409);
+  assert.equal("readerApproved" in validateSpeciesRecord(original).editorial, false);
+  assert.deepEqual(projectSpeciesRecordToCatalog(working()), projectSpeciesRecordToCatalog(validateSpeciesRecord(working())));
+});
+
+test("only exact record2 gains bounded four-MiB cloning and large protected manual transitions remain lossless", () => {
+  const original = richWorking(); original.input.additionalUserField.largeProtectedText = "x".repeat(300 * 1024);
+  assert.ok(Buffer.byteLength(JSON.stringify(original)) > 256 * 1024);
+  assert.deepEqual(validateSpeciesRecord(original), original);
+  const next = applySpeciesManualEdit(original, values(original, { weight: "550 g" }));
+  assert.equal(next.input.weight, "550 g");
+  assert.equal(next.input.additionalUserField.largeProtectedText, original.input.additionalUserField.largeProtectedText);
+  const old = working(); old.input.additionalUserField.largeProtectedText = original.input.additionalUserField.largeProtectedText;
+  assert.throws(() => validateSpeciesRecord(old), error => error.code === "data_too_large" && error.status === 413);
+  const forged = structuredClone(original); forged.type = "other-record";
+  assert.throws(() => validateSpeciesRecord(forged), error => error.code === "data_too_large" && error.status === 413);
+  const tooLarge = richWorking(); tooLarge.input.additionalUserField.largeProtectedText = "x".repeat(4 * 1024 * 1024);
+  assert.throws(() => validateSpeciesRecord(tooLarge), error => error.code === "data_too_large" && error.status === 413);
+});
+
+test("record2 accepts full rich sections beyond old record limit and rejects over-two-MiB editorial intact", () => {
+  const original = richWorking(); original.editorial.sections[1].blocks = Array.from({ length: 4 }, () => ({ type: "paragraph", text: "x".repeat(80000) }));
+  assert.deepEqual(validateSpeciesRecord(original).editorial.sections[1].blocks, original.editorial.sections[1].blocks);
+  original.editorial.sections[1].blocks = Array.from({ length: 24 }, () => ({ type: "paragraph", text: "x".repeat(90000) }));
+  assert.throws(() => validateSpeciesRecord(original), error => error.status === 413);
+  assert.equal(original.editorial.sections[1].blocks.length, 24);
+});
 
 test("typed working species preserves every original and unknown field without changing strict legacy catalog validation", () => {
   const source = working(), before = structuredClone(source), checked = validateSpeciesRecord(source, source.id);
@@ -224,6 +349,10 @@ test("actual four-role store enforces typed editing and approval independently o
 
 test("two actual HTTP clients edit different typed species independently and preserve one durable offline conflict after reopening", () => scoped(async ({ store, a, b, f, network, client }) => {
   const first = working(), second = working("fixture-second");
+  // These are two different species, not aliases of one scientific identity.
+  second.input.species = "secunda"; second.input.german = "Zweiter Testkauz";
+  second.generated["Wissenschaftlicher Name"] = "Strix secunda"; second.generated["Deutscher Name"] = second.input.german;
+  second.generated.Species = "secunda"; second.assets.assetName = "Zweiter Testkauz";
   for (const data of [first, second]) store.createObject(a.token, { kind: "species", id: data.id, data });
   const baseUrl = await network(), credentials = createMemoryCredentialStore(); let offline = false;
   const transport = async (...args) => { if (offline) throw new Error("Synthetic offline"); return fetch(...args); };

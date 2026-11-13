@@ -39,6 +39,7 @@
       setupSpeciesRefresh,
       setupSpeciesDelete,
       setupSpeciesApproval = () => {},
+      setupSpeciesPagePreparation = () => {},
       renderWebsiteStatus = () => "",
       renderWebsiteHint = () => "",
     } = dependencies;
@@ -48,10 +49,19 @@
 
     function renderDetail(species) {
       const shared = species.source === "shared-project";
+      if (shared && species.sourceScope && species.revision && species.editRevision) {
+        const assets = { ...species.assets }, scope = new URLSearchParams({ scope: species.sourceScope, revision: species.revision, stamp: species.editRevision });
+        for (const [key, slot] of [["map", "map.jpg"], ["sound", "sound.mp3"], ["spectrogram", "spectrogram.webp"], ["portrait", "portrait.webp"]]) {
+          if (assets[key]?.projectFileBound) assets[key] = { ...assets[key], exists: true, projectContent: true,
+            url: `/api/shared-project/species/${encodeURIComponent(species.id)}/normal-content/${slot}?${scope}` };
+        }
+        species = { ...species, assets };
+      }
       const manualEditable = species.inInput && (!shared || species.sourcePermissions?.canEditManual === true);
       const mediaEditable = species.inInput && (!shared || species.sourcePermissions?.canEditMedia === true);
       const viewAssetStatus = (asset) => shared ? asset.availableOnline ? "Online verfügbar · noch nicht auf diesem Gerät geprüft"
-        : asset.metadataAvailable ? "Angaben im gemeinsamen Datensatz vorhanden" : "Noch kein Medienverweis bereitgestellt" : assetStatusText(asset);
+        : asset.projectContent ? "Gebundene Projektdatei · wird beim Öffnen geprüft"
+          : asset.metadataAvailable ? "Angaben im gemeinsamen Datensatz vorhanden" : "Noch kein Medienverweis bereitgestellt" : assetStatusText(asset);
       const browserMapUrl = iucnDistributionMapUrl(species);
       const editableSize = parseManualMeasurement(
         species.manual.size,
@@ -115,7 +125,7 @@
       const audio = species.assets.sound.exists
         ? `
           <div class="audio-player">
-            <audio class="explorer-audio" preload="metadata" src="${escapeHtml(soundUrl)}"></audio>
+            <audio class="explorer-audio" ${species.assets.sound.projectContent ? 'preload="none" data-project-media' : 'preload="metadata"'} src="${escapeHtml(soundUrl)}"></audio>
             <div
               class="audio-visual"
               role="button"
@@ -123,7 +133,7 @@
               aria-label="Spektrogramm: klicken zum Springen, Leertaste zum Abspielen"
             >
               ${species.assets.spectrogram.exists
-                ? `<img src="${escapeHtml(spectrogramUrl)}" alt="Spektrogramm ${escapeHtml(species.germanName)}">`
+                ? `<img${species.assets.spectrogram.projectContent ? " data-project-media" : ""} src="${escapeHtml(spectrogramUrl)}" alt="Spektrogramm ${escapeHtml(species.germanName)}">`
                 : `<span class="media-missing">Kein Spektrogramm vorhanden</span>`}
               <span class="audio-progress-marker" aria-hidden="true"></span>
             </div>
@@ -171,7 +181,7 @@
           </div>
         ` : ""}
 
-        ${shared ? `<div class="shared-species-notice" role="status">Gemeinsamer Artbestand · ${species.localConflict ? "Konflikt prüfen" : species.localPending ? "Änderung lokal vorgemerkt" : species.approval === "approved" && species.approvedRevision === species.revision ? "Aktuelle Fassung intern freigegeben" : "Entwurf · noch nicht intern freigegeben"}. Medien werden bei Bedarf über ihre öffentliche Adresse geladen.</div>` : ""}
+        ${shared ? `<div class="shared-species-notice" role="status">Gemeinsamer Artbestand · ${species.localConflict ? "Konflikt prüfen" : species.localPending ? "Änderung lokal vorgemerkt" : species.approval === "approved" && species.approvedRevision === species.revision ? "Aktuelle Fassung intern freigegeben" : "Entwurf · noch nicht intern freigegeben"}. Artdateien werden bei Bedarf geladen.</div>` : ""}
 
         <header class="detail-header">
           <div>
@@ -188,7 +198,9 @@
               : ""}
           </div>
           <div class="detail-meta">
+            ${shared ? `<div class="section-actions detail-actions"><button class="species-offline-open" type="button">Artdateien offline verwenden</button></div>` : ""}
             ${shared && species.canApprove ? `<div class="section-actions detail-actions edit-only" aria-label="Artaktionen"><button class="species-approval-open" type="button">Aktuelle Fassung intern freigeben</button></div>` : ""}
+            ${shared && species.sourcePermissions?.canEditManual ? `<div class="section-actions detail-actions edit-only"><button class="species-page-prepare-open" type="button">Artseite vorbereiten</button><button class="species-enrichment-open" type="button">Artvorschlag prüfen</button></div>` : ""}
             ${species.inInput && !shared ? `
               <div class="section-actions detail-actions edit-only" aria-label="Artaktionen">
                 <button type="button" data-backup-history-open="${escapeHtml(species.id)}">Bearbeitungsstände</button>
@@ -892,7 +904,7 @@
           <p>Die geprüfte Fassung wird für Projektleser und das Nachschlagewerk freigegeben.</p>
           <p>Artseiten-Endfreigabe und Übernahme in Squarespace bleiben eigene Schritte.</p>
           <p class="species-approval-message" role="status"></p><div class="species-approval-content"></div>
-          <div class="dialog-actions"><button class="species-approval-close" type="button">Abbrechen</button>
+          <div class="dialog-actions"><button class="species-approval-close" type="button">Fenster schließen</button>
           <button class="species-approval-preview" type="button">Erneut prüfen</button>
           <button class="species-approval-confirm" type="button" disabled>Geprüfte Fassung intern freigeben</button></div>
         </dialog>` : ""}
@@ -900,7 +912,7 @@
         ${species.assets.map.exists ? `
           <dialog class="map-lightbox" aria-label="Vergrößerte Verbreitungskarte ${escapeHtml(species.germanName)}">
             <button class="map-lightbox-close" type="button" aria-label="Vergrößerte Karte schließen">×</button>
-            <img src="${escapeHtml(detailMapUrl)}" alt="${escapeHtml(`Verbreitungskarte ${species.germanName}`)}">
+            <img${species.assets.map.projectContent ? ' loading="lazy"' : ""} src="${escapeHtml(detailMapUrl)}" alt="${escapeHtml(`Verbreitungskarte ${species.germanName}`)}">
           </dialog>
         ` : ""}
 
@@ -908,6 +920,7 @@
           <dialog class="map-lightbox portrait-lightbox" aria-label="Vergrößertes Artporträt ${escapeHtml(species.germanName)}">
             <button class="map-lightbox-close portrait-lightbox-close" type="button" aria-label="Artporträt schließen">×</button>
             <img
+              ${species.assets.portrait.projectContent ? 'loading="lazy"' : ""}
               src="${escapeHtml(detailPortraitUrl)}"
               alt="${escapeHtml(`Illustriertes Artporträt ${species.germanName}`)}"
             >
@@ -918,8 +931,19 @@
       setupAudioPlayer();
       setupMapZoom();
       setupPortraitZoom();
+      if (shared) for (const media of elements.detailPanel.querySelectorAll?.("[data-project-media]") || []) {
+        const unavailable = () => {
+          const message = media.ownerDocument.createElement("span");
+          message.className = "media-missing";
+          message.textContent = "Diese Projektdatei ist gerade nicht verfügbar.";
+          (media.closest(".map-zoom-trigger, .portrait-zoom-trigger") || (media.tagName === "AUDIO" ? media.closest(".audio-player") : null) || media).replaceWith(message);
+        };
+        if (media.tagName === "IMG" && media.complete && media.naturalWidth === 0) unavailable();
+        else media.addEventListener("error", unavailable, { once: true });
+      }
       setupSpeciesEditor(species);
       setupSpeciesApproval(species);
+      setupSpeciesPagePreparation(species);
       if (!shared) { setupSpeciesRefresh(species); setupSpeciesDelete(species); }
     }
 

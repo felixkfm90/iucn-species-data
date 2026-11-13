@@ -128,6 +128,43 @@ function documentTree(html) {
   return { root, all };
 }
 
+/** Read document identity without executing scripts or following links. */
+export function observeWebsitePublicHtmlIdentity(html) {
+  if (typeof html !== "string" || Buffer.byteLength(html) > MAX_HTML_BYTES) throw new Error("Ungültiger HTML-Umfang");
+  const { root, all } = documentTree(html);
+  const unique = tag => {
+    const matches = all.filter(node => node.tag === tag);
+    if (matches.length !== 1) throw new Error("Uneindeutige HTML-Seitenstruktur");
+    return matches[0];
+  };
+  const page = unique("html"), head = unique("head"), body = unique("body"), title = unique("title");
+  if (page.parent !== root || head.parent !== page || body.parent !== page || title.parent !== head
+      || title.children.some(child => typeof child !== "string") || !title.children.join("").trim()) throw new Error("Ungültige HTML-Seitenstruktur");
+
+  const values = (node, name) => node.attrs.values.get(name) || [];
+  const includes = (node, name, expected) => values(node, name).some(value => value.trim().toLowerCase() === expected);
+  const authAction = value => {
+    let url;
+    try { url = new URL(value, WEBSITE_ORIGIN); } catch { return false; }
+    return /^(?:login|account|auth)\.squarespace\.com$/i.test(url.hostname)
+      || /(?:^|\/)(?:accounts?|auth|oauth2?|log-?in|sign-?in|sso)(?:\/|$)/i.test(url.pathname);
+  };
+  if (all.some(node => node.tag === "meta" && includes(node, "http-equiv", "refresh")
+      || node.tag === "input" && includes(node, "type", "password")
+      || node.tag === "form" && values(node, "action").some(authAction))) throw new Error("HTML enthält eine Umleitung oder Anmeldung");
+
+  const canonicals = all.filter(node => node.tag === "link" && values(node, "rel")
+    .some(value => value.toLowerCase().split(/\s+/u).includes("canonical")));
+  const [canonical] = canonicals;
+  if (canonicals.length > 1 || canonical && (canonical.parent !== head || values(canonical, "rel").length !== 1
+      || !includes(canonical, "rel", "canonical") || values(canonical, "href").length !== 1 || !canonical.attrs.get("href"))) {
+    throw new Error("Uneindeutige kanonische HTML-Adresse");
+  }
+  const bodyIds = values(body, "id"), collectionId = /^collection-([a-f0-9]{24})$/.exec(bodyIds[0] || "")?.[1] || null;
+  if (bodyIds.length > 1 || !collectionId && /^collection-/i.test(bodyIds[0] || "")) throw new Error("Ungültige HTML-Collection");
+  return { canonicalUrl: canonical?.attrs.get("href") ?? null, collectionId, title: title.children.join("") };
+}
+
 function textOf(node, work = null) {
   const parts = [], queue = [node];
   while (queue.length) {

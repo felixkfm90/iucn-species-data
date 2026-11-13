@@ -1,7 +1,8 @@
-import { app, BrowserWindow, dialog, safeStorage, shell } from "electron";
+import { app, BrowserWindow, dialog, Menu, safeStorage, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import {
+  createDesktopProjectImportOptions,
   getExplorerBackupStatus,
   getExplorerPendingChanges,
   getExplorerPipelineStatus,
@@ -12,11 +13,13 @@ import {
   stopManagedExplorerServer,
 } from "./server-lifecycle.mjs";
 import { activateExplorerWindow } from "./window-activation.mjs";
+import { installGermanSpellcheck } from "./spellcheck.mjs";
 import { EXPLORER_WINDOW_ICON } from "./window-branding.mjs";
 import { createSquarespaceBrowserAdapter } from "./squarespace-browser.mjs";
 import { createSquarespaceGalleryDriver } from "./squarespace-gallery-driver.mjs";
 import { loadLocalDeviceProfile } from "./device-profile.mjs";
 import { createSharedProjectCredentialStore } from "./shared-project-credentials.mjs";
+import { createExplorerMediaBudgetReader } from "../shared-project/media-profile-budget.mjs";
 import { createDesktopUpdateCompletionOwner, readTrustedCompletionPresentation } from "./update-completion-owner.mjs";
 import {
   consumeLightroomCorrectionHandoff,
@@ -112,10 +115,13 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      spellcheck: true,
       preload: fileURLToPath(new URL("./preload.cjs", import.meta.url)),
     },
   });
   mainWindow.setMenuBarVisibility(false);
+  const removeSpellcheck = installGermanSpellcheck({ window: mainWindow, Menu, isAllowedUrl: isAllowedAppUrl });
+  mainWindow.once("closed", removeSpellcheck);
   mainWindow.loadURL(START_PAGE);
   mainWindow.once("ready-to-show", () => {
     mainWindow?.show();
@@ -180,12 +186,15 @@ async function restartServerAndLoad() {
       sharedProjectOptions: personalProjectProfile ? {
         filename: join(personalProjectProfile.directory, "project-cache.sqlite"), localStorageConfirmed: true,
         credentialStore: personalProjectProfile.credentials,
+        mediaBudgetReader: createExplorerMediaBudgetReader({ profileRoot: personalProjectProfile.directory }),
+        imageDecodeOptions: { repoRoot: fileURLToPath(new URL("../../", import.meta.url)) },
       } : null,
-      sharedProjectImportOptions: personalProjectProfile ? {
-        filename: join(personalProjectProfile.directory, "initial-import.sqlite"), localStorageConfirmed: true,
-      } : null,
+      sharedProjectImportOptions: personalProjectProfile ? createDesktopProjectImportOptions(personalProjectProfile.directory) : null,
       websiteAltSyncOptions: personalProjectProfile ? {
         filename: join(personalProjectProfile.directory, "website-alt-sync.sqlite"), localStorageConfirmed: true,
+      } : null,
+      pageAuthoringOptions: personalProjectProfile ? {
+        filename: join(personalProjectProfile.directory, "page-authoring.sqlite"), localStorageConfirmed: true,
       } : null,
       localAiOptions: personalProjectProfile ? {
         cacheRoot: join(personalProjectProfile.directory, "local-ai"), deviceId: personalProjectProfile.device.id,

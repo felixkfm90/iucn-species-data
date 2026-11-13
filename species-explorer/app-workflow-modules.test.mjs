@@ -107,7 +107,6 @@ test("Datenbank-Aktionen zeigen Hauptaufgaben und bündeln alle Sonderwege einma
     ["data-pipeline-mode", "manual-maps"], ["data-pipeline-mode", "nc-sounds"], ["data-pipeline-mode", "cleanup"],
     ["data-taxonomy-database-action", "build-baseline"], ["data-taxonomy-database-action", "rollback"],
     ["data-taxonomy-database-action", "storage"], ["data-backup-action", "nas"], ["data-settings-action", "backup-path"],
-    ["id", "shared-project-open"],
   ]) {
     const pattern = new RegExp(`${attribute}="${value}"`, "g");
     assert.equal([...chooser.matchAll(pattern)].length, 1, `${value}: genau ein vorhandener Einstieg`);
@@ -120,9 +119,10 @@ test("Datenbank-Aktionen zeigen Hauptaufgaben und bündeln alle Sonderwege einma
   assert.match(main, /id="taxonomy-maintenance-conflicts"[^>]*\bhidden\b/);
   assert.match(more, /data-taxonomy-database-action="build-baseline" hidden/);
   assert.match(more, /<details class="action-group action-group-danger">/);
-  const settings = more.slice(more.indexOf("<h4>Backup und Einstellungen</h4>"), more.indexOf('<details class="action-group action-group-danger">'));
-  assert.match(settings, /id="shared-project-open" class="edit-only"/);
-  const website = htmlSource.slice(htmlSource.indexOf('class="website-pages-overview"'), htmlSource.indexOf('id="detail-panel"'));
+  assert.doesNotMatch(chooser, /id="shared-project-open"/);
+  const settings = htmlSource.slice(htmlSource.indexOf('<dialog id="settings-dialog"'), htmlSource.indexOf('id="taxonomy-database-dialog"'));
+  assert.match(settings, /id="shared-project-open" type="button"/);
+  const website = htmlSource.slice(htmlSource.indexOf('id="website-menu"'), htmlSource.indexOf('id="detail-panel"'));
   assert.doesNotMatch(website.split("</section>")[0], /id="shared-project-open"/);
 });
 
@@ -204,6 +204,17 @@ test("Weitere Aktionen sind beim Wiederöffnen geschlossen; Navigation bleibt sc
   assert.equal(JSON.parse(calls.at(-1).options.body).mode, "transfer");
   assert.equal(elements.pipelinePreview.hidden, false);
   assert.ok(calls.every(({ url }) => !url.endsWith("/start")), "Eine Vorschau startet weiterhin keine Übertragung");
+  close.click();
+  await state.openPipelineActions({ section: "transfer" });
+  assert.equal(dialog.open, true);
+  assert.equal(elements.pipelineStartButton.textContent, "Änderungen übertragen");
+  assert.deepEqual(JSON.parse(calls.at(-1).options.body), { mode: "transfer", targetSlugs: [] });
+  close.click();
+  const requestCount = calls.length;
+  state.workspace = "shared-project";
+  await state.openPipelineActions({ section: "transfer" });
+  assert.equal(dialog.open, false);
+  assert.equal(calls.length, requestCount);
 });
 
 function workflowStatusFixture({ backup = [{ status: "idle" }], pipeline = [{ status: "idle" }], reloadError } = {}) {
@@ -279,6 +290,22 @@ function workflowStatusFixture({ backup = [{ status: "idle" }], pipeline = [{ st
     readCount(kind) { return calls.filter(({ url }) => url === `/api/${kind}/status`).length; },
   };
 }
+
+test("Kopfmenü öffnet Sicherung und Einstellungen nur als vorhandenen Aktionswähler ohne eine Vorschau oder Schreibaktion", async () => {
+  const f = workflowStatusFixture(); await f.settle();
+  const more = { open: false }, backup = { focus() { this.focused = true; } }, settings = { focus() { this.focused = true; } };
+  const query = f.elements.pipelineDialog.querySelector;
+  f.elements.pipelineDialog.querySelector = (selector) => selector === "#pipeline-more-actions" ? more
+    : selector === '[data-backup-action="nas"]' ? backup : selector === '[data-settings-action="backup-path"]' ? settings : query(selector);
+  f.state.openPipelineActions({ section: "backup" });
+  assert.equal(f.elements.pipelineDialog.open, true); assert.equal(more.open, true); assert.equal(backup.focused, true);
+  assert.equal(f.elements.pipelineStartButton.hidden, true);
+  f.elements.pipelineDialog.open = false; f.state.openPipelineActions({ section: "settings" });
+  assert.equal(settings.focused, true); assert.equal(more.open, true);
+  f.elements.pipelineDialog.open = false; f.state.editMode = false;
+  f.state.openPipelineActions({ section: "backup" }); assert.equal(f.elements.pipelineDialog.open, false);
+  assert.ok(f.calls.every(({ options }) => !options), "Navigation erzeugt keine POSTs");
+});
 
 for (const kind of ["backup", "pipeline"]) {
   test(`${kind}: nie beantworteter Status-GET endet begrenzt und ein später Altstand ersetzt keinen frischen Abschluss`, async () => {

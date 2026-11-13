@@ -3,21 +3,28 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import { DatabaseSync } from "node:sqlite";
 import { fixture, species as publicSpecies } from "./test-fixtures.mjs";
 import { createSharedProjectHttp } from "./http.mjs";
 import { createExplorerSharedProjectService } from "./explorer-service.mjs";
 import { createInitialProjectImport } from "./initial-import.mjs";
+import { createSharedProjectClient } from "./client.mjs";
+import { createLocalNormalMediaReader } from "./local-normal-media.mjs";
+import { normalMediaBinding } from "./normal-media.mjs";
+import { ProjectError } from "./errors.mjs";
+import { createTestWebp } from "../server-test-fixtures.mjs";
 import { buildCatalog } from "./catalog.mjs";
 import { createWorkingImportSource } from "../species-content/working-import-source.mjs";
 import { objectJson } from "./security.mjs";
 
 const sha = (value) => createHash("sha256").update(value).digest("hex");
 const denied = (code) => (error) => error.code === code;
-async function scoped(fn, serviceOptions = {}) {
+async function scoped(fn, { realMedia = false, ...serviceOptions } = {}) {
   const f = fixture(), controllers = []; let remote, service;
   try {
-    const initialized = await f.initialized(), assetsRoot = path.join(f.root, "assets");
+    const imageDecode = async () => ({ width: 8, height: 8 }), realPortrait = realMedia ? createTestWebp() : null;
+    const initialized = await f.initialized(realMedia ? { imageDecode } : {}), assetsRoot = path.join(f.root, "species-assets");
     const input = ["Strix", "Bubo"].map((genus, index) => ({ german: `Testkauz ${index + 1}`, english: `Fixture owl ${index + 1}`, genus,
       species: "fixture", size: "20 cm", weight: "400 g", life_expectancy: "10 Jahre", originalPrivate: { keep: index } }));
     const ids = ["first-owl", "second-owl"];
@@ -29,10 +36,15 @@ async function scoped(fn, serviceOptions = {}) {
       bindings: ids.map((id, index) => ({ id, assetName: `Testkauz${index + 1}`, generalSectionId: null, embeddedGeneralText: null })) };
     for (const binding of source.bindings) {
       await fs.mkdir(path.join(assetsRoot, binding.assetName), { recursive: true });
-      await fs.writeFile(path.join(assetsRoot, binding.assetName, "map.jpg"), `Synthetic map ${binding.id}`);
+      if (realMedia) {
+        await fs.writeFile(path.join(assetsRoot, binding.assetName, "portrait.webp"), realPortrait);
+        await fs.writeFile(path.join(assetsRoot, binding.assetName, "portrait.json"), JSON.stringify({ source: "Synthetic own portrait" }));
+      } else await fs.writeFile(path.join(assetsRoot, binding.assetName, "map.jpg"), `Synthetic map ${binding.id}`);
     }
     remote = createSharedProjectHttp({ store: initialized.store }); const address = await remote.listen();
-    service = createExplorerSharedProjectService({ filename: path.join(f.root, "client.sqlite"), localStorageConfirmed: true, allowLoopbackHttp: true, ...serviceOptions });
+    const reads = [], reader = realMedia ? createLocalNormalMediaReader({ repoRoot: f.root }) : null;
+    service = createExplorerSharedProjectService({ filename: path.join(f.root, "client.sqlite"), localStorageConfirmed: true, allowLoopbackHttp: true,
+      ...(realMedia ? { imageDecode, normalMediaReader: { async read(record, options) { reads.push(record.id); return reader.read(record, options); } } } : {}), ...serviceOptions });
     await service.connect({ baseUrl: address.url, username: initialized.a.user.username, password: f.password });
     const adapter = createWorkingImportSource({ assetsRoot, readSources: async () => structuredClone(source) });
     const filename = path.join(f.root, "initial-import.sqlite");
@@ -40,12 +52,161 @@ async function scoped(fn, serviceOptions = {}) {
       const value = createInitialProjectImport({ service, filename, localStorageConfirmed: true, sourceAdapter: adapter, ...options });
       controllers.push(value); return value;
     }
-    await fn({ f, ...initialized, service, address, assetsRoot, source, adapter, filename, controller });
+    await fn({ f, ...initialized, service, address, assetsRoot, source, adapter, filename, controller, reads, imageDecode, realPortrait });
   } finally {
     for (const value of controllers) await value.close();
     await service?.close(); await remote?.close(); f.cleanup();
   }
 }
+
+async function mediaResult(controller) {
+  for (let attempts = 0; attempts < 600; attempts++) {
+    const status = controller.status();
+    if (!status.busy) return status.plan.media.run;
+    await delay(10);
+  }
+  assert.fail("Die lokale Bereitstellung hat noch keinen Endzustand gemeldet.");
+}
+
+test("the journal keeps its editorial provenance and resumes from that release after reopening", () => scoped(async ({ controller, source, assetsRoot, store, a }) => {
+  const release = { kind: "bundled-catalog" }, requests = [];
+  const adapter = createWorkingImportSource({ assetsRoot, readSources: async ({ editorialRelease } = {}) => {
+    requests.push(editorialRelease);
+    if (requests.length > 1) assert.deepEqual(editorialRelease, release);
+    return { ...structuredClone(source), editorialRelease: release };
+  } });
+  const first = controller({ sourceAdapter: adapter }), plan = await first.prepare();
+  assert.deepEqual(plan.source.editorial, { kind: "bundled-catalog", generatedAt: "2026-10-31T08:16:40.720Z", speciesCount: 63 });
+  assert.equal(store.listObjects(a.token).length, 0);
+  await first.close();
+  const reopened = controller({ sourceAdapter: adapter });
+  assert.deepEqual(reopened.status().plan.source.editorial, plan.source.editorial);
+  const complete = await reopened.apply({ planId: plan.planId, confirmed: true });
+  assert.equal(complete.counts.created, 2);
+  assert.ok(requests.length > 2);
+}));
+
+test("explicit initial media reaches an independent second PC and an uncertain result can be rechecked without another file read", () => scoped(async ({ controller, service, store, a, b, f, address, reads, imageDecode, realPortrait }) => {
+  const importer = controller(), plan = await importer.prepare();
+  assert.equal(plan.media, null);
+  await importer.apply({ planId: plan.planId, confirmed: true });
+  assert.deepEqual(importer.status().plan.media, { species: 2, files: 2, bytes: 2 * realPortrait.length, run: null });
+  assert.throws(() => importer.startMedia({ planId: plan.planId, confirmed: false }), denied("import_confirmation_required"));
+  const capabilities = service.capabilities;
+  service.capabilities = async () => ({ ...await capabilities(), normalMedia: undefined });
+  importer.startMedia({ planId: plan.planId, confirmed: true });
+  assert.equal((await mediaResult(importer)).error, "normal_media_server_required");
+  assert.deepEqual(reads, []);
+  service.capabilities = capabilities;
+  const provide = service.initialImportMedia;
+  service.initialImportMedia = async (...args) => {
+    const value = await provide(...args);
+    throw new ProjectError(503, "normal_media_uncertain", `Synthetic loss after ${value.available}`);
+  };
+  importer.startMedia({ planId: plan.planId, confirmed: true });
+  const uncertain = await mediaResult(importer);
+  assert.equal(uncertain.state, "stopped"); assert.equal(uncertain.confirmedFiles, 0);
+  assert.deepEqual(reads, ["first-owl"], JSON.stringify(uncertain));
+  await importer.close();
+  service.initialImportMedia = provide;
+  const reopened = controller(); reopened.startMedia({ planId: plan.planId, confirmed: true });
+  const finished = await mediaResult(reopened);
+  assert.equal(finished.state, "complete"); assert.equal(finished.confirmedFiles, 2);
+  assert.deepEqual(reads, ["first-owl", "second-owl"]);
+  const secondPc = createSharedProjectClient({ filename: path.join(f.root, "second-pc.sqlite"), localStorageConfirmed: true, allowLoopbackHttp: true, imageDecode });
+  try {
+    await secondPc.connect({ baseUrl: address.url, username: b.user.username, password: f.password });
+    const status = await secondPc.status(), species = await secondPc.getObject("species", "first-owl");
+    const result = await secondPc.normalMedia.read({ speciesId: species.id, slot: "portrait.webp", expectedRevision: species.revision,
+      expectedDataHash: sha(objectJson(species.data)), requiredBinding: { baseUrl: address.url, projectId: status.projectId, userId: b.user.id, role: "admin" } });
+    assert.deepEqual(result.buffer, realPortrait);
+    assert.equal(store.listObjects(a.token).every(item => item.ordinal === 1 && item.approvedRevision === null), true);
+    assert.equal(store.catalog(a.token).species.length, 0);
+  } finally { await secondPc.close(); }
+}, { realMedia: true }));
+
+test("an alternate account cannot send initial media and edited art is skipped without using its old file", () => scoped(async ({ controller, service, store, a, b, f, address, reads }) => {
+  const importer = controller(), plan = await importer.prepare();
+  await importer.apply({ planId: plan.planId, confirmed: true });
+  await service.connect({ baseUrl: address.url, username: b.user.username, password: f.password });
+  importer.startMedia({ planId: plan.planId, confirmed: true });
+  assert.equal((await mediaResult(importer)).error, "import_person_changed"); assert.deepEqual(reads, []);
+  const original = store.getObject(b.token, "species", "first-owl"), edited = structuredClone(original.data);
+  edited.input.english = "Parallel human edit";
+  store.submitChange(b.token, { changeId: "media-parallel-edit", kind: "species", id: original.id, baseRevision: original.revision, data: edited });
+  await service.connect({ baseUrl: address.url, username: a.user.username, password: f.password });
+  importer.startMedia({ planId: plan.planId, confirmed: true });
+  const finished = await mediaResult(importer);
+  assert.equal(finished.state, "complete", JSON.stringify(finished)); assert.equal(finished.changedFiles, 1); assert.equal(finished.confirmedFiles, 1);
+  assert.deepEqual(finished.changedSpecies, ["first-owl"]);
+  assert.deepEqual(reads, ["second-owl"]);
+  assert.equal(store.getObject(a.token, "species", "first-owl").data.input.english, "Parallel human edit");
+}, { realMedia: true }));
+
+test("an edit from a second client after media preparation skips only that species", () => scoped(async ({ controller, service, store, a, b, f, address, imageDecode }) => {
+  const importer = controller(), plan = await importer.prepare();
+  await importer.apply({ planId: plan.planId, confirmed: true });
+  const second = createSharedProjectClient({ filename: path.join(f.root, "parallel-edit.sqlite"), localStorageConfirmed: true, allowLoopbackHttp: true, imageDecode });
+  try {
+    await second.connect({ baseUrl: address.url, username: b.user.username, password: f.password });
+    const provide = service.initialImportMedia, requests = [];
+    service.initialImportMedia = async (input, options) => {
+      requests.push(input.speciesId);
+      if (input.speciesId === "first-owl") {
+        const before = await second.getObject("species", input.speciesId), edited = structuredClone(before.data);
+        edited.input.english = "Edited on the second PC";
+        await second.editExistingObject("species", before.id, edited, { baseRevision: before.revision });
+        await second.sync({ kind: "species", id: before.id });
+      }
+      return provide(input, options);
+    };
+    importer.startMedia({ planId: plan.planId, confirmed: true });
+    const finished = await mediaResult(importer);
+    assert.equal(finished.state, "complete", JSON.stringify(finished));
+    assert.deepEqual([finished.confirmedFiles, finished.changedFiles], [1, 1]);
+    assert.deepEqual(finished.changedSpecies, ["first-owl"]);
+    assert.deepEqual(requests, ["first-owl", "second-owl"]);
+    const first = store.getObject(a.token, "species", "first-owl"), last = store.getObject(a.token, "species", "second-owl");
+    assert.equal(first.data.input.english, "Edited on the second PC");
+    const projectId = (await second.status()).projectId;
+    const portrait = record => normalMediaBinding(record.data, { projectId, slot: "portrait.webp" }).contentId;
+    assert.throws(() => store.getNormalMedia(a.token, portrait(first)), denied("normal_media_not_found"));
+    assert.equal(store.getNormalMedia(a.token, portrait(last)).complete, true);
+  } finally { await second.close(); }
+}, { realMedia: true }));
+
+test("a media conflict without a confirmed new revision still stops the run", () => scoped(async ({ controller, service }) => {
+  const importer = controller(), plan = await importer.prepare();
+  await importer.apply({ planId: plan.planId, confirmed: true });
+  const requests = [];
+  service.initialImportMedia = async input => {
+    requests.push(input.speciesId);
+    throw new ProjectError(409, "object_changed", "Synthetic conflict without a changed server revision");
+  };
+  importer.startMedia({ planId: plan.planId, confirmed: true });
+  const result = await mediaResult(importer);
+  assert.equal(result.state, "stopped");
+  assert.equal(result.error, "object_changed");
+  assert.deepEqual(result.changedSpecies, []);
+  assert.deepEqual(requests, ["first-owl"]);
+}, { realMedia: true }));
+
+test("closing the import owner cancels its active media request and waits before closing the journal", () => scoped(async ({ controller, service, store, a }) => {
+  const importer = controller(), plan = await importer.prepare();
+  await importer.apply({ planId: plan.planId, confirmed: true });
+  let reached;
+  const entered = new Promise(resolve => { reached = resolve; });
+  service.initialImportMedia = async (_input, { signal }) => new Promise((_resolve, reject) => {
+    signal.addEventListener("abort", () => reject(signal.reason), { once: true }); reached();
+  });
+  importer.startMedia({ planId: plan.planId, confirmed: true });
+  await entered; assert.equal(importer.status().busy, true);
+  await importer.close();
+  const status = importer.status();
+  assert.equal(status.busy, false); assert.equal(status.closed, true);
+  assert.equal(status.plan.media.run.error, "import_stopped");
+  assert.equal(store.listObjects(a.token).every(item => item.approvedRevision === null), true);
+}, { realMedia: true }));
 
 test("complete working records use the existing explicit importer and remain full drafts with original metadata and files", () => scoped(async ({ controller, adapter, store, a, assetsRoot, filename, service }) => {
   const expected = await adapter.read(), value = controller(), plan = await value.prepare();
@@ -77,6 +238,50 @@ test("a lost creation acknowledgement resumes full working import without duplic
   assert.equal(done.counts.approved, 2); assert.equal(store.catalog(a.token).species.length, 2);
   assert.equal(store.getObject(a.token, "species", "first-owl").ordinal, 1);
   assert.ok(resumed.receipts(plan.planId).some((item) => item.phase === "recovered-confirmed"));
+}));
+
+test("another administrator on the same device cannot apply or replace the first person's prepared import", () => scoped(async ({ controller, service, store, a, b, address, f }) => {
+  const value = controller(), plan = await value.prepare();
+  assert.equal(plan.preparedByUserId, a.user.id);
+  await service.connect({ baseUrl: address.url, username: b.user.username, password: f.password });
+  await assert.rejects(value.apply({ planId: plan.planId, confirmed: true }), denied("import_person_changed"));
+  await assert.rejects(value.prepare({ replaceUnstartedPlanId: plan.planId }), denied("import_person_changed"));
+  assert.equal(value.status().plan.state, "planned");
+  assert.equal(store.listObjects(b.token).length, 0);
+  assert.deepEqual(value.receipts(plan.planId).map(item => item.actorId), [a.user.id]);
+}));
+
+test("switching the local administrator while reading the import sources creates no plan for the replacement login", () => scoped(async ({ controller, adapter, service, store, b, address, f }) => {
+  const sourceAdapter = { ...adapter, async read() {
+    const result = await adapter.read();
+    await service.connect({ baseUrl: address.url, username: b.user.username, password: f.password });
+    return result;
+  } };
+  const value = controller({ sourceAdapter });
+  await assert.rejects(value.prepare(), denied("import_person_changed"));
+  assert.equal(value.status().plan, null);
+  assert.equal(store.listObjects(b.token).length, 0);
+}));
+
+test("switching administrators after creation pauses the import before approval and the original person can resume", () => scoped(async ({ controller, service, store, a, b, address, f }) => {
+  const value = controller(), plan = await value.prepare({ releaseForReaders: true }), create = service.create;
+  service.create = async input => {
+    const created = await create(input);
+    if (input.id === "first-owl") await service.connect({ baseUrl: address.url, username: b.user.username, password: f.password });
+    return created;
+  };
+  const input = { planId: plan.planId, confirmed: true, confirmInternalRelease: true };
+  await assert.rejects(value.apply(input), denied("import_person_changed"));
+  const [first] = store.listObjects(b.token);
+  assert.equal(first.authorId, a.user.id);
+  assert.equal(first.approvedRevision, null);
+  assert.equal(store.listObjects(b.token).length, 1);
+  assert.equal(value.status().plan.state, "stopped");
+  await service.connect({ baseUrl: address.url, username: a.user.username, password: f.password });
+  service.create = create;
+  assert.equal((await value.apply(input)).counts.approved, 2);
+  assert.equal(store.getObject(a.token, "species", first.id).ordinal, 1);
+  assert.ok(value.receipts(plan.planId).every(item => item.actorId === a.user.id));
 }));
 
 test("existing narrow catalog entries and different working records keep their current content, version and approval", () => scoped(async ({ controller, adapter, store, a }) => {

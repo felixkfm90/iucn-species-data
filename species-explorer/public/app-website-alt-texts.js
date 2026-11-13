@@ -10,7 +10,7 @@
   const CONTEXT_LABELS = Object.freeze({ header: "Kopfbereich", footer: "Fußbereich", content: "Seiteninhalt" });
   const TRANSFER_RESULT_LABELS = Object.freeze({ verified: "Öffentlich bestätigt", error: "Fehlgeschlagen", failed: "Fehlgeschlagen",
     unsupported: "Noch nicht unterstützt", pending: "Übernahme läuft",
-    "verification-pending": "Öffentliche Bestätigung offen", conflict: "Nicht übernommen · Freigabe geändert", stopped: "Nicht abgeschlossen" });
+    "verification-pending": "Öffentliche Bestätigung offen", conflict: "Übernahme nicht bestätigt", stopped: "Nicht abgeschlossen" });
   const TRANSFER_PHASE_LABELS = Object.freeze({ connecting: "Squarespace-Verbindung wird hergestellt.",
     "login-required": "Die Übernahme wartet auf deine Anmeldung.", transferring: "Freigegebene Texte werden in Squarespace übernommen.",
     verifying: "Öffentliche Ausgabe wird geprüft." });
@@ -57,6 +57,18 @@
     return text;
   }
   const visibleEditText = (image, edit) => edit.displayText ?? visibleImageText(image, edit.text);
+  function textLengthState(image, value) {
+    const constraint = image.textConstraint;
+    if (constraint?.reason !== "coupled-gallery-public-alt-limit" || !Number.isSafeInteger(constraint.maxLength)
+        || constraint.maxLength < 1 || constraint.maxLength > 2000) return null;
+    const length = String(value ?? "").length, limit = constraint.maxLength, excess = Math.max(0, length - limit);
+    return { length, limit, excess, message: `${length}/${limit} Zeichen${excess
+      ? ` · ${excess} Zeichen zu viel. Squarespace kürzt den öffentlichen Alternativtext. Bitte den Text vor der Freigabe bewusst kürzen; Entwurf speichern bleibt möglich.`
+      : " · Grenze für den öffentlichen Alternativtext."}` };
+  }
+  const unsavedMessage = (image, edit) => textLengthState(image, edit.text)?.excess
+    ? "Ungespeicherte Änderung · Bitte vor der Freigabe bewusst kürzen; „Entwurf speichern“ erhält den vollständigen Text."
+    : "Ungespeicherte Änderung · „Text freigeben“ speichert sie mit.";
   const reviewedDraftNote = (image, edit = initialEdit(image)) => Boolean(image.approval && ["approved", "verified"].includes(image.status)
     && edit.observationHash === image.observationHash && edit.text === image.approval.text && edit.decorative === image.approval.decorative);
   const applicableDraftNote = (image) => Boolean(image.draftNote && image.context === "content" && image.kind === "image");
@@ -96,8 +108,9 @@
     const ambiguous = ambiguousImage(image);
     const unavailable = image.status === "removed" || image.pageUnavailable === true;
     const existingUsable = existingTextUsable(image, edit.decorative);
+    const lengthState = textLengthState(image, edit.text);
     const canApprove = src && loaded && !busy && !unavailable && !staleEdit && !ambiguous
-      && (edit.text.trim() || edit.decorative);
+      && !lengthState?.excess && (edit.text.trim() || edit.decorative);
     const verified = image.status === "verified", coupledText = image.textCoupled && image.alt === image.caption;
     return `<article class="website-alt-card" data-alt-image-key="${e(image.key)}">
       <div class="website-alt-image">${src ? `<a href="${e(safeImageUrl(image.src) || src)}" target="_blank" rel="noopener noreferrer" aria-label="Bild in größerer Ansicht öffnen">
@@ -111,9 +124,10 @@
         <div data-alt-note="${e(image.key)}">${renderOpenDraftNote(image, edit, e)}</div>
         ${transferResult && transferResult.status !== "verified" ? `<p class="website-alt-warning"><strong>Letzte Übernahme:</strong> ${e(TRANSFER_RESULT_LABELS[transferResult.status] || "Nicht bestätigt")}${transferResult.error ? ` · ${e(transferResult.error)}` : ""}</p>` : ""}
         ${staleEdit ? "<p class=\"website-alt-warning\">Die Bildgrundlage hat sich geändert. Dein ungespeicherter Text bleibt erhalten; bitte erneut prüfen und zunächst als Entwurf speichern.</p>" : ""}
-        <p class="website-alt-warning" data-alt-unsaved="${e(image.key)}"${unsaved ? "" : " hidden"}>Ungespeicherte Änderung · „Text freigeben“ speichert sie mit.</p>
+        <p class="website-alt-warning" data-alt-unsaved="${e(image.key)}"${unsaved ? "" : " hidden"}>${e(unsavedMessage(image, edit))}</p>
         ${verified ? `<details class="website-alt-details" data-alt-detail="${e(image.key)}"${detailOpen || staleEdit || unsaved ? " open" : ""}><summary>Text bearbeiten</summary>` : ""}
-        <label>Textentwurf<textarea rows="3" maxlength="2000" data-alt-text="${e(image.key)}"${busy || unavailable ? " disabled" : ""}>${e(visibleEditText(image, edit))}</textarea></label>
+        <label>Textentwurf<textarea rows="3" maxlength="2000" lang="de" spellcheck="true" data-alt-text="${e(image.key)}"${busy || unavailable ? " disabled" : ""}>${e(visibleEditText(image, edit))}</textarea></label>
+        ${lengthState ? `<p class="${lengthState.excess ? "website-alt-warning" : "website-alt-note"}" role="status" aria-live="polite" data-alt-length="${e(image.key)}">${e(lengthState.message)}</p>` : ""}
         ${image.textCoupled ? "<p class=\"website-alt-note website-alt-coupled\">Bildunterschrift und Alternativtext · kurze Beschriftung ohne abschließenden Punkt.</p>" : ""}
         <label class="website-alt-checkbox"><input type="checkbox" data-alt-decorative="${e(image.key)}"${edit.decorative ? " checked" : ""}${busy || unavailable ? " disabled" : ""}>Bewusst dekorativ · ohne Alternativtext</label>
         <p class="website-alt-preview-note" data-alt-preview-note="${e(image.key)}"${loaded ? " hidden" : ""}>${loaded ? "" : "Freigabe erst nach geladener Bildvorschau."}</p>
@@ -132,13 +146,13 @@
         </div>
         ${automatic ? "<p class=\"website-alt-note\">Bild und Text werden automatisch von der Website erzeugt. Korrekturen erfolgen an der Website-Funktion.</p>" : ""}
         ${applicableDraftNote(image) ? `<p class="website-alt-note" data-alt-note-history="${e(image.key)}"${reviewedDraftNote(image, edit) ? "" : " hidden"}><strong>Früherer Prüfhinweis · durch Freigabe erledigt:</strong> ${e(visibleDraftNote(image.draftNote))}</p>` : ""}
-        ${image.approval ? `<p class="website-alt-note">${image.approval.method === "website-standard" ? "Website-Standard" : "Freigegebener Text"}: ${e(visibleImageText(image, image.approval.text)) || "bewusst leer (dekorativ)"}<br>${image.status === "verified" ? "Die öffentliche Ausgabe ist bestätigt." : automatic ? "Die automatische öffentliche Ausgabe ist noch zu prüfen." : "Der freigegebene Text kann in Squarespace übernommen werden; die Eintragung ist noch nicht bestätigt."}</p>` : ""}
+        ${image.approval ? `<p class="website-alt-note">${image.approval.method === "website-standard" ? "Website-Standard" : "Freigegebener Text"}: ${e(visibleImageText(image, image.approval.text)) || "bewusst leer (dekorativ)"}<br>${image.status === "verified" ? "Die öffentliche Ausgabe ist bestätigt." : textLengthState(image, image.approval.text)?.excess ? "Der freigegebene Text ist für den öffentlichen Alternativtext zu lang. Bitte bewusst kürzen und erneut freigeben." : automatic ? "Die automatische öffentliche Ausgabe ist noch zu prüfen." : "Der freigegebene Text kann in Squarespace übernommen werden; die Eintragung ist noch nicht bestätigt."}</p>` : ""}
         </details>${verified ? "</details>" : ""}
       </div></article>`;
   }
 
   function createWebsiteAltTextsController({ dialog, openButton, fetchJson, escapeHtml, createDialogController,
-    confirmAction, openImageSuggestion, sharedTextsController, canEdit = () => true, setTimeoutImpl = global.setTimeout?.bind(global), clearTimeoutImpl = global.clearTimeout?.bind(global),
+    confirmAction, openImageSuggestion, reviewLanguage, getLanguageBinding = () => "", sharedTextsController, canEdit = () => true, setTimeoutImpl = global.setTimeout?.bind(global), clearTimeoutImpl = global.clearTimeout?.bind(global),
     discoveryIntervalMs = 5 * 60 * 1000, pollIntervalMs = 1500, requestTimeoutMs = 15000, now = Date.now } = {}) {
     if (!dialog || typeof fetchJson !== "function" || typeof escapeHtml !== "function" || typeof createDialogController !== "function") {
       throw new TypeError("Dialog, Explorer-API und Anzeigehelfer sind für die Website-Bildtexte erforderlich.");
@@ -176,7 +190,8 @@
       scanStatus: node("[data-alt-scan-status]"), transferDetails: node("[data-alt-transfer-details]"), transferSummary: node("[data-alt-transfer-summary]") };
     const edits = new Map(), loadedSources = new Map(), activeRequests = new Set();
     const openDetails = new Set();
-    let snapshot = null, selectedPageUrl = "", search = "", filter = "all", generation = 0, readEpoch = 0, selection = 0, pageListView = "";
+    const languageChecks = new Map(); let languageRender = 0, languageBindingKey;
+    let snapshot = null, selectedPageUrl = "", search = "", filter = "all", generation = 0, readEpoch = 0, selection = 0, pageListView = "", renderedPageUrl = "";
     let busy = false, stopped = false, discoveryTimer = null, pollTimer = null, pendingRead = null, transferConfirming = false, suggestionOpening = false, sharedOpening = false, messageSource = "";
     const editKey = (url, key) => JSON.stringify([url, key]);
     const currentPage = () => snapshot?.pages?.find((page) => page.url === selectedPageUrl);
@@ -184,6 +199,62 @@
     const sharedOpen = () => sharedOpening || sharedTextsController?.getState().open === true;
     const alive = (ticket) => !stopped && ticket === generation && controller.isOpen();
     const e = (value) => escapeHtml(String(value ?? ""));
+
+    function clearLanguageChecks() {
+      languageRender++; languageBindingKey = undefined;
+      for (const check of languageChecks.values()) check.dispose();
+      languageChecks.clear();
+    }
+    function bindLanguageChecks() {
+      const create = global.SpeciesExplorerLanguageCheck?.createInlineLanguageCheck;
+      if (typeof create !== "function" || typeof reviewLanguage !== "function" || !currentPage()) return;
+      const pageUrl = selectedPageUrl, renderId = languageRender, ticket = generation, selected = selection;
+      let languageBinding; try { languageBinding = getLanguageBinding(); } catch { return; }
+      if (typeof languageBinding !== "string") return;
+      languageBindingKey = languageBinding;
+      for (const textarea of nodes.page.querySelectorAll("[data-alt-text]")) {
+        const key = textarea.dataset.altText, image = currentImage(key);
+        if (!image || !image.observationHash || image.context !== "content" || image.kind !== "image" || isAutomaticImage(image)) continue;
+        const revision = snapshot.revision, observationHash = image.observationHash, source = image.src;
+        const isCurrent = ({ text } = {}) => {
+          const current = currentImage(key), edit = current && (edits.get(editKey(pageUrl, key)) || initialEdit(current));
+          let sameBinding = false; try { sameBinding = getLanguageBinding() === languageBinding; } catch { return false; }
+          return renderId === languageRender && alive(ticket) && selected === selection && selectedPageUrl === pageUrl
+            && sameBinding && canEdit() && !sharedOpen() && !busy && !transferConfirming && !transferRunning() && !snapshot?.scan?.running
+            && snapshot.revision === revision && current?.observationHash === observationHash && current.src === source
+            && current.status !== "removed" && !ambiguousImage(current) && !edit.decorative
+            && !textarea.disabled && !textarea.readOnly && textarea.isConnected !== false && textarea.value === text && visibleEditText(current, edit) === text;
+        };
+        const check = create({ textarea, isCurrent,
+          async review(text, { signal } = {}) {
+            if (!isCurrent({ text })) throw Object.assign(new Error("Die Textgrundlage wurde geändert."), { name: "AbortError" });
+            const result = await reviewLanguage(text, { signal, context: "caption" });
+            if (!isCurrent({ text })) throw Object.assign(new Error("Die Textgrundlage wurde geändert."), { name: "AbortError" });
+            return result;
+          },
+          onApply({ text, nextText }) {
+            return isCurrent({ text }) && typeof nextText === "string" && nextText.length <= 2000
+              && !/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(nextText);
+          } });
+        languageChecks.set(key, check);
+      }
+    }
+    function languageBindingChanged() {
+      if (stopped) return;
+      let nextBinding; try { nextBinding = getLanguageBinding(); } catch { /* A lost personal binding still clears old hints. */ }
+      if (typeof nextBinding === "string" && nextBinding === languageBindingKey) return;
+      const focused = global.document?.activeElement, key = focused?.dataset?.altText;
+      const selection = key ? [focused.selectionStart, focused.selectionEnd, focused.selectionDirection] : null;
+      const scroll = key ? [focused.scrollTop, focused.scrollLeft] : null;
+      clearLanguageChecks();
+      if (controller.isOpen()) bindLanguageChecks();
+      if (key && canEdit() && !focused.disabled && !focused.readOnly
+          && [...nodes.page.querySelectorAll("[data-alt-text]")].includes(focused)) {
+        focused.focus?.({ preventScroll: true });
+        if (selection?.slice(0, 2).every(Number.isInteger)) focused.setSelectionRange?.(...selection);
+        if (scroll) { focused.scrollTop = scroll[0]; focused.scrollLeft = scroll[1]; }
+      }
+    }
 
     function message(text, type = "info", source = "") {
       messageSource = source;
@@ -207,12 +278,21 @@
     const renderNextStep = (step) => `${e(step.text)}${hasEdits() ? ' <button type="button" data-alt-action="show-unsaved">Offene Eingabe anzeigen</button>' : ""}`;
     const transferRunning = () => snapshot?.transfer?.running === true;
     const approvedCount = (page = currentPage()) => (page?.images || []).filter((image) => image.status === "approved" && image.approval?.revision).length;
+    function overlongApproval(page) {
+      for (const [index, image] of (page?.images || []).entries()) {
+        const length = image.status === "approved" && image.approval?.revision && textLengthState(image, image.approval.text);
+        if (length?.excess) return { index, length };
+      }
+      return null;
+    }
+    const approvalLengthMessage = (entry) => `Bild ${entry.index + 1}: Der freigegebene Text hat ${entry.length.length}/${entry.length.limit} Zeichen (${entry.length.excess} Zeichen zu viel). Bitte den Text bewusst kürzen und erneut freigeben. Bis dahin bleibt die Übernahme der gesamten Seite gesperrt; Squarespace würde den öffentlichen Alternativtext kürzen.`;
     function canTransferPage() {
       const page = currentPage();
       return canEdit() && !sharedOpen() && snapshot?.transfer?.available === true && !busy && !transferRunning()
-        && !snapshot.scan?.running && !hasEdits() && page?.inventoryStatus === "current" && !page.error && !page.redirectUrl && approvedCount(page) > 0;
+        && !snapshot.scan?.running && !hasEdits() && page?.inventoryStatus === "current" && !page.error && !page.redirectUrl && approvedCount(page) > 0 && !overlongApproval(page);
     }
     function closeSession() {
+      clearLanguageChecks();
       generation += 1; readEpoch += 1; busy = false; pendingRead = null; transferConfirming = false;
       for (const cancel of activeRequests) cancel();
       clearTimeoutImpl?.(discoveryTimer); clearTimeoutImpl?.(pollTimer);
@@ -262,21 +342,28 @@
       if (hasEdits()) {
         const change = firstUnsaved(), location = change?.index >= 0 ? `bei Bild ${change.index + 1}${change.pageUrl === page.url ? "" : ` auf „${change.page.title || change.page.url}“`}`
           : "auf einer nicht mehr erfassten Seite";
+        const image = change?.page?.images?.[change.index], edit = image && edits.get(change.identity), length = image && edit && textLengthState(image, edit.text);
+        if (length?.excess) return { text: `Ungespeicherte Eingabe ${location}: ${length.message}`, complete: false };
         return { text: `Ungespeicherte Eingabe ${location}. Text freigeben speichert die Änderung mit; alternativ zurücksetzen.`, complete: false };
       }
       if (transferRunning()) return { text: "Übernahme läuft. Bitte das Ergebnis abwarten.", complete: false };
+      const overlong = overlongApproval(page);
+      if (overlong) return { text: approvalLengthMessage(overlong), complete: false };
       if (complete) return { text: images.length === 1 ? "1 Bild öffentlich bestätigt." : `Alle ${images.length} Bilder öffentlich bestätigt.`, complete: true };
       return { text: approved > 0 ? `${approved} Bildtext${approved === 1 ? "" : "e"} freigegeben. Jetzt in Squarespace übernehmen.`
         : page.redirectUrl || page.error ? "" : "Bildtexte prüfen und freigeben.", complete: false };
     }
 
     function render() {
+      clearLanguageChecks();
       const pages = snapshot?.pages || [], summary = snapshot?.summary || {};
       const nextListView = JSON.stringify([search, filter]);
       const listScrollTop = nextListView === pageListView ? nodes.pages.scrollTop || 0 : 0;
+      const samePageView = selectedPageUrl === renderedPageUrl;
+      const pageScrollTop = samePageView ? nodes.page.scrollTop || 0 : 0;
       const contentPages = summary.pages ?? pages.filter((page) => !page.redirectUrl).length;
       const redirects = summary.redirects ?? pages.filter((page) => page.redirectUrl).length;
-      const focused = global.document?.activeElement, focusKey = focused?.dataset?.altText;
+      const focused = samePageView ? global.document?.activeElement : null, focusKey = focused?.dataset?.altText;
       const focusSelection = focusKey ? [focused.selectionStart, focused.selectionEnd] : null;
       nodes.summary.textContent = snapshot ? `${contentPages} Inhaltsseite${contentPages === 1 ? "" : "n"} · ${redirects} Weiterleitung${redirects === 1 ? "" : "en"} · ${summary.images ?? pages.reduce((sum, page) => sum + (page.images?.length || 0), 0)} erfasste Bildverwendungen · ${summary.publicMissing ?? summary.missing ?? 0} leere oder dateinamenartige Website-Texte (einschließlich dekorativer Bilder) · ${summary.draft || 0} Entwürfe zur Abnahme · ${summary.approved || 0} Freigaben zur Übernahme offen · ${summary.verified || 0} öffentlich bestätigt`
         : "Noch kein gespeicherter Bildtextstand geladen.";
@@ -334,7 +421,7 @@
       nodes.pages.scrollTop = listScrollTop;
       pageListView = nextListView;
       const page = currentPage();
-      if (!page) { nodes.page.innerHTML = "<p>Noch keine Seiten erfasst. Aktualisiere den Seitenbestand und starte anschließend die öffentliche Erfassung.</p>"; return; }
+      if (!page) { nodes.page.innerHTML = "<p>Noch keine Seiten erfasst. Aktualisiere den Seitenbestand und starte anschließend die öffentliche Erfassung.</p>"; nodes.page.scrollTop = 0; renderedPageUrl = ""; return; }
       const pageUrl = safePageUrl(page.url);
       const redirect = safePageUrl(page.redirectUrl);
       const redirectContent = redirect ? `<p>Weiterleitung auf <a href="${e(redirect)}" target="_blank" rel="noopener noreferrer">${e(redirect)}</a>.</p>
@@ -365,11 +452,14 @@
           keepExistingAllowed: canKeepExisting(image.key),
           unsaved: edits.has(editKey(page.url, image.key)),
         })).join("") || "<p>Für diese Seite sind noch keine Bildverwendungen erfasst. Das ist kein Nachweis einer vollständigen Prüfung.</p>"}`;
+      nodes.page.scrollTop = pageScrollTop;
+      renderedPageUrl = page.url;
       if (focusKey) {
         const replacement = [...nodes.page.querySelectorAll("[data-alt-text]")].find((element) => element.dataset.altText === focusKey);
         replacement?.focus?.({ preventScroll: true });
         if (focusSelection?.every(Number.isInteger)) replacement?.setSelectionRange?.(...focusSelection);
       }
+      bindLanguageChecks();
     }
 
     async function request(url, options) {
@@ -451,6 +541,11 @@
         message("Die Bildgrundlage oder Eingabe hat sich während der Anfrage geändert. Bitte den aktuellen Stand prüfen und die Aktion erneut wählen.", "warning");
         return false;
       }
+      const length = textLengthState(image, value.text);
+      if (action === "approve" && length?.excess) {
+        message(length.message, "warning");
+        return false;
+      }
       if (action === "approve" && (!safeImageUrl(image.previewSrc || image.src)
         || loadedSources.get(localKey) !== safeImageUrl(image.previewSrc || image.src)
         || value.observationHash !== (image.observationHash || "") || ambiguousImage(image)
@@ -511,7 +606,10 @@
     }
 
     async function transferCurrentPage() {
-      if (!controller.isOpen() || stopped || transferConfirming || !canTransferPage()) return false;
+      if (!canEdit() || sharedOpen() || !controller.isOpen() || stopped || transferConfirming) return false;
+      const overlong = overlongApproval(currentPage());
+      if (overlong) { message(approvalLengthMessage(overlong), "warning"); return false; }
+      if (!canTransferPage()) return false;
       const scope = { generation, selection, pageUrl: selectedPageUrl, revision: snapshot.revision };
       if (pendingRead) await pendingRead;
       const unchanged = () => alive(scope.generation) && selection === scope.selection && selectedPageUrl === scope.pageUrl
@@ -620,6 +718,7 @@
         && value.decorative === baseline.decorative && value.observationHash === baseline.observationHash) edits.delete(localKey);
       else edits.set(localKey, value);
       updateImageActions(key);
+      languageChecks.get(key)?.refresh();
     }
 
     function onToggle(event) {
@@ -634,7 +733,14 @@
       if (!image || !page) return;
       const value = edits.get(editKey(page.url, key)) || initialEdit(image);
       for (const notice of dialog.querySelectorAll("[data-alt-unsaved]")) {
-        if (notice.dataset.altUnsaved === key) notice.hidden = !edits.has(editKey(page.url, key));
+        if (notice.dataset.altUnsaved === key) { notice.hidden = !edits.has(editKey(page.url, key)); notice.textContent = unsavedMessage(image, value); }
+      }
+      const length = textLengthState(image, value.text);
+      for (const counter of dialog.querySelectorAll("[data-alt-length]")) {
+        if (counter.dataset.altLength === key) {
+          counter.hidden = !length; counter.textContent = length?.message || "";
+          counter.className = length?.excess ? "website-alt-warning" : "website-alt-note";
+        }
       }
       const loaded = loadedSources.get(editKey(page.url, key)) === safeImageUrl(image.previewSrc || image.src);
       for (const note of dialog.querySelectorAll("[data-alt-note]")) {
@@ -646,7 +752,7 @@
       for (const button of dialog.querySelectorAll("[data-alt-action=approve]")) {
         if (button.dataset.altKey === key) button.disabled = busy || transferConfirming || transferRunning() || !loaded || !safeImageUrl(image.previewSrc || image.src)
           || image.status === "removed" || page.error || !page.checkedAt || value.observationHash !== (image.observationHash || "")
-          || ambiguousImage(image) || !value.decorative && !value.text.trim();
+          || ambiguousImage(image) || length?.excess > 0 || !value.decorative && !value.text.trim();
       }
       for (const button of dialog.querySelectorAll("[data-alt-action=suggest]")) {
         if (button.dataset.altKey === key) button.disabled = !canSuggestImage(key);
@@ -698,23 +804,25 @@
         && value.observationHash && value.observationHash === image.observationHash);
     }
     async function suggestImage(key) {
-      if (suggestionOpening || !canSuggestImage(key)) return false;
+      const permitted = canSuggestImage;
+      if (suggestionOpening || !permitted(key)) return false;
       suggestionOpening = true;
       const ticket = generation, selected = selection, page = currentPage(), image = currentImage(key);
       const value = edits.get(editKey(page.url, key)) || initialEdit(image), initialText = visibleEditText(image, value);
-      const expected = { pageUrl: page.url, key, observationHash: image.observationHash, src: image.src,
+      const expected = { pageUrl: page.url, key, observationHash: image.observationHash, snapshotRevision: snapshot.revision, src: image.src,
         status: image.status, approvalRevision: image.approval?.revision, text: value.text, decorative: value.decorative };
       const isCurrent = (binding = {}) => {
-        if (!alive(ticket) || selected !== selection || !canSuggestImage(key)) return false;
+        if (!alive(ticket) || selected !== selection || !permitted(key)) return false;
         const current = currentImage(key), edit = edits.get(editKey(expected.pageUrl, key)) || initialEdit(current);
         return selectedPageUrl === expected.pageUrl && current.observationHash === expected.observationHash && current.src === expected.src
           && current.status === expected.status && current.approval?.revision === expected.approvalRevision
           && edit.text === expected.text && visibleEditText(current, edit) === initialText && edit.decorative === expected.decorative
           && (!binding.pageUrl || binding.pageUrl === expected.pageUrl) && (!binding.imageKey || binding.imageKey === key)
+          && (!binding.observationHash || binding.observationHash === expected.observationHash)
           && (!binding.revision || binding.revision === expected.observationHash);
       };
       try {
-        return await openImageSuggestion({ pageUrl: page.url, imageKey: key, observationHash: image.observationHash,
+        const input = { pageUrl: page.url, imageKey: key, observationHash: image.observationHash,
           previewUrl: image.previewSrc || image.src, initialText, context: { title: page.title }, isCurrent,
           applyProposal(text, caption) {
             if (!isCurrent() || typeof text !== "string" || !text.trim() || text.length > 2000 || /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text)
@@ -725,7 +833,8 @@
             openDetails.add(editKey(page.url, key)); render();
             message("Vorschlag im Textentwurf. Bitte prüfen und bei Bedarf speichern; er ist noch nicht freigegeben.");
             return true;
-          } });
+          } };
+        return await openImageSuggestion(input);
       } catch (error) {
         if (alive(ticket)) message(error.message || "Die lokale Bildtexthilfe konnte nicht geöffnet werden.", "error");
         return false;
@@ -794,7 +903,7 @@
     return Object.freeze({ open, refresh, discover: () => post("discover"), scan: (pageUrl) => post("scan", pageUrl ? { pageUrl } : {}),
       saveDraft: (key) => changeImage("draft", key), approve: (key) => changeImage("approve", key), verify: (key) => changeImage("verify", key),
       connectTransfer, transfer: transferCurrentPage, keepExisting, suggestImage, openSharedTexts,
-      selectPage, showUnsaved,
+      selectPage, showUnsaved, languageBindingChanged,
       snapshot: () => snapshot,
       hasUnsavedDrafts: () => hasEdits() || sharedOpening || sharedTextsController?.hasUnsavedChanges() === true,
       stop() {

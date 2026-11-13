@@ -1,6 +1,6 @@
 # Browserunabhängiger Arten-Explorer
 
-Stand: 2026-10-31
+Stand: 2026-11-02
 
 ## Ziel
 
@@ -50,6 +50,80 @@ Alternative, falls die Electron-Paketgröße im Prototyp nicht akzeptabel ist.
 - Dateipfade werden weiterhin ausschließlich serverseitig konstruiert
 
 ## Bedienfunktionen
+
+### Deutsche Rechtschreibung bei der Texteingabe
+
+Die Desktop-Hülle aktiviert die vorhandene Chromium-/Hunspell-Prüfung ausdrücklich auf Deutsch.
+Bearbeitbare Website-Bildtexte und Seitenentwürfe kennzeichnen ihre Eingabefelder als deutsche Texte.
+Verdächtige Wörter können markiert und im Rechtsklick-Menü durch einen gewählten Vorschlag ersetzt
+werden. Unbekannte Artnamen lassen sich ausdrücklich ins persönliche Wörterbuch aufnehmen.
+Die Anwendung verändert Texte dabei nicht selbstständig und führt keine Freigabe oder Übernahme aus.
+
+Die Prüfung läuft lokal. Electron lädt bei Bedarf das deutsche Wörterbuch vom voreingestellten
+Wörterbuchserver; eingegebene Wörter oder Texte werden dafür nicht übertragen. Ein noch fehlendes
+Wörterbuch kann die Prüfung beim ersten Offline-Start begrenzen. Im normalen Browser bestimmt dessen
+Wörterbuch-/Spracheinstellung die Markierung. Die Rechtschreibmarkierung ist keine vollständige Prüfung
+von Grammatik oder Kommasetzung. Felix bestätigt am 2. November die funktionierende Prüfung direkt
+im geöffneten Textfeld. Der zusätzliche manuelle Button **Sprache prüfen** ist im neuen Quellstand
+aus Website-Bildtextprüfung und Artseiteneditor entfernt. Die ergänzende automatische Grammatikprüfung
+bleibt bis zu ihrer eigenen Qualifikation ausgeschaltet; Zustand und Grenzen führt der
+[Sprachprüfvertrag](../species-explorer/language-check/README.md). Sachliche Quellenprüfung bleibt getrennt.
+Grundlage: [Electron SpellChecker](https://www.electronjs.org/docs/latest/tutorial/spellchecker).
+Der initiale Nachweis der Menü-/Ereignislogik besteht mit den damaligen Bildtext-/Fensterfällen **127/127 Tests ohne
+Fehler oder Skips**, darunter sechs neue Fälle für bewusste Korrektur, Wörterbuchlernen und veraltete
+Menüs. Die damaligen Syntax-, Stil- und Dokumentprüfungen bestehen; die Gegenproben verwenden
+kontrollierte Ereignisse, kein echtes Wörterbuch. Felix' inzwischen bestätigte Wortprüfung ergänzt
+den Bediennachweis, ersetzt aber keinen Nachweis des erstmaligen Wörterbuchdownloads.
+Der persönliche Explorer wird nicht automatisch neu gestartet.
+
+### Abgestimmte Anordnung der Kopfzeile vom 2. November
+
+Felix schlägt vor, die breite Artbestandszeile in die Kopfzeile zu verschieben, Websitewerkzeuge dort
+zusammenzufassen, Datenbank- und Bearbeitungszustand als Hinweise darzustellen und weitere Aktionen
+über drei Punkte zu öffnen. Die Empfehlung ist eine dauerhaft sichtbare Artbestandswahl, ein eigener
+Zugang **FN-Website**, reine Zustandsanzeigen und ein eigener Schloss-Schalter; seltenere Datenbank-,
+Sicherungs- und Einstellungsaktionen gehören unter **⋮**. Verbindungs-/Konflikthinweise müssen sichtbar
+bleiben und schreibende Websitefunktionen bleiben im Lesemodus gesperrt.
+Felix heißt die gemeinsam beschriebene Anordnung anschließend grundsätzlich gut.
+
+Felix ergänzt, den Modus rechts als zweite Informationszeile unter dem Report anzuzeigen und die
+ausführliche Validierung aus der Hauptansicht herauszunehmen. Vorgeschlagener Zugang ist **⋮ → Prüfung
+& Hinweise**. Technisch bestandene Prüfungen und zusätzliche Pflegehinweise sind getrennt darzustellen:
+ein manuell geschützter Sound ist eine neutrale Information, eine nachweislich erfolglose automatische
+Quellensuche ein Pflegehinweis. Tatsächliche Datei-/Datenfehler bleiben Fehler und dürfen durch das
+geschlossene Menü nicht unsichtbar werden. Die aktuelle rote Sammelfläche unterscheidet diese Fälle
+visuell noch nicht. Felix bestätigt, die Artenzahl sichtbar zu erhalten und die übrigen Zähler in
+die Prüfung zu nehmen. Die beschriebene Platzierung ist links unter dem Programmnamen zusammen mit
+der Bestandswahl; die breite bisherige Zahlenzeile entfällt. Die Auswahl ist ein Übergangszugang zum
+bisherigen lokalen Bestand, kein dauerhaftes Zweibestandskonzept; maßgeblich ist der
+[gemeinsame Bestandsvertrag](multi-device-backup-plan.md#technische-aufteilung-nach-der-gesamtfreigabe).
+
+Der neue Quellstand setzt diese Anordnung über das eigene `app-header.js` und `header.css` um.
+Die Zustandsanzeige verwendet ein eigenes Element. Bei `Änderungen offen` im lokalen Bearbeitungsmodus
+ist an derselben Stelle die [Übertragungsvorschau](pipeline-control-plan.md#bedienoberfläche) erreichbar.
+**⋮ → Einstellungen** verwendet den bestehenden Einstellungsdialog. Anmeldung und Lesen
+im gemeinsamen Projekt sind auch im Lesemodus erreichbar; Pfadänderung, Fachbearbeitung, Freigabe,
+Benutzer-/Geräteverwaltung, Erstübernahme und schreibender Abgleich benötigen zusätzlich die passende
+Serverberechtigung und den aktuellen lokalen Bearbeitungsmodus. Ein-/Ausschalten entwertet ältere
+Bestätigungen; tatsächliche Serverrechte werden nicht für andere Fachcontroller umgeschrieben.
+
+Soundhinweise werden bereits an ihrer fachlichen Entstehung als Fehler, Pflege oder Information
+gebunden. Die neutrale Sammelfläche zeigt tatsächliche Daten-/Datei-/Reportfehler rot, bekannte erfolglose
+Tonquellensuche gelb und manuelle Sounds neutral; die Einordnung erfolgt nicht anhand eines Textpräfixes.
+Der eigene Prüfdialog erlaubt sein ausdrücklich angefordertes Lesen/Abgleichen, während fremde Dialoge
+und ein Bestandswechsel weiter geschützt sind. Tastatur, Escape und Rückfokus sind angeschlossen.
+Die Sichtprüfung im tatsächlichen Electronfenster bleibt vom automatisierten UI-/HTTP-Nachweis getrennt;
+die laufende Nutzerinstanz wurde für diese Arbeiten nicht neu gestartet.
+
+Der lokale Nachlauf vom 2. November besteht aus **279/279 UI-Fällen**, einer ergänzenden
+**39/39 Shared-/Importserie** und der abschließenden **36/36 Shared-Renderer-/Wrapper-/Importserie**.
+Die Serien überlappen und werden nicht addiert. Neue Gegenproben belegen vor der Korrektur echte
+unerlaubte Aufrufe nach einem Identitätswechsel während einer Bestätigung sowie den Verlust späterer
+Eingaben durch eine verspätete Speicher-/Snapshotantwort. Frische Bindungen und während laufender
+Aktionen gesperrte Fachfelder erhalten nun die aktuelle Eingabe; eine bereits berechtigte Speicherung
+wird weder rückgängig gemacht noch wiederholt. Der eigene Desktopprüfstarter besteht zusätzlich
+**11/11** Fälle und lädt die tatsächlichen Headerdateien über den isolierten HTTP-Dienst. Sein
+synthetisches DOM ist kein Nachweis für das Aussehen oder die Bedienung des normalen Fensters.
 
 Der Desktop-Wrapper muss mindestens unterstützen:
 
@@ -131,6 +205,14 @@ sieben ICO-Größen, damit ein Zusatzfenster nicht auf das Electron-Standardsymb
 Electron erhält das ICO beim Erzeugen des Windows-Fensters für Fenster-/Taskleistensymbol; auf anderen
 Plattformen wird das PNG verwendet. Der Verknüpfungsinstaller bindet dasselbe ICO relativ zu seinem
 Installationsordner und stoppt bei fehlender Datei vor dem Speichern der Verknüpfung.
+
+Der Quellanschluss vom **2. November** verwendet dasselbe persönliche Squarespace-Fenster jetzt auch
+als vorgesehenen Besitzer neuer Artseitenaufträge. Es trägt den allgemeineren Titel **Squarespace ·
+FN-Website**; Anmeldung, Symbol, erlaubte Ziele, Rückkehr zum Explorer und kontrolliertes Schließen
+bleiben in derselben Instanz. Bildtextübernahme, Zielprüfung und Artseitenanlage teilen dieselbe
+Auftragssperre. Die normale GalleryDriver-Instanz meldet die Anlegefähigkeit noch als nicht verfügbar;
+echte Neuanlage und Speicherung bleiben nach dem [Artseitenvertrag](../species-explorer/page-authoring/README.md#anschluss-an-den-persönlichen-squarespace-browser)
+gesondert nachzuweisen.
 
 Die Quellintegration ändert weder ein laufendes Fenster noch eine vorhandene Desktop-Verknüpfung.
 Ein normaler späterer App-Start lädt das Fenstersymbol; die Verknüpfung übernimmt es erst beim bewusst
@@ -314,7 +396,9 @@ alle Teilprojekte sind auf den vorhandenen Stand abgestimmt. Weitere schwere Bau
 abgestimmt. Die erneute Negativprobe vom 1. November stoppt an der absichtlich fehlenden Plattform 999;
 der SDK-Komponenten-/Metadatenvergleich bleibt unverändert. Der eigene Runner und die APK-Prüfung sind
 beendet und der Werkzeugabschnitt ist an Numis zurückgegeben. Eine echte S24-/S25-, NAS-/HTTPS-/Fernzugriffs- oder Android-Betriebssystemschlüssel-Abnahme ist
-aus lokalen Tests und dem APK-Bau nicht abgeleitet.
+aus lokalen Tests und dem APK-Bau nicht abgeleitet. Zusätzlich ist die signierte Fassung **0.1.2+3**
+am 1. November tatsächlich im privaten Google-Play-Test bereitgestellt. Den aktuellen Zugangs-/Paketstand
+und die weiterhin getrennte Geräteabnahme führt der [mobile Modulvertrag](../mobile/README.md).
 
 Die lokale Explorer-Abschlussprüfung vom 26. Oktober ist im
 [Gesamtauditauftrag](audit-auftrag-phase-10-5.md) angenommen: vorhandene vollständige Prüfungen,

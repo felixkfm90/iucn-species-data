@@ -7,10 +7,10 @@ import { fileURLToPath } from "node:url";
 import { fixture, page, species } from "./test-fixtures.mjs";
 import { createSharedProjectHttp } from "./http.mjs";
 
-async function scoped(fn) {
+async function scoped(fn, options) {
   const f = fixture(); let adapter;
   try {
-    const initialized = await f.initialized();
+    const initialized = await f.initialized(options);
     adapter = createSharedProjectHttp({ store: initialized.store });
     const address = await adapter.listen();
     await fn({ ...initialized, f, adapter, address });
@@ -56,6 +56,73 @@ test("real HTTP login/device refresh/me/logout keep credentials out of errors an
   assert.equal((await api(address, "auth/refresh", { method: "POST", token: login.data.device.token })).status, 401);
   assert.equal((await api(address, "auth/me", { token: refreshed.data.token })).status, 401);
 }));
+
+test("phone invitation is bound to its owner and project and redeemed exactly once as read-only", () => scoped(async ({ address, a, b }) => {
+  const post = (route, data, token) => api(address, route, { method: "POST", data, token });
+  assert.equal((await post("auth/pairing", {})).status, 401);
+  assert.equal((await api(address, "capabilities", { token: a.token })).data.devicePairing, 1);
+  assert.equal((await post("auth/pairing", { userId: b.user.id }, a.token)).status, 400);
+  const invite = await post("auth/pairing", {}, a.token);
+  assert.equal(invite.status, 201);
+  assert.equal(invite.headers.get("cache-control"), "no-store");
+  assert.deepEqual(Object.keys(invite.data), ["schemaVersion", "code", "projectId", "expiresAt"]);
+  const { code, projectId } = invite.data;
+  assert.match(code, /^p1_[A-Za-z0-9_-]{43}$/);
+  const input = { code, projectId, deviceLabel: "Synthetic phone" };
+  assert.equal((await post("auth/pairing/redeem", { ...input, scope: "full" })).status, 400);
+  assert.equal((await post("auth/pairing/redeem", input, b.token)).status, 400);
+  const foreign = await post("auth/pairing/redeem", { ...input, projectId: "00000000-0000-0000-0000-000000000000" });
+  assert.equal(foreign.status, 401);
+  assert.ok(!JSON.stringify(foreign.data).includes(code));
+  const responses = await Promise.all([post("auth/pairing/redeem", input), post("auth/pairing/redeem", input)]);
+  assert.deepEqual(responses.map(response => response.status).sort(), [200, 401]);
+  const paired = responses.find(response => response.status === 200);
+  assert.equal(paired.headers.get("cache-control"), "no-store");
+  assert.equal(paired.data.user.id, a.user.id);
+  assert.equal(paired.data.projectId, projectId);
+  assert.equal(paired.data.scope, "read");
+  const { token, device } = paired.data;
+  assert.equal((await api(address, "catalog", { token })).status, 200);
+  assert.equal((await post("objects", { kind: "page", id: "no-phone-write", data: page() }, token)).status, 403);
+  assert.equal((await post("auth/pairing", {}, token)).status, 403);
+  assert.deepEqual((await api(address, "auth/devices", { token: a.token })).data.devices.map(row => row.id), [device.id]);
+  assert.deepEqual((await api(address, "auth/devices", { token: b.token })).data.devices, []);
+  assert.equal((await post("auth/refresh", undefined, device.token)).data.scope, "read");
+  assert.equal((await api(address, `auth/devices/${device.id}`, { method: "DELETE", token: a.token })).status, 200);
+  assert.equal((await post("auth/refresh", undefined, device.token)).status, 401);
+  assert.equal((await api(address, "catalog", { token })).status, 401);
+}));
+
+test("phone invitation expires, is replaced, and becomes unusable after account change, logout or service restart", async () => {
+  let clock = Date.now();
+  await scoped(async ({ address, a, b, f, store }) => {
+    async function issue(token = a.token) {
+      const response = await api(address, "auth/pairing", { method: "POST", token, data: {} });
+      assert.equal(response.status, 201);
+      const { code, projectId, expiresAt } = response.data;
+      assert.equal(Date.parse(expiresAt) - clock, 120000);
+      return { code, projectId, deviceLabel: "Synthetic phone" };
+    }
+    async function denied(data) {
+      const response = await api(address, "auth/pairing/redeem", { method: "POST", data });
+      assert.equal(response.status, 401);
+      assert.equal(response.data.error.code, "pairing_unavailable");
+    }
+    const old = await issue(), fresh = await issue();
+    await denied(old);
+    clock += 120000;
+    await denied(fresh);
+    const restart = await issue(b.token);
+    assert.throws(() => f.open({ clock: () => clock }).redeemReadPairing(restart), { code: "pairing_unavailable" });
+    const changedAccount = await issue();
+    store.updateUser(b.token, a.user.id, { expectedVersion: a.user.version, role: "contributor" });
+    await denied(changedAccount);
+    const logout = await issue();
+    assert.equal((await api(address, "auth/logout", { method: "POST", token: a.token, data: {} })).status, 200);
+    await denied(logout);
+    assert.deepEqual((await api(address, "auth/devices", { token: b.token })).data.devices, []);
+  }, { clock: () => clock });
+});
 
 test("real HTTP object/update/approval/conflict routes preserve server decisions", () => scoped(async ({ address, a, b, store, f }) => {
   await store.createUser(a.token, { username: "fixture-reader", displayName: "Reader", password: f.password, role: "reader" });

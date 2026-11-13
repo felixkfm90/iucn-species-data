@@ -91,6 +91,62 @@ test("normal editing preserves an actual second-client conflict and supports cac
   assert.equal(conflicts[0].current.input.size, "22 cm"); assert.equal(conflicts[0].proposed.input.size, "21 cm");
 }));
 
+test("an open basic-data preview expires when a known server revision becomes an unresolved conflict", () => scoped(async ({ a, b, open }) => {
+  const first = await open(a.user.username), second = await open(b.user.username);
+  const preview = (service, shown, size) => service.speciesEditor.preview(shown.id, {
+    sourceScope: shown.sourceScope, expectedEditRevision: shown.editRevision, values: { ...values, size },
+  });
+  const id = "fixture-owl";
+  await first.speciesEditor.save(id, { token: (await preview(first, await first.speciesEditor.get(id), "21 cm")).token });
+  await second.speciesEditor.save(id, { token: (await preview(second, await second.speciesEditor.get(id), "22 cm")).token });
+  await second.sync();
+  await first.refresh();
+  const before = await first.speciesEditor.get(id);
+  assert.equal(before.localConflict, false);
+  assert.equal(before.manual.size, "21 cm");
+  const olderPreview = await preview(first, before, "23 cm");
+  await first.sync();
+  const after = await first.speciesEditor.get(id);
+  assert.equal(after.revision, before.revision);
+  assert.equal(after.manual.size, before.manual.size);
+  assert.equal(after.localConflict, true);
+  await assert.rejects(first.speciesEditor.save(id, { token: olderPreview.token }), { code: "local_object_changed" });
+  assert.equal((await first.snapshot()).queuedChanges, 1);
+  assert.equal((await first.conflicts())[0].proposed.input.size, "21 cm");
+  const fresh = await preview(first, after, "23 cm");
+  const saved = await first.speciesEditor.save(id, { token: fresh.token });
+  assert.equal(saved.species.manual.size, "23 cm");
+  assert.equal(saved.species.localConflict, true);
+  assert.equal((await first.snapshot()).queuedChanges, 2);
+  assert.equal((await first.conflicts())[0].proposed.input.size, "21 cm");
+}));
+
+test("distinct arts can be edited in separate personal profiles while one is offline", () => scoped(async ({ a, b, store, open }) => {
+  const recordB = record();
+  recordB.id = "fixture-eagle-owl";
+  Object.assign(recordB.input, { german: "Testuhu", english: "Synthetic eagle-owl", genus: "Bubo" });
+  Object.assign(recordB.generated, { URLSlug: recordB.id, "Deutscher Name": recordB.input.german });
+  recordB.assets.assetName = recordB.input.german;
+  store.createObject(b.token, { kind: "species", id: recordB.id, data: recordB });
+  let offline = false;
+  const first = await open(a.user.username, { fetchImpl: (...args) => offline ? Promise.reject(new Error("Synthetic offline")) : fetch(...args) });
+  const second = await open(b.user.username), shownA = await first.speciesEditor.get("fixture-owl"), shownB = await second.speciesEditor.get(recordB.id);
+  offline = true; await assert.rejects(first.refresh(), { code: "offline" });
+  async function save(client, shown, input) {
+    const plan = await client.speciesEditor.preview(shown.id, { sourceScope: shown.sourceScope, expectedEditRevision: shown.editRevision, values: input });
+    return client.speciesEditor.save(shown.id, { token: plan.token });
+  }
+  await Promise.all([save(first, shownA, { ...values, size: "23 cm" }), save(second, shownB, { ...values, germanName: "Testuhu",
+    englishName: "Synthetic eagle-owl", scientificName: "Bubo fixture", size: "50 cm" })]);
+  await second.sync();
+  assert.equal(store.getObject(b.token, "species", recordB.id).data.input.size, "50 cm");
+  assert.equal(store.getObject(b.token, "species", shownA.id).data.input.size, "20 cm");
+  offline = false; await first.sync();
+  assert.equal(store.getObject(a.token, "species", shownA.id).data.input.size, "23 cm");
+  assert.equal(store.getObject(a.token, "species", recordB.id).data.input.size, "50 cm");
+  assert.deepEqual(await first.conflicts(), []); assert.deepEqual(await second.conflicts(), []);
+}));
+
 test("observed role loss and unsupported coupled renames block normal saves without losing existing content", () => scoped(async ({ store, a, b, open }) => {
   const service = await open(), shown = await service.speciesEditor.get("fixture-owl"), base = { sourceScope: shown.sourceScope, expectedEditRevision: shown.editRevision };
   for (const changed of [{ germanName: "Anderer Testkauz" }, { scientificName: "Strix changed" }]) {

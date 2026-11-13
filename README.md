@@ -67,13 +67,22 @@ oder den Systempfad. Die Linux-Qualitätsprüfung installiert FFmpeg ausdrückli
 
 ## Bedienung und Datenfluss
 
-Im **Lesemodus** sind **Website prüfen**, **Website-Bildtexte** und **Gemeinsames Projekt** ausgeblendet
-und ihre Aufrufe gesperrt. Zum Arbeiten zuerst oben in den **Bearbeitungsmodus** wechseln.
+Der neue Quellstand zeigt Bestandswahl und Artenzahl links unter dem Programmnamen. Der Datenbankzustand
+ist eine reine Information; **⋮** öffnet **Prüfung & Hinweise**, **Datenbank-Aktionen**, **Sicherung** und
+**Einstellungen**. Modustext und Reportdatum stehen rechts; nur der Schlossknopf schaltet zwischen
+**Lesemodus** und **Bearbeitungsmodus** um. Kennzahlen und ausführliche Prüfdetails liegen im Prüfdialog.
+Echte Fehler bleiben zusätzlich in der Hauptansicht sichtbar. Bekannt fehlende Tonquellen sind
+Pflegehinweise, manuell gepflegte Sounds neutrale Informationen.
+
+Im **Lesemodus** bleibt **FN-Website** gesperrt. **Einstellungen → Gemeinsames Projekt** erlaubt
+Anmeldung und Lesen; Fachänderungen, Freigaben, Administration, Erstübernahme und das Senden wartender
+Änderungen benötigen zusätzlich den Bearbeitungsmodus und die jeweilige Serverberechtigung.
 Vorhandene Links zu öffentlichen FN-Artseiten und die automatische Anzeige ihres Prüfstands bleiben nutzbar.
+Der persönliche bereits geöffnete Explorer erhält den neuen Kopfbereich erst beim regulären Neustart.
 
 ### Gemeinsames Projekt
 
-**Datenbank-Aktionen → Weitere Aktionen → Backup und Einstellungen → Gemeinsames Projekt** öffnet
+**⋮ → Einstellungen → Gemeinsames Projekt** öffnet
 die persönliche Verbindung zum eingerichteten NAS-Dienst sowie den
 gemeinsamen Redaktionsbereich. Bestehende Arten/Seiten können als lokale Entwürfe bearbeitet und
 anschließend ausdrücklich abgeglichen werden; widersprüchliche Fassungen bleiben zur Entscheidung
@@ -82,13 +91,29 @@ Eine interne Freigabe veröffentlicht keine Squarespace-Seite. Personen-/Geräte
 den eigenen Rechten verfügbar. Dienstadresse und persönliche Zugänge sind eingerichtet; Betriebsstand
 und noch offene Abnahmen stehen in der [NAS-Anleitung](nas/README.md). Der bisherige lokale Bestand bleibt verfügbar.
 
-**Artbestand → Auf diesem PC / Gemeinsames Projekt** wählt in der ergänzten Programmfassung den
+**Artbestand → Lokaler Bestand / Gemeinsamer FN-Bestand** wählt in der ergänzten Programmfassung den
 Bestand für die normale Artenansicht. Die Wahl bleibt auf diesem Gerät gespeichert. Gemeinsame
 Grunddaten werden zunächst lokal vorgemerkt; **Änderungen abgleichen** sendet die wartenden Änderungen,
-**Serverstand lesen** lädt den Dienststand bewusst. Eine fehlende Anmeldung oder Verbindung wechselt
-nicht still auf den lokalen Bestand. Öffentliche Medienverweise benötigen eine Internetverbindung,
-solange die Dateien nicht auf diesem Gerät bereitgestellt sind. Der vollständige Anfangsbestand ist
-noch nicht übernommen; gekoppelte Namens-/Medienwege und die native Gesamtprüfung bleiben offen.
+**Serverstand lesen** lädt den Dienststand bewusst. Die Bestandswahl gilt auch bei einer fehlenden
+Anmeldung oder Verbindung. Gebundene Projektdateien werden in der Artansicht aus der
+persönlichen Offlineablage oder über die Projektanmeldung geladen. Öffentliche Dateien verwenden ihren
+Websiteverweis. Anfangsübernahme, gekoppelte Namens-/Medienwege und die native Gesamtprüfung stehen aus.
+Die beiden Einstiege gehören zur Übergangsphase. Ziel ist ein verbindlicher gemeinsamer FN-Bestand;
+die lokalen Gerätebestände dienen danach als Arbeits- und Offlinekopien.
+
+Im neuen Quellstand nutzt **Neue Art** im gemeinsamen Bestand dieselben allgemeinen Eingabefelder.
+Nach **Eingaben prüfen** legt **Art im gemeinsamen Projekt anlegen** ausdrücklich einen Entwurf an.
+Bei unklarer Antwort bietet **Serverstand prüfen** ausschließlich den Vergleich der vorhandenen Fassung.
+Nach Dialogschließen öffnet **Neue Art** diesen offenen Vorgang wieder; bei unterbrochener Verbindung
+zuerst **Serverstand lesen** verwenden. Dafür benötigt der gemeinsame Dienst die vorbereitete
+Artanlageunterstützung. Fachinformationen, Artdateien und Websitefreigabe bleiben eigene Schritte;
+der lokale Artassistent startet weiterhin seinen bisherigen Ablauf.
+
+Der neue Quellstand ergänzt **Artdateien offline verwenden** in der gemeinsamen Artansicht.
+Artporträt, Karte, Ton und Spektrogramm lassen sich mit angezeigter Größe einzeln auswählen und
+ausdrücklich herunterladen; vorhandene lokale Dateien werden gekennzeichnet. Dafür ist der passende
+Normaldateidienst erforderlich. Der noch bestätigte NAS-Stand 0.1.2 wird durch die lokale Änderung
+nicht aktualisiert. Zusätzliche Websitefotos sind von dieser Auswahl getrennt.
 
 Bei einem Artkonflikt unter **Gemeinsames Projekt → Grunddaten vergleichen** die erhaltenen lokalen
 Fassungen mit dem Serverstand vergleichen. Für abweichende Grunddaten bewusst einen Serverwert,
@@ -98,11 +123,27 @@ Prüfung vor. Die gespeicherten Fassungen bleiben als Verlauf erhalten. Nach ein
 zuerst **Serverstand lesen** und erneut vergleichen; der Explorer wiederholt keine Übernahme automatisch.
 Deutsche und wissenschaftliche Umbenennungen bleiben bis zum gekoppelten Umbenennungsweg gesperrt.
 
+Bei einer gemeinsamen Art führt **Artvorschlag prüfen** im Bearbeitungsmodus zur automatischen
+Fachdaten- und Medienvorbereitung. Alte und vorgeschlagene Werte sowie neue Bilder und Tonaufnahmen
+lassen sich vor **Zur Übernahme vormerken** prüfen. **Jetzt abgleichen** speichert einen Entwurf und
+stellt seine Dateien bereit. Die spätere interne Freigabe bleibt separat. Der Ablauf ist im Quellstand
+integriert und lokal geprüft. [Fachdaten- und Medienvorbereitung](docs/add-species-workflow.md#gemeinsamer-einartkern-für-fach--und-mediendaten)
+
 In der normalen gemeinsamen Artansicht erscheint für berechtigte Personen **Aktuelle Fassung intern
 freigeben**, sobald die Änderungen dieser Art abgeglichen sind. Die Vorschau zeigt die genaue Fassung
 für das Nachschlagewerk mit Texten, Taxonomie, Bildern und Ton. **Geprüfte Fassung intern freigeben**
 bestätigt nur diese Version für Projektleser und das Nachschlagewerk. Später hinzugekommene lokale
 Änderungen bleiben ungeprüft. Artseiten-Endfreigabe und Squarespace-Übernahme sind eigene Schritte.
+
+Der neue **Quellstand** ergänzt bei einer gemeinsam bearbeiteten Art **Artseite vorbereiten**.
+Vorlage und Websitebereich wählen, Fachtexte eintragen, Bilder hinzufügen und ihre Reihenfolge sowie
+Bildtexte bearbeiten. **Speichern und Vorschau prüfen** sichert die Eingaben und prüft die zusammengesetzte
+Seite. Bewusst leere Abschnitte einzeln bestätigen. Die interne Freigabe gilt für die genaue geprüfte
+Fassung; **Mit gemeinsamem Projekt abgleichen** sendet sie ausdrücklich. Noch nicht lokal vorhandene Projektbilder
+werden erst über **Bild vom Projekt laden** bezogen. Ungespeicherte Eingaben vor dem Beenden sichern.
+Der Anschluss wird derzeit integriert geprüft; er ist noch keine abgenommene NAS-/Desktopauslieferung.
+Squarespace-Anlage, modellgestützte Abschnittsvorschläge und öffentliche Veröffentlichung sind offen;
+Einzelheiten stehen im [Artseitenvertrag](docs/add-species-workflow.md).
 
 Gespeicherte Website-Bildtexte lassen sich je Seite unter **Website-Bildtexte → Seitenaktionen →
 Bildtexte gemeinsam abgleichen** vergleichen und ausdrücklich senden oder auf diesem PC übernehmen.
@@ -117,7 +158,7 @@ Appprofil, getrennt von gemeinsamen Daten. Einrichtung, Betriebsgrenzen und aktu
 
 ### Website-Bildtexte
 
-**Website-Bildtexte** bei der Websiteübersicht öffnet die seitenweise Bild-/Textprüfung. Der Dialog
+**FN-Website → Website-Bildtexte** öffnet die seitenweise Bild-/Textprüfung. Der Dialog
 zeigt vorhandene oder fehlende Texte, Entwürfe, Freigaben und öffentlich bestätigte Ausgaben.
 Vorschauen kommen direkt von Squarespace beziehungsweise den vorhandenen Website-Grafiken; lokal werden
 nur Zuordnungen, Texte und Prüfstände gespeichert. **Entwürfe zur Abnahme** zeigt die vorbereiteten Texte,
@@ -130,6 +171,15 @@ Neue Seiten erscheinen beim Abgleich als offene Arbeit; einzelne Seiten lassen s
 **Text freigeben** speichert den aktuellen Text und gibt ihn in einem Schritt frei. Nur als Zwischenstand
 speichern: **Weitere Aktionen und Hinweise → Entwurf speichern**. Bei offenen Eingaben nennt der Hinweis
 Bildnummer und gegebenenfalls Seite; **Offene Eingabe anzeigen** führt direkt zum betroffenen Bild.
+Gekoppelte Reisegalerietexte zeigen die bekannte öffentliche Grenze von **250 Zeichen** am Feld.
+Zu lange Texte bleiben als Entwurf erhalten; Freigabe und Übernahme warten auf eine bewusste Korrektur.
+Eine fehlende öffentliche Bestätigung wird mit ihrem konkreten Grund angezeigt.
+Die Desktop-App prüft deutsche Rechtschreibung bei der Texteingabe; Rechtsklick auf ein markiertes Wort
+zeigt Korrekturvorschläge. Der zusätzliche manuelle Button **Sprache prüfen** entfällt; die vorhandene
+Rechtschreibprüfung bleibt direkt im Textfeld aktiv. Die ergänzende automatische Grammatik- und
+Kommaprüfung wird lokal vorbereitet und vor ihrer Aktivierung mit echten Texten und der sichtbaren
+Feldbedienung geprüft. Die Annahme eines Hinweises bearbeitet den Entwurf; Speichern und Freigeben
+bleiben deine anschließenden Entscheidungen.
 Danach startet **In Squarespace übernehmen** die freigegebenen Texte der ausgewählten
 Seite. Eine vorherige Verbindung ist nicht nötig: Bei Bedarf öffnet derselbe Auftrag das eigene
 Squarespace-Fenster für deine Anmeldung und fährt danach automatisch fort. **Squarespace verbinden**

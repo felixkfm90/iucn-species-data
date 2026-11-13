@@ -9,9 +9,8 @@ export function validateStoredDocument(document) {
   fields(document, ['schemaVersion','templateId','templateHash','slug','parentPath','title','introduction','sections','images','sources','galleryRequested','emptyConfirmations','species']);
   check(document.schemaVersion === 1 && document.species && document.species.slug === document.slug, 'invalid_document', 'Die Artseitenbindung ist ungültig.');
   const normalized = normalizeDocument(editableDocument(document), { species: document.species, previous: document });
-  const { assetName, ...rawSpecies } = document.species;
   const projectId = Object.values(document.species.normalAssets).find(Boolean)?.projectId || document.images[0]?.asset?.projectId || 'unbound-project';
-  const checkedSpecies = normalizeSpeciesSnapshot(rawSpecies, projectId, document.slug);
+  const checkedSpecies = normalizeSpeciesSnapshot(document.species, projectId, document.slug);
   check(fingerprint(checkedSpecies) === fingerprint(document.species), 'invalid_species_binding', 'Die Artgrunddaten sind nicht kanonisch gebunden.');
   check(document.templateHash === normalized.templateHash, 'template_changed', 'Die gebundene Artseitenvorlage stimmt nicht überein.', 409);
   for (const image of document.images) {

@@ -222,6 +222,7 @@
   }
 
   function versionedAssetUrl(url, asset = {}, ...extraParts) {
+    if (asset.projectContent) return url;
     const key = assetVersionKey(asset, ...extraParts);
     return key ? cacheBustedUrl(url, key) : url;
   }

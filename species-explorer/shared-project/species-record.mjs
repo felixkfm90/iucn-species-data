@@ -1,11 +1,21 @@
 import { check } from "./errors.mjs";
 import { canonicalJson } from "./security.mjs";
 import { validateCatalogSpecies } from "./catalog.mjs";
+import { validateReaderEditorial } from "./species-editorial-data.mjs";
+import { NORMAL_ASSET_FILES } from "../page-authoring/model.mjs";
+import { sanitizeAssetName } from "../species-model.mjs";
 
 export const SPECIES_RECORD_TYPE = "fn-species-record";
 export function sharedSpeciesScientificIdentity(value) {
   const name = value?.type === SPECIES_RECORD_TYPE ? `${value.input?.genus || ""} ${value.input?.species || ""}` : value?.scientificName;
   return typeof name === "string" ? name.trim().replace(/\s+/gu, " ").toLocaleLowerCase("de") : "";
+}
+export function sharedSpeciesCollisionKeys(value) {
+  const normalized = value => typeof value === "string" ? value.trim().normalize("NFC").toLocaleLowerCase("de") : "";
+  const typed = value?.type === SPECIES_RECORD_TYPE, german = typed ? value.input?.german : value?.commonName;
+  const assetName = typed ? value.assets?.assetName : german?.trim() ? sanitizeAssetName(german) : "";
+  return { scientific: sharedSpeciesScientificIdentity(value).normalize("NFC"), german: normalized(german), asset: normalized(assetName),
+    slugs: [...new Set([value?.id, typed ? value.generated?.URLSlug : null].map(normalized).filter(Boolean))] };
 }
 const manualKeys = ["german", "english", "genus", "species", "size", "weight", "life_expectancy"];
 const limits = { german: 160, english: 160, genus: 100, species: 100, size: 240, weight: 240, life_expectancy: 240 };
@@ -13,7 +23,10 @@ const generalFields = ["Wissenschaftlicher Name", "Deutscher Name", "Englischer 
   "Kategorie", "Status", "Trend", "Populationgröße", "Generationsdauer", "Assessment ID", "Letztes IUCN Update", "Daten abgerufen"];
 const ranks = ["Kingdom", "Phylum", "Subphylum", "Class", "Order", "Family", "Genus", "Species"];
 const present = (value) => value !== undefined && value !== null && String(value).trim() !== "";
-const clone = (value) => JSON.parse(canonicalJson(value));
+const record2Limits = { maxBytes: 4 * 1024 * 1024, maxNodes: 300000 };
+const isRecord2 = (value) => value?.type === SPECIES_RECORD_TYPE && value?.schemaVersion === 2;
+const recordJson = (value) => canonicalJson(value, isRecord2(value) ? record2Limits : {});
+const clone = (value) => JSON.parse(recordJson(value));
 function record(value) { return value && typeof value === "object" && !Array.isArray(value); }
 function fields(value, keys) {
   check(record(value) && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key)),
@@ -42,9 +55,10 @@ function publicShape(value, sections = value.editorial.sections) {
 
 /** Bounded, lossless private working object. Validation never reads files or materializes assets. */
 export function validateSpeciesRecord(value, expectedId) {
+  const editorial = isRecord2(value) ? validateReaderEditorial(value.editorial, { speciesId: value.id }) : null;
   const result = clone(value);
   fields(result, ["type", "schemaVersion", "id", "input", "generated", "taxonomyOverride", "assessmentBinding", "assets", "editorial"]);
-  check(result.type === SPECIES_RECORD_TYPE && result.schemaVersion === 1 && typeof result.id === "string"
+  check(result.type === SPECIES_RECORD_TYPE && [1, 2].includes(result.schemaVersion) && typeof result.id === "string"
     && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(result.id) && result.id.length <= 120 && (!expectedId || result.id === expectedId),
   400, "invalid_species_record", "Artkennung oder Version des gemeinsamen Datensatzes ist ungültig.");
   check(record(result.input), 400, "invalid_species_record", "Die vollständige manuelle Artzeile fehlt.");
@@ -80,6 +94,15 @@ export function validateSpeciesRecord(value, expectedId) {
     if (asset.url !== undefined) validateCatalogSpecies({ id: result.id, scientificName: "Validation species", commonName: "", taxonomy: [], sections: [],
       media: { sounds: [{ id: asset.id, url: asset.url }], gallery: [] } }, result.id);
   }
+  if (result.schemaVersion === 2) {
+    result.editorial = editorial;
+    for (const [role, filename] of Object.entries(NORMAL_ASSET_FILES)) {
+      const file = result.assets.files[filename], metadata = result.editorial.normalAssets[role];
+      check(file?.bytes > 0 ? metadata !== null && ["id", "sha256", "bytes", "mimeType"].every(key => metadata[key] === file[key]) : metadata === null,
+        400, "invalid_species_record", "Die redaktionelle Leserfassung muss die unveränderten normalen Artdateien vollständig binden.");
+    }
+    return result;
+  }
   fields(result.editorial, ["websiteUrl", "sections", "gallery", "generalSectionId", "embeddedGeneralText"]);
   check(result.editorial.websiteUrl === null || typeof result.editorial.websiteUrl === "string", 400, "invalid_species_record", "Die öffentliche Seitenbindung ist ungültig.");
   validateCatalogSpecies(publicShape(result), result.id);
@@ -113,6 +136,8 @@ export function guardSpeciesRecordTransition({ objectId, before, next }) {
   check(typedBefore === typedNext, 409, "species_record_adoption_required", "Ein Wechsel der Art-Datenform benötigt eine eigene kontrollierte Übernahme.");
   if (!typedBefore) return true;
   const previous = validateSpeciesRecord(before, objectId), proposed = validateSpeciesRecord(next, objectId);
+  check(previous.schemaVersion === proposed.schemaVersion, 409, "species_record_adoption_required",
+    "Eine neue redaktionelle Datenform benötigt eine eigene kontrollierte Übernahme.");
   for (const key of manualKeys) {
     check(!Object.hasOwn(previous.input, key) || Object.hasOwn(proposed.input, key), 409, "species_record_protected", "Vorhandene manuelle Felder dürfen nicht entfernt werden.");
     if (canonicalJson(previous.input[key] ?? null) !== canonicalJson(proposed.input[key] ?? null) && Object.hasOwn(proposed.input, key)) {
@@ -121,7 +146,7 @@ export function guardSpeciesRecordTransition({ objectId, before, next }) {
     }
     delete previous.input[key]; delete proposed.input[key];
   }
-  check(canonicalJson(previous) === canonicalJson(proposed), 409, "species_record_protected",
+  check(recordJson(previous) === recordJson(proposed), 409, "species_record_protected",
     "Dieser Auftrag darf nur manuelle Grunddaten ändern. Originalquellen, Assetbindungen und Schutzinformationen bleiben erhalten.");
   return true;
 }
@@ -157,6 +182,8 @@ function selectedAttribution(metadata, keys) {
 export function projectSpeciesRecordToCatalog(value) {
   if (value?.type !== SPECIES_RECORD_TYPE) return validateCatalogSpecies(value, value?.id);
   const source = validateSpeciesRecord(value, value.id), generated = { ...(source.generated || {}) }, input = source.input;
+  check(source.schemaVersion !== 2, 409, "reader_catalog_version_required",
+    "Die vollständige redaktionelle Leserfassung benötigt den erweiterten Readerkatalog mit gebundenen gemeinsamen Medien.");
   const manual = { "Wissenschaftlicher Name": `${input.genus} ${input.species}`, "Deutscher Name": input.german };
   for (const [key, label] of Object.entries({ english: "Englischer Name", size: "Größe", weight: "Gewicht", life_expectancy: "Lebenserwartung" })) {
     if (Object.hasOwn(input, key)) manual[label] = input[key];

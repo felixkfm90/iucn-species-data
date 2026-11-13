@@ -5,6 +5,7 @@ import { check, ProjectError } from "../shared-project/errors.mjs";
 import { validateCatalogSpecies } from "../shared-project/catalog.mjs";
 import { validateSpeciesRecord } from "../shared-project/species-record.mjs";
 import { buildSpeciesWorkingRecords } from "./working-records.mjs";
+import { validateWorkingEditorialRelease } from "./working-editorial-catalog.mjs";
 
 const kind = "working-records", version = 1;
 const limits = { maxBytes: 8 * 1024 * 1024, maxNodes: 300000 };
@@ -52,7 +53,11 @@ function validateFile(file, index, speciesId, assetName) {
 /** Pure validation shared by the importer and its personal journal backup. */
 export function validateWorkingImportEvidence(input, species, expectedHash) {
   const evidence = copy(input);
-  keys(evidence, ["sources", "evidence"]); keys(evidence.sources, [...sourceNames, "assetsRoot"]);
+  keys(evidence, ["sources", "evidence"], ["editorialRelease"]); keys(evidence.sources, [...sourceNames, "assetsRoot"]);
+  if (Object.hasOwn(evidence, "editorialRelease")) {
+    try { validateWorkingEditorialRelease(evidence.editorialRelease); }
+    catch { requireEvidence(false); }
+  }
   for (const value of Object.values(evidence.sources)) validateProof(value);
   requireEvidence(Array.isArray(evidence.evidence) && evidence.evidence.length > 0 && evidence.evidence.length <= 10000);
   const ids = new Set(), inputIndices = new Set(), generatedIndices = new Set(), assetNames = new Set();
@@ -92,7 +97,7 @@ function sourcesProof(source, assetsRoot) {
   return { ...Object.fromEntries(sourceNames.map((name) => [name, proof(source[name])])), assetsRoot: proof(assetsRoot) };
 }
 function validateSourceShape(source) {
-  check(record(source) && sourceNames.every((name) => Object.hasOwn(source, name)) && Object.keys(source).every((name) => sourceNames.includes(name))
+  check(record(source) && sourceNames.every((name) => Object.hasOwn(source, name)) && Object.keys(source).every((name) => sourceNames.includes(name) || name === "editorialRelease")
     && Array.isArray(source.speciesList) && Array.isArray(source.speciesData) && Array.isArray(source.bindings)
     && record(source.catalog) && Array.isArray(source.catalog.species), 400, "invalid_working_source", "Die ausdrücklich gebundenen Artquellen sind unvollständig.");
   return source;
@@ -107,9 +112,13 @@ export function createWorkingImportSource({ readSources, assetsRoot } = {}) {
   check(typeof readSources === "function" && typeof assetsRoot === "string" && path.isAbsolute(assetsRoot) && !/^(?:\\\\|\/\/|file:)/i.test(assetsRoot),
     400, "invalid_working_source_config", "Ein fester lokaler Assetordner und ein gebundener Quellenleser sind erforderlich.");
   const root = path.resolve(assetsRoot);
-  async function currentSources() {
+  async function currentSources(options) {
     let source;
-    try { source = await readSources(); } catch { throw new ProjectError(503, "working_source_unavailable", "Die gebundenen Artquellen sind derzeit nicht lesbar."); }
+    try { source = await readSources(options); }
+    catch (error) {
+      if (error instanceof ProjectError && error.code === "working_public_catalog_invalid") throw error;
+      throw new ProjectError(503, "working_source_unavailable", "Die gebundenen Artquellen sind derzeit nicht lesbar.");
+    }
     return validateSourceShape(copy(source));
   }
   function snapshot(input) {
@@ -117,21 +126,21 @@ export function createWorkingImportSource({ readSources, assetsRoot } = {}) {
     value.evidence = validateWorkingImportEvidence(value.evidence, value.species, value.sourceSha256);
     return value;
   }
-  async function requireUnchangedSources(expected) {
-    const source = await currentSources();
-    check(same(sourcesProof(source, root), expected), 409, "working_source_changed", "Die Artquellen oder ihre Zuordnung wurden seit der Planung verändert. Bitte neu prüfen.");
+  async function requireUnchangedSources(evidence) {
+    const source = await currentSources({ editorialRelease: evidence.editorialRelease ?? null });
+    check(same(sourcesProof(source, root), evidence.sources), 409, "working_source_changed", "Die Artquellen oder ihre Zuordnung wurden seit der Planung verändert. Bitte neu prüfen.");
     return source;
   }
   return Object.freeze({ kind, version,
-    async read() {
-      const source = await currentSources(), result = await buildSpeciesWorkingRecords({ ...source, assetsRoot: root }); complete(result);
-      const evidence = validateWorkingImportEvidence({ sources: result.sources, evidence: result.evidence }, result.records);
+    async read(options) {
+      const { editorialRelease, ...source } = await currentSources(options), result = await buildSpeciesWorkingRecords({ ...source, assetsRoot: root }); complete(result);
+      const evidence = validateWorkingImportEvidence({ sources: result.sources, evidence: result.evidence, ...(editorialRelease && { editorialRelease }) }, result.records);
       return copy({ species: result.records, sourceSha256: evidenceHash(evidence), evidence });
     },
     async verifySpecies(input, id) {
       const value = snapshot(input), item = value.evidence.evidence.find((entry) => entry.id === id);
       check(item, 409, "working_species_missing", "Diese Art gehört nicht zur angezeigten vollständigen Übernahme.");
-      const source = await requireUnchangedSources(value.evidence.sources);
+      const source = await requireUnchangedSources(value.evidence);
       const selectedCatalog = source.catalog.species.filter((entry) => entry.id === id), selectedBindings = source.bindings.filter((entry) => entry.id === id);
       check(selectedCatalog.length === 1 && selectedBindings.length === 1 && source.speciesList[item.inputIndex]
         && source.speciesData[item.generatedIndex]?.URLSlug === id, 409, "working_species_changed", "Die geprüfte Artzuordnung stimmt nicht mehr überein.");
@@ -141,7 +150,7 @@ export function createWorkingImportSource({ readSources, assetsRoot } = {}) {
         && same(result.evidence[0].files, item.files) && same(result.evidence[0].input, item.input)
         && same(result.evidence[0].generated, item.generated) && same(result.evidence[0].catalog, item.catalog),
       409, "working_species_changed", "Die gebundenen Dateien oder Artinhalte wurden seit der Planung verändert. Bitte neu prüfen.", result.issues);
-      await requireUnchangedSources(value.evidence.sources);
+      await requireUnchangedSources(value.evidence);
       return true;
     },
   });

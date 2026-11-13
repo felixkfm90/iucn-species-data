@@ -4,8 +4,37 @@ import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { canonicalJson, objectJson, transportJson, digest } from "./security.mjs";
 import { check } from "./errors.mjs";
+import { CLIENT_IMAGE_SCHEMA, createClientImageStore } from "./client-image-media-store.mjs";
+import { validateSealedEditorialRequest } from "./client-editorial-queue.mjs";
+import { CLIENT_NORMAL_SCHEMA,createClientNormalStore,assertClientNormalSchema } from './client-normal-media-store.mjs';
+import { normalMediaBinding } from './normal-media.mjs';
+import { CLIENT_ENRICHMENT_SCHEMA, createClientEnrichmentStore, readQueuedSpeciesEnrichment } from "./client-enrichment-store.mjs";
 
 const pendingStates = "('queued','uncertain','conflict')";
+const cacheColumns={bindings:'id,base_url,project_id,user_id,user_json',state:'key,value',cache:'binding_id,kind,id,server_json,local_json,visible',
+  queue:'seq,binding_id,change_id,kind,object_id,base_revision,depends_on,data_json,request_json,state,result_revision,conflict_id',
+  conflicts:'binding_id,id,conflict_json,resolved',pulls:'id,binding_id,snapshot,total_count,last_key',pull_objects:'pull_id,kind,id,object_json',
+  image_blobs:'sha256,bytes,data',image_media:'binding_id,id,metadata_json,blob_sha256,uploaded,receipt_json',
+  normal_blobs:'sha256,bytes,mime_type,width,height,data',normal_media:'binding_id,content_id,metadata_json,source_revision,source_data_hash,blob_sha256,receipt_json',
+  enrichment_candidates:"binding_id,candidate_id,payload_json",enrichment_files:"binding_id,candidate_id,slot,sha256,bytes,mime_type,data"};
+function cacheSchema(db,version) {
+  const names=Object.keys(cacheColumns).filter(name=>version>=4||!name.startsWith('normal_')).filter(name=>version>=3||!name.startsWith('image_'))
+    .filter(name=>version>=2||!['pulls','pull_objects'].includes(name)).filter(name=>version>=5||!name.startsWith("enrichment_")).sort();
+  const actual=db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(row=>row.name);
+  check(JSON.stringify(names)===JSON.stringify(actual),409,'unsupported_schema','Die persönlichen Cachetabellen besitzen ein unbekanntes oder unvollständiges Format.');
+  for(const name of names)check(db.prepare(`PRAGMA table_xinfo(${name})`).all().map(column=>column.name).join(',')===cacheColumns[name],409,'unsupported_schema','Die persönlichen Cachespalten besitzen ein unbekanntes Format.');
+  check(db.prepare("SELECT count(*) AS n FROM sqlite_schema WHERE type<>'table' AND sql IS NOT NULL").get().n===0,
+    409,'unsupported_schema','Unbekannte ausführbare Cacheelemente bleiben geschützt.');
+  if(version>=4)assertClientNormalSchema(db);
+  if(version===5) {
+    const normalize = sql => sql.replace(/\s+/gu, "").toLowerCase();
+    for (const statement of CLIENT_ENRICHMENT_SCHEMA.split(";").map(value=>value.trim()).filter(Boolean)) {
+      const table=/^CREATE TABLE (\w+)/.exec(statement)[1];
+      check(normalize(db.prepare("SELECT sql FROM sqlite_schema WHERE type='table' AND name=?").get(table)?.sql||"")===normalize(statement),
+        409,"unsupported_schema","Das Format der persönlichen Artvorschläge wurde verändert.");
+    }
+  }
+}
 
 /** Private installation cache. Authentication material is never accepted by this facade. */
 export function createSharedProjectClientStore({ filename, localStorageConfirmed = false } = {}) {
@@ -18,11 +47,14 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
   }
   fs.mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
   const db = new DatabaseSync(filename);
+  try {
   fs.chmodSync(filename, 0o600);
   db.exec("PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA trusted_schema=OFF;");
   const schema = db.prepare("PRAGMA user_version").get().user_version;
-  if (![0, 1, 2].includes(schema)) { db.close(); check(false, 409, "unsupported_schema", "Unbekannte Cacheversion."); }
-  db.exec(`
+  check([0, 1, 2, 3, 4, 5].includes(schema), 409, "unsupported_schema", "Unbekannte Cacheversion.");
+  if(schema)cacheSchema(db,schema);
+  else check(db.prepare("SELECT count(*) AS n FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'").get().n===0,409,'unsupported_schema','Eine unbekannte vorhandene Datenbank wird nicht als neuer Cache angelegt.');
+  if(schema<3)db.exec(`
     CREATE TABLE IF NOT EXISTS bindings(id TEXT PRIMARY KEY, base_url TEXT NOT NULL, project_id TEXT NOT NULL,
       user_id TEXT NOT NULL, user_json TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS state(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -37,8 +69,14 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
       snapshot TEXT NOT NULL,total_count INTEGER NOT NULL,last_key TEXT NOT NULL DEFAULT '');
     CREATE TABLE IF NOT EXISTS pull_objects(pull_id TEXT NOT NULL REFERENCES pulls(id) ON DELETE CASCADE,
       kind TEXT NOT NULL,id TEXT NOT NULL,object_json TEXT NOT NULL,PRIMARY KEY(pull_id,kind,id));
-    PRAGMA user_version=2;
+    ${CLIENT_IMAGE_SCHEMA}
+    PRAGMA user_version=3;
   `);
+  if(schema<4) {
+    db.exec('BEGIN IMMEDIATE');try{cacheSchema(db,3);db.exec(CLIENT_NORMAL_SCHEMA);db.exec('PRAGMA user_version=4');cacheSchema(db,4);db.exec('COMMIT');}
+    catch(error){db.exec('ROLLBACK');throw error;}
+  }
+  }catch(error){db.close();throw error;}
   let closed = false;
   function open() { check(!closed, 409, "client_closed", "Der Projektcache ist geschlossen."); }
   function tx(fn) {
@@ -50,6 +88,15 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
     return row ? { id: row.id, baseUrl: row.base_url, projectId: row.project_id, userId: row.user_id, user: JSON.parse(row.user_json) } : null;
   }
   function pending(id) { open(); return db.prepare(`SELECT * FROM queue WHERE binding_id=? AND state IN ${pendingStates} ORDER BY seq`).all(id); }
+  function editorialChange(id, changeId) {
+    const owner = binding(id), row = db.prepare("SELECT * FROM queue WHERE binding_id=? AND change_id=?").get(id, changeId);
+    check(owner && row && ["queued", "uncertain"].includes(row.state) && row.request_json, 409, "change_blocked", "Dieser Übernahmeauftrag kann nicht auf diese Weise abgeschlossen werden.");
+    const request = validateSealedEditorialRequest(JSON.parse(row.request_json), { changeId, kind: row.kind, id: row.object_id,
+      baseRevision: row.base_revision, data: JSON.parse(row.data_json), projectId: owner.projectId, userId: owner.userId });
+    check(!pending(id).some(entry => entry.kind === row.kind && entry.object_id === row.object_id && entry.seq > row.seq),
+      409, "editorial_followup_review_required", "Hinter dieser Übernahme liegen weitere eigene Änderungen. Sie müssen vor dem Abschließen gesondert geprüft werden; alle Fassungen bleiben erhalten.");
+    return request;
+  }
   function conflictStamp(id, conflictId) {
     open(); const row = db.prepare("SELECT conflict_json FROM conflicts WHERE binding_id=? AND id=? AND resolved=0").get(id, conflictId);
     return row ? digest(row.conflict_json) : null;
@@ -81,13 +128,46 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
       .run(id, value.kind, value.id, serialized, local, Number(Boolean(active)));
   }
   return {
+    media: createClientImageStore({ db, tx, binding, open }),
+    speciesEnrichment: createClientEnrichmentStore({ db, tx,
+      currentOwner() {
+        open();
+        return binding(db.prepare("SELECT value FROM state WHERE key='active'").get()?.value ?? "");
+      },
+      currentSource: (id, speciesId) => object(id, "species", speciesId, { serverOnly: true }),
+      enqueue(owner, sealed, data) {
+        const { change } = sealed, serialized = objectJson(data);
+        db.prepare("INSERT INTO queue(binding_id,change_id,kind,object_id,base_revision,data_json,request_json,state) VALUES (?,?,?,?,?,?,?,'queued')")
+          .run(owner.id, change.changeId, change.kind, change.id, change.baseRevision, serialized,
+            canonicalJson(sealed, { maxBytes: 2 * 1024 * 1024, maxNodes: 300000 }));
+        db.prepare("UPDATE cache SET local_json=? WHERE binding_id=? AND kind='species' AND id=?").run(serialized, owner.id, change.id);
+        return { changeId: change.changeId, candidateId: sealed.candidateId, object: object(owner.id, change.kind, change.id),
+          readerApproved: false, externalPublication: "not-performed" };
+      },
+      ensureSchema() {
+        if (db.prepare("PRAGMA user_version").get().user_version === 5) return;
+        cacheSchema(db, 4);
+        db.exec(CLIENT_ENRICHMENT_SCHEMA);
+        db.exec("PRAGMA user_version=5");
+        cacheSchema(db, 5);
+      },
+    }),
+    normalMedia:createClientNormalStore({db,tx,binding,open,assertSource(id,metadata,source){
+      check(db.prepare("SELECT value FROM state WHERE key='active'").get()?.value===id,409,'normal_media_review_changed','Die aktive persönliche Cachebindung wurde geändert.');
+      const value=object(id,'species',metadata.speciesId,{serverOnly:true}),owner=binding(id);
+      const expected=normalMediaBinding(value.data,{projectId:owner.projectId,slot:metadata.slot});
+      check(value.revision===source.sourceRevision&&digest(objectJson(value.data))===source.sourceDataHash&&!value.localPending&&!value.localConflict
+        &&expected?.contentId===metadata.contentId&&(!['reader'].includes(owner.user.role)||value.approval==='approved'&&value.approvedRevision===value.revision),
+        409,'normal_media_review_changed','Die bestätigte Art- oder Personenbindung wurde vor der Cacheaufnahme geändert.');
+    }}),
     projectIds() { open(); return db.prepare("SELECT DISTINCT project_id FROM bindings ORDER BY project_id").all().map(row => row.project_id); },
     active() { open(); return binding(db.prepare("SELECT value FROM state WHERE key='active'").get()?.value ?? ""); },
     bind({ baseUrl, projectId, user }) {
       check(typeof projectId === "string" && projectId.length <= 100 && user && typeof user.id === "string", 502, "invalid_response", "Die Projektidentität fehlt.");
       const id = digest(`${baseUrl}\n${projectId}\n${user.id}`);
       return tx(() => {
-        const safeUser = { id: user.id, username: user.username, displayName: user.displayName, role: user.role };
+        const safeUser = { id: user.id, username: user.username, displayName: user.displayName, role: user.role,
+          ...(Number.isSafeInteger(user.version) && user.version > 0 ? { version: user.version } : {}) };
         db.prepare("INSERT INTO bindings VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET user_json=excluded.user_json")
           .run(id, baseUrl, projectId, user.id, canonicalJson(safeUser));
         db.prepare("INSERT OR REPLACE INTO state VALUES ('active',?)").run(id);
@@ -96,7 +176,8 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
     },
     updateUser(id, user) {
       return tx(() => {
-        const safeUser = { id: user.id, username: user.username, displayName: user.displayName, role: user.role };
+        const safeUser = { id: user.id, username: user.username, displayName: user.displayName, role: user.role,
+          ...(Number.isSafeInteger(user.version) && user.version > 0 ? { version: user.version } : {}) };
         db.prepare("UPDATE bindings SET user_json=? WHERE id=?").run(canonicalJson(safeUser), id);
       });
     },
@@ -120,7 +201,8 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
         const key = `${value.kind}/${value.id}`;
         check(key > last, 502, "invalid_response", "Objektfolge ist doppelt oder unvollständig geordnet.");
         db.prepare("INSERT INTO pull_objects VALUES (?,?,?,?)").run(pullId, value.kind, value.id,
-          canonicalJson(value, { maxBytes: 3 * 1024 * 1024, maxNodes: 300000 }));
+          canonicalJson(value, { maxBytes: value.data?.type === "fn-species-record" && value.data.schemaVersion === 2
+            ? 4 * 1024 * 1024 + 16 * 1024 : 3 * 1024 * 1024, maxNodes: 300000 }));
         last = key;
       }
       check(db.prepare("SELECT count(*) AS n FROM pull_objects WHERE pull_id=?").get(pullId).n <= totalCount,
@@ -146,11 +228,19 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
       return values;
     },
     get: object,
-    edit(id, kind, objectId, data, { baseRevision } = {}) {
+    edit(id, kind, objectId, data, { baseRevision, expectedLocalReview } = {}) {
       return tx(() => {
+        check(!db.prepare("SELECT 1 FROM state WHERE key LIKE 'editorial-cancel-%' AND value=?").get(`${id}/${kind}/${objectId}`),
+          409, "change_blocked", "Ein alter Seitenübernahmeauftrag wird gerade eindeutig abgeschlossen. Bitte diesen Abschluss zuerst fortsetzen; deine Eingaben bleiben im Formular erhalten.");
         const cached = object(id, kind, objectId), serialized = objectJson(data);
         check(data && typeof data === "object" && !Array.isArray(data), 400, "invalid_data", "Ein Objektinhalt ist erforderlich.");
+        check(expectedLocalReview === undefined || expectedLocalReview?.revision === cached.revision
+          && expectedLocalReview.pending === cached.localPending && expectedLocalReview.conflict === cached.localConflict
+          && expectedLocalReview.dataHash === digest(objectJson(cached.data)), 409, "local_object_changed",
+        "Die Artfassung oder ihr Abgleichstatus hat sich seit der Vorschau geändert. Bitte neu vergleichen. Deine Eingaben bleiben im Formular.");
         const active = pending(id).filter((entry) => entry.kind === kind && entry.object_id === objectId), latest = active.at(-1);
+        check(!active.some(entry => entry.request_json && Object.hasOwn(JSON.parse(entry.request_json), "candidateId")),
+          409, "species_enrichment_pending", "Für diese Art wartet ein geprüfter Vorschlag auf den Abgleich. Bitte zuerst diesen Abgleich abschließen; deine Eingaben bleiben im Formular erhalten.");
         if (latest && latest.state === "queued" && latest.request_json === null) {
           db.prepare("UPDATE queue SET data_json=? WHERE change_id=?").run(serialized, latest.change_id);
         } else {
@@ -161,12 +251,83 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
         return object(id, kind, objectId);
       });
     },
+    stageEditorialAdoption(id, { data, intent }) {
+      return tx(() => {
+        const owner = binding(id);
+        check(owner && db.prepare("SELECT value FROM state WHERE key='active'").get()?.value === id,
+          409, "editorial_adoption_changed", "Die aktive Projektverbindung hat sich geändert.");
+        const changeId = randomUUID(), speciesId = data?.id, baseRevision = intent?.sourceBindings?.species?.objectRevision;
+        const request = validateSealedEditorialRequest({ changeId, kind: "species", id: speciesId, baseRevision, data, intent },
+        { changeId, kind: "species", id: speciesId, baseRevision, data, projectId: owner.projectId, userId: owner.userId, role: owner.user.role });
+        const source = request.intent.sourceBindings;
+        for (const [kind, objectId, revision, dataHash] of [
+          ["page", source.page.objectId, source.page.objectRevision, source.page.dataHash],
+          ["species", source.species.id, source.species.objectRevision, source.species.dataHash],
+        ]) {
+          const current = object(id, kind, objectId);
+          check(!current.localPending && !current.localConflict && current.revision === revision
+            && digest(objectJson(current.data)) === dataHash, 409, "editorial_adoption_changed",
+          "Art oder Seite hat sich seit der Vorschau geändert. Die Übernahme muss erneut geprüft werden.");
+        }
+        const serialized = objectJson(request.data);
+        db.prepare("INSERT INTO queue(binding_id,change_id,kind,object_id,base_revision,data_json,request_json,state) VALUES (?,?,?,?,?,?,?,'queued')")
+          .run(id, request.changeId, "species", request.id, request.baseRevision, serialized, transportJson(request));
+        db.prepare("UPDATE cache SET local_json=? WHERE binding_id=? AND kind='species' AND id=?").run(serialized, id, request.id);
+        return { changeId: request.changeId, object: object(id, "species", request.id), readerApproved: false, externalPublication: "not-performed" };
+      });
+    },
+    editorialChange(id, changeId) {
+      return tx(() => {
+        const request = editorialChange(id, changeId);
+        // Every cache writer checks this durable guard in the same write
+        // transaction as edit(). No network wait holds a SQLite transaction.
+        db.prepare("INSERT OR REPLACE INTO state(key,value) VALUES (?,?)")
+          .run(`editorial-cancel-${changeId}`, `${id}/species/${request.id}`);
+        return request;
+      });
+    },
+    editorialCancellationPending(id, changeId) {
+      open(); const row = db.prepare("SELECT kind,object_id FROM queue WHERE binding_id=? AND change_id=?").get(id, changeId);
+      return Boolean(row && db.prepare("SELECT 1 FROM state WHERE key=? AND value=?")
+        .get(`editorial-cancel-${changeId}`, `${id}/${row.kind}/${row.object_id}`));
+    },
+    cancelEditorialChange(id, changeId) {
+      return tx(() => {
+        const request = editorialChange(id, changeId);
+        db.prepare("UPDATE queue SET state='superseded' WHERE binding_id=? AND change_id=?").run(id, changeId);
+        db.prepare("DELETE FROM state WHERE key=?").run(`editorial-cancel-${changeId}`);
+        const cached = object(id, "species", request.id, { serverOnly: true });
+        db.prepare("UPDATE cache SET local_json=? WHERE binding_id=? AND kind='species' AND id=?").run(objectJson(cached.data), id, request.id);
+        return { cancelled: true, changeId, object: object(id, "species", request.id), readerApproved: false, externalPublication: "not-performed" };
+      });
+    },
     pending,
+    pendingEnrichment(id, speciesId) {
+      const row = pending(id).find(value => value.kind === "species" && value.object_id === speciesId
+        && value.request_json && Object.hasOwn(JSON.parse(value.request_json), "candidateId"));
+      if (!row) return null;
+      const { candidateId } = readQueuedSpeciesEnrichment(db, binding(id), row);
+      return { candidateId, changeId: row.change_id, acceptedRevision: row.result_revision, state: row.state };
+    },
     prepare(changeId) {
       return tx(() => {
         const row = db.prepare("SELECT * FROM queue WHERE change_id=?").get(changeId);
         check(row && ["queued", "uncertain"].includes(row.state), 409, "change_blocked", "Die Änderung wartet auf eine Entscheidung.");
-        if (row.request_json) return JSON.parse(row.request_json);
+        if (row.request_json) {
+          const prepared = JSON.parse(row.request_json);
+          if (Object.hasOwn(prepared, "candidateId")) {
+            const queued = readQueuedSpeciesEnrichment(db, binding(row.binding_id), row, { readBytes: true });
+            db.prepare("UPDATE queue SET state='uncertain' WHERE change_id=?").run(changeId);
+            return { ...queued, resultRevision: row.result_revision };
+          }
+          if (Object.hasOwn(prepared, "intent")) {
+            const owner = binding(row.binding_id);
+            validateSealedEditorialRequest(prepared, { changeId, kind: row.kind, id: row.object_id,
+              baseRevision: row.base_revision, data: JSON.parse(row.data_json), projectId: owner.projectId, userId: owner.userId });
+          }
+          db.prepare("UPDATE queue SET state='uncertain' WHERE change_id=?").run(changeId);
+          return prepared;
+        }
         let baseRevision = row.base_revision;
         if (row.depends_on) {
           const previous = db.prepare("SELECT * FROM queue WHERE change_id=?").get(row.depends_on);
@@ -180,15 +341,37 @@ export function createSharedProjectClientStore({ filename, localStorageConfirmed
         return request;
       });
     },
+    updateEnrichment(id, changeId, value, phase) {
+      return tx(() => {
+        const row = db.prepare("SELECT * FROM queue WHERE binding_id=? AND change_id=?").get(id, changeId), owner = binding(id);
+        check(owner && row?.state === "uncertain" && db.prepare("SELECT value FROM state WHERE key='active'").get()?.value === id,
+          409, "species_enrichment_changed", "Der persönliche Übernahmeauftrag wurde zwischenzeitlich geändert. Bitte erneut abgleichen.");
+        const { change } = readQueuedSpeciesEnrichment(db, owner, row);
+        check(value.kind === change.kind && value.id === change.id, 502, "invalid_response", "Die bestätigte Art gehört nicht zum geprüften Vorschlag.");
+        if (phase === "accepted") {
+          check(value.parentRevision === change.baseRevision && value.revision !== change.baseRevision
+            && digest(objectJson(value.data)) === change.enrichment.targetDataHash && (!row.result_revision || value.revision === row.result_revision),
+          502, "invalid_response", "Die bestätigte Entwurfsfassung entspricht nicht dem geprüften Vorschlag.");
+          db.prepare("UPDATE queue SET result_revision=? WHERE change_id=?").run(value.revision, changeId);
+        } else if (phase !== "observed") {
+          check(phase === "complete" && row.result_revision || phase === "stale" && row.result_revision === null,
+            409, "species_enrichment_changed", "Der bestätigte Übernahmestand wurde zwischenzeitlich geändert.");
+          db.prepare("UPDATE queue SET state=? WHERE change_id=?").run(phase === "complete" ? "applied" : "superseded", changeId);
+        } else check(row.result_revision, 409, "species_enrichment_changed", "Der Entwurf wurde noch nicht eindeutig bestätigt.");
+        saveRemote(id, value);
+      });
+    },
     acknowledge(id, changeId, value) {
       return tx(() => {
         db.prepare("UPDATE queue SET state='applied',result_revision=? WHERE binding_id=? AND change_id=?").run(value.revision, id, changeId);
+        db.prepare("DELETE FROM state WHERE key=?").run(`editorial-cancel-${changeId}`);
         saveRemote(id, value);
       });
     },
     saveConflict(id, changeId, value) {
       return tx(() => {
         db.prepare("UPDATE queue SET state='conflict',conflict_id=? WHERE binding_id=? AND change_id=?").run(value.id, id, changeId);
+        db.prepare("DELETE FROM state WHERE key=?").run(`editorial-cancel-${changeId}`);
         db.prepare("INSERT OR REPLACE INTO conflicts VALUES (?,?,?,0)").run(id, value.id, JSON.stringify(value));
       });
     },

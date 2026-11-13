@@ -3,16 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../domain/catalog.dart';
+import '../domain/project_media.dart';
+import 'project_media_transport.dart';
+import 'reader_catalog.dart';
 import 'website_photo.dart';
 
-class ProjectApiException implements Exception {
-  final int status;
-  final String message;
-  const ProjectApiException(this.status, this.message);
-  bool get requiresLogin => status == 401 || status == 403;
-  @override
-  String toString() => message;
-}
+export 'project_media_transport.dart' show ProjectApiException;
+
+const androidAppVersion = '0.1.13';
 
 abstract interface class ProjectTransport {
   Future<Map<String, dynamic>> json(
@@ -25,11 +23,24 @@ abstract interface class ProjectTransport {
   void close();
 }
 
-class HttpProjectTransport implements ProjectTransport, WebsitePhotoTransport {
+abstract interface class ProtectedProjectMediaTransport {
+  Stream<List<int>> projectMedia(ProjectSession session, ProjectMediaFile file);
+}
+
+abstract interface class WebsitePhotoMetadataTransport {
+  Future<int?> websitePhotoSize(Uri uri);
+}
+
+class HttpProjectTransport
+    implements
+        ProjectTransport,
+        ProtectedProjectMediaTransport,
+        WebsitePhotoTransport,
+        WebsitePhotoMetadataTransport {
   final HttpClient client;
   HttpProjectTransport({HttpClient? client}) : client = client ?? HttpClient() {
     this.client.connectionTimeout = const Duration(seconds: 20);
-    this.client.userAgent = 'ArtenExplorer/0.1.2 Android';
+    this.client.userAgent = 'ArtenExplorer/$androidAppVersion Android';
   }
   @override
   Future<Map<String, dynamic>> json(
@@ -60,23 +71,32 @@ class HttpProjectTransport implements ProjectTransport, WebsitePhotoTransport {
       }
       bytes.addAll(chunk);
     }
-    if (response.statusCode == 401) {
-      throw const ProjectApiException(
-        401,
-        'Bitte erneut am gemeinsamen Projekt anmelden.',
-      );
-    }
-    if (response.statusCode == 403) {
-      throw const ProjectApiException(
-        403,
-        'Für diesen Projektbestand fehlt die Leseberechtigung.',
-      );
-    }
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ProjectApiException(
-        response.statusCode,
-        'Der Projektdienst antwortet mit Fehler ${response.statusCode}.',
-      );
+    final status = response.statusCode;
+    if (status < 200 || status >= 300) {
+      String? code;
+      final expectedCode = switch (status) {
+        401 => 'authentication_required',
+        404 => 'route_not_found',
+        409 => 'reader_snapshot_changed',
+        _ => null,
+      };
+      if (expectedCode != null) {
+        try {
+          final value = jsonDecode(utf8.decode(bytes));
+          final error = value is Map ? value['error'] : null;
+          if (error is Map && error['code'] == expectedCode) {
+            code = expectedCode;
+          }
+        } on FormatException {
+          // A proxy can return its own non-JSON error page.
+        }
+      }
+      throw ProjectApiException(status, switch (status) {
+        401 => 'Bitte erneut am gemeinsamen Projekt anmelden.',
+        403 => 'Für diesen Projektbestand fehlt die Leseberechtigung.',
+        409 when code == 'reader_snapshot_changed' => 'Der gemeinsame Bestand hat sich während des Abrufs geändert. Bitte erneut aktualisieren.',
+        _ => 'Der Projektdienst antwortet mit Fehler $status.',
+      }, code: code);
     }
     return object(jsonDecode(utf8.decode(bytes)), 'Serverantwort');
   }
@@ -89,6 +109,9 @@ class HttpProjectTransport implements ProjectTransport, WebsitePhotoTransport {
         .timeout(const Duration(seconds: 20));
     // Public media never receive the personal project bearer token.
     request.followRedirects = false;
+    request.headers.removeAll(HttpHeaders.authorizationHeader);
+    request.headers.removeAll(HttpHeaders.cookieHeader);
+    request.cookies.clear();
     final response = await request.close().timeout(const Duration(seconds: 25));
     if (response.statusCode != 200) {
       await response.drain<void>();
@@ -101,58 +124,144 @@ class HttpProjectTransport implements ProjectTransport, WebsitePhotoTransport {
   }
 
   @override
+  Stream<List<int>> projectMedia(
+    ProjectSession session,
+    ProjectMediaFile file,
+  ) => readProjectMedia(
+    client,
+    server: session.server,
+    projectId: session.projectId,
+    bearer: session.token,
+    file: file,
+  );
+
+  @override
   void close() => client.close(force: true);
+
+  @override
+  Future<int?> websitePhotoSize(Uri uri) async {
+    WebsitePhotoPolicy.checkUrl(uri);
+    final request = await client
+        .openUrl('HEAD', uri)
+        .timeout(const Duration(seconds: 20));
+    request.followRedirects = false;
+    request.headers.set(
+      HttpHeaders.acceptHeader,
+      'image/jpeg, image/png, image/webp',
+    );
+    request.headers.set(HttpHeaders.acceptEncodingHeader, 'identity');
+    request.headers.removeAll(HttpHeaders.authorizationHeader);
+    request.headers.removeAll(HttpHeaders.cookieHeader);
+    request.cookies.clear();
+    try {
+      final response = await request.close().timeout(
+        const Duration(seconds: 25),
+      );
+      try {
+        if (response.statusCode != 200) return null;
+        WebsitePhotoPolicy.checkMime(response.headers.contentType?.mimeType);
+        final length = response.contentLength;
+        return length > 0 && length <= WebsitePhotoPolicy.maximumBytes
+            ? length
+            : null;
+      } finally {
+        await response.listen(null).cancel();
+      }
+    } finally {
+      request.abort();
+    }
+  }
 
   @override
   Future<WebsitePhotoResponse> websitePhoto(Uri uri) async {
     WebsitePhotoPolicy.checkUrl(uri);
-    final request = await client.getUrl(uri).timeout(const Duration(seconds: 20));
+    final request = await client
+        .getUrl(uri)
+        .timeout(const Duration(seconds: 20));
     request.followRedirects = false;
-    request.headers.set(HttpHeaders.acceptHeader, 'image/jpeg, image/png, image/webp');
+    request.headers.set(
+      HttpHeaders.acceptHeader,
+      'image/jpeg, image/png, image/webp',
+    );
     request.headers.set(HttpHeaders.acceptEncodingHeader, 'identity');
     request.headers.removeAll(HttpHeaders.authorizationHeader);
     request.headers.removeAll(HttpHeaders.cookieHeader);
     request.cookies.clear();
     final timer = Timer(const Duration(seconds: 90), () {
-      request.abort(const FormatException('Das Websitefoto wurde nicht innerhalb des Zeitlimits geladen.'));
+      request.abort(
+        const FormatException(
+          'Das Websitefoto wurde nicht innerhalb des Zeitlimits geladen.',
+        ),
+      );
     });
-    var released=false;
-    void release(){if(!released){released=true;timer.cancel();request.abort();}}
+    var released = false;
+    void release() {
+      if (!released) {
+        released = true;
+        timer.cancel();
+        request.abort();
+      }
+    }
+
     HttpClientResponse? response;
     try {
-      final received = await request.close().timeout(const Duration(seconds: 25));
+      final received = await request.close().timeout(
+        const Duration(seconds: 25),
+      );
       response = received;
       if (received.statusCode != 200) {
-        throw ProjectApiException(received.statusCode,
-          'Das öffentliche Websitefoto wurde nicht bestätigt (${received.statusCode}); Weiterleitungen werden nicht übernommen.');
+        throw ProjectApiException(
+          received.statusCode,
+          'Das öffentliche Websitefoto wurde nicht bestätigt (${received.statusCode}); Weiterleitungen werden nicht übernommen.',
+        );
       }
-      final type = WebsitePhotoPolicy.checkMime(received.headers.contentType?.mimeType);
-      final encoding = received.headers.value(HttpHeaders.contentEncodingHeader);
+      final type = WebsitePhotoPolicy.checkMime(
+        received.headers.contentType?.mimeType,
+      );
+      final encoding = received.headers.value(
+        HttpHeaders.contentEncodingHeader,
+      );
       if (encoding != null && encoding.toLowerCase() != 'identity' ||
           received.contentLength > WebsitePhotoPolicy.maximumBytes ||
           received.contentLength == 0) {
-        throw const FormatException('Die Websiteantwort überschreitet die erlaubte Bildgröße oder Kodierung.');
+        throw const FormatException(
+          'Die Websiteantwort überschreitet die erlaubte Bildgröße oder Kodierung.',
+        );
       }
       Stream<List<int>> bounded() async* {
         var total = 0;
         try {
-          await for (final chunk in received.timeout(const Duration(seconds: 25))) {
+          await for (final chunk in received.timeout(
+            const Duration(seconds: 25),
+          )) {
             total += chunk.length;
             if (total > WebsitePhotoPolicy.maximumBytes ||
                 received.contentLength >= 0 && total > received.contentLength) {
-              throw const FormatException('Das Websitefoto ist größer als erlaubt.');
+              throw const FormatException(
+                'Das Websitefoto ist größer als erlaubt.',
+              );
             }
             yield chunk;
           }
           if (received.contentLength >= 0 && total != received.contentLength) {
-            throw const FormatException('Das Websitefoto wurde nicht vollständig geladen.');
+            throw const FormatException(
+              'Das Websitefoto wurde nicht vollständig geladen.',
+            );
           }
         } finally {
           release();
         }
       }
-      return WebsitePhotoResponse(sourceUrl: uri, mimeType: type,
-        contentLength: received.contentLength < 0 ? null : received.contentLength, body: bounded(),onClose:release);
+
+      return WebsitePhotoResponse(
+        sourceUrl: uri,
+        mimeType: type,
+        contentLength: received.contentLength < 0
+            ? null
+            : received.contentLength,
+        body: bounded(),
+        onClose: release,
+      );
     } catch (_) {
       release();
       if (response != null) await response.listen(null).cancel();
@@ -293,11 +402,90 @@ Uri normalizeServer(String raw) {
   );
 }
 
+class ProjectPairingInvitation {
+  static const _invalid = FormatException(
+    'Der QR-Code ist keine gültige Arten-Explorer-Einladung.',
+  );
+  static const _expired = FormatException(
+    'Die Einladung ist abgelaufen. Bitte am PC eine neue erstellen.',
+  );
+
+  final Uri server;
+  final String projectId;
+  final DateTime expiresAt;
+  final String _code;
+
+  const ProjectPairingInvitation._(
+    this.server,
+    this.projectId,
+    this.expiresAt,
+    this._code,
+  );
+
+  factory ProjectPairingInvitation.parse(String raw) {
+    if (raw.length > 1024) throw _invalid;
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } on FormatException {
+      throw _invalid;
+    }
+    if (decoded is! Map<String, dynamic> ||
+        decoded.length != 6 ||
+        decoded['kind'] != 'arten-explorer-device-pairing' ||
+        decoded['schemaVersion'] != 1) {
+      throw _invalid;
+    }
+    final server = decoded['server'];
+    final projectId = decoded['projectId'];
+    final code = decoded['code'];
+    final expiry = decoded['expiresAt'];
+    if (server is! String ||
+        server.length > 256 ||
+        server.contains(RegExp(r'[\s?#@\\]')) ||
+        projectId is! String ||
+        !RegExp(r'^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$')
+            .hasMatch(projectId) ||
+        code is! String ||
+        !RegExp(r'^p1_[A-Za-z0-9_-]{43}$').hasMatch(code) ||
+        expiry is! String ||
+        !RegExp(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$')
+            .hasMatch(expiry)) {
+      throw _invalid;
+    }
+    final expiresAt = DateTime.tryParse(expiry);
+    if (expiresAt == null || expiresAt.toIso8601String() != expiry) {
+      throw _invalid;
+    }
+    final invitation = ProjectPairingInvitation._(
+      normalizeServer(server),
+      projectId,
+      expiresAt,
+      code,
+    );
+    invitation._checkFresh();
+    return invitation;
+  }
+
+  void _checkFresh() {
+    if (!expiresAt.isAfter(DateTime.now())) throw _expired;
+  }
+}
+
 class ProjectApi {
   final Uri server;
   final ProjectTransport transport;
   ProjectApi(this.server, this.transport);
   Uri endpoint(String path) => server.resolve('/api/v1/$path');
+
+  void _requireSessionServer(ProjectSession session) {
+    if (session.server != server) {
+      throw const FormatException(
+        'Die Anmeldung gehört zu einem anderen Projektserver.',
+      );
+    }
+  }
+
   Future<ProjectSession> login(String username, String password) async =>
       ProjectSession.fromJson(
         server,
@@ -312,7 +500,55 @@ class ProjectApi {
           },
         ),
       );
+  Future<ProjectSession> redeemPairing(
+    ProjectPairingInvitation invitation,
+  ) async {
+    invitation._checkFresh();
+    if (server != invitation.server) {
+      throw const FormatException(
+        'Die Einladung gehört zu einem anderen Projektserver.',
+      );
+    }
+    final Map<String, dynamic> response;
+    try {
+      response = await transport.json(
+        endpoint('auth/pairing/redeem'),
+        method: 'POST',
+        body: {
+          'code': invitation._code,
+          'projectId': invitation.projectId,
+          'deviceLabel': 'Arten-Explorer Android',
+        },
+      );
+    } on ProjectApiException catch (error) {
+      if (error.status == 404 ||
+          error.status == 401 && error.code == 'authentication_required') {
+        throw ProjectApiException(
+          error.status,
+          'Der Projektdienst unterstützt die QR-Kopplung noch nicht. Das NAS benötigt Version 0.1.8 oder neuer.',
+        );
+      }
+      if (error.status != 401) rethrow;
+      throw const ProjectApiException(
+        401,
+        'Die Einladung ist nicht mehr gültig. Bitte am PC eine neue erstellen.',
+      );
+    }
+    final session = ProjectSession.fromJson(server, response);
+    if (session.projectId != invitation.projectId ||
+        session.deviceToken == null ||
+        session.deviceExpiresAt == null ||
+        !session.expiresAt.isAfter(DateTime.now()) ||
+        session.expiresAt.isAfter(session.deviceExpiresAt!)) {
+      throw const FormatException(
+        'Der Projektdienst hat keine passende Gerätezulassung bestätigt.',
+      );
+    }
+    return session;
+  }
+
   Future<ProjectSession> refresh(ProjectSession session) async {
+    _requireSessionServer(session);
     if (session.deviceToken == null || !session.mayReadOffline) {
       throw const ProjectApiException(
         401,
@@ -330,10 +566,65 @@ class ProjectApi {
     );
   }
 
-  Future<Catalog> catalog(ProjectSession session) async => Catalog.fromJson(
-    await transport.json(endpoint('catalog'), bearer: session.token),
-  );
+  Future<Catalog> catalog(ProjectSession session) async {
+    _requireSessionServer(session);
+    return Catalog.fromJson(
+      await transport.json(endpoint('catalog'), bearer: session.token),
+    );
+  }
+
+  Future<ReaderCatalogSnapshot> readerCatalog(ProjectSession session) async {
+    _requireSessionServer(session);
+    final route = server.resolve('/api/v2/catalog/page');
+    return ReaderCatalogSnapshot.read(
+      projectId: session.projectId,
+      get: (parameters) => transport.json(
+        parameters.isEmpty ? route : route.replace(queryParameters: parameters),
+        bearer: session.token,
+      ),
+    );
+  }
+
+  Future<Catalog> loadCatalog(
+    ProjectSession session, {
+    required bool allowLegacy,
+  }) async {
+    try {
+      return (await readerCatalog(session)).toCatalog();
+    } on ProjectApiException catch (failure) {
+      if (!allowLegacy ||
+          failure.status != 404 ||
+          failure.code != 'route_not_found') {
+        rethrow;
+      }
+      return catalog(session);
+    }
+  }
+
+  Stream<List<int>> projectMedia(
+    ProjectSession session,
+    ProjectMediaFile file,
+  ) {
+    _requireSessionServer(session);
+    if (file.projectId != session.projectId) {
+      throw const FormatException(
+        'Die Projektdatei gehört zu einem anderen Projekt.',
+      );
+    }
+    final reader = transport;
+    if (reader is! ProtectedProjectMediaTransport) {
+      throw const FormatException(
+        'Der geschützte Medienabruf ist nicht verfügbar.',
+      );
+    }
+    return (reader as ProtectedProjectMediaTransport).projectMedia(
+      session,
+      file,
+    );
+  }
+
   Future<void> logout(ProjectSession session) async {
+    _requireSessionServer(session);
     await transport.json(
       endpoint('auth/logout'),
       method: 'POST',

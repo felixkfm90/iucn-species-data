@@ -5,8 +5,8 @@ import { createHash } from "node:crypto";
 // Same public snapshot used by Android. These are intentionally source-bound
 // bytes, not today's local unapproved editorial drafts or an arbitrary path.
 export const BUNDLED_SPECIES_SOURCE = Object.freeze({
-  relativePath: "mobile/assets/catalog.json", bytes: 733439, speciesCount: 63,
-  sha256: "bad4403e0032452dd9899abef6d3383ce86265f7ef01b8a01ba023e6da6984c5",
+  relativePath: "mobile/assets/catalog.json", bytes: 733442, speciesCount: 63,
+  sha256: "dec3aff4835a75ce7c11585e5b838381f82eb29bc83be041646557fe32a016f3",
   generatedAt: "2026-10-31T08:16:40.720Z",
 });
 

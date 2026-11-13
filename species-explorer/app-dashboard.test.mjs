@@ -134,6 +134,9 @@ function createElements() {
     "manualMapCount",
     "reportDate",
     "pipelineMenuButton",
+    "databaseStatus",
+    "databaseTransferButton",
+    "validationIssueNotice",
     "pipelineStatus",
     "validationOverall",
     "validationDataCard",
@@ -170,6 +173,25 @@ class FakeOption {
   }
 }
 
+test("Die Kopfzeile bietet die Übertragung nur bei offenen Änderungen im lokalen Bearbeitungsmodus an", () => {
+  const state = { workspace: "local", editMode: false };
+  const elements = createElements();
+  const controller = createController({ state, elements, filterSpecies: () => [] });
+  controller.renderDatabaseStatus("outdated");
+  assert.equal(elements.databaseTransferButton.hidden, true);
+  assert.equal(elements.pipelineStatus.textContent, "Änderungen offen");
+  state.editMode = true;
+  controller.renderDatabaseStatus("outdated");
+  assert.equal(elements.databaseTransferButton.hidden, false);
+  assert.match(elements.databaseStatus.className, /visually-hidden/);
+  controller.renderDatabaseStatus("current");
+  assert.equal(elements.databaseTransferButton.hidden, true);
+  assert.doesNotMatch(elements.databaseStatus.className, /visually-hidden/);
+  state.workspace = "shared-project";
+  controller.renderDatabaseStatus("outdated");
+  assert.equal(elements.databaseTransferButton.hidden, true);
+});
+
 function createController({ state, elements, filterSpecies, onSpeciesSelect = () => {}, documentRef }) {
   return dashboard.createDashboardController({
     state,
@@ -181,9 +203,9 @@ function createController({ state, elements, filterSpecies, onSpeciesSelect = ()
     iucnStatusIconUrl: (status) => status ? `/status/${status}.png` : "",
     iucnTrendIconUrl: (trend) => trend ? `/trend/${trend}.png` : "",
     filterSpecies,
-    resolveDatabaseStatus: () => {
+    resolveDatabaseStatus: ({ explicitStatus }) => {
       state.renderDatabaseStatusCalls = (state.renderDatabaseStatusCalls || 0) + 1;
-      return "needs-update";
+      return explicitStatus || "needs-update";
     },
     databaseStatusLabel: (status) => status,
     onSpeciesSelect,
@@ -202,18 +224,18 @@ test("Kopf zeigt denselben Taxonomiefortschritt ohne geöffneten Dialog und beh�
   assert.equal(elements.pipelineStatus.textContent, expected.compact);
   assert.equal(elements.pipelineStatus.textContent, "Datenbank-Update\n3/7 Master aufbauen · 25 %");
   assert.equal(elements.pipelineStatus.innerHTML, "", "Beschriftung bleibt reiner Text, kein neues HTML");
-  assert.equal(elements.pipelineMenuButton.title, expected.detail);
-  assert.match(elements.pipelineMenuButton.attributes["aria-label"], /25 % dieses Teilschritts/);
+  assert.equal(elements.databaseStatus.title, expected.detail);
+  assert.match(elements.databaseStatus.attributes["aria-label"], /25 % dieses Teilschritts/);
   state.taxonomyMasterSnapshot = { status: "idle", buildJob: { available: true, status: "paused",
     progress: { phase: "Masterdatenbank schreiben" } } };
   controller.renderDatabaseStatus();
   assert.match(elements.pipelineStatus.textContent, /pausiert/);
-  assert.match(elements.pipelineMenuButton.className, /review/);
+  assert.match(elements.databaseStatus.className, /review/);
   state.taxonomyMasterSnapshot = { status: "completed", lightroomPackage: { status: "current" } };
   state.pipelineStatusSnapshot = { status: "awaiting-review" };
   controller.renderDatabaseStatus();
   assert.equal(elements.pipelineStatus.textContent, "needs-update", "Abgeschlossene Taxonomie verdeckt keine Assetprüfung");
-  assert.equal(elements.pipelineMenuButton.title, "Datenbank-Aktionen öffnen");
+  assert.equal(elements.databaseStatus.title, "needs-update");
 });
 
 test("Nur die obere Datenbankbeschriftung erhält einen sichtbaren Zeilenumbruch ohne feste Höhe", () => {
@@ -225,6 +247,63 @@ test("Nur die obere Datenbankbeschriftung erhält einen sichtbaren Zeilenumbruch
   assert.doesNotMatch(rule, /(?:^|;)\s*(?:height|max-height|overflow):/);
 });
 
+test("Reiner Kopfstatus verändert keinen Aktionsbutton; echte Datenfehler bleiben bei geschlossenem Prüfdialog sichtbar", () => {
+  const state = {}, elements = createElements();
+  elements.pipelineMenuButton.className = "menu-action";
+  elements.pipelineMenuButton.title = "Datenbank-Aktionen";
+  elements.pipelineMenuButton.setAttribute("aria-label", "Datenbank-Aktionen");
+  const controller = createController({ state, elements, filterSpecies: () => [] });
+  controller.renderDatabaseStatus();
+  assert.equal(elements.pipelineMenuButton.className, "menu-action");
+  assert.equal(elements.pipelineMenuButton.title, "Datenbank-Aktionen");
+  assert.equal(elements.pipelineMenuButton.attributes["aria-label"], "Datenbank-Aktionen");
+  controller.updateValidation(validationFixture({ status: "issues", issueCount: 1,
+    data: { ...validationFixture().data, issueSpeciesCount: 1, mismatchSpeciesCount: 1 } }));
+  assert.equal(elements.validationIssueNotice.hidden, false);
+  assert.match(elements.validationIssueNotice.textContent, /Daten|Datei|prüfen/);
+  controller.updateValidation(validationFixture({ special: { ...validationFixture().special,
+    missingSoundKnownCount: 1, manualSoundCount: 1 } }));
+  assert.equal(elements.validationIssueNotice.hidden, true, "Bekannte erfolglose Soundsuche ist kein Datenfehler");
+});
+
+test("Manueller Sound ist neutrale Information, bekannte erfolglose Quellensuche bleibt eigener Pflegehinweis", () => {
+  const base = { id: "amsel", germanName: "Amsel", scientificName: "Turdus merula", iucn: {}, inconsistencies: [] };
+  const options = { formatIucnStatus, iucnStatusIconUrl: () => "", iucnTrendIconUrl: () => "" };
+  const manual = dashboard.createSpeciesListItemPresentation({ ...base, soundCareHint: true, isManualSound: true }, options);
+  const missing = dashboard.createSpeciesListItemPresentation({ ...base, soundCareHint: true, soundMissingKnown: true }, options);
+  assert.equal(manual.flags[0].className, "sound-manual");
+  assert.match(manual.flags[0].title, /manuell/);
+  assert.equal(missing.flags[0].className, "sound-care");
+  assert.match(missing.flags[0].title, /quelle/i);
+  const broken = dashboard.createSpeciesListItemPresentation({ ...base, inconsistencies: ["Credits sind ungültig"], isManualSound: true }, options);
+  assert.equal(broken.flags[0].className, "issue");
+});
+
+test("Gemeinsamer Kopfstatus behauptet bei Offlinebetrieb, fehlendem Zugang oder offenen Änderungen keinen aktuellen Serverstand", () => {
+  const state = { workspace: "shared-project" }, elements = createElements();
+  const controller = createController({ state, elements, filterSpecies: () => [] });
+  for (const [status, text] of [[null, /Projektverbindung/], [{ available: false }, /Projektverbindung/],
+    [{ connection: "offline" }, /offline/], [{ connection: "online", pending: 2 }, /Abgleich offen/],
+    [{ connection: "online", conflicts: 1 }, /Konflikt/]]) {
+    state.workspaceStatus = status; controller.renderDatabaseStatus();
+    assert.match(elements.pipelineStatus.textContent, text); assert.doesNotMatch(elements.databaseStatus.className, /current/);
+  }
+  state.workspaceStatus = { connection: "online", pending: 0, conflicts: 0 };
+  controller.renderDatabaseStatus(); assert.match(elements.pipelineStatus.textContent, /Bestand geladen/);
+  state.dataLoadError = "Datei unlesbar"; controller.renderDatabaseStatus();
+  assert.match(elements.databaseStatus.className, /failed/); assert.equal(elements.validationIssueNotice.hidden, false);
+  assert.doesNotMatch(elements.pipelineStatus.textContent, /geladen|aktuell/);
+});
+
+test("Gemeinsame Versionskonflikte bleiben sichtbar, ohne einen beschädigten Dateibestand zu behaupten", () => {
+  const elements = createElements(), controller = createController({ state: { workspace: "shared-project" }, elements, filterSpecies: () => [] });
+  controller.updateValidation({ source: "shared-project", pending: 0, conflicts: 2, connection: "online", speciesCount: 4,
+    availableMediaCount: 5, missingMediaCount: 0, legacyCount: 0 });
+  assert.equal(elements.validationIssueNotice.hidden, false);
+  assert.match(elements.validationIssueNotice.textContent, /2 Versionskonflikt/);
+  assert.doesNotMatch(elements.validationIssueNotice.textContent, /Dateifehler|beschädigt/);
+});
+
 test("Kopf zeigt offene Updatebestätigung ohne erfundenen Teilschritt und danach wieder den aktuellen Bestand", () => {
   const state = { taxonomyDatabaseBusy: true, taxonomyDatabasePreparation: "confirmation",
     taxonomyMasterSnapshot: { status: "completed", lightroomPackage: { status: "current" } } };
@@ -232,8 +311,8 @@ test("Kopf zeigt offene Updatebestätigung ohne erfundenen Teilschritt und danac
   const controller = createController({ state, elements, filterSpecies: () => [] });
   controller.renderDatabaseStatus();
   assert.equal(elements.pipelineStatus.textContent, "Datenbank-Update\nBestätigung ausstehend");
-  assert.doesNotMatch(elements.pipelineMenuButton.title, /Schritt \d+|Quellen vorbereiten/);
-  assert.match(elements.pipelineMenuButton.attributes["aria-label"], /noch keine neue Aktualisierung gestartet/);
+  assert.doesNotMatch(elements.databaseStatus.title, /Schritt \d+|Quellen vorbereiten/);
+  assert.match(elements.databaseStatus.attributes["aria-label"], /noch keine neue Aktualisierung gestartet/);
   state.taxonomyDatabaseBusy = false;
   state.taxonomyDatabasePreparation = "";
   controller.renderDatabaseStatus();
@@ -245,7 +324,7 @@ test("Validierungspräsentation beschreibt einen konsistenten Bestand", () => {
 
   assert.equal(result.isOk, true);
   assert.equal(result.overallText, "Alle Prüfungen bestanden");
-  assert.equal(result.data.value, "2 / 2");
+  assert.equal(result.data.value, "2 angelegt · 2 abgerufen");
   assert.equal(result.assets.value, "2 vollständig");
   assert.equal(result.report.value, "Konsistent");
   assert.equal(result.specialText, "1 Karten · 1 NC");
@@ -294,6 +373,33 @@ test("Validierungspräsentation trennt Daten-, Asset-, Sound- und Reporthinweise
   assert.ok(result.detailItems.some((entry) => entry.startsWith("Manuelle Sounds:")));
   assert.ok(result.detailItems.some((entry) => entry.includes("fehlen im Report: Amsel")));
   assert.ok(result.detailItems.some((entry) => entry.startsWith("Report-Zähler:")));
+});
+
+test("Gemischte Prüfhinweise rendern echte Fehler rot, erfolglose Quellensuche als Pflege und manuelle Sounds neutral", () => {
+  const elements = createElements(), controller = createController({ state: {}, elements, filterSpecies: () => [] });
+  const base = validationFixture(), value = validationFixture({ status: "issues", issueCount: 3,
+    data: { ...base.data, issueSpeciesCount: 1, mismatchSpeciesCount: 1 },
+    assets: { ...base.assets, issueSpeciesCount: 1 },
+    report: { ...base.report, consistent: false, checks: [{ label: "Manuelle Sounds: <fremder Reporttext>", ok: false,
+      missingFromReport: ["Amsel"], staleInReport: [] }] },
+    special: { ...base.special, missingSoundKnownCount: 1, manualSoundCount: 1 } });
+  controller.updateValidation(value);
+  const rendered = elements.validationDetails.innerHTML;
+  assert.match(rendered, /<li class="validation-detail error">Daten:/);
+  assert.match(rendered, /<li class="validation-detail error">Assets vorhanden:/);
+  assert.match(rendered, /<li class="validation-detail care">Sound fehlt:/);
+  assert.match(rendered, /<li class="validation-detail info">Manuelle Sounds: 1 Art/);
+  assert.match(rendered, /<li class="validation-detail error">Manuelle Sounds: &lt;fremder Reporttext>/,
+    "Schwere folgt der Ursache, nicht einem Textpräfix");
+  const presentation = dashboard.createValidationPresentation(value, { pluralize });
+  assert.ok(presentation.detailItems.every((item) => typeof item === "string"));
+  assert.deepEqual([...presentation.detailEntries].map((entry) => entry.text), [...presentation.detailItems]);
+  const baseRule = stylesheet.match(/\.validation-details\s*\{([^}]+)\}/)?.[1];
+  assert.doesNotMatch(baseRule, /--red|--amber|--green/);
+  assert.match(stylesheet, /\.validation-details \.validation-detail\.error\s*\{[^}]*--red/s);
+  assert.match(stylesheet, /\.validation-details \.validation-detail\.care\s*\{[^}]*--amber/s);
+  const neutral = stylesheet.match(/\.validation-details \.validation-detail\.info\s*\{([^}]+)\}/)?.[1];
+  assert.ok(neutral); assert.doesNotMatch(neutral, /--red|--amber|--green/);
 });
 
 test("Artenlistenpräsentation kombiniert Status-, Trend- und Pflegehinweise", () => {

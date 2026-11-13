@@ -151,8 +151,11 @@ export function createIucnMapAdapter({
   async function findTaxonId(entry) {
     const direct = taxonIdFromTaxon(entry) || numericId(entry["Taxon ID"]);
     if (direct) return direct;
-    const genus = String(entry.Genus ?? "").trim();
-    const species = String(entry.Species ?? "").trim();
+    const boundName = entry["IUCN-Zuordnung"]?.scientificName;
+    const iucnName = typeof boundName === "string" && /^[\p{L}][\p{L}-]* [\p{L}][\p{L}-]*$/u.test(boundName)
+      ? boundName.split(" ") : null;
+    const genus = iucnName?.[0] || String(entry.Genus ?? "").trim();
+    const species = iucnName?.[1] || String(entry.Species ?? "").trim();
     if (!genus || !species || genus === "n/a" || species === "n/a") return "";
     const taxonData = await iucnGET(
       `/taxa/scientific_name?genus_name=${encodeURIComponent(genus)}&species_name=${encodeURIComponent(species)}`,

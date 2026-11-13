@@ -161,10 +161,14 @@ test("an existing schema-1 private cache migrates additively without altering it
   const credentials = createMemoryCredentialStore(), c = client({ credentialStore: credentials }); await connect(c);
   await c.editExistingObject("page", objects[0].id, page("Before cache migration")); await c.close();
   const filename = path.join(f.root, "cache.sqlite"), before = rows(filename);
-  const db = new DatabaseSync(filename); try { db.exec("DROP TABLE pull_objects; DROP TABLE pulls; PRAGMA user_version=1;"); } finally { db.close(); }
+  const db = new DatabaseSync(filename);
+  try {
+    db.exec("DROP TABLE normal_media; DROP TABLE normal_blobs; DROP TABLE image_media; DROP TABLE image_blobs; DROP TABLE pull_objects; DROP TABLE pulls; PRAGMA user_version=1;");
+    assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_schema WHERE type='table' AND name IN ('normal_media','normal_blobs','image_media','image_blobs','pull_objects','pulls')").get().n, 0);
+  } finally { db.close(); }
   const reopened = client({ credentialStore: credentials }); assert.equal((await reopened.status()).pending, 1);
   assert.equal((await reopened.getObject("page", objects[0].id)).data.title, "Before cache migration"); assert.deepEqual(rows(filename), before);
-  assert.equal(rows(filename, "PRAGMA user_version")[0].user_version, 2); await reopened.sync(); assert.equal((await reopened.status()).pending, 0);
+  assert.equal(rows(filename, "PRAGMA user_version")[0].user_version, 4); await reopened.sync(); assert.equal((await reopened.status()).pending, 0);
 }, 1));
 
 test("an existing schema-1 project migrates append-only receipt/generation structures without altering users, versions or approval", async () => {
@@ -173,11 +177,14 @@ test("an existing schema-1 project migrates append-only receipt/generation struc
     const { store, a } = await f.initialized(), original = store.createObject(a.token, { kind: "page", id: "migration-page", data: page("Before project migration") });
     store.approveObject(a.token, "page", original.id, { expectedRevision: original.revision }); store.close();
     const db = new DatabaseSync(f.filename);
-    try { db.exec("DROP TABLE page_authoring_receipts; DROP TABLE website_alt_receipts; DROP TRIGGER objects_insert_generation; DROP TRIGGER objects_update_generation; DELETE FROM meta WHERE key='objects_generation'; PRAGMA user_version=1;"); }
+    try {
+      db.exec("DROP TABLE normal_media_assets; DROP TABLE normal_media_blobs; DELETE FROM meta WHERE key='reader_media_generation'; DROP TABLE image_media_assets; DROP TABLE image_media_blobs; DROP TABLE page_authoring_receipts; DROP TABLE website_alt_receipts; DROP TRIGGER objects_insert_generation; DROP TRIGGER objects_update_generation; DELETE FROM meta WHERE key='objects_generation'; PRAGMA user_version=1;");
+      assert.equal(db.prepare("SELECT count(*) AS n FROM sqlite_schema WHERE type='table' AND name IN ('image_media_assets','image_media_blobs','page_authoring_receipts','website_alt_receipts')").get().n, 0);
+    }
     finally { db.close(); }
     const reopened = f.open(), preserved = reopened.getObject(a.token, "page", original.id);
     assert.equal(preserved.revision, original.revision); assert.equal(preserved.approvedRevision, original.revision); assert.equal(preserved.data.title, "Before project migration");
     assert.equal(reopened.me(a.token).id, a.user.id); assert.equal(reopened.objectPage(a.token).objects.length, 1);
-    assert.equal(rows(f.filename, "PRAGMA user_version")[0].user_version, 4);
+    assert.equal(rows(f.filename, "PRAGMA user_version")[0].user_version, 6);
   } finally { f.cleanup(); }
 });

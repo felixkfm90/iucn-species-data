@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export class PageAuthoringError extends Error {
   constructor(status, code, message, details = undefined) {
-    super(message); this.name = "PageAuthoringError"; this.status = status; this.code = code;
+    super(message); this.name = "PageAuthoringError"; this.status = status; this.statusCode = status; this.code = code;
     if (details !== undefined) this.details = details;
   }
 }

@@ -1,4 +1,5 @@
 import { setTimeout as delay } from "node:timers/promises";
+import path from "node:path";
 import { createExplorerServer } from "../server.mjs";
 
 const DEFAULT_HOST = "127.0.0.1";
@@ -6,6 +7,15 @@ const DEFAULT_PORT = 4177;
 const DEFAULT_HEALTH_TIMEOUT_MS = 10_000;
 const DEFAULT_HEALTH_INTERVAL_MS = 150;
 const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
+
+/** Fixed desktop source; the existing journal retains its own historical source bindings. */
+export function createDesktopProjectImportOptions(profileDirectory) {
+  if (typeof profileDirectory !== "string" || !path.isAbsolute(profileDirectory)
+      || /^(?:\\\\|\/\/|file:)/i.test(profileDirectory) || profileDirectory.includes("\0")) {
+    throw new TypeError("Ein festes persönliches lokales Geräteprofil ist erforderlich.");
+  }
+  return { filename: path.join(profileDirectory, "initial-import.sqlite"), localStorageConfirmed: true, sourceKind: "working-records" };
+}
 
 function normalizePort(value, fallback = DEFAULT_PORT) {
   const parsed = Number(value);
@@ -69,6 +79,7 @@ export async function startManagedExplorerServer({
   sharedProjectOptions = null,
   sharedProjectImportOptions = null,
   websiteAltSyncOptions = null,
+  pageAuthoringOptions = null,
   deviceBackupProfile = null,
   localAiOptions = null,
   updateCompletionFactory = null,
@@ -80,7 +91,7 @@ export async function startManagedExplorerServer({
   for (const port of candidates) {
     const transferAdapter = websiteAltTransferAdapterFactory ? websiteAltTransferAdapterFactory() : websiteAltTransferAdapter;
     const server = await createExplorerServer({ repoRoot, host, port, websiteAltTransferAdapter: transferAdapter,
-      sharedProjectOptions, sharedProjectImportOptions, websiteAltSyncOptions, deviceBackupProfile, localAiOptions, updateCompletionFactory });
+      sharedProjectOptions, sharedProjectImportOptions, websiteAltSyncOptions, pageAuthoringOptions, deviceBackupProfile, localAiOptions, updateCompletionFactory });
     try {
       const address = await server.listen();
       const baseUrl = addressToBaseUrl(address, host);

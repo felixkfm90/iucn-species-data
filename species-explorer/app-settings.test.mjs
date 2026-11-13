@@ -31,7 +31,7 @@ class FakeElement {
 }
 
 function createFixture(fetchJson) {
-  const state = {};
+  const state = { editMode: true };
   const elements = {
     settingsDialog: new FakeElement(),
     settingsForm: new FakeElement(),
@@ -42,15 +42,19 @@ function createFixture(fetchJson) {
     settingsResetButton: new FakeElement(),
     settingsSaveButton: new FakeElement(),
   };
-  elements.settingsDialog.cancelButtons = [new FakeElement()];
+  const headerClose = new FakeElement();
+  headerClose.textContent = "×";
+  headerClose.classList = { contains: (name) => name === "edit-close" };
+  elements.settingsDialog.cancelButtons = [headerClose, new FakeElement()];
   const opened = [];
   const controller = settingsModule.createBackupSettingsController({
     state,
     elements,
     fetchJson,
-    createDialogController: ({ dialog, closeButtons }) => ({
+    canEdit: () => state.editMode,
+    createDialogController: ({ dialog, closeButtons, afterClose }) => ({
       open() {
-        opened.push({ dialog, closeButtons });
+        opened.push({ dialog, closeButtons, afterClose });
       },
     }),
   });
@@ -144,4 +148,50 @@ test("API-Fehler werden im geöffneten Einstellungsdialog erklärt", async () =>
   );
   assert.match(fixture.elements.settingsMessage.className, /error/);
   assert.equal(fixture.elements.settingsSaveButton.disabled, false);
+});
+
+test("Einstellungen verwerfen nur ungespeicherte Pfadänderungen", async () => {
+  const standard = "W:\\Website Datenbank Backup";
+  const custom = "X:\\Sicherungen";
+  const f = createFixture(async (url) => ({
+    backupRoot: url === "/api/settings/backup" ? standard : custom,
+    defaultBackupRoot: standard,
+  }));
+  const [header, footer] = f.elements.settingsDialog.cancelButtons;
+
+  await f.controller.openSettings();
+  assert.equal(footer.textContent, "Fenster schließen");
+  const input = f.elements.backupRootInput;
+  const enter = (value) => {
+    input.value = value;
+    for (const listener of input.listeners.get("input")) listener();
+  };
+  enter(` ${custom} `);
+  assert.equal(footer.textContent, "Fenster schließen");
+  enter("Y:\\Ungespeichert");
+  assert.equal(footer.textContent, "Änderungen verwerfen");
+  f.opened[0].afterClose();
+  assert.equal(input.value, custom);
+  assert.equal(footer.textContent, "Fenster schließen");
+
+  await f.controller.openSettings();
+  f.controller.resetToDefault();
+  assert.equal(footer.textContent, "Änderungen verwerfen");
+  await f.controller.saveSettings();
+  assert.equal(input.value, standard);
+  assert.equal(footer.textContent, "Fenster schließen");
+  assert.equal(header.textContent, "×");
+});
+
+test("Lesende Einstellungen laden nur GET und sperren Pfadänderung, Reset sowie alten programmatischen Submit", async () => {
+  const calls = [], f = createFixture(async (url, options) => { calls.push([url, options?.method || "GET"]); return { backupRoot: "X:\\Sicherung" }; });
+  f.state.editMode = false; await f.controller.openSettings();
+  assert.equal(f.opened.length, 1); assert.deepEqual(calls, [["/api/settings", "GET"]]);
+  assert.equal(f.elements.backupRootInput.value, "X:\\Sicherung"); assert.equal(f.elements.backupRootInput.disabled, true);
+  assert.equal(f.elements.settingsSaveButton.disabled, true); assert.equal(f.elements.settingsResetButton.disabled, true);
+  assert.equal(f.elements.settingsDialog.cancelButtons[1].textContent, "Fenster schließen");
+  f.controller.resetToDefault(); assert.equal(f.elements.backupRootInput.value, "X:\\Sicherung");
+  await f.controller.saveSettings();
+  for (const listener of f.elements.settingsForm.listeners.get("submit")) await listener({ preventDefault() {} });
+  assert.deepEqual(calls, [["/api/settings", "GET"]]);
 });

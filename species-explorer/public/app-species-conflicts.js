@@ -6,7 +6,7 @@
   const sameValue = (a, b) => Boolean(a?.present) === Boolean(b?.present) && (!a?.present || a.value === b.value);
 
   function createSpeciesConflictReview({ root, fetchJson, confirmAction, onResolved = () => {}, onDirtyChange = () => {},
-    getContext = () => null, documentRef = global.document } = {}) {
+    getContext = () => null, canEdit = () => true, documentRef = global.document } = {}) {
     if (!root || !documentRef?.createElement || typeof fetchJson !== "function" || typeof confirmAction !== "function") {
       throw new TypeError("Artvergleich, geschützte API und Bestätigung sind erforderlich.");
     }
@@ -43,7 +43,7 @@
     function setMessage(text) { message.textContent = text; message.hidden = !text; }
     function canRead() { return !stopped && project?.permissions?.canRead === true; }
     function canResolve() {
-      return canRead() && project?.permissions?.canEdit === true && project.status?.connection === "online"
+      return canRead() && canEdit() && project?.permissions?.canEdit === true && project.status?.connection === "online"
         && !project.status?.readOnlySession && review?.canResolve === true && review.connection === "online" && !stale
         && reviewIdentity === identity && reviewContext === contextKey();
     }
@@ -69,7 +69,7 @@
       for (const input of inputs) input.disabled = !editable;
     }
     function changed() {
-      if (stopped || !review || reviewIdentity !== identity) return false;
+      if (!canResolve()) return false;
       dirty = true; editGeneration++; clearPreview(); setMessage(""); notifyDirty(); controls(); return true;
     }
     function ticket() { return { generation, context: contextKey() }; }
@@ -145,7 +145,7 @@
       }
       warnings(content, review.warnings);
       if (!canResolve()) setMessage(stale ? "Grundlage oder Anmeldung wurde geändert. Deine Auswahl bleibt erhalten; bitte den Vergleich neu laden."
-        : "Dieser Vergleich ist zurzeit nur lesbar. Für die Übernahme bitte online mit Bearbeitungsrechten anmelden.");
+        : review.resolutionBlock?.message || "Dieser Vergleich ist zurzeit nur lesbar. Für die Übernahme bitte online mit Bearbeitungsrechten anmelden.");
       controls();
     }
     function checkedReview(value) {

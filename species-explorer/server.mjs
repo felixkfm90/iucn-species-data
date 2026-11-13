@@ -10,6 +10,7 @@ import {
   renderSoundSegments,
 } from "../scripts/sound-segment-editor.mjs";
 import { createSessionToken } from "./request-security.mjs";
+import { createExplorerLanguageCheckService } from "./language-check/explorer-service.mjs";
 import { renderPortrait } from "../scripts/portrait-renderer.mjs";
 import { cleanupManagedExplorerTemp } from "./temp-retention.mjs";
 import { cleanupOrphanTempSessions, createManagedTempSession } from "./temp-session.mjs";
@@ -131,8 +132,11 @@ export async function createExplorerServer({
   sharedProjectImportOptions = null,
   websiteAltSyncService = null,
   websiteAltSyncOptions = null,
+  pageAuthoringOptions = null,
   localAiService = null,
   localAiOptions = null,
+  languageCheckService = null,
+  languageCheckOptions = null,
   deviceBackupProfile = null,
   deviceBackupProvider = null,
   backupServiceFactory = createBackupService,
@@ -150,7 +154,7 @@ export async function createExplorerServer({
   let sharedProject = sharedProjectService;
   let sharedProjectInitializationFailed = false;
   if (!sharedProject && sharedProjectOptions) {
-    try { sharedProject = await (await import("./shared-project/explorer-service.mjs")).createExplorerSharedProjectService(sharedProjectOptions); }
+    try { sharedProject = await (await import("./shared-project/explorer-service.mjs")).createExplorerSharedProjectService({ ...sharedProjectOptions, repoRoot }); }
     catch { sharedProjectInitializationFailed = true; }
   }
   let initialProjectImport = null, initialProjectImportFailed = false;
@@ -174,10 +178,21 @@ export async function createExplorerServer({
     catch { websiteAltSyncInitializationFailed = true; }
   }
   let localAi = localAiService, localAiInitializationFailed = false;
+  let pageAuthoring = null, pageAuthoringInitializationFailed = false;
+  if (sharedProject && pageAuthoringOptions) {
+    try { pageAuthoring = await sharedProject.createPageAuthoringService({ ...pageAuthoringOptions, repoRoot,
+      cmsAdapter:websiteAltTransferAdapter }); }
+    catch { pageAuthoringInitializationFailed = true; }
+  }
   if (!localAi && localAiOptions) {
     try { localAi = (await import("./local-ai/explorer-service.mjs")).createExplorerLocalAiService({ ...localAiOptions,
-      repoRoot, websiteAltTexts, species: () => model.species, sharedProject }); }
+      repoRoot, websiteAltTexts, species: () => model.species, sharedProject, pageAuthoring }); }
     catch { localAiInitializationFailed = true; }
+  }
+  let languageCheck = languageCheckService;
+  if (!languageCheck && languageCheckOptions?.enabled === true) {
+    try { languageCheck = createExplorerLanguageCheckService({ ...languageCheckOptions, repoRoot, sharedProject }); }
+    catch { /* Missing local grammar tools must leave regular text editing usable. */ }
   }
   const speciesListPath = join(repoRoot, "species_list.json");
   const speciesDataPath = join(repoRoot, "speciesData.json");
@@ -323,8 +338,8 @@ export async function createExplorerServer({
     isPipelineActive,
     isAssetWriteActive: () => assetWriteActive || creationMutationActive,
     deviceBackupProvider: deviceBackupProvider || (deviceBackupProfile ? createExplorerDeviceBackupProvider({
-      ...deviceBackupProfile, sharedProject, initialProjectImport, websiteAltSync,
-      websiteAltSyncConfigured: Boolean(websiteAltSyncOptions || websiteAltSyncService), tempSession,
+      ...deviceBackupProfile, sharedProject, initialProjectImport, websiteAltSync, pageAuthoring,
+      websiteAltSyncConfigured: Boolean(websiteAltSyncOptions || websiteAltSyncService), pageAuthoringConfigured: Boolean(pageAuthoringOptions), tempSession,
     }) : null),
   });
   const {
@@ -552,6 +567,7 @@ export async function createExplorerServer({
   });
 
   const {
+    prepareSharedNewSpecies,
     previewNewSpecies,
     discardNewSpecies,
     createNewSpeciesPortraitPrompt,
@@ -580,6 +596,7 @@ export async function createExplorerServer({
     isBackupActive,
     assertTaxonomyAssignable: (id) => taxonomyReference.assertAssignable(id),
   });
+  sharedProject?.configureSpeciesCreationSource?.(prepareSharedNewSpecies);
 
   const {
     previewSpeciesDelete,
@@ -701,8 +718,8 @@ export async function createExplorerServer({
   }
 
   async function readLocalWorkState() {
-    const [pendingChanges, website, shared, sharedAlt] = await Promise.all([
-      pendingChangesPayload(), websiteAltTexts.snapshot(), sharedProject?.snapshot(), websiteAltSync?.blockingState(),
+    const [pendingChanges, website, shared, sharedAlt, sharedPages] = await Promise.all([
+      pendingChangesPayload(), websiteAltTexts.snapshot(), sharedProject?.snapshot(), websiteAltSync?.blockingState(), pageAuthoring?.blockingState(),
     ]);
     const sharedKnown = !sharedProjectInitializationFailed && (!sharedProject || typeof shared?.busy === "boolean"
       && Number.isSafeInteger(shared?.queuedChanges) && Number.isSafeInteger(shared?.conflictCount));
@@ -710,11 +727,11 @@ export async function createExplorerServer({
     return {
       known: sharedKnown && !pendingChanges.error && !initialProjectImportFailed && !localAiInitializationFailed
         && !websiteAltSyncInitializationFailed && (!websiteAltSync || sharedAlt?.known === true)
-        && (!localAi || localAi.blockingState().known),
-      writersActive: Boolean(mutationBarrier.active || assetWriteActive || creationMutationActive || pipelineRuntime.assetReviewSaving || shared?.busy || sharedAlt?.busy),
-      jobsActive: Boolean(isPipelineActive() || initialProjectImport?.status().busy || localAi?.blockingState().busy),
+        && (!localAi || localAi.blockingState().known) && !pageAuthoringInitializationFailed && (!pageAuthoring || sharedPages?.known === true),
+      writersActive: Boolean(mutationBarrier.active || assetWriteActive || creationMutationActive || pipelineRuntime.assetReviewSaving || shared?.busy || sharedAlt?.busy || sharedPages?.busy),
+      jobsActive: Boolean(isPipelineActive() || initialProjectImport?.status().busy || localAi?.blockingState().busy || sharedPages?.busy),
       pipeline: { ...pipelineState }, backup: getBackupState(), websiteTransfer: website.transfer,
-      pendingChanges: { ...pendingChanges, hasPendingChanges: pendingChanges.hasPendingChanges || sharedPending > 0 || sharedAlt?.pending > 0 || sharedAlt?.conflicts > 0 },
+      pendingChanges: { ...pendingChanges, hasPendingChanges: pendingChanges.hasPendingChanges || sharedPending > 0 || sharedAlt?.pending > 0 || sharedAlt?.conflicts > 0 || sharedPages?.pending > 0 },
     };
   }
   const updateCompletion = updateCompletionFactory ? await updateCompletionFactory({
@@ -958,6 +975,7 @@ export async function createExplorerServer({
           }
           if (operation.action === "import-prepare") return initialProjectImport.prepare(operation.payload);
           if (operation.action === "import-start") return initialProjectImport.start(operation.payload);
+          if (operation.action === "import-media") return initialProjectImport.startMedia(operation.payload);
           if (operation.action === "import-receipts") {
             const planId = initialProjectImport.status().plan?.planId;
             return { receipts: planId ? initialProjectImport.receipts(planId) : [] };
@@ -967,7 +985,28 @@ export async function createExplorerServer({
           ...await invokeSharedProjectOperation(null, operation),
           message: "Der persönliche Projektcache konnte nicht geöffnet werden. Vorhandene Dateien bleiben erhalten. Bitte die Geräteablage prüfen; die lokalen Explorerfunktionen bleiben erreichbar.",
         };
-        return invokeSharedProjectOperation(sharedProject, operation);
+        const result = await invokeSharedProjectOperation(sharedProject, operation);
+        if (operation.action !== "sync" || result.permissions?.canEdit !== true) return result;
+        // The shared client already finished the network operation. Only match its cache receipts to the local journal.
+        const [pageAuthoringReconciliation, websiteAltReconciliation] = await Promise.all([
+          pageAuthoring?.reconcileAfterProjectSync(result.status).catch(() => ({ checked: false })),
+          websiteAltSync?.reconcileAfterProjectSync?.(result.status).catch(() => ({ checked: false })),
+        ]);
+        return { ...result, ...(pageAuthoringReconciliation && { pageAuthoringReconciliation }), ...(websiteAltReconciliation && { websiteAltReconciliation }) };
+      },
+      async pageAuthoring(operation) {
+        if (!pageAuthoring) {
+          if (operation.action === "status") return { available: false, permissions: { canEdit: false, canCreate: false, canApprove: false },
+            message: pageAuthoringInitializationFailed ? "Die persönliche Artseitenablage konnte nicht geöffnet werden. Vorhandene Entwürfe bleiben erhalten."
+              : "Artseiten in der Desktop-App mit persönlicher Projektanmeldung vorbereiten." };
+          throw Object.assign(new Error("Die persönliche Artseitenvorbereitung ist noch nicht verfügbar."), { statusCode: 503 });
+        }
+        const { action, id, payload, searchParams } = operation;
+        return pageAuthoring.operation({ action, id, payload, searchParams });
+      },
+      async pageAuthoringImage(id, input) {
+        if (!pageAuthoring) throw Object.assign(new Error("Die persönliche Artseitenvorbereitung ist noch nicht verfügbar."), { statusCode: 503 });
+        return pageAuthoring.imageContent(id, input);
       },
       async localAi(operation) {
         if (!localAi) {
@@ -976,6 +1015,11 @@ export async function createExplorerServer({
           throw Object.assign(new Error("Die lokale Bild-/Texthilfe ist auf diesem Gerät noch nicht verfügbar."), { statusCode: 409 });
         }
         return localAi.operation(operation);
+      },
+      async languageCheck(operation) {
+        if (!languageCheck) return { available: false, findings: [],
+          message: "Die lokale Grammatikprüfung ist noch nicht verfügbar. Die Rechtschreibprüfung bleibt aktiv." };
+        return languageCheck.operation(operation);
       },
       async updateCompletion({ action, payload }) {
         if (!updateCompletion) {
@@ -1126,6 +1170,7 @@ export async function createExplorerServer({
         await updateCompletion?.close();
         await backupService.close();
         await localAi?.close();
+        await languageCheck?.close();
         await initialProjectImport?.close();
         await websiteAltSync?.close();
         await sharedProject?.close();

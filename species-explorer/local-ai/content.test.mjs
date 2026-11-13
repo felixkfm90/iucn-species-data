@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildContentRequest, validateContentResponse, normalizeAltProposal } from "./content.mjs";
+import { bindImageInput, bindTextInput, buildContentRequest, validateContentResponse, normalizeAltProposal } from "./content.mjs";
+import { fingerprint } from "../page-authoring/contract.mjs";
+import { createTestJpeg } from "../server-test-fixtures.mjs";
 import { createLocalAiService } from "./service.mjs";
 import { sha256 } from "./files.mjs";
 import { pixel, waitJob } from "./test-fixtures.mjs";
@@ -8,6 +10,25 @@ import { pixel, waitJob } from "./test-fixtures.mjs";
 const input = () => ({ bytes: Buffer.from("synthetic-bound-image"), mimeType: "image/png",
   context: { pageType: "species", title: "Eisvogel", coupledCaption: false }, binding: { revision: "synthetic-revision" },
   target: { sectionId: "appearance", intentionallyEmpty: false }, sources: [{ id: "A", text: "Eine blaue Oberseite." }], draft: "Eine grüne Oberseite." });
+
+function pageCommon(kind) {
+  const origin = "https://project.invalid", projectId = "project-a", userId = "person-a";
+  return { type: "page-authoring", kind, origin, projectId, userId, role: "publisher", sourceScope: fingerprint([origin, projectId, userId]),
+    documentId: "draft-a", revision: sha256(Buffer.from("page-revision")), authorizationHash: "1".repeat(64), snapshotHash: "2".repeat(64), targetHash: "3".repeat(64), inputProof: "4".repeat(64) };
+}
+function pageImage() {
+  const bytes = createTestJpeg(3, 2), digest = sha256(bytes);
+  return { bytes, mimeType: "image/jpeg", sha256: digest, sourceSha256: "5".repeat(64),
+    binding: { ...pageCommon("alt-text"), imageId: "position-a", assetId: "image-asset", imageSha256: digest, sourceSha256: "5".repeat(64), metadataHash: "6".repeat(64) },
+    context: { pageType: "species", title: "Testart", commonName: "Testart", coupledCaption: false } };
+}
+function pageText(kind = "source-text") {
+  const common = pageCommon(kind), sourceId = "source-" + "a".repeat(64);
+  const normalized = bindTextInput({ binding: { documentId: common.documentId, revision: common.revision },
+    target: { sectionId: "appearance", title: "Aussehen", intentionallyEmpty: false },
+    sources: [{ id: sourceId, title: "Gelieferter Arttext", revision: "7".repeat(64), text: "Eine blaue Oberseite." }], draft: "Eine grüne Oberseite." }, kind);
+  return { ...normalized, binding: { ...common, ...normalized.binding, sourceCatalogRevision: "8".repeat(64), sourceIds: [sourceId], selectedSourcesHash: fingerprint(normalized.sources) } };
+}
 
 test("Reiseübersichten erhalten kurze KI-Alttexte ohne Schlusspunkt und ohne gekoppelte Beschriftung", () => {
   const pageUrl = "https://www.fnwildlifetravel.de/reisen/2020-sizilien";
@@ -90,4 +111,49 @@ test("ungültige Modellantwort wird ohne Abschneiden, Fallback oder zweiten Mode
       assert.deepEqual(structuredClone(image), before);
     });
   }
+});
+
+test("typisierte Pagebilder behalten die vollständige signierte Bindung ohne erfundene öffentliche Seite", () => {
+  const raw = pageImage(), before = structuredClone(raw.binding), bound = bindImageInput(raw);
+  assert.deepEqual(bound.binding, before); assert.equal(Object.hasOwn(bound.binding, "pageUrl"), false); assert.equal(Object.hasOwn(bound.binding, "imageKey"), false);
+  assert.equal(bound.binding.imageSha256, sha256(bound.bytes)); assert.equal(bound.context.coupledCaption, false);
+  const proposal = validateContentResponse("alt-text", { text: "Testart auf einem Ast.", uncertainties: [] }, bound);
+  assert.deepEqual(proposal.binding, before); assert.equal(proposal.caption, null); assert.equal(proposal.approved, false); assert.equal(proposal.transferred, false);
+});
+
+test("Pagebildbinder lehnt fremde Bindungsfelder, Rollen, Quellen und geänderte Bildhashes ab", () => {
+  for (const mutate of [
+    (value) => { value.binding.pageUrl = "https://www.fnwildlifetravel.de/erfunden"; },
+    (value) => { value.binding.role = "reader"; }, (value) => { value.binding.origin = "https://another.invalid"; },
+    (value) => { value.binding.imageSha256 = "0".repeat(64); }, (value) => { value.sourceSha256 = "0".repeat(64); },
+    (value) => { delete value.binding.inputProof; }, (value) => { value.binding.revision = "not-a-hash"; },
+    (value) => { value.context.coupledCaption = true; },
+  ]) { const value = pageImage(); mutate(value); assert.throws(() => bindImageInput(value)); }
+});
+
+test("Page-Textbinder rechnet normalisierte Quellen neu und bewahrt alle echten typisierten Belegfelder", () => {
+  for (const kind of ["source-text", "review-text"]) {
+    const raw = pageText(kind), before = structuredClone(raw.binding), bound = bindTextInput(raw, kind);
+    assert.deepEqual(bound.binding, before); assert.equal(bound.binding.sourcesRevision, sha256(Buffer.from(JSON.stringify(bound.sources))));
+    assert.equal(bound.binding.selectedSourcesHash, fingerprint(bound.sources));
+    if (kind === "review-text") assert.equal(bound.binding.draftSha256, sha256(Buffer.from(bound.draft)));
+    const response = kind === "review-text" ? { findings: [] } : { paragraphs: [{ text: "Die Oberseite ist blau.", sourceIds: [raw.sources[0].id], evidenceQuotes: [{ sourceId: raw.sources[0].id, quote: "blaue Oberseite" }] }] };
+    assert.deepEqual(validateContentResponse(kind, response, bound).binding, before);
+  }
+});
+
+test("Page-Textbinder akzeptiert keine nachträgliche Quellen-/Entwurfsänderung oder extra Freigabe", () => {
+  for (const mutate of [
+    (value) => { value.sources[0].text = "Eine andere Quelle."; }, (value) => { value.binding.sourceIds = []; },
+    (value) => { value.binding.selectedSourcesHash = "0".repeat(64); }, (value) => { value.binding.sourcesRevision = "0".repeat(64); },
+    (value) => { value.draft = "Ein geänderter Prüftext."; }, (value) => { value.binding.approved = true; },
+    (value) => { value.binding.kind = "source-text"; },
+  ]) { const value = pageText("review-text"); mutate(value); assert.throws(() => bindTextInput(value, "review-text")); }
+});
+
+test("Page-Quellenvorschlag benennt ausschließlich den ausdrücklich gewünschten leeren Zielabschnitt", () => {
+  const value = bindTextInput(pageText(), "source-text"), request = buildContentRequest("source-text", value);
+  assert.match(request.messages[1].content, /ausdrücklich gewünschten noch leeren Zielabschnitt/);
+  assert.match(request.messages[1].content, /Bewusst leer bestätigte Abschnitte nicht auffüllen/);
+  assert.doesNotMatch(request.messages[1].content, /https:\/\/project\.invalid|inputProof|authorizationHash/);
 });

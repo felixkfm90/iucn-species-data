@@ -9,6 +9,7 @@ import { sanitizeAssetName } from "../species-model.mjs";
 import { buildSpeciesContent } from "./export.mjs";
 import { readBundledSpeciesCatalog } from "./bundled.mjs";
 import { createWorkingImportSource } from "./working-import-source.mjs";
+import { readWorkingEditorialRelease, validateWorkingEditorialRelease } from "./working-editorial-catalog.mjs";
 
 const sourceFiles = Object.freeze({ speciesList: "species_list.json", speciesData: "speciesData.json", assetOverrides: "species-assets-overrides.json",
   taxonomyOverrides: "species-taxonomy-overrides.json", assessmentBindings: "lastSavedAssessmentId.json" });
@@ -71,12 +72,43 @@ function bindGeneratedGeneral(speciesData, catalog) {
   });
 }
 
-/** Fixed main-process paths only. Reads local originals but never imports, writes or opens a browser. */
-export function createLocalWorkingImportSource({ repoRoot, readCatalog = () => readBundledSpeciesCatalog(repoRoot) } = {}) {
-  check(typeof repoRoot === "string" && path.isAbsolute(repoRoot) && !/^(?:\\\\|\/\/|file:)/i.test(repoRoot) && !repoRoot.includes("\0") && typeof readCatalog === "function",
+function bindWorkingCatalog(speciesData, publicCatalog) {
+  const bindings = bindGeneratedGeneral(speciesData, publicCatalog);
+  const publicIds = new Set(publicCatalog.species.map((species) => species.id));
+  const localSpecies = [];
+  for (const record of speciesData) {
+    const id = record.URLSlug;
+    if (publicIds.has(id)) continue;
+    const commonName = record["Deutscher Name"];
+    check(typeof commonName === "string" && commonName.trim(), 409, "local_working_asset_binding_missing",
+      "Die vorhandene lokale Assetkennung ist nicht eindeutig aus der erzeugten Artzeile gebunden.");
+    localSpecies.push({ id, commonName, scientificName: record["Wissenschaftlicher Name"] ?? `${record.Genus} ${record.Species}`,
+      taxonomy: [], sections: [], media: { sounds: [], gallery: [] } });
+    bindings.push({ id, assetName: sanitizeAssetName(commonName), generalSectionId: null, embeddedGeneralText: null });
+  }
+  // A local-only row supplies identity and asset binding. Editorial texts and public URLs require a matching public source.
+  return { catalog: buildCatalog({ ...publicCatalog, species: [...publicCatalog.species, ...localSpecies] }), bindings };
+}
+
+function publishedEditorial(published, bundled, speciesData) {
+  const localIds = new Set(speciesData.map((record) => record.URLSlug));
+  const bundledMedia = new Map(bundled.species.map(({ id, media }) => [id, media]));
+  const publishedIds = new Set(published.species.map(({ id }) => id));
+  check(bundled.species.every(({ id }) => !localIds.has(id) || publishedIds.has(id)), 409, "working_public_catalog_invalid",
+    "Die veröffentlichte Fassung enthält nicht alle bisher gebundenen lokalen Arten.");
+  return buildCatalog({ ...published, species: published.species.filter(({ id }) => localIds.has(id)).map(({ media, ...species }) => ({
+    ...species, media: { sounds: [], ...bundledMedia.get(species.id), gallery: media.gallery },
+  })) });
+}
+
+/** Reads fixed local originals and the verified public editorial release; never imports or writes. */
+export function createLocalWorkingImportSource({ repoRoot, readCatalog, fetchPublicCatalog } = {}) {
+  check(typeof repoRoot === "string" && path.isAbsolute(repoRoot) && !/^(?:\\\\|\/\/|file:)/i.test(repoRoot) && !repoRoot.includes("\0")
+    && (readCatalog === undefined || typeof readCatalog === "function") && (fetchPublicCatalog === undefined || typeof fetchPublicCatalog === "function"),
     400, "invalid_local_working_source_config", "Ein fester lokaler Projektordner und gebundener Katalogleser sind erforderlich.");
   const root = path.resolve(repoRoot);
-  async function readSources() {
+  const usePublicRelease = !readCatalog || fetchPublicCatalog !== undefined;
+  async function readSources({ editorialRelease } = {}) {
     try {
       const chain = await directories(root), files = Object.entries(sourceFiles).map(([key, filename]) => ({ key, filename: path.join(root, filename) }));
       // Bind the whole block before reading its first member, then recheck every
@@ -85,19 +117,30 @@ export function createLocalWorkingImportSource({ repoRoot, readCatalog = () => r
       const sources = {};
       for (const file of files) sources[file.key] = parseJson(await readFileSnapshot(file.filename, file.stat), path.basename(file.filename));
       let catalogBytes;
-      try { catalogBytes = await readCatalog(); }
+      try { catalogBytes = await (readCatalog ? readCatalog() : readBundledSpeciesCatalog(root)); }
       catch { throw new ProjectError(503, "local_working_catalog_unavailable", "Der gebundene öffentliche Artkatalog ist derzeit nicht lesbar."); }
       check((Buffer.isBuffer(catalogBytes) || catalogBytes instanceof Uint8Array) && catalogBytes.length > 0 && catalogBytes.length <= 5 * 1024 * 1024,
         413, "local_working_catalog_invalid", "Der gebundene Artkatalog besitzt keine begrenzte Bytefassung.");
       const catalogValue = parseJson(catalogBytes, "öffentlicher Artkatalog");
       check(catalogValue?.schemaVersion === 1, 400, "local_working_catalog_invalid", "Der gebundene Artkatalog hat ein unbekanntes Format.");
-      const catalog = buildCatalog(catalogValue), bindings = bindGeneratedGeneral(sources.speciesData, catalog);
+      const bundled = buildCatalog(catalogValue);
+      let published = null;
+      if (usePublicRelease && editorialRelease !== null) {
+        try {
+          editorialRelease ??= await readWorkingEditorialRelease(fetchPublicCatalog);
+          published = validateWorkingEditorialRelease(editorialRelease);
+        } catch {
+          throw new ProjectError(409, "working_public_catalog_invalid", "Der veröffentlichte Artkatalog konnte nicht sicher geprüft werden. Bitte die Übernahme erneut vorbereiten.");
+        }
+      }
+      const { catalog, bindings } = bindWorkingCatalog(sources.speciesData,
+        published ? publishedEditorial(published, bundled, sources.speciesData) : bundled);
       for (const file of files) { const after = await fs.lstat(file.filename, { bigint: true }); regular(after); if (!same(file.stat, after)) changed(); }
       for (const entry of chain) {
         const after = await fs.lstat(entry.filename, { bigint: true });
         if (!after.isDirectory() || after.isSymbolicLink() || after.dev !== entry.stat.dev || after.ino !== entry.stat.ino) changed();
       }
-      return { ...sources, catalog, bindings };
+      return { ...sources, catalog, bindings, ...(editorialRelease && { editorialRelease }) };
     } catch (error) {
       if (error instanceof ProjectError) throw error;
       throw new ProjectError(503, "local_working_sources_unavailable", "Die festen lokalen Artquellen sind derzeit nicht vollständig lesbar.");

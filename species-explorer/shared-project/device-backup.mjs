@@ -8,6 +8,11 @@ import { canonicalJson, objectJson } from "./security.mjs";
 import { validateCatalogSpecies } from "./catalog.mjs";
 import { validateWorkingImportEvidence } from "../species-content/working-import-source.mjs";
 import { assertImportItemIntegrity } from "./initial-import-integrity.mjs";
+import { CLIENT_IMAGE_SCHEMA, inspectClientImageStore } from "./client-image-media-store.mjs";
+import { CLIENT_NORMAL_SCHEMA, inspectClientNormalStore } from "./client-normal-media-store.mjs";
+import { CLIENT_ENRICHMENT_SCHEMA, inspectClientEnrichmentStore, readQueuedSpeciesEnrichment } from "./client-enrichment-store.mjs";
+import { validateSealedEditorialRequest } from "./client-editorial-queue.mjs";
+import { checkedPageJournalMedia, hasManagedPageMedia, legacyPageJournalMedia, pageMediaRequirementHash, validatePageMediaBackup } from "./page-media-backup.mjs";
 
 const HASH = /^[a-f0-9]{64}$/;
 const ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/;
@@ -116,7 +121,42 @@ function inspectImportBinding(db, plan, rows) {
   }
   assertImportItemIntegrity({ plan, items: rows, receipts: db.prepare("SELECT * FROM receipts WHERE plan_id=? ORDER BY sequence").all(plan.id) });
 }
-function inspectSqlite(db, spec, context) {
+function cacheSchemaSql(sql) {
+  // Normalize SQL syntax spacing only. Quoted defaults/literals remain byte-exact.
+  return sql.split(/('(?:''|[^'])*'|"(?:""|[^"])*"|`(?:``|[^`])*`|\[[^\]]*\])/g)
+    .map((part, index) => index % 2 ? part : part.replace(/\bIF\s+NOT\s+EXISTS\b/gi, "").replace(/\s+/g, "").toLowerCase()).join("");
+}
+function inspectCurrentCacheSchema(db, version) {
+  const reference = new DatabaseSync(":memory:");
+  try {
+    reference.exec(`
+      CREATE TABLE bindings(id TEXT PRIMARY KEY,base_url TEXT NOT NULL,project_id TEXT NOT NULL,user_id TEXT NOT NULL,user_json TEXT NOT NULL);
+      CREATE TABLE state(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+      CREATE TABLE cache(binding_id TEXT NOT NULL REFERENCES bindings(id),kind TEXT NOT NULL,id TEXT NOT NULL,server_json TEXT NOT NULL,local_json TEXT NOT NULL,visible INTEGER NOT NULL DEFAULT 1,PRIMARY KEY(binding_id,kind,id));
+      CREATE TABLE queue(seq INTEGER PRIMARY KEY AUTOINCREMENT,binding_id TEXT NOT NULL REFERENCES bindings(id),change_id TEXT UNIQUE NOT NULL,kind TEXT NOT NULL,object_id TEXT NOT NULL,base_revision TEXT,depends_on TEXT,data_json TEXT NOT NULL,request_json TEXT,state TEXT NOT NULL,result_revision TEXT,conflict_id TEXT);
+      CREATE TABLE conflicts(binding_id TEXT NOT NULL REFERENCES bindings(id),id TEXT NOT NULL,conflict_json TEXT NOT NULL,resolved INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(binding_id,id));
+      CREATE TABLE pulls(id TEXT PRIMARY KEY,binding_id TEXT NOT NULL REFERENCES bindings(id),snapshot TEXT NOT NULL,total_count INTEGER NOT NULL,last_key TEXT NOT NULL DEFAULT '');
+      CREATE TABLE pull_objects(pull_id TEXT NOT NULL REFERENCES pulls(id) ON DELETE CASCADE,kind TEXT NOT NULL,id TEXT NOT NULL,object_json TEXT NOT NULL,PRIMARY KEY(pull_id,kind,id));
+      ${CLIENT_IMAGE_SCHEMA}
+      ${CLIENT_NORMAL_SCHEMA}
+      ${version >= 5 ? CLIENT_ENRICHMENT_SCHEMA : ""}
+    `);
+    const schema = database => database.prepare("SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name").all()
+      .map(row => ({ ...row, sql: row.sql === null ? null : cacheSchemaSql(row.sql) }));
+    check(db.prepare("PRAGMA application_id").get().application_id === 0 && same(schema(db), schema(reference)),
+      "Das persönliche Cacheformat enthält unbekannte SQL-Tabellen, Spalten, Bezüge oder Zusatzobjekte.");
+    for (const { name } of reference.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'").all()) {
+      check(same(db.prepare(`PRAGMA table_xinfo("${name}")`).all(), reference.prepare(`PRAGMA table_xinfo("${name}")`).all())
+        && same(db.prepare(`PRAGMA foreign_key_list("${name}")`).all(), reference.prepare(`PRAGMA foreign_key_list("${name}")`).all()),
+      "Das persönliche Cacheformat besitzt abweichende Spalten oder Fremdschlüssel.");
+    }
+  } finally { reference.close(); }
+}
+function normalMediaSummary(value) {
+  return { localNormalBytes: value.localNormalBytes, localNormalBlobCount: value.localBlobCount,
+    normalReferenceCount: value.normalReferenceCount, normalReferencesSha256: value.normalReferencesSha256 };
+}
+async function inspectSqlite(db, spec, context) {
   db.exec("PRAGMA trusted_schema=OFF; PRAGMA query_only=ON;");
   check(db.prepare("PRAGMA quick_check").all().every((row) => row.quick_check === "ok")
     && db.prepare("PRAGMA foreign_key_check").all().length === 0, "Das persönliche SQLite-Abbild ist nicht konsistent.");
@@ -126,20 +166,31 @@ function inspectSqlite(db, spec, context) {
     check(ID.test(name) && !DENIED_KEY.test(name.replace(/[_-]/g, "")), "Unbekannte oder vertrauliche SQLite-Tabelle.");
     const columns = db.prepare(`PRAGMA table_info("${name}")`).all();
     check(columns.every((column) => !DENIED_KEY.test(column.name.replace(/[_-]/g, ""))), "SQLite-Anmeldedaten sind von der Sicherung ausgeschlossen.");
-    for (const row of db.prepare(`SELECT * FROM "${name}"`).iterate()) {
-      abortIfNeeded(context.signal, context.deadline);
-      for (const [key, value] of Object.entries(row)) if (key.endsWith("_json") && value !== null) noSecrets(JSON.parse(value));
+    for (const column of columns.filter((column) => column.name.endsWith("_json"))) {
+      check(column.type.toUpperCase() === "TEXT", "Eine persönliche JSON-Spalte besitzt einen unbekannten Speichertyp.");
+      const quoted = `"${column.name.replaceAll('"', '""')}"`, size = `length(CAST(${quoted} AS BLOB))`;
+      // CASE prevents SQLite from returning an oversized value or a disguised BLOB to Node.
+      const query = `SELECT typeof(${quoted}) AS kind,${size} AS bytes,CASE WHEN typeof(${quoted})='text' AND ${size}<=33554432 THEN ${quoted} ELSE NULL END AS value FROM "${name}"`;
+      for (const row of db.prepare(query).iterate()) {
+        abortIfNeeded(context.signal, context.deadline);
+        check(row.kind === "null" || row.kind === "text" && row.bytes <= 32 * 1024 * 1024,
+          "Ein persönlicher JSON-Wert ist kein begrenzter Textwert.");
+        if (row.value !== null) noSecrets(JSON.parse(row.value));
+      }
     }
   }
   if (spec.kind === "sqlite") return spec.validate(db, context);
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  check([1, 2].includes(version), "Unbekannte persönliche SQLite-Version.");
-  let projects, pending = 0;
+  check((spec.kind === "client-cache" ? [1, 2, 3, 4, 5] : [1, 2]).includes(version), "Unbekannte persönliche SQLite-Version.");
+  let projects, media, pending = 0;
   if (spec.kind === "client-cache") {
     const expectedTables = version === 1 ? ["bindings", "cache", "conflicts", "queue", "state"]
-      : ["bindings", "cache", "conflicts", "pull_objects", "pulls", "queue", "state"];
+      : version === 2 ? ["bindings", "cache", "conflicts", "pull_objects", "pulls", "queue", "state"]
+        : ["bindings", "cache", "conflicts", ...(version === 5 ? ["enrichment_candidates", "enrichment_files"] : []),
+          "image_blobs", "image_media", ...(version >= 4 ? ["normal_blobs", "normal_media"] : []), "pull_objects", "pulls", "queue", "state"];
     check(same(tables, expectedTables), "Unbekanntes persönliches Cacheformat.");
-    if (version === 2) {
+    if (version >= 4) inspectCurrentCacheSchema(db, version);
+    if (version >= 2) {
       for (const [table, columns] of [["pulls", ["id", "binding_id", "snapshot", "total_count", "last_key"]],
         ["pull_objects", ["pull_id", "kind", "id", "object_json"]]]) {
         check(same(db.prepare(`PRAGMA table_info("${table}")`).all().map((column) => column.name), columns), "Unbekanntes persönliches Abrufformat.");
@@ -162,11 +213,24 @@ function inspectSqlite(db, spec, context) {
             && value?.kind === row.kind && value.id === row.id && UUID.test(value.revision) && Number.isSafeInteger(value.ordinal)
             && value.ordinal >= 1 && value.data && typeof value.data === "object" && !Array.isArray(value.data),
           "Ein persönliches Abrufobjekt ist nicht eindeutig gebunden.");
-          objectJson(value.data); canonicalJson(value, { maxBytes: 3 * 1024 * 1024, maxNodes: 300000 });
+          objectJson(value.data);
+          const record2 = Object.hasOwn(value.data, "type") && Object.hasOwn(value.data, "schemaVersion")
+            && value.data.type === "fn-species-record" && value.data.schemaVersion === 2;
+          canonicalJson(value, { maxBytes: record2 ? 4 * 1024 * 1024 + 16 * 1024 : 3 * 1024 * 1024, maxNodes: 300000 });
           last = key; count++;
         }
         check(count <= pull.total_count && last === pull.last_key, "Der persönliche Zwischenabruf besitzt keine passende Mengen-/Reihenfolgebindung.");
       }
+    }
+    if (version >= 3) media = await inspectClientImageStore(db, { progress: () => abortIfNeeded(context.signal, context.deadline) });
+    if (version >= 4) {
+      const normal = await inspectClientNormalStore(db, { progress: () => abortIfNeeded(context.signal, context.deadline) });
+      check(media.localImageBytes + normal.localNormalBytes <= 192 * 1024 * 1024, "Die gemeinsame persönliche Medienreserve von 192 MiB wurde überschritten.");
+      media = { ...media, ...normalMediaSummary(normal) };
+    }
+    if (version === 5) {
+      const enrichment = await inspectClientEnrichmentStore(db, { signal: context.signal, progress: () => abortIfNeeded(context.signal, context.deadline) });
+      media = { ...media, ...enrichment };
     }
     projects = db.prepare("SELECT DISTINCT project_id AS id FROM bindings ORDER BY id").all().map((row) => row.id);
     for (const row of db.prepare("SELECT * FROM queue").iterate()) {
@@ -175,13 +239,36 @@ function inspectSqlite(db, spec, context) {
       check(value && typeof value === "object" && !Array.isArray(value), "Eine ungesendete Änderung ist nicht lesbar.");
       if (row.request_json !== null) {
         const request = JSON.parse(row.request_json);
-        check(request.changeId === row.change_id && request.kind === row.kind && request.id === row.object_id
+        if (Object.hasOwn(request, "candidateId")) {
+          const owner = db.prepare("SELECT id,base_url AS baseUrl,project_id AS projectId,user_id AS userId FROM bindings WHERE id=?").get(row.binding_id);
+          check(version === 5 && owner, "Der Artvorschlag besitzt keine persönliche Projektbindung.");
+          readQueuedSpeciesEnrichment(db, owner, row);
+        } else check(request.changeId === row.change_id && request.kind === row.kind && request.id === row.object_id
           && same(request.data, value), "Eine ungesendete Änderung besitzt keine eindeutige Anfragebindung.");
+        if (Object.hasOwn(request, "intent")) {
+          const binding = db.prepare("SELECT project_id,user_id FROM bindings WHERE id=?").get(row.binding_id);
+          check(binding, "Der redaktionelle Übernahmeauftrag besitzt keine persönliche Projektbindung.");
+          validateSealedEditorialRequest(request, { changeId: row.change_id, kind: row.kind, id: row.object_id,
+            baseRevision: row.base_revision, data: value, projectId: binding.project_id, userId: binding.user_id });
+        }
       }
       if (["queued", "uncertain", "conflict"].includes(row.state)) pending++;
     }
     for (const row of db.prepare("SELECT key,value FROM state").iterate()) {
       check(!DENIED_KEY.test(row.key.replace(/[_-]/g, "")), "Der Cache enthält unzulässige Anmeldewerte.");
+      // SQLite LIKE in edit() also recognizes ASCII case variants; reject them
+      // here rather than restoring an unvalidated guard under another spelling.
+      if (row.key.toLowerCase().startsWith("editorial-cancel-")) {
+        const changeId = row.key.slice("editorial-cancel-".length);
+        const queued = db.prepare("SELECT q.*,b.project_id,b.user_id FROM queue q JOIN bindings b ON b.id=q.binding_id WHERE q.change_id=?").get(changeId);
+        check(queued && ["queued", "uncertain"].includes(queued.state) && queued.kind === "species" && queued.request_json !== null
+          && row.key === `editorial-cancel-${queued.change_id}` && row.value === `${queued.binding_id}/species/${queued.object_id}`,
+        "Die dauerhafte Abschlusssperre besitzt keinen passenden offenen redaktionellen Übernahmeauftrag.");
+        const request = JSON.parse(queued.request_json);
+        check(Object.hasOwn(request, "intent"), "Die dauerhafte Abschlusssperre besitzt keinen versiegelten redaktionellen Übernahmebeleg.");
+        validateSealedEditorialRequest(request, { changeId: queued.change_id, kind: queued.kind, id: queued.object_id,
+          baseRevision: queued.base_revision, data: JSON.parse(queued.data_json), projectId: queued.project_id, userId: queued.user_id });
+      }
     }
   } else {
     inspectImportSchema(db, tables, version);
@@ -200,7 +287,7 @@ function inspectSqlite(db, spec, context) {
     }
   }
   check(projects.every((id) => context.projectIds.includes(id)), "Persönliche Daten gehören zu einem nicht gebundenen Projekt.");
-  return { projectIds: projectList(projects), pending };
+  return { projectIds: projectList(projects), pending, ...(media ? { media } : {}) };
 }
 async function inspect(filename, spec, context) {
   if (spec.sqlite) {
@@ -219,7 +306,18 @@ function checkedResult(value, context) {
   check(value && Number.isSafeInteger(value.pending) && value.pending >= 0, "Der persönliche Validator muss offene Änderungen zuverlässig zählen.");
   const ids = projectList(value.projectIds);
   check(ids.every((id) => context.projectIds.includes(id)), "Die persönliche Projektbindung ist widersprüchlich.");
-  return { projectIds: ids, pending: value.pending };
+  const journalMedia = checkedPageJournalMedia(value);
+  check(!journalMedia || journalMedia.scopedRequiredMedia.every((entry) => ids.includes(entry.asset.projectId)), "Die Seitenbildanforderungen gehören zu einem fremden Projekt.");
+  return { projectIds: ids, pending: value.pending, ...(value.media ? { media: value.media } : {}), ...(journalMedia ? { journalMedia } : {}) };
+}
+function bindJournalMedia(records, context) {
+  const requirements = records.flatMap((record) => record.journalMedia?.scopedRequiredMedia || []);
+  if (!records.some((record) => record.journalMedia)) return;
+  const evidence = validatePageMediaBackup({ caches: records.filter((record) => record.kind === "client-cache").map((record) => ({ id: record.id, filename: record.sourcePath })),
+    requirements, progress: () => abortIfNeeded(context.signal, context.deadline) });
+  const byHash = new Map(evidence.map((entry) => [entry.requirementSha256, entry]));
+  for (const record of records) if (record.journalMedia) record.journalMedia = { ...record.journalMedia,
+    evidence: record.journalMedia.scopedRequiredMedia.map((entry) => byHash.get(pageMediaRequirementHash(entry))) };
 }
 
 /**
@@ -307,8 +405,10 @@ export function createDeviceBackupProvider({ profileRoot, deviceId, resolveProje
           for (const original of before) check(same(original, { path: original.path,
             ...await fingerprint(profileRoot, original.path, { optional: true, maxBytes: spec.maxBytes, signal }) }), "Persönliche Daten wurden während der Snapshot-Erstellung geändert.");
           records.push({ id: spec.id, kind: spec.kind, relativePath: spec.relativePath, bytes: copied.bytes, sha256: copied.sha256,
-            projectIds: checked.projectIds, pending: checked.pending, sourcePath: filename });
+            projectIds: checked.projectIds, pending: checked.pending, ...(checked.media ? { media: checked.media } : {}),
+            ...(checked.journalMedia ? { journalMedia: checked.journalMedia } : {}), sourcePath: filename });
         }
+        bindJournalMedia(records, context);
         const logical = records.map(({ sourcePath, ...record }) => record), stateHash = sha(canonical({ deviceId, projectIds, files: logical }));
         const manifest = { schemaVersion: 1, backupKind: "arten-explorer-device-profile", deviceId, projectIds, stateHash,
           pending, files: logical, excluded: ["credentials", "passwords", "tokens", "credential .bin files"], completeness: "all-configured-files" };
@@ -355,14 +455,31 @@ export async function validateDeviceBackupCopy({ directory, expectedDeviceId, ex
     && same(manifest.projectIds, projectIds) && manifest.completeness === "all-configured-files" && Array.isArray(manifest.files)
     && manifest.files.length <= 32, "Die persönliche Sicherung besitzt eine fremde oder unvollständige Bindung.");
   check(sha(canonical({ deviceId: manifest.deviceId, projectIds, files: manifest.files })) === manifest.stateHash, "Das persönliche Sicherungsverzeichnis wurde verändert.");
-  const seen = new Set(); let pending = 0;
+  const seen = new Set(), qualified = []; let pending = 0;
   for (const record of manifest.files) {
     const spec = specs.find((entry) => entry.id === record.id);
     check(spec && spec.kind === record.kind && spec.relativePath === record.relativePath && !seen.has(spec.id), "Unbekannte oder doppelte persönliche Sicherungsdatei."); seen.add(spec.id);
     const filename = path.join(directory, spec.relativePath), actual = await fingerprint(directory, filename, { maxBytes: spec.maxBytes });
     check(actual.bytes === record.bytes && actual.sha256 === record.sha256, "Die persönliche Wiederherstellungskopie stimmt nicht mit ihren Prüfwerten überein.");
     const checked = checkedResult(await inspect(filename, spec, { deviceId: expectedDeviceId, projectIds }), { projectIds });
-    check(same(checked.projectIds, record.projectIds) && checked.pending === record.pending, "Die persönlichen offenen Änderungen sind nicht vollständig gebunden."); pending += checked.pending;
+    check(same(checked.projectIds, record.projectIds) && checked.pending === record.pending && same(checked.media ?? null, record.media ?? null), "Die persönlichen offenen Änderungen und Bildbelege sind nicht vollständig gebunden."); pending += checked.pending;
+    check(record.journalMedia || !hasManagedPageMedia(checked.journalMedia), "Der persönliche Sicherungsstand enthält keine gebundenen Artseitenbildbelege.");
+    qualified.push({ id: record.id, kind: record.kind, sourcePath: filename, ...(checked.journalMedia ? { journalMedia: checked.journalMedia } : {}) });
+  }
+  bindJournalMedia(qualified, { projectIds });
+  for (const record of manifest.files) {
+    const checked = qualified.find((entry) => entry.id === record.id);
+    let journalMedia = checked.journalMedia;
+    if (record.journalMedia?.schemaVersion === 1 && journalMedia) {
+      // A genuine old proof used the UUID prefix, including an old portrait ID.
+      // Recheck that historical claim against qualified cache3 image bytes;
+      // never assign this proof to the new normal domain or a new backup.
+      const { evidence: ignoredEvidence, ...source } = journalMedia;
+      journalMedia = legacyPageJournalMedia(source);
+      journalMedia.evidence = validatePageMediaBackup({ caches: qualified.filter(entry => entry.kind === "client-cache")
+        .map(entry => ({ id: entry.id, filename: entry.sourcePath })), requirements: journalMedia.scopedRequiredMedia, legacyCacheOnly: true });
+    }
+    check(record.journalMedia === undefined || same(record.journalMedia, journalMedia), "Die persönlichen Artseitenbild- und Scopebelege wurden verändert.");
   }
   check(specs.every((spec) => !spec.required || seen.has(spec.id)) && pending === manifest.pending, "Die persönliche Sicherung enthält nicht alle benötigten offenen Änderungen.");
   const expectedFiles = new Set([MANIFEST, ...manifest.files.map((record) => record.relativePath)]);

@@ -6,7 +6,9 @@ import { buildCatalog } from "./catalog.mjs";
 import { canonicalJson, objectJson } from "./security.mjs";
 import { validateSpeciesRecord, sharedSpeciesScientificIdentity as scientificIdentity } from "./species-record.mjs";
 import { validateWorkingImportEvidence } from "../species-content/working-import-source.mjs";
+import { workingEditorialProvenance } from "../species-content/working-editorial-catalog.mjs";
 import { assertImportItemIntegrity } from "./initial-import-integrity.mjs";
+import { NORMAL_MEDIA_SLOTS } from "./normal-media.mjs";
 import { check, ProjectError } from "./errors.mjs";
 
 const sha = (value) => createHash("sha256").update(value).digest("hex");
@@ -85,6 +87,8 @@ export function createInitialProjectImport({ service, filename, localStorageConf
   `); } catch (error) { try { db.exec("ROLLBACK"); } finally { db.close(); } throw error; }
   db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON;");
   const owner = randomUUID();
+  const mediaAbort = new AbortController();
+  let mediaRun = null;
   let running = false, runningPromise = null, preparing = false, preparationPromise = null, closing = false, closed = false, lastClosedStatus = null;
   const now = () => new Date(clock()).toISOString();
   function open() { check(!closed && !closing, 409, "import_closed", "Das Importjournal wird geschlossen."); }
@@ -101,9 +105,18 @@ export function createInitialProjectImport({ service, filename, localStorageConf
     db.prepare("INSERT INTO receipts(plan_id,object_id,operation,phase,revision,actor_id,created_at) VALUES (?,?,?,?,?,?,?)")
       .run(planId, id, operation, phase, revision ?? null, actor ?? null, now());
   }
-  async function source() {
+  function preparedBy(planId) {
+    const rows = db.prepare("SELECT actor_id FROM receipts WHERE plan_id=? AND object_id IS NULL AND operation='plan' AND phase='prepared'").all(planId);
+    return rows.length === 1 && typeof rows[0].actor_id === "string" && rows[0].actor_id.trim() ? rows[0].actor_id : null;
+  }
+  function requirePlanPerson(planId, userId) {
+    const preparedUser = preparedBy(planId);
+    check(preparedUser, 409, "import_journal_drift", "Der Plan hat keinen eindeutigen persönlichen Vorbereitungsbeleg.");
+    check(preparedUser === userId, 409, "import_person_changed", "Für diesen Importplan bitte wieder mit dem Konto anmelden, das ihn vorbereitet hat.");
+  }
+  async function source(savedEvidence) {
     if (workingSource) {
-      const current = await sourceAdapter.read();
+      const current = await sourceAdapter.read(savedEvidence && { editorialRelease: savedEvidence.editorialRelease ?? null });
       check(current && Array.isArray(current.species) && current.species.length > 0 && current.species.length <= 10000
         && (expectedSpeciesCount === null || current.species.length === expectedSpeciesCount), 409, "import_scope_changed", "Der vollständige Artumfang ist nicht eindeutig gebunden.");
       const species = current.species.map((item) => validateSpeciesRecord(item, item.id));
@@ -125,19 +138,24 @@ export function createInitialProjectImport({ service, filename, localStorageConf
   }
   async function inspect(plan) {
     const state = await service.refresh({ users: true });
-    check(state.status?.connection === "online" && state.status.user?.role === "admin" && !state.status.readOnlySession
+    check(state.status?.connection === "online" && state.status.user?.role === "admin" && typeof state.status.user.id === "string"
+      && state.status.user.id.trim() && !state.status.readOnlySession
       && state.permissions?.canManageUsers === true, 403, "import_admin_required", "Der Erstbestand benötigt eine volle Online-Anmeldung der Administration.");
     check(state.queuedChanges === 0 && state.conflictCount === 0 && !state.busy, 409, "import_local_work_pending", "Bitte lokale Änderungen und Konflikte zuerst abschließen.");
+    if (plan) {
+      check(state.status.projectId === plan.project_id && state.status.baseUrl === plan.base_url,
+        409, "import_project_changed", "Das verbundene Projekt oder der Server wurde geändert.");
+      requirePlanPerson(plan.id, state.status.user.id);
+    }
+    let capabilities = null;
     if (workingSource) {
       check(typeof service.capabilities === "function", 409, "species_record_server_required", "Der Projektdienst muss vollständige Artdatensätze ausdrücklich unterstützen.");
-      const capabilities = await service.capabilities();
+      capabilities = await service.capabilities();
       check(capabilities?.schemaVersion === 1 && capabilities.speciesRecordVersion === 1 && capabilities.adminBoundImport === true && capabilities.projectId === state.status.projectId
         && capabilities.user?.id === state.status.user.id && capabilities.user.role === "admin",
       409, "species_record_server_required", "Die Unterstützung vollständiger Artdatensätze und die aktuelle Administration müssen am Projektdienst bestätigt sein.");
     }
-    if (plan) check(state.status.projectId === plan.project_id && state.status.baseUrl === plan.base_url,
-      409, "import_project_changed", "Das verbundene Projekt oder der Server wurde geändert.");
-    return { state, objects: new Map(state.objects.filter((item) => item.kind === "species").map((item) => [item.id, item])) };
+    return { state, capabilities, objects: new Map(state.objects.filter((item) => item.kind === "species").map((item) => [item.id, item])) };
   }
   function planRow(id) { const row = db.prepare("SELECT * FROM plans WHERE id=?").get(id); check(row, 404, "import_plan_missing", "Der Importplan ist nicht vorhanden."); return row; }
   function items(id) { return db.prepare("SELECT * FROM items WHERE plan_id=? ORDER BY id").all(id); }
@@ -190,10 +208,26 @@ export function createInitialProjectImport({ service, filename, localStorageConf
     }
     return result;
   }
+  function mediaItems(rows) {
+    return rows.filter(row => row.state === "created" || row.state === "approved").flatMap(row => {
+      const files = JSON.parse(row.target_json).assets?.files;
+      const slots = NORMAL_MEDIA_SLOTS.filter(slot => files?.[slot]?.bytes > 0).map(slot => ({ slot, bytes: files[slot].bytes }));
+      return slots.length ? [{ row, slots }] : [];
+    });
+  }
+  function mediaPreview(plan, source, rows) {
+    if (source.kind !== workingKind || plan.state !== "complete" || typeof service.initialImportMedia !== "function") return null;
+    const candidates = mediaItems(rows), files = candidates.flatMap(item => item.slots);
+    if (!files.length) return null;
+    return { species: candidates.length, files: files.length, bytes: files.reduce((sum, file) => sum + file.bytes, 0),
+      run: mediaRun?.planId === plan.id ? { ...mediaRun, changedSpecies: [...mediaRun.changedSpecies] } : null };
+  }
   function view(id, differences = []) {
     const plan = planRow(id), source = binding(id), rows = items(id), count = (state) => rows.filter((item) => item.state === state).length;
+    const editorialRelease = source.kind === workingKind ? JSON.parse(source.evidence_json).editorialRelease : null;
+    const editorial = workingEditorialProvenance(editorialRelease);
     return { schemaVersion: 1, planId: id, projectId: plan.project_id, baseUrl: plan.base_url, sourceSha256: plan.source_hash,
-      source: { kind: source.kind, version: source.version },
+      source: { kind: source.kind, version: source.version, ...(editorial && { editorial }) }, preparedByUserId: preparedBy(id), media: mediaPreview(plan, source, rows),
       canReplace: plan.state !== "superseded" && db.prepare("SELECT count(*) AS n FROM receipts WHERE plan_id=? AND phase='intent'").get(id).n === 0,
       releaseForReaders: Boolean(plan.release_readers), state: plan.state, createdAt: plan.created_at, lastError: plan.last_error,
       canApply: ["planned", "running", "stopped"].includes(plan.state) && plan.last_error !== "import_identity_collision" && !differences.length, drift: differences, externalPublication: "not-performed",
@@ -213,13 +247,19 @@ export function createInitialProjectImport({ service, filename, localStorageConf
     check(typeof releaseForReaders === "boolean", 400, "invalid_import_confirmation", "Die interne Freigabe muss ausdrücklich gewählt werden.");
     acquire();
     try {
+      const { state: { status: author } } = await inspect();
       const catalog = await source(), observed = await inspect();
+      const { status } = observed.state;
+      check(status.projectId === author.projectId && status.baseUrl === author.baseUrl,
+        409, "import_project_changed", "Das verbundene Projekt oder der Server wurde während der Vorbereitung geändert.");
+      check(status.user.id === author.user.id, 409, "import_person_changed", "Die Anmeldung wurde während der Vorbereitung gewechselt. Bitte erneut prüfen.");
       const previous = db.prepare("SELECT * FROM plans WHERE project_id=? AND base_url=? AND state IN ('planned','running','stopped','complete') ORDER BY rowid DESC LIMIT 1")
-        .get(observed.state.status.projectId, observed.state.status.baseUrl);
+        .get(status.projectId, status.baseUrl);
       if (replaceUnstartedPlanId !== null) check(previous && replaceUnstartedPlanId === previous.id, 409, "import_plan_inactive", "Der ausdrücklich zu ersetzende Plan ist nicht mehr aktuell.");
       let superseded = null;
       const collisions = identityDrift(catalog, observed);
       if (previous) {
+        requirePlanPerson(previous.id, status.user.id);
         const sameSource = binding(previous.id).kind === sourceKind && previous.source_hash === catalog.sourceSha256;
         if (sameSource) {
           validatePlanSource(previous, catalog);
@@ -254,18 +294,22 @@ export function createInitialProjectImport({ service, filename, localStorageConf
     check(["planned", "running", "stopped", "complete"].includes(plan.state), 409, "import_plan_inactive", "Dieser Importplan wurde ersetzt und kann nicht mehr gestartet werden.");
     check(!plan.release_readers || confirmInternalRelease === true, 400, "import_release_confirmation_required", "Die interne Freigabe für Projektleser benötigt eine eigene Bestätigung.");
     acquire();
+    let ownerConfirmed = false;
     try {
       check(["planned", "running", "stopped", "complete"].includes(planRow(planId).state), 409, "import_plan_inactive", "Der Importplan ist nicht mehr aktiv.");
-      const catalog = await source(); validatePlanSource(plan, catalog);
+      await inspect(plan);
+      ownerConfirmed = true;
+      const catalog = await source(JSON.parse(binding(planId).evidence_json)); validatePlanSource(plan, catalog);
+      let firstInspection = await inspect(plan);
       if (plan.state === "complete") {
-        const observed = await inspect(plan);
-        check(!drift(plan, observed).length && !identityDrift(catalog, observed).length, 409, "import_drift", "Der bereits quittierte Stand wurde inzwischen geändert.");
+        check(!drift(plan, firstInspection).length && !identityDrift(catalog, firstInspection).length, 409, "import_drift", "Der bereits quittierte Stand wurde inzwischen geändert.");
         return view(planId);
       }
       db.prepare("UPDATE plans SET state='running',last_error=NULL WHERE id=?").run(planId);
       for (let item of items(planId)) {
         check(!closing, 409, "import_stopped", "Der Import wurde vor dem nächsten Schritt angehalten.");
-        const observed = await inspect(plan), differences = [...drift(plan, observed), ...identityDrift(catalog, observed)];
+        const observed = firstInspection ?? await inspect(plan), differences = [...drift(plan, observed), ...identityDrift(catalog, observed)];
+        firstInspection = null;
         check(!closing, 409, "import_stopped", "Der Import wurde vor der nächsten Änderung angehalten.");
         check(differences.length === 0, 409, "import_drift", "Der Projektstand ist vom bestätigten Importplan abgewichen. Es wurde nichts überschrieben.");
         if (["skipped", "approved"].includes(item.state)) continue;
@@ -322,7 +366,7 @@ export function createInitialProjectImport({ service, filename, localStorageConf
       return view(planId);
     } catch (error) {
       const code = error instanceof ProjectError ? error.code : "import_not_confirmed";
-      db.prepare("UPDATE plans SET state='stopped',last_error=? WHERE id=? AND state IN ('planned','running','stopped')").run(code, planId);
+      if (ownerConfirmed) db.prepare("UPDATE plans SET state='stopped',last_error=? WHERE id=? AND state IN ('planned','running','stopped')").run(code, planId);
       if (error instanceof ProjectError) throw error;
       throw new ProjectError(503, "import_not_confirmed", "Der letzte Importschritt ist nicht bestätigt. Das Journal und beide Bestände bleiben erhalten; bitte vor einer Wiederaufnahme prüfen.");
     } finally { release(); }
@@ -331,15 +375,80 @@ export function createInitialProjectImport({ service, filename, localStorageConf
     open(); check(!running && !preparing, 409, "import_running", "Der Import oder die Planprüfung läuft bereits."); running = true;
     runningPromise = execute(input).finally(() => { running = false; }); return runningPromise;
   }
+  async function executeMedia(planId) {
+    let acquired = false, currentFile = null;
+    try {
+      acquire(); acquired = true;
+      const plan = planRow(planId), journal = binding(planId), rows = items(planId);
+      check(plan.state === "complete" && journal.kind === workingKind, 409, "import_media_plan_required", "Die vollständige Bestandsübernahme muss zuerst abgeschlossen werden.");
+      let observed = await inspect(plan);
+      check(observed.capabilities?.normalMedia === 1, 409, "normal_media_server_required", "Der Projektdienst muss die Artdateibereitstellung unterstützen.");
+      assertImportItemIntegrity({ plan, items: rows, receipts: db.prepare("SELECT * FROM receipts WHERE plan_id=? ORDER BY sequence").all(planId) });
+      const records = rows.map(row => JSON.parse(row.target_json));
+      validateWorkingImportEvidence(JSON.parse(journal.evidence_json), records, plan.source_hash);
+      const requiredBinding = { baseUrl: plan.base_url, projectId: plan.project_id, userId: observed.state.status.user.id, role: "admin" };
+      function matchesImportedRevision(row) {
+        const actual = observed.objects.get(row.id);
+        return actual && actual.revision === row.expected_revision && actual.ordinal === 1 && actual.authorId === row.intent_actor
+          && dataHash(actual.data) === row.target_hash;
+      }
+      function skipChangedSpecies(row, count) {
+        mediaRun.changedFiles += count;
+        mediaRun.changedSpecies.push(row.id);
+      }
+      for (const { row, slots } of mediaItems(rows)) {
+        if (!matchesImportedRevision(row)) {
+          skipChangedSpecies(row, slots.length);
+          continue;
+        }
+        for (const [index, file] of slots.entries()) {
+          mediaAbort.signal.throwIfAborted();
+          currentFile = { commonName: row.name, slot: file.slot };
+          try {
+            const confirmed = await service.initialImportMedia({ speciesId: row.id, slot: file.slot,
+              expectedRevision: row.expected_revision, expectedDataHash: row.target_hash, requiredBinding }, { signal: mediaAbort.signal });
+            check(confirmed?.available === true, 503, "normal_media_uncertain", "Der Projektdienst hat die Datei noch nicht bestätigt.");
+            mediaRun.confirmedFiles++;
+          } catch (error) {
+            if (!(error instanceof ProjectError) || !["object_changed", "normal_media_review_changed"].includes(error.code)) throw error;
+            mediaAbort.signal.throwIfAborted();
+            observed = await inspect(plan);
+            if (matchesImportedRevision(row)) throw error;
+            skipChangedSpecies(row, slots.length - index);
+            break;
+          }
+          currentFile = null;
+        }
+        currentFile = null;
+      }
+      mediaRun.state = "complete";
+    } catch (error) {
+      mediaRun.state = "stopped";
+      mediaRun.error = mediaAbort.signal.aborted ? "import_stopped" : error instanceof ProjectError ? error.code : "normal_media_uncertain";
+      mediaRun.stoppedFile = currentFile;
+    } finally { if (acquired) release(); }
+  }
+  function startMedia(input) {
+    open(); check(!running && !preparing, 409, "import_running", "Eine Erstbestandsaktion läuft bereits.");
+    check(input && Object.keys(input).length === 2 && typeof input.planId === "string" && input.confirmed === true,
+      400, "import_confirmation_required", "Bitte die angezeigten Artdateien ausdrücklich bestätigen.");
+    const { plan } = status();
+    check(plan?.planId === input.planId && plan.media, 409, "import_media_plan_required", "Der aktuelle Importplan enthält keine verfügbaren Artdateien.");
+    mediaRun = { planId: plan.planId, state: "running", confirmedFiles: 0, changedFiles: 0, changedSpecies: [], error: null, stoppedFile: null };
+    running = true;
+    runningPromise = executeMedia(plan.planId).finally(() => { running = false; });
+    runningPromise.catch(() => {});
+    return status();
+  }
   return { prepare(input) {
       open(); check(!running && !preparing, 409, "import_running", "Der Import oder die Planprüfung läuft bereits.");
       preparing = true; preparationPromise = prepareWork(input).finally(() => { preparing = false; }); return preparationPromise;
-    }, apply,
+    }, apply, startMedia,
     start(input) { const task = apply(input); task.catch(() => {}); return status(); }, status,
     backupProjectIds() { open(); return db.prepare("SELECT DISTINCT project_id AS id FROM plans ORDER BY id").all().map((row) => row.id); },
     receipts(planId) { open(); return db.prepare("SELECT sequence,object_id AS objectId,operation,phase,revision,actor_id AS actorId,created_at AS createdAt FROM receipts WHERE plan_id=? ORDER BY sequence").all(planId); },
     async close() {
-      if (closed) return; closing = true;
+      if (closed) return; closing = true; mediaAbort.abort();
       if (preparationPromise) await preparationPromise.catch(() => {});
       if (runningPromise) await runningPromise.catch(() => {});
       lastClosedStatus = status(); release(); db.close(); closed = true;

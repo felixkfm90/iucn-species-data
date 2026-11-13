@@ -1,6 +1,6 @@
 services:
   project:
-    image: fn-arten-explorer-project:0.1.3
+    image: fn-arten-explorer-project:0.1.9
     build:
       context: ..
       dockerfile: nas/Dockerfile

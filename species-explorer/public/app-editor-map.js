@@ -24,6 +24,7 @@
       mapBrowserLink,
       mapDeleteButton,
       fileToBase64,
+      iucnDistributionMapUrl,
       fetchJson,
       formatBytes,
       closeEditDialog,
@@ -159,7 +160,7 @@ async function acceptFiles(files) {
     if (!mapReasonInput.value.trim()) mapReasonInput.value = "Karte als lokale Datei importiert.";
     if (assessment === expected && (!mapSourceInput.value.trim()
       || mapSourceInput.value === (species.assets?.map?.source || ""))) {
-      mapSourceInput.value = `https://www.iucnredlist.org/api/v4/assessments/${expected}/distribution_map/jpg`;
+      mapSourceInput.value = iucnDistributionMapUrl(species);
     }
     await previewMap();
   } catch (error) {

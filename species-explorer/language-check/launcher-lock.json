@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "javaRelease": 17,
+  "className": "org.languagetool.server.FNManagedLanguageTool",
+  "sourceSha256": "d6f3b9cfe2f027b9f30d3bbd216663b7514e82b94aca5ad5f185601a9ae77378",
+  "classSha256": "40cfd8a52280a82bbebd23ae7d5cbff7b299f7b7b61d353385112560e7a2b604",
+  "jarSha256": "001e219e154960e271fc77c6e75330a815aabbb94cfa3ed40304e20401730bbe",
+  "jarBytes": 2779
+}

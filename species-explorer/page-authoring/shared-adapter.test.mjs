@@ -60,3 +60,15 @@ test('real server guard rejects another project media even from actual admin',t=
   const foreign=clone(draft);for(const asset of [...Object.values(foreign.document.species.normalAssets).filter(Boolean),...foreign.document.images.map(image=>image.asset)])asset.projectId='foreign-project';
   assert.throws(()=>store.createObject(a.token,{kind:'page',id:pageAuthoringObjectId(draft.id),data:encodePageAuthoringDraft(foreign)}),error=>error.code==='foreign_media');
 }));
+
+test('actual shared HTTP transport preserves stable asset binding after an explicit display-name source refresh',t=>scoped(t,async({adapter,draft,local,store,a})=>{
+  const original=clone(draft.document.species);
+  local.species.commonName='Grüner Baumleguan';local.species.assetName='Gruener Leguan';local.species.revision='species-stable-assets';
+  const updated=(await local.service.refreshSpecies('publisher',{draftId:draft.id,mutationId:local.mutationId(),expectedRevision:draft.revision})).draft;
+  const created=await adapter.create('publisher',updated),saved=store.getObject(a.token,'page',created.object.id);
+  assert.equal(saved.data.document.species.commonName,'Grüner Baumleguan');
+  assert.equal(saved.data.document.species.assetName,'Gruener Leguan');
+  assert.equal((await adapter.read('contributor',draft.id)).data.document.species.assetName,'Gruener Leguan');
+  assert.deepEqual(draft.document.species,original);
+  assert.equal(saved.data.document.species.normalAssets.portrait.projectId,a.projectId);
+}));

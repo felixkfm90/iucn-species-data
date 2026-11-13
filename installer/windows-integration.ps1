@@ -1,12 +1,10 @@
 param(
-  [Parameter(Mandatory=$true)][ValidateSet('Install','Remove')][string]$Action,
+  [Parameter(Mandatory=$true)][ValidateSet('Preflight','Install','Remove')][string]$Action,
   [Parameter(Mandatory=$true)][string]$Base,
   [switch]$DesktopShortcut
 )
 $ErrorActionPreference = 'Stop'
 $installBase = [IO.Path]::GetFullPath($Base)
-$record = Get-Content -LiteralPath (Join-Path $installBase 'installation.json') -Raw | ConvertFrom-Json
-if ($record.productId -ne 'FN.ArtenExplorer' -or $record.base -ne $installBase) { throw 'Installationsnachweis passt nicht zum Ziel.' }
 $registryPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\FN.ArtenExplorer'
 $programs = [Environment]::GetFolderPath('Programs')
 $desktop = [Environment]::GetFolderPath('Desktop')
@@ -20,10 +18,12 @@ function Remove-OwnedShortcut([string]$ShortcutPath) {
     if ($shortcut.TargetPath -eq $launcher) { Remove-Item -LiteralPath $ShortcutPath }
   }
 }
-if ($Action -eq 'Install') {
-  $existing = Get-ItemProperty -LiteralPath $registryPath -ErrorAction SilentlyContinue
+$shortcutFolders = @($programs) + $(if ($DesktopShortcut) { @($desktop) } else { @() })
+if ($Action -ne 'Remove') {
+  $existing = $null
+  try { $existing = Get-ItemProperty -LiteralPath $registryPath -ErrorAction Stop }
+  catch [System.Management.Automation.ItemNotFoundException] {}
   if ($existing -and $existing.InstallLocation -ne $installBase) { throw 'Ein anderer registrierter Arten-Explorer bleibt erhalten; zuerst dessen Einrichtung pruefen.' }
-  $shortcutFolders = @($programs) + $(if ($DesktopShortcut) { @($desktop) } else { @() })
   foreach ($folder in $shortcutFolders) {
     $shortcutPath = Join-Path $folder $shortcutName
     if (Test-Path -LiteralPath $shortcutPath) {
@@ -31,6 +31,11 @@ if ($Action -eq 'Install') {
       if ($existingShortcut.TargetPath -ne $launcher) { throw "Vorhandene fremde Verknuepfung bleibt erhalten: $shortcutPath" }
     }
   }
+  if ($Action -eq 'Preflight') { return }
+}
+$record = Get-Content -LiteralPath (Join-Path $installBase 'installation.json') -Raw | ConvertFrom-Json
+if ($record.productId -ne 'FN.ArtenExplorer' -or $record.base -ne $installBase) { throw 'Installationsnachweis passt nicht zum Ziel.' }
+if ($Action -eq 'Install') {
   foreach ($folder in $shortcutFolders) {
     $shortcutPath = Join-Path $folder $shortcutName
     $shortcut = $shell.CreateShortcut($shortcutPath)

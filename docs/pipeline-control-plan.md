@@ -168,11 +168,12 @@ eingebundenen Skripte oder Styles. Keine Squarespace-Versionsänderung und keine
 
 ## Bedienoberfläche
 
-Die Prozesssteuerung belegt keinen eigenen Seitenbereich. In der Kopfzeile steht das klickbare Feld
-`Änderungen übertragen` beziehungsweise `Datenbank aktuell`. Bei manuellen Eingabeabweichungen oder lokal
-gespeicherten Assetaenderungen oeffnet ein Klick direkt den Transferlauf; dabei werden keine Karten oder Sounds
-gesucht. Dieser Übertragungsweg bleibt auch im Lesemodus sichtbar. Ohne offene Abweichungen oeffnet das Feld nur im
-Bearbeitungsmodus den Dialog `Datenbank-Aktionen`.
+Die Prozesssteuerung belegt keinen eigenen Seitenbereich. Zeigt die Kopfzeile für den lokalen Bestand
+`Änderungen offen`, öffnet ein Klick im Bearbeitungsmodus direkt die Vorschau `Änderungen übertragen`.
+Der Lauf beginnt erst nach der Bestätigung in der Vorschau und überträgt die vorgemerkten Änderungen ohne externe Suche.
+Im Lesemodus und bei anderen Statusmeldungen informiert das Feld über den aktuellen Zustand.
+`⋮ → Datenbank-Aktionen` führt im Bearbeitungsmodus weiterhin zu den passenden Aktionen.
+`Fenster schließen` schließt den Pipeline- oder Backup-Dialog. Ein bereits gestarteter Lauf läuft weiter.
 
 Der Pipeline-Dialog fragt zuerst die Laufart ab:
 

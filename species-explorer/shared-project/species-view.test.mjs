@@ -84,12 +84,12 @@ test("missing sources and references have complete normal DTO defaults without g
   }
   for (const key of ["dataIssues", "assetIssues", "inconsistencies", "fieldMismatches", "careHints"]) assert.ok(Array.isArray(view[key]), key);
   assert.equal(view.missingPortrait, true); assert.equal(view.soundCareHint, true); assert.equal(view.soundMissingKnown, false);
-  assert.match(view.assetIssues.join(" "), /öffentlicher Medienverweis/);
+  assert.match(view.assetIssues.join(" "), /keine Artdatei gebunden/);
   assert.doesNotMatch(view.assetIssues.join(" "), /Pipeline|auf dem PC|Hash stimmt nicht/);
   assert.equal(view.sourcePermissions.canEditManual, false);
 });
 
-test("a declared file without public URL remains unavailable and private path-like metadata is excluded", () => {
+test("a declared private file stays unverified until read and private path-like metadata is excluded", () => {
   const source = object(); delete source.data.assets.files["map.jpg"].url;
   source.data.assets.overrides.map.source = "D:\\Private\\map.jpg";
   source.data.assets.overrides.map.reason = "Datei unter /volume1/private/map.jpg";
@@ -98,7 +98,8 @@ test("a declared file without public URL remains unavailable and private path-li
   source.data.assets.portraitMetadata.source = "\\\\server\\private\\photo.jpg";
   const view = projectSpeciesRecordToExplorer(source);
   assert.equal(view.assets.map.exists, false); assert.equal(view.assets.map.declaredBytes, 128); assert.equal(view.assets.map.url, "");
-  assert.equal(view.assets.map.availability, "not-provided"); assert.equal(view.assets.map.source, ""); assert.equal(view.assets.map.manualReason, "");
+  assert.equal(view.assets.map.availability, "project-unchecked"); assert.equal(view.assets.map.projectFileBound, true);
+  assert.equal(view.assets.map.source, ""); assert.equal(view.assets.map.manualReason, "");
   assert.equal(view.credits.source, ""); assert.equal(view.credits.url, "");
   assert.equal(view.assets.portrait.metadata.source, "");
   assert.doesNotMatch(JSON.stringify(view), /Private|\/volume1\/private|token=secret|file:\/\//);
@@ -120,7 +121,7 @@ test("browser-provider care and declared stale spectrum remain distinct from loc
 });
 
 test("normal dashboard, filters and existing detail renderer accept populated and empty projected views", async () => {
-  const context = vm.createContext({ URL, setTimeout, clearTimeout });
+  const context = vm.createContext({ URL, URLSearchParams, setTimeout, clearTimeout });
   for (const filename of ["app-presentation.js", "app-media.js", "app-dashboard.js", "filter.js", "app-detail-view.js"]) {
     new vm.Script(await readFile(new URL(`../public/${filename}`, import.meta.url), "utf8"), { filename }).runInContext(context);
   }
@@ -154,6 +155,13 @@ test("normal dashboard, filters and existing detail renderer accept populated an
   assert.match(detailPanel.innerHTML, /Keine Sounddatei vorhanden/);
   assert.equal(statusCalls.length, 0);
   assert.match(detailPanel.innerHTML, /Noch kein Medienverweis bereitgestellt/);
+
+  const privateMap = object(); delete privateMap.data.assets.files["map.jpg"].url;
+  const scope = "b".repeat(64), stamp = "c".repeat(64);
+  render({ id: privateMap.id, source: "shared-project", sourceScope: scope, revision: privateMap.revision, editRevision: stamp,
+    ...projectSpeciesRecordToExplorer(privateMap) });
+  assert.ok(detailPanel.innerHTML.includes(`class="map-image" data-project-media src="/api/shared-project/species/${privateMap.id}/normal-content/map.jpg?scope=${scope}&amp;revision=${privateMap.revision}&amp;stamp=${stamp}"`));
+  assert.match(detailPanel.innerHTML, /Gebundene Projektdatei/);
 
   const local = structuredClone(full); local.source = "local";
   local.assets.map.stale = true; local.assets.map.staleReason = "Isolierte lokale Hashabweichung";

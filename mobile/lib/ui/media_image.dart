@@ -27,15 +27,31 @@ class MediaImage extends StatefulWidget {
 
 class _MediaImageState extends State<MediaImage> {
   late Future<Uint8List> _bytes;
-  String _loadedBinding='';
-  String _bindingIdentity(){
-    final reference=MediaReference(widget.species.id,widget.kind,widget.media);
-    final binding=widget.controller.offline?.bindings[reference.key];
-    return '${widget.controller.catalog?.revision}|${widget.controller.offlineFile(widget.species,widget.media,widget.kind)?.path}|${binding?.observedAt}';
+  String _loadedBinding = '';
+  String _bindingIdentity() {
+    final reference = MediaReference(
+      widget.species.id,
+      widget.kind,
+      widget.media,
+    );
+    final binding = widget.controller.offline?.bindings[reference.key];
+    final permitted = widget.controller.mayUseMedia(
+      widget.species,
+      widget.media,
+      widget.kind,
+    );
+    final scope = widget.media.projectFile == null
+        ? null
+        : widget.controller.readerScope;
+    return '$permitted|$scope|${widget.controller.catalog?.revision}|${widget.controller.offlineFile(widget.species, widget.media, widget.kind)?.path}|${binding?.observedAt}';
   }
-  void _controllerChanged(){if(mounted && _loadedBinding!=_bindingIdentity())setState(_load);}
+
+  void _controllerChanged() {
+    if (mounted && _loadedBinding != _bindingIdentity()) setState(_load);
+  }
+
   void _load() {
-    _loadedBinding=_bindingIdentity();
+    _loadedBinding = _bindingIdentity();
     _bytes = widget.controller.imageBytes(
       widget.species,
       widget.media,
@@ -53,15 +69,23 @@ class _MediaImageState extends State<MediaImage> {
   @override
   void didUpdateWidget(MediaImage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if(oldWidget.controller!=widget.controller){oldWidget.controller.removeListener(_controllerChanged);widget.controller.addListener(_controllerChanged);}
-    if (oldWidget.media.url != widget.media.url ||
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_controllerChanged);
+      widget.controller.addListener(_controllerChanged);
+    }
+    if (oldWidget.media.sourceIdentity != widget.media.sourceIdentity ||
         oldWidget.media.sha256 != widget.media.sha256 ||
-        oldWidget.species.id != widget.species.id || _loadedBinding!=_bindingIdentity()) {
+        oldWidget.species.id != widget.species.id ||
+        _loadedBinding != _bindingIdentity()) {
       _load();
     }
   }
+
   @override
-  void dispose(){widget.controller.removeListener(_controllerChanged);super.dispose();}
+  void dispose() {
+    widget.controller.removeListener(_controllerChanged);
+    super.dispose();
+  }
 
   Widget _failure() => Center(
     child: widget.compact
@@ -84,6 +108,7 @@ class _MediaImageState extends State<MediaImage> {
   );
   @override
   Widget build(BuildContext context) => FutureBuilder<Uint8List>(
+    key: ValueKey(_loadedBinding),
     future: _bytes,
     builder: (context, snapshot) {
       if (snapshot.hasError) return _failure();
@@ -101,18 +126,25 @@ class _MediaImageState extends State<MediaImage> {
           : widget.media.caption.isNotEmpty
           ? widget.media.caption
           : widget.species.displayName;
+      final isSpectrogram = widget.kind == MediaKind.sound;
+      // The player's seek position uses the full image width as its time axis.
+      final fit = isSpectrogram
+          ? BoxFit.fill
+          : widget.compact && widget.kind != MediaKind.portrait
+          ? BoxFit.cover
+          : BoxFit.contain;
       if (widget.media.isSvg) {
         return SvgPicture.string(
           utf8.decode(snapshot.data!),
-          fit: BoxFit.contain,
+          fit: isSpectrogram ? fit : BoxFit.contain,
           semanticsLabel: label,
           errorBuilder: (context, error, stack) => _failure(),
         );
       }
       return Image.memory(
         snapshot.data!,
-        cacheWidth: widget.compact ? 192 : null,
-        fit: widget.compact ? BoxFit.cover : BoxFit.contain,
+        cacheWidth: widget.compact && !isSpectrogram ? 192 : null,
+        fit: fit,
         semanticLabel: label,
         errorBuilder: (_, error, stack) => _failure(),
       );

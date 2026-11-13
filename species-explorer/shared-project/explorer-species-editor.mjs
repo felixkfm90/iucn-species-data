@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { check } from "./errors.mjs";
-import { digest, transportJson } from "./security.mjs";
+import { digest, objectJson, transportJson } from "./security.mjs";
 import { SPECIES_RECORD_TYPE, validateSpeciesRecord, applySpeciesManualEdit } from "./species-record.mjs";
 
 const fields = [
@@ -60,7 +60,9 @@ export function createExplorerSpeciesEditor({ withClient, clock = Date.now, toke
       check(changes.length > 0, 400, "no_changes", "Es wurden keine Änderungen vorgenommen.");
       check(previews.size < 100, 429, "too_many_previews", "Bitte offene Artvorschauen zuerst abschließen oder später neu laden.");
       const token = tokenId(), expiresAt = clock() + ttlMs;
-      previews.set(token, { id, sourceScope: scope(state.status), editRevision: stamp(object), proposed, expiresAt });
+      const localReview = { revision: object.revision, dataHash: digest(objectJson(object.data)),
+        pending: Boolean(object.localPending), conflict: Boolean(object.localConflict) };
+      previews.set(token, { id, sourceScope: scope(state.status), editRevision: stamp(object), localReview, proposed, expiresAt });
       return { token, expiresAt: new Date(expiresAt).toISOString(), source: "shared-project", changes,
         species: view(object, state), warnings: ["Beim Speichern wird die Änderung in derselben persönlichen Offlinewarteschlange vorgemerkt. Abgleich und interne Freigabe bleiben eigene Schritte."] };
     }),
@@ -71,7 +73,7 @@ export function createExplorerSpeciesEditor({ withClient, clock = Date.now, toke
       check(preview.sourceScope === scope(state.status), 409, "project_changed", "Die Projektanmeldung wurde geändert. Die frühere Vorschau wird nicht für ein anderes Projekt oder eine andere Person verwendet.");
       const object = await current(client, id);
       check(preview.editRevision === stamp(object), 409, "local_object_changed", "Die Art wurde seit der Vorschau geändert. Beide Eingaben bleiben erhalten; bitte neu vergleichen.");
-      const saved = await client.editExistingObject("species", id, preview.proposed);
+      const saved = await client.editExistingObject("species", id, preview.proposed, { expectedLocalReview: preview.localReview });
       previews.delete(input.token);
       return { source: "shared-project", queued: true, species: view(saved, state), externalPublication: "not-performed" };
     }),

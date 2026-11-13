@@ -27,7 +27,7 @@ export function initialDocument({ templateId, species, parentPath, title = speci
     images: [], galleryRequested: true }, { species, previous: null });
 }
 export function normalizeSpeciesSnapshot(input, projectId, wantedSlug) {
-  fields(input, ["slug", "scientificName", "commonName", "taxonomy", "general", "status", "revision", "dataSha256", "runtimeReady", "normalAssets"]);
+  fields(input, ["slug", "scientificName", "commonName", "assetName", "taxonomy", "general", "status", "revision", "dataSha256", "runtimeReady", "normalAssets"]);
   check(input.slug === wantedSlug, "species_changed", "Die Artzuordnung stimmt nicht mit der gewählten Art überein.", 409);
   check(Array.isArray(input.taxonomy) && input.taxonomy.length <= 30 && Array.isArray(input.general) && input.general.length <= 40, "invalid_species", "Die Artgrunddaten sind unvollständig.");
   const normalAssets = {};
@@ -43,7 +43,11 @@ export function normalizeSpeciesSnapshot(input, projectId, wantedSlug) {
     taxonomy: input.taxonomy.map(value => { fields(value, ["rank", "name"]); return { rank: text(value.rank, 80), name: text(value.name, 300) }; }),
     general: input.general.map(value => { fields(value, ["label", "value"]); return { label: text(value.label, 300), value: text(value.value, 3000, true) }; }),
     status: text(input.status, 1000, true), revision: identifier(input.revision), dataSha256: digest(input.dataSha256), runtimeReady: input.runtimeReady === true, normalAssets };
-  return { ...value, assetName: sanitizeAssetName(value.commonName || value.scientificName) };
+  const assetName = input.assetName === undefined ? sanitizeAssetName(value.commonName || value.scientificName) : input.assetName;
+  check(typeof assetName === 'string' && assetName.length > 0 && assetName.length <= 512 && assetName === assetName.trim()
+    && !['.', '..'].includes(assetName) && !/[\\/:*?"<>|\x00-\x1f\x7f]/.test(assetName) && !/[. ]$/.test(assetName)
+    && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(assetName), 'invalid_asset_name', 'Die gebundene Artablage benötigt einen sicheren einzelnen Ordnernamen.');
+  return { ...value, assetName };
 }
 export function normalizeAssetMetadata(input, projectId) {
   fields(input, ["id", "projectId", "sha256", "bytes", "mimeType", "attribution"]);

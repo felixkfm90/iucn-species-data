@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "version": "6.6",
+  "minimumJava": 17,
+  "source": "https://languagetool.org/download/LanguageTool-6.6.zip",
+  "archiveBytes": 251998221,
+  "archiveSha256": "53600506b399bb5ffe1e4c8dec794fd378212f14aaf38ccef9b6f89314d11631",
+  "hashProvenance": "SHA256 measured after direct HTTPS download from languagetool.org; not a separately published vendor signature",
+  "license": "LGPL-2.1-or-later; individual dictionaries and dependencies retain their own bundled notices",
+  "nativeTempArtifacts": [
+    {
+      "source": "libs/jna.jar",
+      "entry": "com/sun/jna/win32-x86-64/jnidispatch.dll",
+      "bytes": 235008,
+      "sha256": "cf8e552ee05cb0e872797ecffe0f9d3dc67e513748f3cd957f79e0f2f3d66ac2"
+    },
+    {
+      "source": "libs/hunspell.jar",
+      "entry": "win32-x86-64/hunspell.dll",
+      "bytes": 495104,
+      "sha256": "5069b9d8e779a1293531e70cd40cb1b267afcd81778fb151b13e8f96b3040d01"
+    }
+  ],
+  "tree": {
+    "entries": 2031,
+    "files": 1789,
+    "bytes": 405072177,
+    "treeSha256": "39f7f4e22405d374084cabf15af64b2ce8aee56470803842f27b7535c6da020b"
+  }
+}

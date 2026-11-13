@@ -8,6 +8,7 @@ import { tmpdir, assertTestTempPath } from "../scripts/test-temp.mjs";
 import { createWebsiteAltStore } from "./website-alt-store.mjs";
 import { createWebsiteAltTextsService } from "./website-alt-service.mjs";
 import { normalizeWebsiteAltProposalText } from "./website-alt-policy.mjs";
+import { parseWebsiteAltPage } from "./website-alt-parser.mjs";
 
 const pageUrl = "https://www.fnwildlifetravel.de/wildlife/island/fraterculaarctica";
 const secondUrl = "https://www.fnwildlifetravel.de/reisen/2024-costarica/bocatapada";
@@ -174,7 +175,7 @@ test("Dekorativvorschlag gilt für Inhalts-Hintergründe und das FN-Footerlogo; 
   assert.ok(snapshot.pages[0].images.slice(2).every((entry) => entry.approval === null));
   const file = path.join(root, "website", "alt-texts.json"), raw = await fs.readFile(file, "utf8");
   assert.equal(JSON.parse(raw).schemaVersion, 1);
-  assert.ok(JSON.parse(raw).pages[0].images.every((entry) => !Object.hasOwn(entry, "suggestedDecorative") && !Object.hasOwn(entry, "textCoupled")));
+  assert.ok(JSON.parse(raw).pages[0].images.every((entry) => !Object.hasOwn(entry, "suggestedDecorative") && !Object.hasOwn(entry, "textCoupled") && !Object.hasOwn(entry, "textConstraint")));
   const reopened = await createWebsiteAltStore({ dataRoot: root, now }).snapshot();
   assert.deepEqual(reopened.pages[0].images.map((entry) => entry.suggestedDecorative), [false, true, false, true, false, false]);
   assert.equal(await fs.readFile(file, "utf8"), raw, "Ein Vorschlag migriert oder schreibt vorhandene Daten nicht beim Lesen um");
@@ -516,6 +517,91 @@ test("Geplante gekoppelte Textübernahme erhält die Freigabe in beiden Feldreih
   }
 }));
 
+const talamancaUrl = "https://www.fnwildlifetravel.de/reisen/2024-costarica/cordillera-de-talamanca";
+// Exact existing public captions from the private, bound Talamanca HTML evidence.
+const talamancaCaptions = [
+  "Die Orangekehl-Elfe ist ein winziger Kolibri der Bergnebelwälder Mittelamerikas, dessen leuchtend orange Kehle im Flug besonders auffällt. Trotz ihrer geringen Größe ist sie äußerst lebhaft und territorial und verteidigt energisch ihre bevorzugten Blütenplätze.",
+  "Der Grünstirn-Brillantkolibri fällt durch seine leuchtend grüne Stirn und das metallisch schimmernde Gefieder auf, das je nach Lichteinfall intensiv glänzt. Mit seiner schnellen, präzisen Flugweise wirkt er im Flug fast wie ein schwebender Lichtpunkt.",
+];
+const talamancaImage = (index, values = {}) => image({ src: `https://images.squarespace-cdn.com/content/v1/fixture/talamanca-${index}.jpg`, ...values });
+const truncatedTalamanca = () => page(talamancaCaptions.map((text, index) => talamancaImage(index, { alt: text.slice(0, 250), caption: text, captionVariants: [text, ""] })), { url: talamancaUrl });
+const documentDigest = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+async function legacyLongApprovals(store, root) {
+  await store.mergeScan(scan([page(talamancaCaptions.map((_text, index) => talamancaImage(index, { alt: "Alter Text", caption: "Alter Text" })), { url: talamancaUrl })]));
+  const filename = path.join(root, "website", "alt-texts.json"), document = JSON.parse(await fs.readFile(filename, "utf8"));
+  for (const [index, image] of document.pages[0].images.entries()) {
+    const approval = { text: talamancaCaptions[index], decorative: false, approvedAt: now().toISOString(), observationHash: image.observationHash };
+    image.draftText = approval.text; image.draftDecorative = false; image.draftSavedAt = approval.approvedAt;
+    image.approval = { ...approval, revision: documentDigest(approval) }; image.verification = null; image.status = "approved";
+  }
+  const { revision: _revision, ...body } = document; document.revision = documentDigest(body);
+  await fs.writeFile(filename, JSON.stringify(document)); return { filename, snapshot: await store.snapshot() };
+}
+
+test("Gekoppelte 250-Zeichen-Grenze wird nur im Snapshot abgeleitet; Freigabe speichert 250 und stoppt 251 vor dem Schreiben", () => fixture(async (store, root) => {
+  let current = await store.mergeScan(scan([page([image()], { url: secondUrl })]));
+  assert.deepEqual(current.pages[0].images[0].textConstraint, { maxLength: 250, reason: "coupled-gallery-public-alt-limit" });
+  current = await store.approve(payload(current, { pageUrl: secondUrl, text: "A".repeat(250) }));
+  assert.equal(current.pages[0].images[0].approval.text.length, 250);
+  current = await store.draft(payload(current, { pageUrl: secondUrl, text: "B".repeat(2000) }));
+  const filename = path.join(root, "website", "alt-texts.json"), before = await fs.readFile(filename, "utf8");
+  await assert.rejects(store.approve(payload(current, { pageUrl: secondUrl, text: "B".repeat(251) })),
+    (error) => error.code === "website_alt_text_limit" && error.statusCode === 409 && /251/.test(error.message) && /250/.test(error.message));
+  assert.equal(await fs.readFile(filename, "utf8"), before); assert.deepEqual(await store.snapshot(), current);
+  assert.equal(current.pages[0].images[0].draftText.length, 2000); assert.equal(Object.hasOwn(JSON.parse(before).pages[0].images[0], "textConstraint"), false);
+}));
+
+test("Historische 251-/261-Zeichen-Freigaben bleiben ohne Lesemigration gültig und unverändert erhalten", () => fixture(async (store, root) => {
+  assert.deepEqual(talamancaCaptions.map((text) => text.length).sort(), [251, 261]);
+  const { filename, snapshot } = await legacyLongApprovals(store, root), before = await fs.readFile(filename, "utf8");
+  const reopened = await createWebsiteAltStore({ dataRoot: root, now }).snapshot();
+  assert.deepEqual(reopened, snapshot); assert.equal(await fs.readFile(filename, "utf8"), before);
+  assert.equal(reopened.summary.approved, 2); assert.equal(reopened.summary.verified, 0);
+  assert.deepEqual(reopened.pages[0].images.map((entry) => entry.approval.text), talamancaCaptions);
+}));
+
+test("Exakt öffentlich gekürzte Reisebildtexte erhalten beide langen Freigaben ohne falschen Übernahmenachweis", () => fixture(async (store, root) => {
+  let { snapshot } = await legacyLongApprovals(store, root); const approvals = snapshot.pages[0].images.map((entry) => entry.approval.revision), observed = truncatedTalamanca();
+  for (let index = 0; index < 2; index++) {
+    await assert.rejects(store.verify({ revision: snapshot.revision, pageUrl: talamancaUrl, imageKey: snapshot.pages[0].images[index].key,
+      approvalRevision: approvals[index], observedPage: observed }), (error) => error.code === "website_alt_public_mismatch" && error.statusCode === 409
+        && error.message.includes(`${talamancaCaptions[index].length}/250`) && /bewusst kürzen/.test(error.message));
+    snapshot = await store.snapshot();
+    assert.deepEqual(snapshot.pages[0].images.map((entry) => entry.approval?.revision), approvals);
+    assert.equal(snapshot.summary.verified, 0); assert.equal(snapshot.summary.approved, 2);
+    assert.ok(snapshot.pages[0].images.every((entry) => entry.verification === null && entry.status === "approved"));
+  }
+  snapshot = await store.mergeScan(scan([observed]));
+  assert.deepEqual(snapshot.pages[0].images.map((entry) => entry.approval.revision), approvals);
+  assert.deepEqual(snapshot.pages[0].images.map((entry) => entry.draftText), talamancaCaptions);
+  assert.equal(snapshot.summary.verified, 0); assert.equal((await store.exportPage({ pageUrl: talamancaUrl })).page.images.length, 2);
+}));
+
+test("Fremdes Präfix, Caption, Varianten oder Bildquelle sind keine erlaubte 250-Zeichen-Kürzung", async () => {
+  for (const mode of ["prefix", "caption", "alt-variants", "caption-variants", "source"]) await fixture(async (store, root) => {
+    let { snapshot } = await legacyLongApprovals(store, root); snapshot = await store.mergeScan(scan([truncatedTalamanca()]));
+    const firstKey = snapshot.pages[0].images[0].key, secondApproval = snapshot.pages[0].images[1].approval.revision, observed = truncatedTalamanca();
+    if (mode === "prefix") { observed.images[0].alt = "X" + observed.images[0].alt.slice(1); observed.images[0].altVariants = [observed.images[0].alt]; }
+    if (mode === "caption") { observed.images[0].caption = "Eine fremde neue Aussage"; observed.images[0].captionVariants = [observed.images[0].caption]; }
+    if (mode === "alt-variants") observed.images[0].altVariants = [observed.images[0].alt, "Ein anderer Alternativtext"];
+    if (mode === "caption-variants") observed.images[0].captionVariants = [observed.images[0].caption, "Eine andere Bildunterschrift"];
+    if (mode === "source") observed.images[0] = talamancaImage("foreign", { alt: talamancaCaptions[0].slice(0, 250), caption: talamancaCaptions[0] });
+    snapshot = await store.mergeScan(scan([observed]));
+    const first = snapshot.pages[0].images.find((entry) => entry.key === firstKey);
+    assert.equal(first.approval, null, mode); assert.equal(first.verification, null, mode); assert.ok(first.history.some((entry) => entry.approval), mode);
+    assert.equal(snapshot.pages[0].images.find((entry) => entry.key !== firstKey && entry.status !== "removed" && entry.src.includes("talamanca-1.jpg")).approval.revision, secondApproval, mode);
+  });
+});
+
+test("Vorhandenen Text beibehalten bestätigt weder ein 250er-Präfix mit längerer Caption noch eine neue überlange Freigabe", async () => {
+  for (const fullAlt of [false, true]) await fixture(async (store) => {
+    const text = talamancaCaptions[0], observed = page([talamancaImage(0, { alt: fullAlt ? text : text.slice(0, 250), caption: text })], { url: talamancaUrl });
+    let current = await store.mergeScan(scan([observed])); current = await store.draft(payload(current, { pageUrl: talamancaUrl, text }));
+    await assert.rejects(store.keepExisting(keepPayload(current, observed)), (error) => error.code === "website_alt_public_mismatch" && error.statusCode === 409 && error.message.includes(`${text.length}/250`));
+    const after = await store.snapshot(); assert.equal(after.summary.verified, 0); assert.equal(after.pages[0].images[0].approval, null); assert.equal(after.pages[0].images[0].draftText, text);
+  });
+});
+
 test("Eine fremde neue Reisebeschriftung ist keine geplante Übernahme und setzt die alte Freigabe zurück", () => fixture(async (store) => {
   let snapshot = await store.mergeScan(scan([page([image({ alt: "Alt", caption: "Alt" })], { url: secondUrl })]));
   snapshot = await store.approve(payload(snapshot, { pageUrl: secondUrl, text: "Freigegeben" }));
@@ -721,7 +807,7 @@ test("Vorhandenen Website-Text atomar bestätigen erhält den vorbereiteten Entw
   assert.equal(kept.verification.observationHash, kept.observationHash);
   assert.ok(kept.history.some((entry) => entry.draftText === "Vorbereiteter abweichender Entwurf"));
   assert.ok(kept.history.some((entry) => entry.approval?.revision === oldApproval.revision));
-  const { suggestedDecorative, textCoupled, ...record } = kept;
+  const { suggestedDecorative, textCoupled, textConstraint, ...record } = kept;
   assert.deepEqual((await store.exportPage({ pageUrl })).page.images[0], record);
 }));
 
@@ -750,6 +836,44 @@ test("Vorhandener Reisefototext braucht weiterhin die exakt passende sichtbare B
   assert.equal(result.pages[0].images[0].draftText, "Vorbereiteter Entwurf bleibt");
   assert.equal(result.pages[0].images[0].approval, null);
 }));
+
+test("Dyrholaey: vorhandenen Rohtext mit doppeltem Leerzeichen ohne Umschreiben öffentlich bestätigen", () => fixture(async (store) => {
+  const raw = "...  um hier ihre Nester zu bauen ...", caption = "... um hier ihre Nester zu bauen ...";
+  const observed = { ...parseWebsiteAltPage(`<figure><img src="${source}" alt="${raw}"><figcaption>${raw}</figcaption></figure>`, secondUrl),
+    checkedAt: now().toISOString() };
+  assert.equal(observed.images[0].alt, raw);
+  assert.equal(observed.images[0].caption, caption);
+  const current = await store.mergeScan(scan([observed])), hash = current.pages[0].images[0].observationHash;
+  const kept = (await store.keepExisting(keepPayload(current, observed))).pages[0].images[0];
+  assert.equal(kept.alt, raw); assert.equal(kept.draftText, raw); assert.equal(kept.approval.text, raw);
+  assert.equal(kept.caption, caption); assert.equal(kept.observationHash, hash);
+  assert.equal(kept.status, "verified"); assert.equal(kept.verification.approvalRevision, kept.approval.revision);
+}));
+
+test("Gekoppelte öffentliche Caption bestätigt den HTML-Leerraum einer exakten neuen Rohtextfreigabe", () => fixture(async (store) => {
+  const raw = "...  um hier ihre Nester zu bauen ...", caption = "... um hier ihre Nester zu bauen ...";
+  let current = await store.mergeScan(scan([page([image({ alt: "Früherer Text", caption: "Früherer Text" })], { url: secondUrl })]));
+  current = await store.approve(payload(current, { pageUrl: secondUrl, text: raw }));
+  const approval = structuredClone(current.pages[0].images[0].approval);
+  current = await store.verify({ ...keepPayload(current, page([image({ alt: raw, caption })], { url: secondUrl })) });
+  assert.equal(current.pages[0].images[0].status, "verified");
+  assert.deepEqual(current.pages[0].images[0].approval, approval);
+}));
+
+test("Öffentliche Leerraumdarstellung lockert weder rohe Altbindung noch Wörter, Satzzeichen oder Unicode-Leerzeichen", async () => {
+  const raw = "...  um hier ihre Nester zu bauen ...", caption = "... um hier ihre Nester zu bauen ...";
+  for (const values of [{ alt: caption, caption }, { alt: raw, caption: "... um dort ihre Nester zu bauen ..." },
+    { alt: raw, caption: caption + "." }, { alt: "...\u00a0um hier ihre Nester zu bauen ...", caption },
+    { alt: raw, caption: "...\u2009um hier ihre Nester zu bauen ..." }]) {
+    await fixture(async (store) => {
+      const observed = page([image({ alt: raw, caption })], { url: secondUrl });
+      let current = await store.mergeScan(scan([observed]));
+      current = await store.approve(payload(current, { pageUrl: secondUrl, text: raw }));
+      await assert.rejects(store.verify(keepPayload(current, page([image(values)], { url: secondUrl }))), /nicht.*bestätigt/);
+      assert.notEqual((await store.snapshot()).pages[0].images[0].status, "verified");
+    });
+  }
+});
 
 test("Fremde Revision oder Freigabe stoppt das Beibehalten ohne einen Entwurf zu ersetzen", () => fixture(async (store) => {
   const observed = page([image({ alt: "Vorhandener Text" })]);

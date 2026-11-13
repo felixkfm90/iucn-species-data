@@ -1,6 +1,6 @@
 import { tmpdir } from "./test-temp.mjs";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
@@ -18,6 +18,7 @@ import {
   PAGE_SOURCE_FILES,
 } from "./pages-artifact-policy.mjs";
 import { validatePagesArtifact } from "./validate-pages-artifact.mjs";
+import { installPublicCatalogCandidate } from "../mobile/tool/install-public-catalog-candidate.mjs";
 
 test("Pages-Ausgabewahl schützt Daten, Quellen und fremde Ziele vor Ersetzen", async (context) => {
   const root = await createFixture();
@@ -174,6 +175,31 @@ test("Pages akzeptiert passende Medien, deren Git-Kennungen sich unterscheiden",
   species.media.spectrogram.url = `${raw}${"b".repeat(40)}/species-assets/Amsel/spectrogram.webp`;
   const { filename } = await writePublicCatalogFixture(directory, species);
   assert.deepEqual(await listPublicCatalogFiles(root), ["mobile/catalog/manifest.json", `mobile/catalog/${filename}`]);
+});
+
+test("Katalogübernahme prüft die Ausgangsfassung und ersetzt ausschließlich das Katalogpaar", async context => {
+  const fixture = await mkdtemp(path.join(tmpdir(), "public-catalog-install-"));
+  context.after(() => rm(fixture, { recursive: true, force: true }));
+  const root = path.join(fixture, "repo"), candidate = path.join(fixture, "candidate");
+  const catalogDirectory = path.join("mobile", "catalog");
+  const before = await writePublicCatalogFixture(path.join(root, catalogDirectory), publicSpecies());
+  const revised = publicSpecies();
+  revised.sections = [{ id: "habitat", title: "Lebensraum", text: "Gärten und lichte Wälder.", intentionallyEmpty: false }];
+  const after = await writePublicCatalogFixture(path.join(candidate, catalogDirectory), revised);
+  const verification = { status: "verified-candidate", catalogSha256: path.parse(after.filename).name,
+    baselineSha256: path.parse(before.filename).name };
+  const untouched = path.join(root, "speciesData.json");
+  await writeFile(untouched, "Unveränderte Artendaten");
+
+  await assert.rejects(installPublicCatalogCandidate({ root, candidate,
+    verification: { ...verification, baselineSha256: "f".repeat(64) } }), /Ausgangsfassung/);
+  await assert.rejects(installPublicCatalogCandidate({ root, candidate,
+    verification: { ...verification, catalogSha256: "f".repeat(64) } }), /Kandidatendateien/);
+  assert.deepEqual(await listPublicCatalogFiles(root), ["mobile/catalog/manifest.json", `mobile/catalog/${before.filename}`]);
+  await installPublicCatalogCandidate({ root, candidate, verification });
+  assert.deepEqual(await listPublicCatalogFiles(root), ["mobile/catalog/manifest.json", `mobile/catalog/${after.filename}`]);
+  assert.equal(await readFile(path.join(root, catalogDirectory, after.filename), "utf8"), after.content);
+  assert.equal(await readFile(untouched, "utf8"), "Unveränderte Artendaten");
 });
 
 test("Pages verlangt trotz passender Dateiprüfsumme die gebundenen Katalog-Metadaten", async context => {

@@ -1,0 +1,177 @@
+name: Prepare mobile catalog
+
+on:
+  workflow_run:
+    workflows: [Deploy GitHub Pages]
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '43 17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-mobile-catalog
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Verify public catalog sources
+    if: >-
+      github.repository == 'felixkfm90/iucn-species-data' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.head_branch == 'main' &&
+        (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      status: ${{ steps.catalog.outputs.status }}
+      source_commit: ${{ steps.catalog.outputs.source_commit }}
+      baseline: ${{ steps.catalog.outputs.baseline }}
+    steps:
+      - name: Checkout trusted source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Prepare and verify candidate files
+        id: catalog
+        shell: bash
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          result="$RUNNER_TEMP/mobile-catalog-result.json"
+          node mobile/tool/stage-public-catalog.mjs > "$result"
+          node --input-type=module - "$result" <<'NODE'
+          import assert from 'node:assert/strict';
+          import { appendFileSync, readFileSync } from 'node:fs';
+          import path from 'node:path';
+          import { assertTestTempPath } from './scripts/test-temp.mjs';
+          import { decodePublicAppCatalogManifest, decodePublicAppCatalogPayload } from './species-explorer/species-content/public-app-catalog.mjs';
+
+          const result = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+          assert.ok(result.status === 'candidate' || result.status === 'unchanged');
+          assert.match(result.baseline.sha256, /^[a-f0-9]{64}$/u);
+          assert.match(result.sourceCommit, /^[a-f0-9]{40}$/u);
+          assert.equal(result.sourceCommit, process.env.EXPECTED_SOURCE_COMMIT);
+          const outputs = [`status=${result.status}`, `source_commit=${result.sourceCommit}`, `baseline=${result.baseline.sha256}`];
+          if (result.status === 'candidate') {
+            const directory = assertTestTempPath(path.join(result.directory, 'catalog'));
+            assert.ok(!/[\r\n]/u.test(directory));
+            const manifestPath = assertTestTempPath(path.join(directory, 'manifest.json'));
+            const manifest = decodePublicAppCatalogManifest(readFileSync(manifestPath));
+            assert.equal(manifest.catalogSha256, result.catalogSha256);
+            const snapshotPath = assertTestTempPath(path.join(directory, `${manifest.catalogSha256}.json`));
+            decodePublicAppCatalogPayload(readFileSync(snapshotPath), manifest);
+            outputs.push(`manifest=${manifestPath}`, `snapshot=${snapshotPath}`);
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `${outputs.join('\n')}\n`);
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            `**Katalogprüfung** · \`${result.status}\`\n\n` +
+            `Ausgangsfassung (SHA-256) \`${result.baseline.sha256}\`\n\n` +
+            `Geprüfter Git-Stand \`${result.sourceCommit}\`\n\n` +
+            `${result.addedSpecies.length} neue Arten · ${result.changedSpecies.length} geänderte Arten\n`);
+          NODE
+
+      - name: Upload verified candidate for review
+        if: steps.catalog.outputs.status == 'candidate'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: public-mobile-catalog-candidate
+          path: |
+            ${{ steps.catalog.outputs.manifest }}
+            ${{ steps.catalog.outputs.snapshot }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Commit verified public catalog
+    needs: prepare
+    if: needs.prepare.outputs.status == 'candidate' && vars.PUBLIC_MOBILE_CATALOG_AUTO_PUBLISH == 'true'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      commit: ${{ steps.push.outputs.commit }}
+    steps:
+      - name: Checkout the verified source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.prepare.outputs.source_commit }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Download the candidate from this run
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: public-mobile-catalog-candidate
+          path: ${{ runner.temp }}/mobile-catalog-candidate/mobile/catalog
+
+      - name: Verify sources again and commit only the catalog files
+        env:
+          BASELINE: ${{ needs.prepare.outputs.baseline }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.source_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$SOURCE_COMMIT" ]]
+          [[ -z "$(git status --porcelain)" ]]
+          current=$(git ls-remote --exit-code origin refs/heads/main | cut -f 1)
+          [[ "$current" == "$SOURCE_COMMIT" ]] || { echo 'main has advanced. Run catalog preparation again.'; exit 1; }
+          candidate="$RUNNER_TEMP/mobile-catalog-candidate"
+          verified=$(node mobile/tool/stage-public-catalog.mjs --verify-candidate "$candidate/mobile/catalog" "$BASELINE")
+          node mobile/tool/install-public-catalog-candidate.mjs "$candidate" "$verified"
+          git add -A -- mobile/catalog
+          git diff --cached --check
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'Update public mobile catalog'
+
+      - name: Push the single fast-forward commit
+        id: push
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.source_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD^)" == "$SOURCE_COMMIT" ]]
+          git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push \
+            --force-with-lease="refs/heads/main:$SOURCE_COMMIT" origin HEAD:refs/heads/main
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Start the existing Pages quality gate
+    needs: publish
+    permissions:
+      actions: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch Pages for the catalog commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CATALOG_COMMIT: ${{ needs.publish.outputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CATALOG_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main -f catalog_commit="$CATALOG_COMMIT"
+          echo "Pages requested for $CATALOG_COMMIT. Its quality and deployment results appear in Deploy GitHub Pages." >> "$GITHUB_STEP_SUMMARY"

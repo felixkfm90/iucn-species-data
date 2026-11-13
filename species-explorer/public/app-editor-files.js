@@ -3,8 +3,9 @@
 
   function iucnDistributionMapUrl(species) {
     const assessmentId = String(species?.iucn?.assessmentId ?? "").trim();
-    return /^\d+$/.test(assessmentId)
-      ? `https://www.iucnredlist.org/api/v4/assessments/${assessmentId}/distribution_map/jpg`
+    const taxonId = String(species?.iucn?.taxonId ?? "").trim();
+    return /^[1-9]\d*$/.test(assessmentId) && /^[1-9]\d*$/.test(taxonId)
+      ? `https://www.iucnredlist.org/species/${taxonId}/${assessmentId}/distribution_map`
       : "";
   }
 

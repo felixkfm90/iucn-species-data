@@ -6,7 +6,8 @@
   function editModePresentation(enabled) {
     return {
       pressed: String(Boolean(enabled)),
-      label: enabled ? "Bearbeitungsmodus 🔓" : "Lesemodus 🔒",
+      label: enabled ? "Bearbeitungsmodus" : "Lesemodus",
+      icon: enabled ? "🔓" : "🔒",
       title: enabled
         ? "In den Lesemodus wechseln"
         : "Bearbeitungsfunktionen einblenden",
@@ -64,8 +65,10 @@
       documentRef.body.classList.toggle("edit-mode", state.editMode);
       const presentation = editModePresentation(state.editMode);
       elements.editModeToggle.setAttribute("aria-pressed", presentation.pressed);
-      elements.editModeToggle.textContent = presentation.label;
+      elements.editModeToggle.textContent = presentation.icon;
+      elements.editModeToggle.setAttribute("aria-label", presentation.title);
       elements.editModeToggle.title = presentation.title;
+      if (elements.editModeStatus) elements.editModeStatus.textContent = presentation.label;
       onWorkspaceState();
       return presentation;
     }
@@ -82,6 +85,7 @@
         failureMessage: "Lokale Daten konnten nicht aktualisiert werden.",
       });
       if (workspace !== (state.workspace || "local") || epoch !== (state.workspaceEpoch || 0)) throw new Error("Der Artbestand oder die Projektanmeldung wurde während des Ladens gewechselt.");
+      state.dataLoadError = "";
       state.dataRevision = snapshot.revision.revision;
       state.species = snapshot.species;
       state.workspaceStatus = snapshot.workspace || null;
@@ -98,6 +102,7 @@
       const ticket = ++loadTicket, workspace = state.workspace || "local", epoch = state.workspaceEpoch || 0;
       const dialogWasOpen = hasOpenDialog();
       state.dataLoading = true;
+      state.dataLoadError = "";
       elements.reloadButton.disabled = true;
       elements.reloadButton.textContent = "Lädt…";
       onWorkspaceState();
@@ -147,6 +152,7 @@
           state.pendingRevisionReload = true;
           return null;
         }
+        state.dataLoadError = error.message;
         if (workspace === "shared-project") {
           state.species = []; state.filtered = []; state.selectedId = "";
           state.workspaceStatus = { source: "shared-project", available: false, permissions: {} };

@@ -5,7 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 import { assertNoStorageLinks } from "./storage-migration.mjs";
 import { canonicalWebsiteImageSource, normalizeWebsitePageUrl } from "./website-alt-parser.mjs";
-import { coupledWebsiteAltCaption } from "./website-alt-policy.mjs";
+import { coupledWebsiteAltCaption, websiteAltTextLengthProblem } from "./website-alt-policy.mjs";
 
 const MAX_IMAGES = 500;
 const DRIVER_STATUSES = new Set(["written", "unchanged", "unsupported", "conflict", "failed"]);
@@ -95,6 +95,9 @@ export function buildWebsiteAltTransferPlan(saved, { revision, pageUrl } = {}) {
         || typeof approval.revision !== "string" || !approval.revision || !image.observationHash) {
       throw blocked("Eine gespeicherte Bildfreigabe ist nicht vollständig gebunden.");
     }
+    const lengthProblem = websiteAltTextLengthProblem(target, image, approval.text);
+    if (lengthProblem) throw Object.assign(blocked(`Bild ${page.images.indexOf(image) + 1}: ${lengthProblem.message}`),
+      { code: "website_alt_text_limit", details: lengthProblem });
     return Object.freeze({ imageKey: image.key, sourceUrl: canonicalWebsiteImageSource(image.sourceUrl || image.src),
       context: image.context, kind: image.kind, text: approval.text, decorative: approval.decorative,
       approvalRevision: approval.revision, observationHash: image.observationHash,
@@ -273,7 +276,8 @@ export async function runWebsiteAltTransfer({ plan, state, discovery, adapter, s
         results[index] = { imageKey: target.imageKey, status: "verified" };
       } catch (error) {
         ensureOpen();
-        results[index] = { imageKey: target.imageKey, status: error.statusCode === 409 ? "conflict" : "verification-pending",
+        results[index] = { imageKey: target.imageKey, status: error.code === "website_alt_public_mismatch" ? "verification-pending"
+          : error.statusCode === 409 ? "conflict" : "verification-pending",
           error: message(error.message, "Die öffentliche Ausgabe ist noch nicht bestätigt.") };
       }
       publish();

@@ -37,7 +37,6 @@
       activateBackupContext,
       setMessage,
       showDialog,
-      setDialogCloseMode,
       renderPersistentPipelineStatus,
     } = dependencies;
 
@@ -65,7 +64,6 @@
       elements.pipelinePreview.hidden = true;
       elements.pipelineStartButton.hidden = true;
       elements.pipelineStartButton.disabled = true;
-      setDialogCloseMode(status.status === "running");
       setMessage(presentation.message, presentation.messageType);
       showDialog();
     };
@@ -86,7 +84,6 @@
       elements.pipelineStartButton.hidden = false;
       elements.pipelineStartButton.disabled = true;
       elements.pipelineStartButton.textContent = "Backup starten";
-      setDialogCloseMode(false);
       setMessage("Backup-Vorschau wird erstellt...", "info");
       elements.pipelineDialogTitle.textContent = backupLabel();
       elements.pipelineDialogDescription.textContent = "Projektstand als komprimierte NAS-Sicherung prüfen.";
@@ -124,7 +121,6 @@
         dialog.dataset.statusKind = "backup";
         elements.pipelineStartButton.hidden = true;
         elements.pipelinePreview.hidden = true;
-        setDialogCloseMode(true);
         const presentation = backupStatusPresentation(startedStatus);
         elements.pipelineDialogTitle.textContent = presentation.title;
         elements.pipelineDialogDescription.textContent = backupLabel();
@@ -197,7 +193,6 @@
             };
             elements.pipelineDialogTitle.textContent = presentation.title;
             elements.pipelineDialogDescription.textContent = backupLabel();
-            setDialogCloseMode(active);
             setMessage(presentation.message, presentation.messageType);
             elements.pipelineStatusDetail.textContent = active
               ? `${Math.max(0, Math.min(100, Math.round(status.percent || 0)))}% · ${status.phase || "Backup läuft"}`

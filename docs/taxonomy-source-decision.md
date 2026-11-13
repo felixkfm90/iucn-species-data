@@ -158,6 +158,27 @@ Anbieter eine offizielle maschinelle Schnittstelle und eindeutige Nutzungsbeding
 
 ### 3.6 IUCN Red List
 
+Seit dem beauftragten Nachlauf vom 6. November fragt der Artendatenlauf zuerst den führenden
+wissenschaftlichen Namen der angelegten Art ab. Nur bei bestätigtem Nichtfund werden bekannte,
+eindeutig derselben aktiven Masterart zugeordnete wissenschaftliche Synonyme geprüft. Die Zuordnung
+liest den lokalen Master über seine Indizes. Frei eingegebene Aliaslisten, bloße Projektnamen,
+historisch zurückbehaltene Klassifikationen und mehrdeutige Synonyme berechtigen keinen Ersatzabruf.
+Zugangs-, Server- und Verbindungsfehler gelten nicht als taxonomischer Nichtfund. Liefern die Synonyme
+verschiedene IUCN-Taxa, bleibt der Abruf zur Prüfung offen. Mehrere Namen derselben IUCN-Taxonkennung
+bilden einen Treffer.
+
+Die erzeugten Artdaten behalten den führenden Namen, Gattung, Art und Slug. Bekannte höhere Ränge
+kommen vorrangig aus dem Master. IUCN-Name, abgefragter Name, Trefferweg und verfügbare IUCN-Taxonkennung
+werden daneben als Quellenzuordnung gespeichert. Der Kartenabruf verwendet diese IUCN-Zuordnung.
+Auch bei fehlendem Assessment bleiben Gattung und Art zuordenbar. Bestehende brauchbare Fachdaten
+werden bei einem unvollständigen Abruf weiterhin erhalten. Der lokale Aufruf und die gemeinsame
+Einartvorbereitung verwenden denselben Adapter.
+
+Eine lesende Liveprobe am 6. November bestätigt den Mittelspecht aus dem aktuellen lokalen Master:
+`Dendrocoptes medius` wird über das gespeicherte Synonym `Leiopicus medius` bei IUCN gefunden.
+Die Antwort liefert Taxonkennung `22681114`, Assessment `132055069` und Status `LC`.
+Der führende Name bleibt `Dendrocoptes medius`. Die Probe hat keine Artdateien geschrieben.
+
 IUCN bleibt für die bereits angebundene Gefährdungskategorie, Populationstrends, Assessments und
 Verbreitungskarten zuständig. Diese Daten gelten nur für bewertete Arten und ersetzen deshalb keinen globalen
 Taxonomie-Backbone.

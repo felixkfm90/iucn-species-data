@@ -47,7 +47,7 @@ async function scoped(fn) {
     async function acceptRemote(side, pageUrl = pageA) {
       const exported = await side.localStore.exportPage({ pageUrl }), current = await side.client.getObject("page", websiteAltObjectId(pageUrl), { serverOnly: true });
       await side.bridge.resolve({ pageUrl, strategy: "current", confirmed: true, expectedPageRevision: exported.pageRevision, expectedRemoteRevision: current.revision });
-      return side.bridge.importRemote({ pageUrl, confirmed: true, expectedPageRevision: exported.pageRevision });
+      return side.bridge.importRemote({ pageUrl, confirmed: true, expectedPageRevision: exported.pageRevision, expectedRemoteRevision: current.revision });
     }
     await fn({ f, ...initialized, address, side, link, acceptRemote });
   } finally { for (const value of bridges) await value.close(); for (const value of clients) await value.close(); if (http) await http.close(); f.cleanup(); }
@@ -106,6 +106,42 @@ test("a trusted page imports across devices with both histories intact and no pu
   assert.ok(page.page.images[0].history.length > 0); assert.equal((await second.bridge.snapshot()).pending, 0);
 }));
 
+test("an edit saved immediately after local import stays pending and is sent only on explicit sync", () => scoped(async ({ side, a, b, f, store, link }) => {
+  const first = await side("import-origin", a.user), second = await side("import-target", b.user);
+  await edit(first.localStore, pageA, "Gemeinsamer Bildtext zur Übernahme");
+  await link(first);
+  await edit(second.localStore, pageA, "Bisheriger Entwurf auf dem zweiten PC");
+  let committed;
+  const localStore = { ...second.localStore,
+    async importSharedPage(input) {
+      const result = await second.localStore.importSharedPage(input);
+      committed = await second.localStore.exportPage({ pageUrl: pageA });
+      await edit(second.localStore, pageA, "Nach der Übernahme neu gespeichert");
+      return result;
+    },
+  };
+  const bridge = createWebsiteAltSync({ localStore, client: second.client, filename: path.join(f.root, "import-race.sqlite"), localStorageConfirmed: true });
+  try {
+    const shown = await second.localStore.exportPage({ pageUrl: pageA });
+    const bound = await bridge.link({ pageUrl: pageA, expectedPageRevision: shown.pageRevision, confirmed: true });
+    const input = { pageUrl: pageA, expectedPageRevision: shown.pageRevision, expectedRemoteRevision: bound.remoteRevision, confirmed: true };
+    await bridge.resolve({ ...input, strategy: "current" });
+    const receipt = await bridge.importRemote(input);
+    assert.equal(receipt.localRevision, committed.localRevision);
+    assert.equal(receipt.pageRevision, committed.pageRevision);
+    assert.equal(committed.page.images[0].draftText, "Gemeinsamer Bildtext zur Übernahme");
+    assert.ok(committed.page.images[0].history.some((entry) => entry.draftText === "Bisheriger Entwurf auf dem zweiten PC"));
+    const latest = await bridge.read(pageA), objectId = websiteAltObjectId(pageA);
+    assert.equal(latest.state, "local-changed");
+    assert.equal(latest.page.images[0].draftText, "Nach der Übernahme neu gespeichert");
+    assert.equal((await bridge.snapshot()).pending, 1);
+    assert.equal(store.getObject(a.token, "page", objectId).revision, bound.remoteRevision);
+    assert.equal((await bridge.sync({ pageUrl: pageA, expectedPageRevision: latest.pageRevision })).synced, true);
+    assert.equal(store.getObject(a.token, "page", objectId).data.page.images[0].draftText, "Nach der Übernahme neu gespeichert");
+    assert.equal((await bridge.snapshot()).pending, 0);
+  } finally { await bridge.close(); }
+}));
+
 test("different pages sync independently, including a global local-store revision change", () => scoped(async ({ side, a, b, link, acceptRemote, store }) => {
   const first = await side("a", a.user), second = await side("b", b.user);
   await link(first, pageA); await link(first, pageB); await link(second, pageA); await link(second, pageB);
@@ -115,11 +151,54 @@ test("different pages sync independently, including a global local-store revisio
   assert.equal(store.listConflicts(a.token).length, 0);
   assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageA)).data.page.images[0].draftText, "Athen draft A");
   assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageB)).data.page.images[0].draftText, "Delphi draft B");
-  await second.bridge.pull({ pageUrl: pageA }); const shown = await second.localStore.exportPage({ pageUrl: pageA });
+  const pulled = await second.bridge.pull({ pageUrl: pageA }); const shown = await second.localStore.exportPage({ pageUrl: pageA });
   await edit(second.localStore, pageB, "Another Delphi local edit");
-  await second.bridge.importRemote({ pageUrl: pageA, confirmed: true, expectedPageRevision: shown.pageRevision });
+  await second.bridge.importRemote({ pageUrl: pageA, confirmed: true, expectedPageRevision: shown.pageRevision, expectedRemoteRevision: pulled.remote.revision });
   assert.equal((await second.localStore.exportPage({ pageUrl: pageB })).page.images[0].draftText, "Another Delphi local edit");
   assert.ok(acceptRemote);
+}));
+
+test("local import refuses a displayed approval replaced on the server and preserves the previous local draft", () => scoped(async ({ side, a, b, link, store }) => {
+  let offline = false;
+  const first = await side("a", a.user), second = await side("b", b.user, { fetchImpl: async (...args) => {
+    if (offline) throw new Error("synthetic offline");
+    return fetch(...args);
+  } }); await link(first); await link(second);
+  await edit(first.localStore, pageA, "First approval", true);
+  await first.bridge.queue({ pageUrl: pageA, adoptUnlinkedApprovals: true }); await first.bridge.sync({ pageUrl: pageA });
+  await edit(second.localStore, pageA, "Unsent local draft");
+  const before = await second.localStore.exportPage({ pageUrl: pageA });
+  const shown = (await second.bridge.pull({ pageUrl: pageA })).remote;
+  const input = { pageUrl: pageA, confirmed: true, expectedPageRevision: before.pageRevision, expectedRemoteRevision: shown.revision };
+  await assert.rejects(second.bridge.importRemote({ ...input, expectedRemoteRevision: undefined }), failure("website_alt_review_required"));
+  offline = true;
+  await assert.rejects(second.bridge.importRemote(input), failure("offline"));
+  assert.deepEqual(await second.localStore.exportPage({ pageUrl: pageA }), before);
+  offline = false;
+  await edit(first.localStore, pageA, "Newer approval", true);
+  await first.bridge.queue({ pageUrl: pageA, adoptUnlinkedApprovals: true }); await first.bridge.sync({ pageUrl: pageA });
+  await assert.rejects(second.bridge.importRemote(input), failure("object_changed"));
+  assert.deepEqual(await second.localStore.exportPage({ pageUrl: pageA }), before);
+  const fresh = (await second.bridge.pull({ pageUrl: pageA })).remote;
+  await assert.rejects(second.bridge.importRemote(input), failure("object_changed"));
+  await second.bridge.importRemote({ ...input, expectedRemoteRevision: fresh.revision });
+  const after = (await second.localStore.exportPage({ pageUrl: pageA })).page.images[0];
+  assert.equal(after.approval.text, "Newer approval");
+  assert.ok(after.history.some((entry) => entry.draftText === "Unsent local draft"));
+  assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageA)).revision, fresh.revision);
+}));
+
+test("a sync without local changes never makes an unseen server change the base for later edits", () => scoped(async ({ side, a, b, link, store }) => {
+  const first = await side("a", a.user), second = await side("b", b.user); await link(first); await link(second);
+  await edit(first.localStore, pageA, "New shared draft");
+  await first.bridge.queue({ pageUrl: pageA }); await first.bridge.sync({ pageUrl: pageA });
+  const current = store.getObject(a.token, "page", websiteAltObjectId(pageA));
+  const refreshed = await second.bridge.sync({ pageUrl: pageA });
+  assert.equal(refreshed.synced, false);
+  assert.equal((await second.bridge.read(pageA)).state, "pulled");
+  await edit(second.localStore, pageA, "Based on the old local text");
+  await assert.rejects(second.bridge.queue({ pageUrl: pageA }), failure("website_alt_review_required"));
+  assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageA)).revision, current.revision);
 }));
 
 test("a refreshed cache does not become a false base: same-page CAS preserves base/server/local and stale scan stops", () => scoped(async ({ side, a, b, link, store }) => {
@@ -191,7 +270,7 @@ test("a committed response lost before acknowledgement survives bridge/client re
   } finally { await bridge.close(); await client.close(); }
 }));
 
-test("same-page conflict is deliberately merged and locally imported with both people's drafts retained", () => scoped(async ({ side, a, b, link, store }) => {
+test("same-page conflict is deliberately merged and locally imported with both people's drafts retained", () => scoped(async ({ side, a, b, link, store, address, f }) => {
   const first = await side("a", a.user), second = await side("b", b.user); await link(first); await link(second);
   await edit(first.localStore, pageA, "Server draft A"); await first.bridge.queue({ pageUrl: pageA }); await first.bridge.sync({ pageUrl: pageA });
   await edit(second.localStore, pageA, "Local draft B"); await second.bridge.queue({ pageUrl: pageA }); await second.bridge.sync({ pageUrl: pageA });
@@ -199,9 +278,28 @@ test("same-page conflict is deliberately merged and locally imported with both p
   const remote = await second.client.getObject("page", websiteAltObjectId(pageA), { serverOnly: true });
   await assert.rejects(second.bridge.resolve({ pageUrl: pageA, conflictId: "other-page-conflict", strategy: "local", confirmed: true,
     expectedPageRevision: shown.pageRevision, expectedRemoteRevision: remote.revision }), failure("website_alt_foreign_conflict"));
-  await second.bridge.resolve({ pageUrl: pageA, conflictId: conflict.id, strategy: "local", confirmed: true,
-    expectedPageRevision: shown.pageRevision, expectedRemoteRevision: remote.revision });
-  const applied = await second.bridge.importRemote({ pageUrl: pageA, confirmed: true, expectedPageRevision: shown.pageRevision }); assert.equal(applied.imported, true);
+  await second.bridge.close();
+  const signIn = (user) => second.client.connect({ baseUrl: address.url, username: user.username, password: f.password });
+  let shouldSwitch = true;
+  const client = new Proxy(second.client, { get(target, key) {
+    if (key === "resolveConflict") return async (...args) => {
+      if (shouldSwitch) { shouldSwitch = false; await signIn(a.user); }
+      return target.resolveConflict(...args);
+    };
+    return target[key];
+  } });
+  const reopened = createWebsiteAltSync({ localStore: second.localStore, client, filename: path.join(f.root, "bridge-b.sqlite"), localStorageConfirmed: true });
+  try {
+    const decision = { pageUrl: pageA, conflictId: conflict.id, confirmed: true, expectedPageRevision: shown.pageRevision, expectedRemoteRevision: remote.revision };
+    await assert.rejects(reopened.resolve({ ...decision, strategy: "current" }), failure("conflict_review_changed"));
+    assert.ok(store.listConflicts(a.token).some((entry) => entry.id === conflict.id && !entry.resolvedAt));
+    assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageA)).revision, remote.revision);
+    await signIn(b.user);
+    const resolved = await reopened.resolve({ ...decision, strategy: "local" });
+    const applied = await reopened.importRemote({ pageUrl: pageA, confirmed: true, expectedPageRevision: shown.pageRevision,
+      expectedRemoteRevision: resolved.remoteRevision });
+    assert.equal(applied.imported, true);
+  } finally { await reopened.close(); }
   const final = await second.localStore.exportPage({ pageUrl: pageA }); assert.equal(final.page.images[0].draftText, "Local draft B");
   assert.ok(final.page.images[0].history.some((entry) => entry.draftText === "Server draft A"));
   assert.equal(store.listConflicts(a.token).filter((entry) => !entry.resolvedAt).length, 0);
@@ -228,6 +326,143 @@ test("bridge close joins a begun refresh but stops before creating a remote obje
   assert.equal(store.listObjects(a.token).length, 0); await fs.unlink(filename); assert.equal(bridge.status().closed, true); await assert.rejects(fs.stat(filename), (error) => error.code === "ENOENT");
   await edit(first.localStore, pageA, "Legacy workflow still available");
   assert.equal((await first.localStore.exportPage({ pageUrl: pageA })).page.images[0].draftText, "Legacy workflow still available");
+}));
+
+test("first page linking never creates an object under a changed project account", () => scoped(async ({ side, a, b, address, f, store }) => {
+  for (const [step, pageUrl] of [["refresh", pageA], ["createObject", pageB]]) {
+    const first = await side(step, a.user);
+    await edit(first.localStore, pageUrl, "Nur aus der ursprünglichen Anmeldung freigegebener Entwurf");
+    const shown = await first.localStore.exportPage({ pageUrl });
+    let shouldSwitch = true;
+    async function switchAccount() {
+      if (!shouldSwitch) return;
+      shouldSwitch = false;
+      await first.client.connect({ baseUrl: address.url, username: b.user.username, password: f.password });
+    }
+    const client = new Proxy(first.client, { get(target, key) {
+      if (key === "refresh" && step === key) return async () => { const result = await target.refresh(); await switchAccount(); return result; };
+      if (key === "createObject" && step === key) return async (input) => { await switchAccount(); return target.createObject(input); };
+      return target[key];
+    } });
+    const bridge = createWebsiteAltSync({ localStore: first.localStore, client, filename: path.join(f.root, `switch-${step}.sqlite`), localStorageConfirmed: true });
+    try {
+      const input = { pageUrl, expectedPageRevision: shown.pageRevision, confirmed: true };
+      await assert.rejects(bridge.link(input), failure("website_alt_binding_changed"));
+      assert.equal(store.listObjects(b.token).some((value) => value.id === websiteAltObjectId(pageUrl)), false);
+      assert.equal((await first.localStore.exportPage({ pageUrl })).pageRevision, shown.pageRevision);
+      await first.client.connect({ baseUrl: address.url, username: a.user.username, password: f.password });
+      const resumed = await bridge.link(input);
+      assert.equal(resumed.reviewRequired, false);
+      assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageUrl)).data.pageRevision, shown.pageRevision);
+    } finally { await bridge.close(); }
+  }
+}));
+
+test("a page sync never queues or sends edits under a different signed-in account", () => scoped(async ({ side, a, b, address, f, store }) => {
+  for (const [step, pageUrl] of [["editExistingObject", pageA], ["sync", pageB]]) {
+    const first = await side(step, a.user), objectId = websiteAltObjectId(pageUrl);
+    const signIn = (user) => first.client.connect({ baseUrl: address.url, username: user.username, password: f.password });
+    let shouldSwitch = true;
+    const client = new Proxy(first.client, { get(target, key) {
+      if (key === step) return async (...args) => {
+        if (shouldSwitch) { shouldSwitch = false; await signIn(b.user); }
+        return target[key](...args);
+      };
+      return target[key];
+    } });
+    const bridge = createWebsiteAltSync({ localStore: first.localStore, client, filename: path.join(f.root, `switch-${step}.sqlite`), localStorageConfirmed: true });
+    try {
+      const before = await first.localStore.exportPage({ pageUrl });
+      await bridge.link({ pageUrl, expectedPageRevision: before.pageRevision, confirmed: true });
+      const original = store.getObject(a.token, "page", objectId);
+      if (step === "sync") {
+        await signIn(b.user);
+        await edit(first.localStore, pageUrl, "Wartender Entwurf von Konto B");
+        await first.client.editExistingObject("page", objectId, encodeWebsiteAltPage((await first.localStore.exportPage({ pageUrl })).page));
+        await signIn(a.user);
+      }
+      await edit(first.localStore, pageUrl, "Gespeicherter Entwurf von Konto A");
+      const shown = await first.localStore.exportPage({ pageUrl });
+      if (step === "sync") await bridge.queue({ pageUrl, expectedPageRevision: shown.pageRevision });
+      const input = { pageUrl, expectedPageRevision: shown.pageRevision };
+      await assert.rejects(bridge.sync(input), failure("website_alt_binding_changed"));
+      assert.equal(store.getObject(a.token, "page", objectId).revision, original.revision);
+      assert.equal((await first.localStore.exportPage({ pageUrl })).pageRevision, shown.pageRevision);
+      const secondAccount = await first.client.getObject("page", objectId);
+      assert.equal(secondAccount.localPending, step === "sync");
+      assert.equal(secondAccount.data.page.images[0].draftText, step === "sync" ? "Wartender Entwurf von Konto B" : "");
+      await signIn(a.user);
+      assert.equal((await bridge.sync(input)).synced, true);
+      assert.equal(store.getObject(a.token, "page", objectId).data.page.images[0].draftText, "Gespeicherter Entwurf von Konto A");
+      if (step === "sync") {
+        await signIn(b.user);
+        const waiting = await first.client.getObject("page", objectId);
+        assert.equal(waiting.localPending, true);
+        assert.equal(waiting.data.page.images[0].draftText, "Wartender Entwurf von Konto B");
+      }
+    } finally { await bridge.close(); }
+  }
+}));
+
+test("a first comparison cannot send the chosen page under a newly signed-in account", () => scoped(async ({ side, a, b, address, f, store, link }) => {
+  const first = await side("comparison-origin", a.user), second = await side("comparison-editor", b.user);
+  await edit(first.localStore, pageA, "Bereits gemeinsam gespeicherte Fassung");
+  await link(first);
+  await second.client.refresh();
+  await edit(second.localStore, pageA, "Nur vom zweiten Konto ausgewählte Fassung");
+  const shown = await second.localStore.exportPage({ pageUrl: pageA });
+  const signIn = (user) => second.client.connect({ baseUrl: address.url, username: user.username, password: f.password });
+  let shouldSwitch = true;
+  const client = new Proxy(second.client, { get(target, key) {
+    if (key === "editExistingObject") return async (...args) => {
+      if (shouldSwitch) { shouldSwitch = false; await signIn(a.user); }
+      return target.editExistingObject(...args);
+    };
+    return target[key];
+  } });
+  const bridge = createWebsiteAltSync({ localStore: second.localStore, client, filename: path.join(f.root, "switch-comparison.sqlite"), localStorageConfirmed: true });
+  try {
+    const bound = await bridge.link({ pageUrl: pageA, expectedPageRevision: shown.pageRevision, confirmed: true });
+    assert.equal(bound.reviewRequired, true);
+    const choice = { pageUrl: pageA, expectedPageRevision: shown.pageRevision, expectedRemoteRevision: bound.remoteRevision, strategy: "local", confirmed: true };
+    await assert.rejects(bridge.resolve(choice), failure("website_alt_binding_changed"));
+    assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageA)).revision, bound.remoteRevision);
+    assert.equal((await second.client.status()).pending, 0);
+    assert.equal((await second.localStore.exportPage({ pageUrl: pageA })).pageRevision, shown.pageRevision);
+    await signIn(b.user);
+    assert.equal((await bridge.resolve(choice)).requiresExplicitImport, true);
+    assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageA)).data.page.images[0].draftText, "Nur vom zweiten Konto ausgewählte Fassung");
+  } finally { await bridge.close(); }
+}));
+
+test("a server edit during comparison send leaves both versions in a new open conflict", () => scoped(async ({ side, a, b, f, store, link }) => {
+  const first = await side("race-origin", a.user), second = await side("race-editor", b.user);
+  await edit(first.localStore, pageA, "Angezeigter gemeinsamer Entwurf");
+  await link(first);
+  await edit(second.localStore, pageA, "Im Vergleich ausgewählter eigener Entwurf");
+  const shown = await second.localStore.exportPage({ pageUrl: pageA });
+  const client = new Proxy(second.client, { get(target, key) {
+    if (key === "sync") return async (...args) => {
+      await edit(first.localStore, pageA, "Neuerer gemeinsamer Entwurf");
+      await first.bridge.sync({ pageUrl: pageA });
+      return target.sync(...args);
+    };
+    return target[key];
+  } });
+  const bridge = createWebsiteAltSync({ localStore: second.localStore, client, filename: path.join(f.root, "raced-comparison.sqlite"), localStorageConfirmed: true });
+  try {
+    const bound = await bridge.link({ pageUrl: pageA, expectedPageRevision: shown.pageRevision, confirmed: true });
+    await assert.rejects(bridge.resolve({ pageUrl: pageA, expectedPageRevision: shown.pageRevision, expectedRemoteRevision: bound.remoteRevision,
+      strategy: "local", confirmed: true }), failure("website_alt_review_required"));
+    assert.equal((await bridge.read(pageA)).state, "conflict");
+    const [conflict] = await bridge.conflicts(pageA);
+    assert.equal(conflict.current.page.images[0].draftText, "Neuerer gemeinsamer Entwurf");
+    assert.equal(conflict.proposed.page.images[0].draftText, "Im Vergleich ausgewählter eigener Entwurf");
+    assert.equal(store.getObject(a.token, "page", websiteAltObjectId(pageA)).revision, conflict.currentRevision);
+    assert.equal((await second.localStore.exportPage({ pageUrl: pageA })).pageRevision, shown.pageRevision);
+    await assert.rejects(bridge.importRemote({ pageUrl: pageA, expectedPageRevision: shown.pageRevision,
+      expectedRemoteRevision: conflict.currentRevision, confirmed: true }), failure("website_alt_review_required"));
+  } finally { await bridge.close(); }
 }));
 
 test("journal schema is explicit, old own unversioned journals migrate and unknown files stay byte-identical", () => scoped(async ({ side, a, f, link }) => {

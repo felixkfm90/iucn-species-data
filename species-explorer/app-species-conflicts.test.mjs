@@ -19,6 +19,18 @@ const all = (root) => root.children.flatMap((child) => [child, ...all(child)]);
 const visibleText = (node) => node.hidden ? "" : node._text + node.children.map(visibleText).join("");
 const present = (value) => ({ present: true, value }), absent = () => ({ present: false });
 const BASE = "/api/shared-project/species/conflicts/conflict-fixture";
+
+test("an editorial conflict explains the actual review boundary and cannot send a four-field decision", async () => {
+  const f = fixture(), value = review(); value.canResolve = false;
+  value.resolutionBlock = { code: "editorial_adoption_review_required", message: "Seitenübernahme mit aktueller Art und Seite neu prüfen. Alle Fassungen bleiben erhalten." };
+  f.setReview(value); await f.controller.open("conflict-fixture");
+  assert.match(visibleText(f.root), /Seitenübernahme mit aktueller Art und Seite neu prüfen/);
+  assert.doesNotMatch(visibleText(f.root), /Für die Übernahme bitte online mit Bearbeitungsrechten anmelden/);
+  for (const node of all(f.root).filter(node => node.tagName === "BUTTON" && /prüfen|übernehmen/i.test(node.textContent))) {
+    assert.equal(node.disabled, true); await node.emit("click", { force: true });
+  }
+  assert.equal(f.calls.filter(call => call.method === "POST").length, 0);
+});
 function project({ user = "person-a", role = "admin", connection = "online", readOnly = false, projectId = "project-a" } = {}) {
   return { status: { baseUrl: "https://project.example.org", projectId, connection, user: { id: user, role }, readOnlySession: readOnly },
     permissions: { canRead: true, canEdit: role !== "reader" } };
@@ -63,6 +75,7 @@ function fixture(options = {}) {
     confirmAction: async (input) => { confirmations.push(input); return options.confirm ? options.confirm(input) : true; },
     onDirtyChange: (value) => dirty.push(value), onResolved: async (value) => { resolved.push(value); if (options.onResolved) await options.onResolved(value); },
     ...(options.useContext ? { getContext: () => ({ epoch: contextEpoch }) } : {}),
+    ...(options.canEdit ? { canEdit: options.canEdit } : {}),
   });
   if (options.setAuthority !== false) controller.setProjectState(authority);
   const button = (label) => all(root).find((node) => node.tagName === "BUTTON" && node.textContent === label);
@@ -188,6 +201,38 @@ test("an optional context epoch invalidates a pending preview even before projec
   f.setContext(2); pending.resolve(previewFor(f.getReview(), {})); await settle();
   assert.equal(f.button("Geprüfte Grunddaten übernehmen").disabled, true); assert.equal(f.controller.busy, false);
   assert.equal(f.input("Englischer Name wählen").value, "local:change-first"); assert.match(f.root.textContent, /Projektansicht wurde gewechselt/);
+});
+
+test("old input and select events cannot change preserved choices after context or write access is lost", async () => {
+  for (const lost of ["context", "rights"]) {
+    const f = fixture({ useContext: true }); await f.controller.open("conflict-fixture"); await chooseRequired(f);
+    await f.choose("Größe", "custom"); await f.custom("Größe", "31 cm");
+    const text = f.input("Eigener Wert: Größe"), select = f.input("Englischer Name wählen");
+    if (lost === "context") f.setContext(2); else f.setProject(project({ role: "reader" }));
+    text.value = "Überholte 99 cm"; await text.emit("input", { force: true });
+    select.value = "server"; await select.emit("change", { force: true });
+    assert.equal(f.calls.filter((call) => call.method === "POST").length, 0);
+    // Return to the original review scope solely to read back its preserved
+    // choices. A blocked late DOM value must never become a new local choice.
+    if (lost === "context") f.setContext(1); else f.setProject(project());
+    await f.click("Vergleich neu laden");
+    assert.equal(f.input("Eigener Wert: Größe").value, "31 cm");
+    assert.equal(f.input("Englischer Name wählen").value, "local:change-first");
+  }
+});
+
+test("explicit local read mode can reload and inspect a conflict without enabling fresh choices or POSTs", async () => {
+  let editing = false;
+  const f = fixture({ useContext: true, canEdit: () => editing });
+  await f.controller.open("conflict-fixture");
+  assert.match(f.root.textContent, /Server owl/); assert.equal(f.input("Englischer Name wählen").disabled, true);
+  f.input("Englischer Name wählen").value = "local:change-first"; await f.input("Englischer Name wählen").emit("change", { force: true });
+  await f.click("Vergleich neu laden");
+  assert.equal(f.input("Englischer Name wählen").value, "");
+  await f.button("Serverfassung beibehalten").emit("click", { force: true });
+  assert.equal(f.calls.filter((call) => call.method === "POST").length, 0);
+  editing = true; f.setContext(2); await f.click("Vergleich neu laden");
+  assert.equal(f.input("Englischer Name wählen").disabled, false);
 });
 
 test("a changed context after preview blocks confirmation and a late resolution cannot update another person's view", async () => {

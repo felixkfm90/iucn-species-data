@@ -1,0 +1,66 @@
+/* The compact header is independent of the former overview rows. */
+.app-shell > .workspace { flex: 1 1 0; min-height: 0; }
+.app-shell > .pipeline-run-notice, .app-shell > .validation-issue-notice { flex: 0 0 auto; }
+.app-header { flex: 0 0 auto; grid-template-columns: minmax(240px, 1fr) auto minmax(400px, 1fr); gap: 20px; }
+.header-logo { width: min(300px, 24vw); }
+.header-workspace { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 7px; font-size: .76rem; }
+.header-workspace label { color: #c7d4ce; }
+.header-workspace select { width: auto; max-width: 100%; min-height: 30px; padding: 3px 22px 3px 7px; font-size: inherit; }
+.header-species-count { white-space: nowrap; color: #e1eae5; }
+.header-status { grid-template-columns: minmax(150px, 196px) auto 36px 36px; gap: 7px; }
+.header-status .database-status { width: auto; min-height: 34px; padding: 6px 9px; border: 1px solid #668173; border-radius: 4px; font-size: .76rem; font-weight: 700; }
+.database-transfer-button { text-align: left; }
+.database-transfer-button > span { margin-inline-start: 4px; }
+.header-status .database-transfer-button:hover { border-color: #fff; }
+.header-status .mode-toggle, .header-status .app-menu-button { width: 36px; height: 36px; padding: 4px; font-size: 1.1rem; }
+.header-report { grid-column: 1 / -1; display: grid; justify-items: end; gap: 3px; font-size: .72rem; color: #c7d4ce; }
+#edit-mode-status { color: #a8c1b5; }
+.header-menu-group { position: relative; }
+.header-menu { position: absolute; top: calc(100% + 8px); right: 0; width: min(310px, 85vw); z-index: 50; display: grid; gap: 4px; margin-top: 0; padding: 10px; color: #17211d; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px #0004; }
+.header-menu[hidden] { display: none; }
+.header-menu > button { text-align: left; width: 100%; padding: 9px 10px; min-height: 36px; }
+.header-menu-note { margin: 3px 5px; font-size: .76rem; line-height: 1.4; color: var(--text-muted); }
+.header-action:disabled { opacity: .55; cursor: default; }
+.header-action:focus-visible, .header-menu button:focus-visible, .database-transfer-button:focus-visible { outline: 2px solid #90b7a2; outline-offset: 3px; }
+.validation-issue-notice { margin: 0; padding: 10px 22px; color: #812121; background: var(--red-soft); border-bottom: 1px solid #d9abab; font-weight: 600; }
+.inspection-dialog { width: min(960px, calc(100vw - 32px)); }
+.inspection-dialog .edit-form { display: block; }
+.inspection-dialog [hidden] { display: none !important; }
+.inspection-dialog .summary-bar { padding: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.inspection-dialog .validation-dashboard { padding: 16px 0 8px; border: 0; }
+.inspection-dialog .validation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.inspection-dialog .validation-card small { display: block; }
+.inspection-dialog .validation-card { min-height: 92px; padding: 12px; }
+.inspection-dialog .validation-card > span { font-size: .76rem; }
+.inspection-dialog .validation-card strong { font-size: 1rem; }
+.inspection-dialog .validation-card small, .inspection-dialog .validation-details { font-size: .8rem; }
+.flag.sound-manual { color: #4c5c55; background: #e6ebe8; }
+.flag.sound-care { color: var(--amber); background: var(--amber-soft); }
+.validation-overall.warning { color: var(--amber); background: var(--amber-soft); }
+@media (max-width: 1200px) {
+  .app-header { grid-template-columns: minmax(210px, 1fr) auto minmax(360px, 1fr); gap: 12px; }
+  .header-logo { width: min(210px, 20vw); }
+  .header-status { grid-template-columns: minmax(130px, 1fr) auto 36px 36px; }
+}
+@media (max-width: 900px) {
+  .app-header { grid-template-columns: minmax(200px, 1fr) auto; }
+  .header-logo { width: 180px; max-height: 44px; justify-self: end; }
+  .header-status { grid-column: 1 / -1; width: 100%; justify-self: stretch; grid-template-columns: minmax(160px, 1fr) auto 36px 36px; }
+  .header-report { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .app-shell > .workspace { flex: 1 1 auto; }
+  .app-header { padding: 12px 14px; }
+  .header-logo { width: min(160px, 28vw); }
+  .header-workspace { font-size: .7rem; }
+  .header-report { justify-items: start; }
+  .validation-issue-notice { padding: 10px 14px; }
+  .inspection-dialog .summary-bar, .inspection-dialog .validation-grid { grid-template-columns: 1fr; }
+  .inspection-dialog .summary-bar > div { border-right: 0; }
+}
+@media (max-width: 520px) {
+  .app-header { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .header-status { grid-template-columns: minmax(0, 1fr) auto 36px 36px; gap: 4px; }
+  .header-status .database-status { overflow-wrap: anywhere; font-size: .68rem; }
+  #website-menu-button { font-size: .68rem; padding-inline: 5px; }
+}

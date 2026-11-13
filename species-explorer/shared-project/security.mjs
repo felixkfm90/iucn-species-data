@@ -1,5 +1,6 @@
 import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
+import { isProxy } from "node:util/types";
 import { check } from "./errors.mjs";
 
 const derive = promisify(scrypt);
@@ -55,6 +56,15 @@ export function canonicalJson(value, { maxBytes = 256 * 1024, maxNodes = 20000 }
 }
 
 export function objectJson(value) {
+  // Only the exact typed v2 record receives the rich-record budget. Inherited,
+  // accessor or Proxy markers must not enlarge a generic/v1 JSON allowance.
+  if (value && typeof value === "object" && !isProxy(value) && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype) {
+    const type = Object.getOwnPropertyDescriptor(value, "type"), version = Object.getOwnPropertyDescriptor(value, "schemaVersion");
+    if (type?.enumerable && Object.hasOwn(type, "value") && type.value === "fn-species-record"
+      && version?.enumerable && Object.hasOwn(version, "value") && version.value === 2) {
+      return canonicalJson(value, { maxBytes: 4 * 1024 * 1024, maxNodes: 300000 });
+    }
+  }
   return canonicalJson(value, ["website-alt-page", "fn-species-page"].includes(value?.type) ? { maxBytes: 2 * 1024 * 1024, maxNodes: 250000 } : {});
 }
 export function transportJson(value) {

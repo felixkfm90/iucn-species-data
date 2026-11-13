@@ -29,7 +29,6 @@
       const dialog = elements.pipelineDialog;
       const form = elements.pipelineForm;
       const cancelButtons = [...dialog.querySelectorAll(".pipeline-cancel")];
-      const footerCloseButton = dialog.querySelector(".pipeline-dialog-close-button");
       let previewToken = "";
       let previewMode = "";
       let previewKind = "";
@@ -51,10 +50,6 @@
         for (const button of elements.backupButtons) button.disabled = disabled;
         for (const button of elements.settingsButtons) button.disabled = disabled;
         for (const button of elements.taxonomyButtons) button.disabled = disabled;
-      };
-
-      const setDialogCloseMode = (active) => {
-        footerCloseButton.textContent = active ? "Fenster schließen" : "Abbrechen";
       };
 
       const hasSavedCreation = (status) => status?.status === "awaiting-review"
@@ -117,7 +112,6 @@
         elements.pipelinePreview.hidden = true;
         elements.pipelineStartButton.hidden = true;
         elements.pipelineStartButton.disabled = true;
-        setDialogCloseMode(true);
         setMessage(presentation.message, presentation.messageType);
         showDialog();
       };
@@ -141,7 +135,6 @@
         },
         setMessage,
         showDialog,
-        setDialogCloseMode,
         renderPersistentPipelineStatus,
       });
 
@@ -156,7 +149,7 @@
         return true;
       };
 
-      const openChooser = () => {
+      const openChooser = ({ section = "" } = {}) => {
         if (openReadErrorStatus()) return;
         if (state.pipelineStatusSnapshot?.status === "running"
           || state.pipelineStatusSnapshot?.status === "awaiting-review") {
@@ -165,6 +158,12 @@
         }
         if (state.backupStatusSnapshot?.status === "running") {
           backupController.showStatusDialog(state.backupStatusSnapshot || {});
+          return;
+        }
+        if (section === "transfer") {
+          if (state.workspace !== "shared-project" && state.databaseNeedsUpdate) {
+            return openPreview("transfer", { transfer: true });
+          }
           return;
         }
         previewToken = "";
@@ -177,15 +176,17 @@
         elements.pipelineDialogDescription.textContent = "Wähle aus, was aktualisiert, gesichert oder bereinigt werden soll.";
         elements.pipelineModeChoice.hidden = false;
         const moreActions = dialog.querySelector("#pipeline-more-actions");
-        if (moreActions) moreActions.open = false;
+        if (moreActions) moreActions.open = section === "backup" || section === "settings";
         const technicalDetails = dialog.querySelector("#taxonomy-master-technical-details");
         if (technicalDetails) technicalDetails.open = false;
         elements.pipelinePreview.hidden = true;
         elements.pipelineStartButton.hidden = true;
         elements.pipelineStartButton.disabled = true;
-        setDialogCloseMode(false);
         setMessage();
         showDialog();
+        if (section === "backup" || section === "settings") {
+          dialog.querySelector(section === "backup" ? '[data-backup-action="nas"]' : '[data-settings-action="backup-path"]')?.focus?.();
+        }
         void state.refreshTaxonomyMaintenanceStatus?.();
         void state.refreshTaxonomyMasterStatus?.();
       };
@@ -224,7 +225,6 @@
           previewToken = "";
           elements.pipelineStartButton.hidden = true;
           elements.pipelinePreview.hidden = true;
-          setDialogCloseMode(true);
           const presentation = pipelineStatusPresentation(startedStatus);
           elements.pipelineDialogTitle.textContent = presentation.title;
           elements.pipelineDialogDescription.textContent = pipelineModeLabel(startedStatus.mode);
@@ -280,7 +280,6 @@
         elements.pipelineStartButton.hidden = true;
         elements.pipelineModeChoice.hidden = true;
         elements.pipelinePreview.hidden = true;
-        setDialogCloseMode(false);
         setMessage("Vorschau wird erstellt…", "info");
         elements.pipelineDialogTitle.textContent = options.transfer
           ? "Änderungen übertragen"
@@ -472,7 +471,6 @@
               };
               elements.pipelineDialogTitle.textContent = presentation.title;
               elements.pipelineDialogDescription.textContent = pipelineModeLabel(status.mode || "");
-              setDialogCloseMode(active);
               setMessage(presentation.message, presentation.messageType);
               elements.pipelineStatusDetail.textContent = active
                 ? `${pipelineModeLabel(status.mode)} · gestartet ${formatDate(status.startedAt).replace(/^Report /, "")}`
@@ -530,6 +528,7 @@
       for (const button of elements.pipelineButtons) {
         button.addEventListener("click", () => openPreview(button.dataset.pipelineMode));
       }
+      state.openPipelineActions = (options) => { if (state.editMode) return openChooser(options); };
       elements.pipelineMenuButton.addEventListener("click", () => {
         if (openReadErrorStatus()) return;
         const pipelineActive = state.pipelineStatusSnapshot?.status === "running"
@@ -557,11 +556,11 @@
           openChooser();
           return;
         }
+        if (!state.editMode) return;
         if (state.databaseNeedsUpdate) {
           void openPreview("transfer", { transfer: true });
           return;
         }
-        if (!state.editMode) return;
         openChooser();
       });
       elements.pipelineRunNoticeOpen.addEventListener("click", () => {

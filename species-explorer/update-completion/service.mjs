@@ -43,7 +43,7 @@ export function createUpdateCompletionService({ stateRoot, deviceId, deviceName,
       ? Math.max(0, Math.ceil((countdown.durationMs - (clock.monotonic() - countdown.started)) / 1000)) : null;
     return { available: true, deviceId, deviceName, action: record.action, status: record.status, selectionId: record.selectionId,
       updateRunId: record.updateRunId || "", revision: record.revision, message: record.message,
-      error: record.error || "", runtimeError: lastRuntimeError, remainingSeconds,
+      error: record.status === "cancelled" ? "" : record.error || "", runtimeError: lastRuntimeError, remainingSeconds,
       countdownSeconds, presentationToken: record.status === "awaiting-display" ? record.presentationToken : "",
       cancellable: ACTIVE.has(record.status), outcome: record.outcome || null };
   }

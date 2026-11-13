@@ -52,7 +52,7 @@ function harness({ fetch, confirm, reload } = {}) {
     "backup-history-preview", "backup-history-preview-content", "backup-history-save", "backup-history-refresh",
     "backup-archives-dialog", "backup-archives-list", "backup-archives-message", "backup-archives-root", "backup-archives-refresh"]) nodes.set(id, element());
   const historyClose = element(), archiveClose = element(), archiveOpen = element(), historyOpen = element();
-  const detailPanel = element(), pipelineMenuButton = element(), pipelineDialog = element(), settingsDialog = element();
+  const detailPanel = element(), pipelineMenuButton = element(), appMenuButton = element(), pipelineDialog = element(), settingsDialog = element();
   const pipelineClose = element(), settingsClose = element();
   pipelineDialog.querySelector = () => pipelineClose;
   settingsDialog.querySelector = () => settingsClose;
@@ -83,7 +83,7 @@ function harness({ fetch, confirm, reload } = {}) {
   const context = vm.createContext({});
   sources.forEach((source) => new vm.Script(source).runInContext(context));
   const api = context.SpeciesExplorerBackupHistory.createBackupHistoryController({
-    state, elements: { detailPanel, pipelineMenuButton, pipelineDialog, settingsDialog }, documentRef,
+    state, elements: { detailPanel, pipelineMenuButton, appMenuButton, pipelineDialog, settingsDialog }, documentRef,
     createDialogController: context.SpeciesExplorerDialogs.createDialogController,
     ...context.SpeciesExplorerPresentation,
     fetchJson: async (url, options) => {
@@ -98,7 +98,7 @@ function harness({ fetch, confirm, reload } = {}) {
     loadData: async (options) => { reloads.push(options); return reload ? reload(options) : {}; },
   });
   return { api, state, nodes, calls, confirmations, reloads, historyClose, archiveClose, archiveOpen, historyOpen,
-    detailPanel, pipelineMenuButton, pipelineDialog, settingsDialog, pipelineClose, settingsClose,
+    detailPanel, pipelineMenuButton, appMenuButton, pipelineDialog, settingsDialog, pipelineClose, settingsClose,
     setForeignDialog(value) { foreignDialog = value; } };
 }
 
@@ -326,7 +326,7 @@ for (const parentName of ["pipeline", "settings"]) test(`NAS menu entry closes i
   assert.equal(h[`${parentName}Dialog`].open, false);
   assert.equal(h.nodes.get("backup-archives-dialog").open, true);
   h.archiveClose.click();
-  assert.equal(h.pipelineMenuButton.focused, true);
+  assert.equal(h.appMenuButton.focused, true);
   assert.deepEqual(h.calls.map(({ method }) => method), ["GET"]);
 });
 

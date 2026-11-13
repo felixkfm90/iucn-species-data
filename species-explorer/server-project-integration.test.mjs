@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
-import { writeFile, readFile, mkdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { writeFile, readFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import { createExplorerServer } from "./server.mjs";
 import { createBackupService } from "./backup-service.mjs";
@@ -11,7 +14,9 @@ import { createSharedProjectHttp } from "./shared-project/http.mjs";
 import { createWorkingImportSource } from "./species-content/working-import-source.mjs";
 import { buildSpeciesContent } from "./species-content/export.mjs";
 import { createWebsiteAltTextsService } from "./website-alt-service.mjs";
-import { createEditableFixture, registerFixtureCleanup, serverFixtureStoragePaths } from "./server-test-fixtures.mjs";
+import { createWebsiteAltStore } from "./website-alt-store.mjs";
+import { encodeWebsiteAltPage, websiteAltObjectId } from "./shared-project/website-alt-sync.mjs";
+import { createEditableFixture, createTestJpeg, registerFixtureCleanup, serverFixtureStoragePaths } from "./server-test-fixtures.mjs";
 
 async function setup(t, options = {}) {
   const repoRoot = await createEditableFixture(), register = registerFixtureCleanup(t, repoRoot);
@@ -21,7 +26,7 @@ async function setup(t, options = {}) {
   register(server);
   const address = await server.listen(), baseUrl = `http://127.0.0.1:${address.port}`;
   const { token } = await (await fetch(`${baseUrl}/api/session`)).json();
-  const post = (suffix, payload = {}) => fetch(`${baseUrl}${suffix}`, { method: "POST", headers: {
+  const post = (suffix, payload = {}, signal) => fetch(`${baseUrl}${suffix}`, { method: "POST", signal, headers: {
     "content-type": "application/json", "x-species-explorer-session": token, origin: baseUrl }, body: JSON.stringify(payload) });
   return { server, repoRoot, baseUrl, post };
 }
@@ -44,6 +49,109 @@ test("echter Explorer verdrahtet Projekt und Abschluss und schließt beide neuen
   const blocked = await f.post("/api/shared-project/objects/page/athen", {}); assert.equal(blocked.status, 409); await blocked.text();
   release();
   await f.server.close(); await f.server.close(); assert.equal(sharedClosed, 1); assert.equal(completionClosed, 1);
+});
+
+test("Explorer prüft, speichert und gleicht einen Artvorschlag getrennt ab", { timeout: 15000 }, async t => {
+  const project = createProjectFixture(); let http, server, sourceRequests = 0;
+  const opened = Promise.withResolvers(), stopped = Promise.withResolvers(); let holdSource = true;
+  t.after(async () => { await server?.close(); await http?.close(); project.cleanup(); });
+  const { store, a } = await project.initialized();
+  const id = "turdusmerula", record = { type: "fn-species-record", schemaVersion: 1, id,
+    input: { german: "Amsel", english: "Blackbird", genus: "Turdus", species: "merula", size: "24 cm", weight: "100 g", life_expectancy: "3 Jahre" },
+    generated: null, taxonomyOverride: null, assessmentBinding: null,
+    assets: { assetName: "Amsel", files: {}, overrides: {}, credits: null, portraitMetadata: null },
+    editorial: { websiteUrl: null, sections: [], gallery: [], generalSectionId: null, embeddedGeneralText: null } };
+  const original = store.createObject(a.token, { kind: "species", id, data: record });
+  store.approveObject(a.token, "species", id, { expectedRevision: original.revision });
+  http = createSharedProjectHttp({ store });
+  const { url } = await http.listen(), jpeg = createTestJpeg(1600, 1200);
+  const f = await setup(t, { sharedProjectOptions: { filename: join(project.root, "enrichment-client.sqlite"), localStorageConfirmed: true,
+    allowLoopbackHttp: true, credentialStore: createMemoryCredentialStore(), speciesEnrichmentProviders: () => ({
+      iucnToken: "private-test-iucn", xenoToken: "private-test-xeno", sleep: async () => {},
+      fetch: async (address, { signal } = {}) => {
+        sourceRequests++;
+        if (holdSource) {
+          holdSource = false;
+          opened.resolve();
+          return new Promise((_resolve, reject) => signal.addEventListener("abort", () => {
+            stopped.resolve(); reject(signal.reason);
+          }, { once: true }));
+        }
+        const { pathname, hostname } = new URL(address);
+        if (pathname === "/api/v4/taxa/scientific_name") return Response.json({ taxon: { scientific_name: "Turdus merula",
+          kingdom_name: "ANIMALIA", phylum_name: "CHORDATA", class_name: "AVES", order_name: "PASSERIFORMES", family_name: "TURDIDAE",
+          genus_name: "Turdus", species_name: "merula" }, assessments: [{ assessment_id: 123, red_list_category_code: "LC", year_published: 2026,
+          scopes: [{ description: { en: "Global" } }] }] });
+        if (pathname === "/api/v4/assessment/123") return Response.json({ population_trend: { description: { en: "Stable" } }, red_list_category: { code: "LC" } });
+        if (pathname.endsWith("/distribution_map/jpg")) return new Response(jpeg, { headers: { "content-type": "image/jpeg" } });
+        if (hostname === "xeno-canto.org") return Response.json({ recordings: [], numPages: 1 });
+        if (hostname === "commons.wikimedia.org") return Response.json({ query: { pages: {} } });
+        if (hostname === "api.inaturalist.org") return Response.json({ results: [] });
+        assert.fail(`Unexpected fixture host: ${hostname}${pathname}`);
+      },
+    }) } });
+  server = f.server;
+  const inputBefore = await readFile(join(f.repoRoot, "species_list.json"));
+  const connected = await f.post("/api/shared-project/connect", { baseUrl: url, username: a.user.username, password: project.password });
+  assert.equal(connected.status, 200); await connected.json();
+  const workspace = await (await fetch(`${f.baseUrl}/api/shared-project/species/workspace`)).json(), [shown] = workspace.species;
+  const path = `/api/shared-project/species/${id}/enrichment`;
+  const request = async (action, data = {}, expectedStatus = 200) => {
+    const response = await f.post(`${path}/${action}`, { sourceScope: shown.sourceScope, ...data }), value = await response.json();
+    assert.equal(response.status, expectedStatus, JSON.stringify(value)); return value;
+  };
+  assert.equal((await request("status")).candidate, null);
+  assert.equal(sourceRequests, 0);
+  const controller = new AbortController();
+  const cancelled = f.post(`${path}/prepare`, { sourceScope: shown.sourceScope, expectedRevision: shown.revision,
+    expectedEditRevision: shown.editRevision, mode: "missing" }, controller.signal);
+  const rejected = assert.rejects(cancelled, { name: "AbortError" });
+  await opened.promise; controller.abort(); await rejected; await stopped.promise;
+  let status;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    status = await request("status");
+    if (!status.busy) break;
+    await delay(20);
+  }
+  assert.equal(status.busy, false); assert.equal(status.candidate, null);
+  const candidate = await request("prepare", { expectedRevision: shown.revision, expectedEditRevision: shown.editRevision, mode: "missing" });
+  assert.equal(candidate.complete, true);
+  assert.match(candidate.candidateId, /^[a-f0-9]{64}$/);
+  assert.ok(candidate.changes.some(entry => entry.field === "generated.Family"));
+  assert.ok(candidate.changes.some(entry => entry.field === "assets.files.map.jpg"));
+  assert.doesNotMatch(JSON.stringify(candidate), /private-test-|sourceResult|\bmedia\b|sha256|repoRoot/);
+  assert.equal(store.getObject(a.token, "species", id).revision, original.revision);
+  assert.equal((await request("status")).candidate.candidateId, candidate.candidateId);
+  const previewUrl = `${f.baseUrl}${path}/${candidate.candidateId}/file/map.jpg?scope=${shown.sourceScope}`;
+  const preview = await fetch(previewUrl);
+  assert.equal(preview.status, 200); assert.equal(preview.headers.get("content-type"), "image/jpeg");
+  assert.deepEqual(Buffer.from(await preview.arrayBuffer()), jpeg);
+  const partial = await fetch(previewUrl, { headers: { Range: "bytes=0-15" } });
+  assert.equal(partial.status, 206); assert.deepEqual(Buffer.from(await partial.arrayBuffer()), jpeg.subarray(0, 16));
+  const foreign = await fetch(previewUrl, { headers: { Origin: "https://foreign.invalid" } });
+  assert.equal(foreign.status, 403); await foreign.text();
+  await request("stage", { candidateId: candidate.candidateId, targetDataHash: "f".repeat(64) }, 409);
+  const queued = await request("stage", { candidateId: candidate.candidateId, targetDataHash: candidate.targetDataHash });
+  assert.equal(queued.state, "queued");
+  assert.equal(store.getObject(a.token, "species", id).revision, original.revision);
+  assert.equal((await request("status")).pending.changeId, queued.changeId);
+  const result = await request("sync", { changeId: queued.changeId });
+  assert.equal(result.confirmedFiles, 1);
+  const draft = store.getObject(a.token, "species", id);
+  assert.equal(draft.revision, result.currentRevision); assert.equal(draft.approvedRevision, original.revision);
+  assert.equal((await request("status")).pending, null);
+  const [current] = (await (await fetch(`${f.baseUrl}/api/shared-project/species/workspace`)).json()).species;
+  assert.equal(current.assets.map.projectFileBound, true);
+  assert.equal(current.assets.map.url, "");
+  assert.equal(current.assets.map.availableOnline, false);
+  const fileUrl = ({ sourceScope, revision, editRevision }) => `${f.baseUrl}/api/shared-project/species/${id}/normal-content/map.jpg?${new URLSearchParams({ scope: sourceScope, revision, stamp: editRevision })}`;
+  const loaded = await fetch(fileUrl(current));
+  assert.equal(loaded.status, 200); assert.equal(loaded.headers.get("cache-control"), "no-store");
+  assert.deepEqual(Buffer.from(await loaded.arrayBuffer()), jpeg);
+  const stale = await fetch(fileUrl(shown)); assert.equal(stale.status, 409); await stale.text();
+  const foreignFile = await fetch(fileUrl(current), { headers: { Origin: "https://foreign.invalid" } });
+  assert.equal(foreignFile.status, 403); await foreignFile.text();
+  assert.deepEqual(await readFile(join(f.repoRoot, "species_list.json")), inputBefore);
 });
 
 test("echter Explorer-Grunddatenweg verwendet nur den gemeinsamen Cache und lässt lokale Artdateien bytegleich", async (t) => {
@@ -202,8 +310,11 @@ test("beschädigter persönlicher Cache bleibt erhalten und der vorhandene lokal
   const summary = await fetch(`${baseUrl}/api/summary`); assert.equal(summary.status, 200); await summary.json();
   const status = await (await fetch(`${baseUrl}/api/shared-project`)).json();
   assert.equal(status.available, false); assert.match(status.message, /Projektcache/);
-  assert.deepEqual(await readFile(filename), original);
   assert.equal((await server.readLocalWorkState()).known, false);
+  await server.close();
+  const preserved = join(repoRoot, "preserved-broken-cache.sqlite");
+  await rename(filename, preserved);
+  assert.deepEqual(await readFile(preserved), original);
 });
 
 test("Explorer schließt einen laufenden Sicherungsbesitzer vor persönlichem Cache und Tempablage", async (t) => {
@@ -251,6 +362,120 @@ test("vollständige persönliche Desktopverdrahtung startet ohne Anmeldung/Model
   assert.equal((await server.readLocalWorkState()).known, true);
 });
 
+async function setupWebsiteAltProject(t, { afterChange } = {}) {
+  const project = createProjectFixture(), { store, a, b } = await project.initialized(), http = createSharedProjectHttp({ store });
+  let server;
+  t.after(async () => { await server?.close(); await http.close(); project.cleanup(); });
+  const { url } = await http.listen(), local = createWebsiteAltStore({ dataRoot: join(project.root, "alt-data") });
+  const pageUrl = "https://www.fnwildlifetravel.de/reisen/2019-griechenland/athen", objectId = websiteAltObjectId(pageUrl);
+  const checkedAt = "2026-11-03T14:00:00.000Z", src = "https://images.squarespace-cdn.com/content/v1/fixture/athen.jpg";
+  const key = createHash("sha256").update(`${src}\ncontent\nimage`).digest("hex");
+  await local.mergeScan({ pages: [{ url: pageUrl, title: "Athen", checkedAt, images: [{ key, src, previewSrc: src,
+    context: "content", kind: "image", alt: "", caption: "", altPresent: true }] }], discoveredUrls: [pageUrl], completedAt: checkedAt, complete: true, errors: [] });
+  const journalFile = join(project.root, "alt-bridge.sqlite");
+  const f = await setup(t, { websiteAltTextsService: createWebsiteAltTextsService({ store: local }),
+    sharedProjectOptions: { filename: join(project.root, "alt-client.sqlite"), localStorageConfirmed: true,
+      allowLoopbackHttp: true, credentialStore: createMemoryCredentialStore(), fetchImpl: async (address, options) => {
+        const response = await fetch(address, options);
+        if (afterChange && response.ok && options.method === "POST" && address.endsWith("/changes")) afterChange({ store, a, objectId });
+        return response;
+      } },
+    websiteAltSyncOptions: { filename: journalFile, localStorageConfirmed: true } });
+  server = f.server;
+  const connected = await f.post("/api/shared-project/connect", { baseUrl: url, username: b.user.username, password: project.password });
+  assert.equal(connected.status, 200); await connected.json();
+  const before = await local.exportPage({ pageUrl }), input = { pageUrl, expectedPageRevision: before.pageRevision, confirmed: true };
+  async function post(action, body, status = 200) {
+    const response = await f.post(`/api/website/alt-texts/shared/${action}`, body), result = await response.json();
+    assert.equal(response.status, status, JSON.stringify(result)); return result;
+  }
+  const read = async (action) => {
+    const response = await fetch(`${f.baseUrl}/api/website/alt-texts/shared/${action}?${new URLSearchParams({ pageUrl })}`);
+    assert.equal(response.status, 200); return response.json();
+  };
+  const saveText = async (text) => {
+    const state = await local.snapshot();
+    await local.draft({ revision: state.revision, pageUrl, imageKey: key, text, decorative: false });
+    return local.exportPage({ pageUrl });
+  };
+  return { f, store, a, local, pageUrl, objectId, checkedAt, before, input, post, read, saveText, journalFile };
+}
+
+test("Explorer übernimmt Bildtexte erst nach Bestätigung der aktuellen gemeinsamen Version", async (t) => {
+  const { store, a, local, pageUrl, objectId, checkedAt, before, input, post } = await setupWebsiteAltProject(t);
+  const linked = await post("link", input), shown = await post("pull", input);
+  assert.equal(shown.remote.revision, linked.remoteRevision);
+  const next = structuredClone(shown.remote.data.page);
+  Object.assign(next.images[0], { status: "draft", draftText: "Neuer gemeinsamer Bildtext", draftSavedAt: checkedAt });
+  const changed = store.submitChange(a.token, { kind: "page", id: objectId, changeId: "another-editor-changed-picture-text",
+    baseRevision: shown.remote.revision, data: encodeWebsiteAltPage(next) });
+  assert.equal(changed.status, "applied");
+  await post("import", { ...input, expectedRemoteRevision: shown.remote.revision }, 409);
+  assert.deepEqual(await local.exportPage({ pageUrl }), before);
+  const refreshed = await post("pull", input);
+  assert.equal(refreshed.remote.revision, changed.object.revision);
+  const applied = await post("import", { ...input, expectedRemoteRevision: refreshed.remote.revision });
+  assert.equal(applied.imported, true); assert.equal(applied.publicCheckPerformed, false);
+  assert.equal((await local.exportPage({ pageUrl })).page.images[0].draftText, "Neuer gemeinsamer Bildtext");
+  assert.equal(store.getObject(a.token, "page", objectId).revision, changed.object.revision);
+});
+
+test("zentraler Projektabgleich quittiert vorgemerkte Bildtexte und erhält neuere lokale Texte und Konflikte", async (t) => {
+  const { f, store, a, local, pageUrl, objectId, input, post, read, saveText, journalFile } = await setupWebsiteAltProject(t);
+  await post("link", input);
+  const earlier = await saveText("Vorherige Fassung in derselben Warteschlange");
+  await post("queue", { pageUrl, expectedPageRevision: earlier.pageRevision });
+  const sent = await saveText("Zur Übertragung vorgemerkt");
+  await post("queue", { pageUrl, expectedPageRevision: sent.pageRevision });
+  const newer = await saveText("Inzwischen auf diesem PC weiterbearbeitet");
+  assert.equal((await read("page")).state, "queued");
+  const synced = await f.post("/api/shared-project/sync"); assert.equal(synced.status, 200);
+  assert.deepEqual(await local.exportPage({ pageUrl }), newer);
+  const current = store.getObject(a.token, "page", objectId);
+  assert.equal(current.data.page.images[0].draftText, "Zur Übertragung vorgemerkt");
+  assert.equal(current.data.page.images[0].verification, null);
+  const viewed = await read("page");
+  assert.equal(viewed.state, "local-changed"); assert.equal(viewed.remote.revision, current.revision);
+  assert.deepEqual((await synced.json()).websiteAltReconciliation, { checked: true, confirmed: 1, conflicts: 0 });
+  const journal = new DatabaseSync(journalFile, { readOnly: true });
+  try {
+    const entry = journal.prepare("SELECT phase, remote_revision FROM operations WHERE local_hash=?");
+    assert.deepEqual({ ...entry.get(earlier.pageRevision) }, { phase: "captured", remote_revision: null });
+    assert.deepEqual({ ...entry.get(sent.pageRevision) }, { phase: "shared", remote_revision: current.revision });
+  } finally { journal.close(); }
+  await post("queue", { pageUrl, expectedPageRevision: newer.pageRevision });
+  const remotePage = structuredClone(current.data.page);
+  remotePage.images[0].draftText = "Zweite Person hat denselben Bildtext geändert";
+  const foreign = store.submitChange(a.token, { kind: "page", id: objectId, changeId: "alt-project-sync-conflict",
+    baseRevision: current.revision, data: encodeWebsiteAltPage(remotePage) }).object;
+  const conflicted = await f.post("/api/shared-project/sync"); assert.equal(conflicted.status, 200);
+  assert.deepEqual((await conflicted.json()).websiteAltReconciliation, { checked: true, confirmed: 0, conflicts: 1 });
+  const shown = await read("page"), { conflicts } = await read("conflicts");
+  assert.equal(shown.state, "conflict"); assert.equal(conflicts.length, 1);
+  assert.equal(conflicts[0].currentRevision, foreign.revision);
+  assert.equal(conflicts[0].current.page.images[0].draftText, remotePage.images[0].draftText);
+  assert.equal(conflicts[0].proposed.page.images[0].draftText, newer.page.images[0].draftText);
+  assert.deepEqual(await local.exportPage({ pageUrl }), newer);
+});
+
+test("eine Änderung direkt nach dem allgemeinen Bildtextversand verlangt einen neuen Vergleich", async (t) => {
+  const { f, local, pageUrl, input, post, read, saveText } = await setupWebsiteAltProject(t, { afterChange({ store, a, objectId }) {
+    const current = store.getObject(a.token, "page", objectId), page = structuredClone(current.data.page);
+    page.images[0].draftText = "Neuer gemeinsamer Text nach dem Versand";
+    store.submitChange(a.token, { kind: "page", id: objectId, changeId: "newer-after-alt-send", baseRevision: current.revision, data: encodeWebsiteAltPage(page) });
+  } });
+  await post("link", input);
+  const pending = await saveText("Mein gesendeter Entwurf");
+  await post("queue", { pageUrl, expectedPageRevision: pending.pageRevision });
+  const response = await f.post("/api/shared-project/sync"); assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).websiteAltReconciliation, { checked: true, confirmed: 0, conflicts: 1 });
+  const comparison = await read("page"), { conflicts } = await read("conflicts");
+  assert.equal(comparison.state, "unrelated");
+  assert.equal(conflicts[0].current.page.images[0].draftText, "Neuer gemeinsamer Text nach dem Versand");
+  assert.equal(conflicts[0].proposed.page.images[0].draftText, "Mein gesendeter Entwurf");
+  assert.deepEqual(await local.exportPage({ pageUrl }), pending);
+});
+
 test("unbekanntes eingerichtetes Bildtextjournal bleibt unverändert und verhindert eine unvollständige persönliche Sicherung", async (t) => {
   const repoRoot = await createEditableFixture(), register = registerFixtureCleanup(t, repoRoot), profileRoot = join(repoRoot, "personal-fixture");
   const device = await loadLocalDeviceProfile(profileRoot), filename = join(profileRoot, "website-alt-sync.sqlite");
@@ -269,5 +494,8 @@ test("unbekanntes eingerichtetes Bildtextjournal bleibt unverändert und verhind
   const summary = await fetch(`${origin}/api/summary`); assert.equal(summary.status, 200); await summary.json();
   assert.equal((await server.readLocalWorkState()).known, false);
   await assert.rejects(provider.prepare(), /Bildtextjournal.*nicht vollständig lesbar/);
-  await server.close(); assert.deepEqual(await readFile(filename), original);
+  await server.close();
+  const preserved = join(profileRoot, "preserved-website-alt-sync.sqlite");
+  await rename(filename, preserved);
+  assert.deepEqual(await readFile(preserved), original);
 });

@@ -2,6 +2,12 @@ import { check, clone, fingerprint } from "./contract.mjs";
 
 export const FN_SPECIES_CODE = '<div id="species-output">\n  <div id="species-info"></div>\n  <div id="species-taxonomy"></div>\n  <div id="species-status"></div>\n  <div id="species-sound"></div>\n</div>';
 export const FN_MAP_CODE = '<div id="map-wrapper" style="position:relative; width:100%; overflow:hidden;">\n  <div id="map-output" style="width:100%;"></div>\n</div>';
+export const FN_FIGURE_STYLES = Object.freeze({
+  grid: "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:1rem",
+  figure: "margin:0;min-width:0",
+  image: "display:block;width:100%;height:auto",
+  text: "display:block;white-space:pre-wrap;overflow-wrap:anywhere",
+});
 export const FN_MODULE_IDS = ["species-output", "species-info", "species-taxonomy", "species-status", "species-sound", "map-wrapper", "map-output"];
 const compact = [["general", "Allgemein", "general-module"], ["appearance", "Aussehen"], ["distribution", "Verbreitung"],
   ["habitat", "Lebensraum"], ["reproduction", "Brut"], ["food", "Nahrung"], ["observation", "Beobachtungstipp"], ["map", "Verbreitungskarte", "map-module"]];

@@ -74,8 +74,7 @@ export function createSpeciesCreateOperations({
     return await assertTaxonomyAssignable(id);
   }
 
-  async function previewNewSpecies(payload) {
-    cleanupPreviewTokens();
+  async function inspectNewSpecies(payload) {
     const { values, errors, fieldErrors } = validateNewSpeciesValues(payload?.values);
     if (errors.length) {
       const error = new Error("Eingaben sind ungültig");
@@ -97,9 +96,10 @@ export function createSpeciesCreateOperations({
     }
 
     const { entry, derived } = buildNewSpeciesEntry(values);
+    const currentModel = getModel();
     const collisions = findNewSpeciesCollisions({
       inputList,
-      model: getModel(),
+      model: currentModel,
       entry,
       derived,
       repoRoot,
@@ -123,6 +123,25 @@ export function createSpeciesCreateOperations({
       throw error;
     }
 
+    return { values, entry, derived, masterTaxonId, taxonomyReference, taxonomyBinding: selectedTaxon?.assignmentBinding || null,
+      sourceRevision: hashText(sourceText), sourceHash: hashText(JSON.stringify({ sourceRevision: hashText(sourceText),
+        taxonomyReference, taxonomyBinding: selectedTaxon?.assignmentBinding || null,
+        model: currentModel.species.map(item => [item.id, item.slug, item.germanName, item.scientificName, item.safeName]).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))) })) };
+  }
+
+  async function prepareSharedNewSpecies(payload) {
+    const inspected = await inspectNewSpecies(payload);
+    // Keep the selected reference and its actual local provenance on the working
+    // input. No generated taxonomy, media, or public URL is invented here.
+    return { values: inspected.values, derived: inspected.derived, sourceHash: inspected.sourceHash,
+      entry: { ...inspected.entry, ...(inspected.taxonomyReference ? { taxonomyReference: inspected.taxonomyReference,
+        taxonomyBinding: inspected.taxonomyBinding, ...(inspected.masterTaxonId ? { masterTaxonId: inspected.masterTaxonId } : {}) } : {}) } };
+  }
+
+  async function previewNewSpecies(payload) {
+    cleanupPreviewTokens();
+    const { values, entry, derived, masterTaxonId, taxonomyReference, taxonomyBinding, sourceRevision } = await inspectNewSpecies(payload);
+
     const token = randomUUID();
     const expiresAt = null; // An interactive creation draft has no wall-clock deadline.
     previewTokens.set(token, {
@@ -130,8 +149,8 @@ export function createSpeciesCreateOperations({
       values,
       masterTaxonId,
       taxonomyReference,
-      taxonomyBinding: selectedTaxon?.assignmentBinding || null,
-      sourceRevision: hashText(sourceText),
+      taxonomyBinding,
+      sourceRevision,
       expiresAt,
     });
 
@@ -461,6 +480,7 @@ export function createSpeciesCreateOperations({
   }
 
   return {
+    prepareSharedNewSpecies,
     previewNewSpecies,
     discardNewSpecies,
     createNewSpeciesPortraitPrompt,

@@ -58,6 +58,17 @@
 .species-approval-dialog figure { margin: 12px 0; padding: 10px; border: 1px solid var(--line); }
 .species-approval-dialog img { max-width: 100%; max-height: 260px; object-fit: contain; }
 .species-approval-dialog audio { width: 100%; }
+.species-enrichment-dialog { max-width: min(900px, calc(100vw - 36px)); max-height: calc(100vh - 36px); box-sizing: border-box; padding: 18px; overflow: auto; }
+.species-enrichment-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.species-enrichment-dialog h2 { margin: 0; }
+.species-enrichment-dialog table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 12px 0; }
+.species-enrichment-dialog th,
+.species-enrichment-dialog td { padding: 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; }
+.species-enrichment-dialog .dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.species-enrichment-dialog button { padding: 6px 10px; }
+.species-enrichment-dialog details { margin: 8px 0; }
+.species-enrichment-dialog img { max-width: 100%; max-height: 360px; object-fit: contain; }
+.species-enrichment-dialog audio { width: 100%; }
 @media (max-width: 850px) {
   .shared-project-workspace { grid-template-columns: 1fr; }
   .shared-project-workspace > nav { max-height: 280px; }
@@ -65,4 +76,11 @@
 @media (max-width: 520px) {
   .edit-dialog.shared-project-dialog { padding: 14px; }
   .shared-project-dialog > .shared-project-close { top: 14px; }
+}
+.shared-project-pairing canvas {
+  display: block;
+  width: min(100%, 20rem);
+  height: auto;
+  margin: 0.75rem 0;
+  image-rendering: pixelated;
 }

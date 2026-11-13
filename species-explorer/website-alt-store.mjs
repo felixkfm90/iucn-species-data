@@ -5,7 +5,8 @@ import { DatabaseSync } from "node:sqlite";
 import { atomicWriteJson } from "./taxonomy-storage.mjs";
 import { assertNoStorageLinks } from "./storage-migration.mjs";
 import { canonicalWebsiteImageSource, normalizeWebsiteImageUrl, normalizeWebsitePageUrl } from "./website-alt-parser.mjs";
-import { suggestedWebsiteAltDecorative, coupledWebsiteAltCaption, isWebsiteAltHeaderLogo, observedWebsiteAltStandard, normalizeWebsiteAltProposalText } from "./website-alt-policy.mjs";
+import { suggestedWebsiteAltDecorative, coupledWebsiteAltCaption, isWebsiteAltHeaderLogo, observedWebsiteAltStandard, normalizeWebsiteAltProposalText,
+  websiteAltTextConstraint, websiteAltTextLengthProblem, websiteAltCaptionMatchesText } from "./website-alt-policy.mjs";
 
 const MAX_STORE_BYTES = 25 * 1024 * 1024;
 const MAX_PAGES = 500;
@@ -17,12 +18,30 @@ const sharedImportTickets = new WeakMap();
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const digest = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const problem = (message, statusCode = 400) => Object.assign(new Error(message), { statusCode });
+const publicMismatch = (message) => Object.assign(problem(message, 409), { code: "website_alt_public_mismatch" });
 const conflictingCaptions = (image) => image.captionVariants.filter((value) => value.trim()).length > 1;
 
 function captionMatchesApproval(pageUrl, image, approval) {
   if (!coupledWebsiteAltCaption(pageUrl, image)) return !conflictingCaptions(image);
   const captions = image.captionVariants.filter((value) => value.trim());
-  return approval.decorative ? captions.length === 0 : captions.length === 1 && captions[0] === approval.text;
+  return approval.decorative ? captions.length === 0 : captions.length === 1 && websiteAltCaptionMatchesText(captions[0], approval.text);
+}
+
+function knownCoupledTruncation(pageUrl, image, approval) {
+  const limit = websiteAltTextConstraint(pageUrl, image);
+  return Boolean(limit && approval && !approval.decorative && approval.text.length > limit.maxLength && image.altPresent
+    && image.altVariants.length === 1 && image.alt === image.altVariants[0] && image.alt === approval.text.slice(0, limit.maxLength)
+    && captionMatchesApproval(pageUrl, image, approval));
+}
+
+function publicMismatchMessage(pageUrl, image, approval = null) {
+  const caption = image?.captionVariants?.filter((value) => value.trim());
+  const expected = approval || (caption?.length === 1 ? { text: caption[0], decorative: false } : null);
+  if (image && knownCoupledTruncation(pageUrl, image, expected)) {
+    const { length, maxLength } = websiteAltTextLengthProblem(pageUrl, image, expected.text);
+    return `Die gekoppelte Bildunterschrift hat ${length}/${maxLength} Zeichen. Squarespace gibt öffentlich nur die ersten ${maxLength} Zeichen als Alternativtext aus. Bitte den Text bewusst kürzen und erneut freigeben. Die öffentliche Bestätigung bleibt offen.`;
+  }
+  return "Der freigegebene Text oder seine Bildunterschrift ist öffentlich noch nicht eindeutig bestätigt. Die Übernahme bleibt offen.";
 }
 
 function boundedText(value, label, max = 4096) {
@@ -216,6 +235,7 @@ function publicSnapshot(document) {
     for (const image of page.images) {
       image.suggestedDecorative = suggestedWebsiteAltDecorative(image);
       image.textCoupled = coupledWebsiteAltCaption(page.url, image);
+      image.textConstraint = websiteAltTextConstraint(page.url, image);
     }
   }
   return { ...snapshot, summary };
@@ -237,9 +257,10 @@ function canBeIntendedTransfer(previous, next, pageUrl) {
   const approval = previous.approval;
   const coupled = coupledWebsiteAltCaption(pageUrl, next);
   return approval && next.altVariants.length === 1 && !conflictingCaptions(next)
-    && (next.altVariants[0] === approval.text
+    && (next.altVariants[0] === approval.text || knownCoupledTruncation(pageUrl, next, approval)
       || coupled && captionMatchesApproval(pageUrl, next, approval) && previous.altVariants.includes(next.altVariants[0]))
-    && next.captionVariants.every((value) => coupled && !value.trim() || previous.captionVariants.includes(value) || value === approval.text)
+    && next.captionVariants.every((value) => coupled && (!value.trim() || websiteAltCaptionMatchesText(value, approval.text))
+      || previous.captionVariants.includes(value) || value === approval.text)
     && (approval.decorative ? next.altPresent || next.kind === "background" : true);
 }
 
@@ -398,7 +419,7 @@ export function createWebsiteAltStore({ dataRoot, now = () => new Date() } = {})
     catch (error) { throw problem(`Alttextbestand nicht lesbar; Original bleibt erhalten. ${error.message}`, 500); }
   }
 
-  async function mutate(revision, operation, { requireRevision = true } = {}) {
+  async function mutate(revision, operation, { requireRevision = true, resultFor = publicSnapshot } = {}) {
     const previous = queues.get(file) || Promise.resolve();
     const pending = previous.catch(() => {}).then(async () => {
       await assertNoStorageLinks(directory);
@@ -415,7 +436,7 @@ export function createWebsiteAltStore({ dataRoot, now = () => new Date() } = {})
         }
         const at = stamp();
         const outcome = await operation(document, at);
-        if (outcome?.unchanged) return publicSnapshot(document);
+        if (outcome?.unchanged) return resultFor(document);
         for (const page of document.pages) page.redirectUrl ??= null;
         document.updatedAt = at;
         document.revision = digest(bodyOf(document));
@@ -423,7 +444,7 @@ export function createWebsiteAltStore({ dataRoot, now = () => new Date() } = {})
         await assertNoStorageLinks(file);
         await atomicWriteJson(file, document);
         if (outcome?.error) throw outcome.error;
-        return publicSnapshot(document);
+        return resultFor(document);
       } finally { database.close(); }
     });
     queues.set(file, pending);
@@ -498,7 +519,10 @@ export function createWebsiteAltStore({ dataRoot, now = () => new Date() } = {})
         validateWebsiteAltPageRecord(next);
         if (existing && websiteAltPageRevision(existing) === websiteAltPageRevision(next)) return { unchanged: true };
         if (index < 0) document.pages.push(next); else document.pages[index] = next;
-      });
+      }, { resultFor(document) {
+        const page = document.pages.find((entry) => entry.url === url);
+        return { revision: document.revision, pageRevision: websiteAltPageRevision(page) };
+      } });
     },
     async discover({ urls = [], checkedAt = null, errors = [], coverageNotes = [] } = {}) {
       if (!Array.isArray(urls) || urls.length > MAX_PAGES) throw problem("Zu viele Seiten im Erfassungsbestand.", 413);
@@ -578,7 +602,9 @@ export function createWebsiteAltStore({ dataRoot, now = () => new Date() } = {})
       const candidate = draftPayload(payload);
       if (!candidate.text && !candidate.decorative) throw problem("Ein fehlender Text kann nicht freigegeben werden.");
       return mutate(payload.revision, (document, at) => {
-        const { image } = findImage(document, payload);
+        const { page, image } = findImage(document, payload);
+        const lengthProblem = websiteAltTextLengthProblem(page.url, image, candidate.text);
+        if (lengthProblem) throw Object.assign(problem(lengthProblem.message, 409), { code: "website_alt_text_limit" });
         if (image.altVariants.length > 1 || conflictingCaptions(image)) throw problem("Unterschiedliche Texte derselben Bildverwendung müssen einzeln geprüft werden.", 409);
         retainHistory(image, at, "Neue Textfreigabe");
         image.draftText = candidate.text;
@@ -600,14 +626,20 @@ export function createWebsiteAltStore({ dataRoot, now = () => new Date() } = {})
         if (text && initialStatus(image) === "missing") throw problem("Ein Dateiname oder fehlender Bildtext kann nicht als ausreichender Alternativtext bestätigt werden.", 409);
         if (typeof payload.decorative !== "boolean" || (text ? payload.decorative : !payload.decorative)
             || !text.trim() && text !== "") throw problem("Ein leerer Website-Text benötigt eine bewusste dekorative Einordnung.", 409);
-        if (normalizeWebsitePageUrl(payload.observedPage?.url) !== page.url) throw problem("Öffentliche Prüfung gehört zu einer anderen Seite.", 409);
+        if (normalizeWebsitePageUrl(payload.observedPage?.url) !== page.url) throw publicMismatch("Öffentliche Prüfung gehört zu einer anderen Seite.");
         mergePage(document, payload.observedPage, at);
         const fresh = page.images.find((entry) => entry.key === image.key);
         const candidate = { text, decorative: payload.decorative };
         if (!fresh || fresh.status === "removed" || fresh.observationHash !== payload.observationHash
             || fresh.altVariants.length !== 1 || fresh.altVariants[0] !== text || !captionMatchesApproval(page.url, fresh, candidate)
             || fresh.kind === "image" && !fresh.altPresent) {
-          return { error: problem("Der vorhandene Text oder seine Bildunterschrift ist öffentlich nicht mehr eindeutig bestätigt. Bitte die aktuelle Bildgrundlage prüfen.", 409) };
+          return { error: publicMismatch(knownCoupledTruncation(page.url, fresh, fresh?.approval) || knownCoupledTruncation(page.url, fresh, { text: fresh?.caption || "", decorative: false })
+            ? publicMismatchMessage(page.url, fresh, fresh?.approval) : "Der vorhandene Text oder seine Bildunterschrift ist öffentlich nicht mehr eindeutig bestätigt. Bitte die aktuelle Bildgrundlage prüfen.") };
+        }
+        const lengthProblem = websiteAltTextLengthProblem(page.url, fresh, text);
+        if (lengthProblem) {
+          fresh.verification = null; if (fresh.approval) fresh.status = "approved";
+          return { error: publicMismatch(`${lengthProblem.length}/${lengthProblem.maxLength} Zeichen: ${lengthProblem.message}`) };
         }
         if (!fresh.approval || fresh.approval.text !== text || fresh.approval.decorative !== candidate.decorative) {
           fresh.history.push({ at, reason: "Vorhandenen Website-Text bewusst beibehalten und öffentlich geprüft",
@@ -632,14 +664,14 @@ export function createWebsiteAltStore({ dataRoot, now = () => new Date() } = {})
       return mutate(payload.revision, (document, at) => {
         const { page, image } = findImage(document, payload);
         if (!image.approval || payload.approvalRevision !== image.approval.revision) throw problem("Diese konkrete Textfreigabe ist nicht mehr aktuell.", 409);
-        if (normalizeWebsitePageUrl(payload.observedPage?.url) !== page.url) throw problem("Öffentliche Prüfung gehört zu einer anderen Seite.", 409);
+        if (normalizeWebsitePageUrl(payload.observedPage?.url) !== page.url) throw publicMismatch("Öffentliche Prüfung gehört zu einer anderen Seite.");
         const approval = clone(image.approval);
         mergePage(document, payload.observedPage, at);
         const fresh = page.images.find((entry) => entry.key === image.key);
         const matches = fresh && fresh.status !== "removed" && fresh.approval?.revision === approval.revision
           && fresh.altVariants.length === 1 && fresh.altVariants[0] === approval.text && captionMatchesApproval(page.url, fresh, approval)
           && (approval.decorative ? fresh.altPresent || fresh.kind === "background" : true);
-        if (!matches) return { error: problem("Der freigegebene Text ist öffentlich noch nicht eindeutig bestätigt. Die Übernahme bleibt offen.", 409) };
+        if (!matches) return { error: publicMismatch(publicMismatchMessage(page.url, fresh, approval)) };
         fresh.verification = { checkedAt: timestamp(payload.observedPage.checkedAt || at), method: "public-html",
           approvalRevision: approval.revision, observationHash: fresh.observationHash };
         fresh.status = "verified";

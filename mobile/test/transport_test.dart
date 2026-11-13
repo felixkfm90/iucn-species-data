@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arten_explorer/data/project_api.dart';
 import 'package:arten_explorer/data/website_photo.dart';
+import 'package:arten_explorer/domain/project_media.dart';
+import 'package:crypto/crypto.dart';
 
 class RecordingHeaders implements HttpHeaders {
   final values = <String, Object>{};
@@ -103,6 +105,77 @@ class Client implements HttpClient {
 }
 
 void main() {
+  final projectServer = Uri.parse('https://project.invalid:55431');
+  final session = ProjectSession(
+    server: projectServer, projectId: 'project-fixture', token: 'fixture-bearer',
+    expiresAt: DateTime.utc(2030),
+    user: const ProjectIdentity(id: 'user-fixture', username: 'fixture', displayName: 'Fixture', role: 'reader'),
+  );
+  final imageBody = [137, 80, 78, 71];
+  final imageHash = sha256.convert(imageBody).toString();
+  const imageId = 'image-11111111-1111-4111-8111-111111111111';
+  final image = {
+    'kind': 'project-image', 'id': imageId, 'projectId': session.projectId,
+    'sha256': imageHash, 'mimeType': 'image/png', 'bytes': imageBody.length, 'attribution': '',
+  };
+  final imageFile = ProjectMediaFile.fromJson(image);
+
+  test('Geschützte Datei verwendet nur den angemeldeten Ursprung und den gebundenen Abrufweg', () async {
+    final response = Response(200, imageBody, mimeType: 'image/png');
+    response.headers.set('x-content-sha256', imageHash);
+    final client = Client(response, seededHeaders: true);
+    final transport = HttpProjectTransport(client: client);
+    final downloaded = await ProjectApi(projectServer, transport).projectMedia(session, imageFile)
+        .expand((chunk) => chunk).toList();
+    expect(downloaded, imageBody);
+    expect(client.urls, [projectServer.replace(path: '/api/v1/media/$imageId/content')]);
+    final request = client.requests.single;
+    expect(request.followRedirects, isFalse);
+    expect(request.headers.value('authorization'), 'Bearer fixture-bearer');
+    expect(request.headers.value('cookie'), isNull);
+    expect(request.cookies, isEmpty);
+    expect(request.headers.value('accept-encoding'), 'identity');
+    transport.close();
+  });
+
+  test('Manipulierte Projektbytes und Weiterleitungen ergeben keine vollständige Datei', () async {
+    for (final (response, expected) in <(Response, Matcher)>[
+      (Response(302, []), throwsA(isA<ProjectApiException>())),
+      (Response(200, [1, 2, 3, 4], mimeType: 'image/png'), throwsFormatException),
+      (Response(200, imageBody, mimeType: 'text/html'), throwsFormatException),
+    ]) {
+      response.headers.set('x-content-sha256', imageHash);
+      final client = Client(response), transport = HttpProjectTransport(client: client);
+      await expectLater(ProjectApi(projectServer, transport).projectMedia(session, imageFile).toList(), expected);
+      expect(client.requests.single.followRedirects, isFalse);
+      transport.close();
+    }
+  });
+
+  test('Projekt- und Serverwechsel sowie fremde Adressen werden vor dem Abruf abgewiesen', () {
+    final client = Client(Response(200, imageBody));
+    final transport = HttpProjectTransport(client: client);
+    final otherFile = ProjectMediaFile.fromJson({...image, 'projectId': 'other-project'});
+    expect(() => ProjectApi(projectServer, transport).projectMedia(session, otherFile), throwsFormatException);
+    expect(() => ProjectApi(Uri.parse('https://other.invalid'), transport).projectMedia(session, imageFile), throwsFormatException);
+    expect(() => ProjectMediaFile.fromJson({...image, 'url': 'https://other.invalid/content'}), throwsFormatException);
+    expect(client.requests, isEmpty);
+    transport.close();
+  });
+
+  test('Reader snapshot conflicts retain the known code and a local message', () async {
+    final transport = HttpProjectTransport(client: Client(Response(409,
+      utf8.encode('{"error":{"code":"reader_snapshot_changed","message":"private detail"}}'))));
+    await expectLater(
+      transport.json(Uri.parse('https://project.invalid/api/v2/catalog/page')),
+      throwsA(isA<ProjectApiException>()
+          .having((error) => error.status, 'status', 409)
+          .having((error) => error.code, 'code', 'reader_snapshot_changed')
+          .having((error) => error.message, 'message', contains('Bitte erneut aktualisieren'))),
+    );
+    transport.close();
+  });
+
   test(
     'Echter JSON-Transport bindet Bearer ohne Weiterleitung und sendet JSON',
     () async {
@@ -127,7 +200,7 @@ void main() {
     },
   );
   test('Echter Medien-Transport sendet keine Authorization und folgt keinem Redirect', () async {
-    final client = Client(Response(200, [1, 2, 3]));
+    final client = Client(Response(200, [1, 2, 3]), seededHeaders: true);
     final transport = HttpProjectTransport(client: client);
     expect(
       await transport
@@ -141,6 +214,8 @@ void main() {
       false,
     );
     expect(client.requests.single.followRedirects, false);
+    expect(client.requests.single.headers.value('cookie'), isNull);
+    expect(client.requests.single.cookies, isEmpty);
     transport.close();
   });
   test('HTTP- und lokale Medien scheitern vor einem Netzwerkzugriff', () async {

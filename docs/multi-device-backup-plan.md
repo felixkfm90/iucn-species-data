@@ -1,6 +1,6 @@
 # Phase 11 - Mehrgeraete, Git-Update, Locking und NAS-Backup
 
-Stand: 2026-11-01
+Stand: 2026-11-02
 
 ## Ziel
 
@@ -77,6 +77,23 @@ Windows behält eine beschreibbare lokale Projekt-/Datenkopie und die lokalen Li
 Offlineänderungen vorhandener Objekte werden später mit ihren Ausgangsversionen abgeglichen;
 widersprüchliche Änderungen bleiben als Konflikt erhalten. Der gemeinsame Lightroom-Katalog wird
 weiter nacheinander benutzt, nicht vom NAS-Dienst als gleichzeitig beschreibbarer Katalog geöffnet.
+
+Felix bestätigt am **2. November** nochmals ausdrücklich das Ziel **eines gemeinsamen verbindlichen
+FN-Bestands**. Die derzeitige Auswahl zwischen lokalem Bestand und gemeinsamem Projekt gehört zur
+Übergangsphase; sie begründet keine dauerhaft getrennt gepflegten fachlichen Datenbanken. Nach der
+kontrollierten Anfangsübernahme sind die lokalen Gerätebestände Arbeits-/Offlinekopien der gemeinsamen
+Grundlage. Das Umschalten allein führt heute weder diese Anfangsübernahme noch einen automatischen
+Abgleich des bisherigen vollständigen lokalen Bestands aus. Das Android-Nachschlagewerk erhält daraus
+freigegebene Leseinhalte, keinen unabhängig gepflegten zweiten Fachbestand.
+
+Felix hat am **3. November** den Arten-Explorer als verbindliche fachliche Quelle für die
+FN-Website, das Android-Nachschlagewerk und die Lightroom-Taxonomie bestätigt. Die gepflegte
+[Taxonomie-Masterliste](global-taxonomy-lightroom-plan.md) ist die Grundlage für Artidentitäten
+und taxonomische Zuordnungen. Redaktionelle Inhalte und Freigaben liegen im gemeinsamen Bestand.
+Website, App und Lightroom verwenden daraus abgeleitete Ausgaben mit ihrer jeweiligen
+Freigabe und ihrem dokumentierten Aktualisierungsstand. Der App-Bau übernimmt die deutschen
+Familiennamen aus derselben Arten-Explorer-Zuordnung wie die Lightroom-Suche.
+
 Android wird mit der bereits vorhandenen Flutter-Toolchain als lesende App entwickelt; Medienpakete
 sind wählbar. Die lokale Bild-/Texthilfe wird zunächst auf Windows geprüft. Das legt keine KI-Ausführung
 auf dem NAS oder Handy fest. Neue Module, Installer und App werden isoliert gebaut und geprüft;
@@ -95,8 +112,8 @@ lesen ausschließlich ihre synthetische geschützte Probe; kein vorhandenes pers
 geöffnet. Der gebundene Nachweis steht unter `mobile/build-evidence/safe-storage-native.json` und
 belegt diese konkrete lokale Probe, keine NAS-/Zweitgeräteanmeldung.
 
-Der Explorer hat dafür im **Bearbeitungsmodus** unter **Datenbank-Aktionen → Weitere Aktionen →
-Backup und Einstellungen** den Bereich **Gemeinsames Projekt**: Verbindung, bestehende Fachabschnitte,
+Der Explorer hat dafür im neuen Kopfbereich unter **⋮ → Einstellungen** den Bereich
+**Gemeinsames Projekt**: Verbindung, bestehende Fachabschnitte,
 Bildvorschauen und Bildtexte, lokale Entwürfe, ausdrücklichen Abgleich, Konfliktentscheidungen sowie
 Personen-/Geräteverwaltung. Die lokale HTTP-Anbindung verwendet die vorhandenen Sitzungs-/Originregeln.
 Offene Formulare und wartende Änderungen werden beim Schließen beziehungsweise bei Abschlussaktionen
@@ -219,6 +236,12 @@ dieses Anschlusses sind getrennt nachzuweisen; die laufende NAS-Version wird nic
 Der vorbereitete Backendweg verwendet kurzlebige, an Person/Projekt/Fassung gebundene Vorschauen
 und dieselbe bestehende Warteschlange. **14/14 fokussierte Editor-/Routenfälle** prüfen unter anderem
 zwei tatsächliche HTTP-Clients, Offlineänderung, Konflikterhalt, Rollenverlust und Personenwechsel.
+Ein ergänzender lokaler Lauf über die regulären Explorer-Schnittstellen startet den Dienst zweimal
+mit demselben persönlichen Profil und gesperrter Netzwerkverbindung neu. Artgrunddaten, Entwurf und
+gespeicherte Galeriedatei sind erreichbar. Änderungen bleiben vorgemerkt und werden erst durch den
+ausdrücklichen Projektabgleich gesendet. Dieser bestätigt auch den Artseitenstatus oder zeigt den
+Konflikt an. Die Probe nutzt eine Testanmeldung und getrennte SQLite-Dateien. Die Abnahme am NAS
+und mit echten Geräten bleibt separat.
 Der anschließende Quellstand schließt die normale Hauptansicht und ihr Grunddatenformular über die
 bewusste Auswahl **Artbestand → Auf diesem PC / Gemeinsames Projekt** an. Die Quellen bleiben getrennt,
 die Wahl wird auf diesem Gerät gespeichert. Cachelesen startet keinen Netzabgleich. Offene Formulare,
@@ -252,6 +275,10 @@ bleiben gesperrt. Die Entscheidung bindet Person, Projekt, Rolle, Serverfassung 
 Fassungen. Ein parallel entstandener weiterer lokaler Entwurf wird auch nach einer bereits am Server
 ausgeführten Entscheidung nicht still verworfen. Unklare Antworten werden nicht automatisch wiederholt;
 **Serverstand lesen** aktualisiert bekannte Konflikte ausschließlich lesend, danach wird erneut geprüft.
+Beim Lesen und beim Abgleich gilt dieselbe Prüfung für bekannte Konflikte. Eine verspätete Antwort
+ändert nur den passenden, noch offenen Cacheeintrag. Eine inzwischen bestätigte Konfliktentscheidung
+bleibt abgeschlossen und der entschiedene Inhalt erhalten. Die Gegenprobe mit einem lokalen HTTP-Dienst,
+zwei Projektkonten und zwei SQLite-Verbindungen prüft beide Bedienwege.
 Wurde ein Konflikt bereits andernorts entschieden, entsteht gegebenenfalls nur eine lokale Vormerkung
 für den eigenen geprüften Zielinhalt; ein späterer Abgleich bleibt ausdrücklich erforderlich.
 
@@ -312,10 +339,92 @@ bestätigen; Administration und Projekt-/Personenbindung werden in der Schreibtr
 Ein ersetzter Plan bleibt gesperrt; ein noch unbegonnener Plan kann nach ausdrücklicher Bestätigung
 auf dem aktuellen Bestand neu vorbereitet werden. Bestehende schmale Katalogobjekte bleiben erhalten.
 Der feste lokale Quellenleser ist am tatsächlichen Originalbestand vollständig lesend und je Art erneut
-geprüft; die Quelldateien bleiben unverändert. Er ist über eine feste Node-Option am Explorer-Server
-anschließbar. Der normale Desktop nutzt weiterhin die öffentliche Erstquelle. Seine Umschaltung,
-NAS-Upgrade, Übernahmefreigabe, Medienbereitstellung und ein eigener atomar geprüfter Typwechsel mit
-erhaltener Versions-/Freigabehistorie stehen noch aus; der vorbereitete Anfangsplan bleibt erhalten.
+geprüft. Der normale Desktop verwendet diese vollständige Quelle. Der Vorbereitungsbeleg bindet den
+Plan an das ursprüngliche Projektkonto und schützt die Fortsetzung bei einem Kontowechsel. NAS-Upgrade,
+Übernahmefreigabe, produktive Medienbereitstellung und ein eigener atomar geprüfter Typwechsel mit
+erhaltener Versions-/Freigabehistorie stehen noch aus.
+
+Im lokalen Quellstand ist die nachgelagerte Artdateibereitstellung für neu importierte Arten an
+den normalen Desktop angeschlossen. Die Administration bestätigt die angezeigte Dateiauswahl
+separat. Die Originale sind in einem zweiten Testprofil abrufbar. Leserfreigabe und produktive
+NAS-Übernahme bleiben eigene Entscheidungen.
+
+### Neue persönliche Artseiten- und Bildablage im Quellstand vom 1. November
+
+Der neue Artseitenanschluss nutzt denselben angemeldeten Client und dieselbe Offlinequeue wie der
+gemeinsame Artbestand. Das persönliche `page-authoring.sqlite` trennt zusätzlich tatsächliche
+Projektadresse und Person; Altbestände werden nicht still einer Anmeldung zugewiesen. Rechteverlust
+blendet private Redaktionsfassungen aus und erhält ihre gespeicherten Bytes. Ein gezielter Abgleich
+sendet ausschließlich die gewählte vorbereitete Seitenfassung und ihre benötigten neuen Bilder.
+Eine neuere lokale Fassung bleibt als ungesendet sichtbar, auch wenn eine ältere Übertragung gelingt.
+
+Die persönliche Bildablage wurde mit Clientcache-Schema 3 eingeführt; der unten beschriebene
+Normaldateianschluss erweitert diesen Cache additiv auf Schema 4. JPEG/PNG/WebP werden vor der Aufnahme
+tatsächlich dekodiert, unveränderlich per ID/Hash gebunden und auf 20 MiB je Bild sowie 40 Millionen
+Pixel begrenzt. Eindeutige lokale Bildbytes besitzen eine gemeinsame Grenze von 192 MiB, der
+Cacheaufnahmepfad ein 384-MiB-Budget. Die vorhandenen Sicherungsgrenzen von 512 MiB je Datei und
+1 GiB je persönlichem Paket bleiben erhalten. Keine automatische Bilderbevorratung oder Löschung:
+Listen, Status und Fremdentwurfsimport lesen Metadaten; ein Download erfolgt ausdrücklich. Bereits
+servergebundene Bilder können ohne lokale Bytes redaktionell weiterverwendet werden.
+
+Die persönliche Sicherung berücksichtigt das Seitenjournal samt allen registrierten Anmeldungen.
+Benötigte verwaltete Bilder brauchen entweder bytegleiche lokale Cachedateien oder einen exakten
+Serverbeleg derselben Adresse, Person und Projektzuordnung. Im zweiten Fall bleibt der gemeinsame
+Dienst weiterhin nötig; die Gerätesicherung enthält diese Serverbytes nicht. Restore prüft dieselbe
+Bindung erneut. Das ersetzt keine Sicherung des gemeinsamen NAS-Dienstes.
+
+Die integrierte Quellprüfung ist im Gang. Der produktive NAS-Dienst läuft unverändert mit 0.1.2;
+0.1.3 bleibt als getrenntes gebundenes Vorbereitungspaket erhalten. Der neue Containerquellstand
+0.1.4 ergänzt Bildspeicher und FFmpeg, benötigt aber erst tatsächlichen Bau, Versions-/Digestbeleg
+und gesonderte Betriebsprüfung. Keine Anmeldung, kein NAS-Upgrade und kein Bestandsimport sind mit
+diesen lokalen Änderungen ausgeführt.
+
+### Normaldateien und auswählbare Offlineablage vom 2. November
+
+Der neue Quellstand verbindet den Windows-Client mit dem normalen Bild-/Tondienst und der
+anschließenden Reader-2-Prüfung. Eine ausdrücklich gestartete Bereitstellung liest vorhandene
+Originale über Art, festen Slot, tatsächliche Version und alle sechs Metadatenfelder. Sie verändert
+keine Reposassets und führt keine automatische Freigabe aus. Ein expliziter Abruf vom Dienst liefert
+geprüfte Bytes zunächst nur im Arbeitsspeicher. Der gebundene NAS-Quellstand 0.1.5 ist lokal
+vorbereitet; daraus folgt kein Update des zuletzt bestätigten NAS-Dienstes 0.1.2.
+
+Der nächste lokale Anschluss ergänzt die Auswahl **Artdateien offline verwenden** im gemeinsamen
+Artbestand. Sie zeigt Größen und vorhandene lokale Dateien; erst der ausdrückliche Download speichert
+ausgewählte vollständige Normalbytes. Zusätzliche Websitefotos sind nicht Teil dieser Auswahl.
+Normales Lesen bleibt ohne dauerhafte Aufnahme. Die vier festen persönlichen Sicherungsdateien
+bleiben unverändert; die zusätzlichen Tabellen liegen in `project-cache.sqlite`, Schema 4.
+
+Bild- und Normaldateien teilen dieselbe 192-MiB-Reserve. Beide Aufnahmepfade prüfen diese gemeinsame
+Summe innerhalb ihrer endgültigen Schreibtransaktion; zusätzlich bleiben 384 MiB Cacheaufnahme,
+512 MiB je Sicherungsdatei und 1 GiB je persönlichem Paket wirksam. Pro MP3 gelten höchstens 50 MiB.
+Bei Platzmangel bleiben Originaldateien, vorhandene Cachebytes und offene Offlineentwürfe erhalten;
+es gibt keine automatische Verdrängung. Teilweise abgeschlossene Downloads melden die bereits
+bestätigten Dateien und den angehaltenen Slot, ohne selbstständig zu wiederholen oder freizugeben.
+
+Projektadresse, Projekt, Person, Art, fester Slot und alle sechs Dateimetadaten sind lokal gebunden.
+Eine gespeicherte Quellenrevision samt Datenhash ist ein Downloadbeleg, keine Leserfreigabe.
+Volle Bearbeiter können erhaltene normale Dateibindungen eigener älterer Seiten offline weiterverwenden.
+Eine Lesersitzung benötigt die aktuell gecachte, tatsächlich freigegebene exakte Artbindung.
+Ein bekannter Rollenverlust sperrt den Zugriff und erhält die Bytes; ohne Netz lässt sich nur der
+zuletzt bekannte Berechtigungsstand prüfen.
+
+Die Sicherungsprüfung wird gemeinsam auf Cache 4 erweitert. Der Quellenreview fand zudem eine
+Zuordnungslücke: Das `image-UUID`-Präfix wurde bisher allein zur Auswahl des Galeriecaches benutzt.
+Neue Journalanforderungen erhalten deshalb die tatsächliche Mediendomäne, Art und den festen Slot.
+Normale Rollen und ihre exakten Galeriealiase bleiben Normaldateien; dieselbe Kennung mit anderem
+Quellenbeleg ist keine identische Verwendung. Tatsächlich gesicherte lokale Normalbytes und nicht
+gewählte externe Abhängigkeiten bleiben unterscheidbar. Ein serverseitiger Beleg enthält keine lokalen
+Bytes. Das Seitenjournal behält `mediaBytesIncluded:false`; Bytes liegen in der separat geprüften
+Cachekopie. Frühere Sicherungsformate bleiben lesbar.
+
+Der gezielte lokale Nachlauf besteht mit **44/44 Cache-/Client-/Explorerfällen**, **88/88
+Sicherungsfällen** und anschließend **664 bestandenen Fällen bei 665 insgesamt** in der gesamten
+Mehrbenutzergruppe. Ein Windows-Dateisymlinkfall bleibt ausdrücklich ohne Zielberechtigung
+übersprungen. Die historische Quellenkompatibilität im Seitenjournal besteht danach zusätzlich mit
+**16/16 Fällen**. Echte eigene SQLite-Dateien, HTTP-Dienste, Neustart, Warteschlangen, getrennte
+Personen, Reservegrenzen und Wiederherstellungskopien sind geprüft; tatsächliche NAS-Aktivierung,
+Zweit-PC-Betrieb und sichtbare Bedienabnahme folgen getrennt. Diese Quellergänzung ist noch nicht
+im zuvor gebauten privaten Windows-Installer enthalten.
 
 Das lesende Android-Paket **0.1.2+3** ist seit 1. November mit optionaler Offlinegalerie tatsächlich
 gebaut. Analyzer und **89 Tests** bestehen; APK-Signatur, gebundener Anfangskatalog und beide
@@ -325,14 +434,72 @@ Komponentenmetadaten bleiben unverändert und der Werkzeugabschnitt wurde an Num
 Die tatsächliche S24-/S25-, Anmelde- und NAS-Betriebsprüfung steht weiterhin aus; Paketpfad und
 Prüfgrenzen stehen im [mobilen Modulvertrag](../mobile/README.md).
 
+Felix bestätigt anschließend die Play-Installation und präzisiert die mobile Nutzung: lesendes
+Nachschlagewerk unterwegs, Artansicht an Aufbau und Darstellung der Website orientieren, Bearbeitung
+am PC. Die übrigen bestätigten Projektbereiche haben vor einer umfassenden Appüberarbeitung Vorrang;
+weitere Bedienrückmeldungen werden im mobilen Modulvertrag gesammelt.
+
+Felix beauftragt am 1. November zusätzlich den privaten Google-Play-Zugang wie bei Numis. Das
+vorhandene verifizierte Entwicklerkonto kann verwendet werden; App, Uploadsignierung, interner Track
+und Testlink bleiben Arten-Explorer-eigen. Lokaler Releasebau, tatsächliche Play-Bereitstellung und
+S24-/S25-Abnahme werden getrennt nachgewiesen. Nach dem anfänglichen Stopp der nativen
+URL-Erkennung ist der vorhandene Chrome-Zugang über die Browsererweiterung verwendbar. In der
+Konsole besteht bereits die eigene App `de.fnwildlifetravel.arten_explorer`; die neue Liste
+**Arten-Explorer privat** ist mit Felix' Google-Konto dem internen Test zugeordnet. Version **0.1.2 (3)**
+ist seit **1. November, 21:28 Uhr**, tatsächlich für interne Tester verfügbar. Der private Teilnahmelink
+ist aktiv und zeigt im vorgesehenen Konto die Einladung. Paket, eigene Signatur, Logo-/Katalogbindung
+und Aufräumen des temporären Signierschlüssels sind bestätigt; Geräteinstallation und S24-/S25-Abnahme
+bleiben getrennt offen. Details und Bedienfolge stehen im [mobilen Modulvertrag](../mobile/README.md).
+
+### Abgleich mit Numis: QR-Kopplung und persönliche Anmeldung
+
+Auf Felix' Frage wurden aktueller Aufbau und bestätigte Folgepläne mit dem Numis-Arbeitschat abgeglichen.
+Numis bleibt im bestätigten Pilot ein privater Windowsbestand mit eigenem PC-Dienst; das NAS ist
+Sicherungsziel. Seine QR-Einladung richtet eine gerätebezogene Handyberechtigung ein. Eine gemeinsame
+Personenverwaltung mehrerer Projekte oder ein NAS-Anmeldedienst ist dort nicht bestätigt.
+FN benötigt dagegen den unabhängigen NAS-Dienst, persönliche Konten und Rollen für gleichzeitige
+Zusammenarbeit. Google-Play-Testzugang, Projektanmeldung und Geräteberechtigung sind unterschiedliche
+Vorgänge. Ein ähnlicher einfacher QR-Einrichtungsablauf für FN ist als Vorschlag erläutert; er würde
+eigene personengebundene Leseberechtigungen verwenden. Eine zentrale gemeinsame Anmeldung oder eine
+neue QR-Funktion ist durch diesen Abgleich nicht beauftragt. Bestehende Schlüssel, Sitzungen und
+Berechtigungen bleiben je Projekt getrennt. Die aktuelle Android-App verwendet weiterhin ihre
+persönliche Projektanmeldung; es wurde keine Autharchitektur geändert.
+
+Am **2. November** äußert Felix beim Prüfen der App ausdrücklich den Wunsch nach QR-Einrichtung
+statt manueller Projektadresse und Anmeldung am Handy. Der bisherige Abgleich dokumentiert
+den Vorschlagsstand vor der Umsetzung.
+Öffentlich mitgelieferte Inhalte bleiben ohne Anmeldung nutzbar. Die QR-Einrichtung soll eine
+persönliche Leseberechtigung zum unabhängigen NAS-Dienst vermitteln; bestehende Numis-Schlüssel
+werden dafür nicht wiederverwendet. Aktuelle Bedienrückmeldung und Priorität führt der
+[mobile Modulvertrag](../mobile/README.md#offline--informations--und-zugangsrückmeldung-vom-2-november).
+
+Im Dienstquellstand vom **3. November** sind die einmalige Einladung und ihre Einlösung
+angeschlossen. Die Einladung gilt zwei Minuten und ist an die volle Sitzung der ausstellenden
+Person sowie ihr Projekt gebunden. Der Explorer kann sie über seine geschützte lokale Schnittstelle
+anfordern. Das Handy erhält bei Einlösung ausschließlich eine persönliche Lesesitzung und eine
+widerrufbare Gerätezulassung. Android kann die versionierte Einladung im Quellstand bereits prüfen
+und ausschließlich beim gebundenen HTTPS-Ursprung einlösen. Der Einladungscode steht nur im
+Anfragekörper. Gespeichert wird die bestätigte Lesesitzung mit Gerätezulassung über den vorhandenen
+geschützten Speicher. Ablehnungen oder widersprüchliche Antworten erhalten die bisherige Anmeldung.
+Die PC-Ansicht **Gemeinsames Projekt → Eigene Geräte → Handy koppeln** erzeugt den QR-Code lokal.
+Im internen Play-Teststand **0.1.8 (8)** öffnet **QR-Code scannen** den lokalen Scanner. Erst die
+Bestätigung der angezeigten HTTPS-Adresse löst die Einladung ein. Die Kamera wird beim Scan
+angefordert. Die manuelle Anmeldung bleibt verfügbar. Der entschlüsselte QR-Inhalt wurde mit
+dem verwendeten ZXing-Decoder gegengeprüft. Der Android-Paketbau ist bestätigt. Die Kamera-Probe auf den Zielgeräten
+und die Aktivierung des passenden [NAS-Quellpakets 0.1.8](../nas/README.md#nas-quellpaket-018-für-die-handy-kopplung)
+stehen aus.
+Die [Dienstschnittstellen](../species-explorer/shared-project/README.md#anmeldung-und-rechte)
+führen die Bindungen und Prüfgrenzen.
+
 Der [Windows-Installer](../installer/README.md) ist als privates Prüfpaket tatsächlich gebaut;
 Dateiinstallation, Update, Reparatur, Rücknahme und datenerhaltende Deinstallation sind an isolierten
-Beständen geprüft. Node, Electron, Git sowie FFmpeg/FFprobe werden gebunden bereitgestellt; Lightroom
-bleibt eine vorhandene Adobe-Installation. Plug-in-Quellstand .43 erkennt das mitgelieferte Node;
+Beständen geprüft. Node, Electron, MinGit, FFmpeg/FFprobe, Temurin Java und LanguageTool werden
+gebunden bereitgestellt. Lightroom Classic wird separat über Adobe eingerichtet. Plug-in-Quellstand
+.43 erkennt das mitgelieferte Node;
 der installierte Korrekturrückweg prüft die Bindung und verwendet den nativen Appstarter. Die letzte
-reguläre native Lightroom-Ladeprüfung betrifft .42. Das integrierte private Windows-Prüfpaket ist am
-1. November erneut gebaut und mit 14 tatsächlichen Paketproben geprüft. Erstinstallation auf einem
-frischen vorgesehenen PC und Auslieferungsnachweise bleiben offen.
+reguläre native Lightroom-Ladeprüfung betrifft .42. Das integrierte private Windows-Prüfpaket vom
+3. November hat 20 Paketproben einschließlich des tatsächlichen Vorgängerupdates bestanden.
+Erstinstallation auf einem frischen vorgesehenen PC und Auslieferungsnachweise bleiben offen.
 
 ## Ergänzter Folgeauftrag: Installer und Mehrbenutzerunterstützung
 

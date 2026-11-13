@@ -5,12 +5,17 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      catalog_commit:
+        description: Expected commit when dispatched by public catalog preparation
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: pages
+  group: ${{ inputs.catalog_commit && inputs.catalog_commit != github.sha && format('pages-stale-catalog-{0}', github.run_id) || 'pages' }}
   cancel-in-progress: false
 
 jobs:
@@ -19,6 +24,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - name: Verify dispatched catalog commit
+        if: inputs.catalog_commit != ''
+        env:
+          EXPECTED_COMMIT: ${{ inputs.catalog_commit }}
+        shell: bash
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_SHA" == "$EXPECTED_COMMIT" ]] || {
+            echo 'The catalog dispatch no longer matches main. Check the Pages run for the newer commit.'
+            exit 1
+          }
+
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 

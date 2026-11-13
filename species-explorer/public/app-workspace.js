@@ -34,10 +34,16 @@
         }
         const details = documentRef.querySelector("#validation-details");
         if (details) { details.textContent = ""; details.hidden = true; }
-        const overall = documentRef.querySelector("#validation-overall"); if (overall) overall.textContent = "Projektverbindung prüfen";
+        const overall = documentRef.querySelector("#validation-overall");
+        if (overall) { overall.textContent = "Projektverbindung prüfen"; overall.classList.toggle("ok", false);
+          overall.classList.toggle("warning", false); overall.classList.toggle("error", true); }
+        const notice = documentRef.querySelector("#validation-issue-notice");
+        if (notice) { notice.hidden = false; notice.textContent = "Gemeinsamer Bestand nicht verfügbar · Projektverbindung unter Einstellungen prüfen"; }
       }
       const create = documentRef.querySelector("#new-species-button");
-      if (create) { create.hidden = shared; create.disabled = shared; }
+      const canCreate = !shared || state.editMode === true && status?.available !== false
+        && status?.connection === "online" && status?.permissions?.canCreate === true;
+      if (create) { create.hidden = shared && !canCreate; create.disabled = busy || state.dataLoading || !canCreate; }
       const reload = documentRef.querySelector("#reload-button");
       if (reload) reload.title = shared ? "Gespeicherten gemeinsamen Stand auf diesem Gerät laden" : "Daten erneut vom lokalen Projekt laden";
       for (const [id, label] of Object.entries(shared ? { "validation-data-label": "Gemeinsamer Bestand", "validation-assets-label": "Medienverweise", "validation-report-label": "Abgleich" }
@@ -56,10 +62,18 @@
       render(); await loadData(); render();
     });
     async function action(name) {
-      if (busy || state.dataLoading || state.workspace !== "shared-project" || hasOpenDialog()
+      const inspection = documentRef.querySelector("#inspection-dialog");
+      const blockingDialog = hasOpenDialog() && (inspection?.open !== true
+        || Boolean(documentRef.querySelector("dialog[open]:not(#inspection-dialog)")));
+      if (busy || state.dataLoading || state.workspace !== "shared-project" || blockingDialog
         || name === "sync" && (!state.editMode || state.workspaceStatus?.permissions?.canEdit !== true)) return;
       busy = true; ownMessage = name === "sync" ? "Lokale Änderungen werden abgeglichen…" : "Serverstand wird gelesen…"; render();
-      try { await fetchJson(`/api/shared-project/${name}`, { method: "POST", body: "{}" }); ownMessage = ""; state.notice = ""; await loadData(); }
+      try {
+        const result = await fetchJson(`/api/shared-project/${name}`, { method: "POST", body: "{}" });
+        ownMessage = result?.pageAuthoringReconciliation?.checked === false || result?.websiteAltReconciliation?.checked === false
+          ? "Projektabgleich bestätigt. Offene Website-Entwürfe und Bildtexte bitte in ihrer jeweiligen Ansicht prüfen." : "";
+        state.notice = ""; await loadData();
+      }
       catch { ownMessage = "Abgleich nicht bestätigt. Gespeicherte Entwürfe bleiben erhalten; Verbindung und offene Konflikte prüfen."; await loadData(); }
       finally { busy = false; render(); }
     }
@@ -68,7 +82,8 @@
     render();
     function projectChanged(project) {
       const status = project.status || {}, signature = JSON.stringify([status.baseUrl || "", status.projectId || "", status.user?.id || "",
-        status.user?.role || "", status.readOnlySession === true, project.permissions?.canRead === true, project.permissions?.canEdit === true]);
+        status.user?.role || "", status.user?.version ?? null, status.readOnlySession === true,
+        project.permissions?.canRead === true, project.permissions?.canEdit === true, project.permissions?.canCreate === true]);
       if (signature === projectIdentity) return;
       projectIdentity = signature;
       if (state.workspace !== "shared-project") return;

@@ -69,15 +69,17 @@ export function createSpeciesWorkspace({ withClient } = {}) {
         canEdit: active.permissions.canEdit, externalPublication: "not-performed",
       })).sort((left, right) => left.germanName.localeCompare(right.germanName, "de") || left.id.localeCompare(right.id));
       const pending = active.status.pending, conflicts = active.status.conflicts;
-      const availableMediaCount = species.reduce((sum, entry) => sum + mediaKeys.filter((key) => entry.assets[key].availableOnline === true).length, 0);
+      const referenced = (entry, key) => entry.assets[key].availableOnline === true || entry.assets[key].projectFileBound === true
+        || key === "credits" && entry.assets[key].metadataAvailable === true;
+      const availableMediaCount = species.reduce((sum, entry) => sum + mediaKeys.filter(key => referenced(entry, key)).length, 0);
       const missingMediaCount = species.length * mediaKeys.length - availableMediaCount;
       const message = legacySpecies.length
         ? `${legacySpecies.length} Art(en) besitzen bislang nur einen Katalogdatensatz. Sie bleiben erhalten und werden bis zur bewussten vollständigen Quellenübernahme nicht als bearbeitbare Art umgewandelt.`
-        : species.length ? "Gemeinsamer Artbestand aus dem persönlichen Projektcache. Medienverweise sind keine geprüften lokalen Dateien."
+        : species.length ? "Gemeinsamer Artbestand aus dem persönlichen Projektcache. Artdateien werden bei Bedarf geladen."
           : "Noch keine vollständigen gemeinsamen Art-Arbeitsdatensätze vorhanden. Es wurde nichts aus lokalen Dateien übernommen.";
       return { species,
         summary: { source, speciesCount: species.length,
-          missingCoreAssets: species.filter((entry) => mediaKeys.some((key) => !entry.assets[key].availableOnline)).length,
+          missingCoreAssets: species.filter(entry => mediaKeys.some(key => !referenced(entry, key))).length,
           ncSoundCount: species.filter((entry) => entry.isNcSound).length,
           manualMapCount: species.filter((entry) => entry.isManualMap).length,
           browserImportedMapCount: species.filter((entry) => entry.assets.map.browserImported).length,

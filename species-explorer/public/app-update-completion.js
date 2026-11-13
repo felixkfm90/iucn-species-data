@@ -6,6 +6,41 @@
     ["shutdown", "Diesen PC herunterfahren"], ["restart", "Diesen PC neu starten"],
   ]);
 
+  // Layout rectangles also exist behind showModal(), where the outer page is
+  // inert. Both the renderer acknowledgement and trusted desktop read use this
+  // same check: the notice AND its actual cancel button must be accessible.
+  function isCountdownAccessible({ documentRef = global.document, statusContainer,
+    cancelButton = statusContainer?.querySelector?.("button[data-update-completion-cancel]") } = {}) {
+    try {
+      if (documentRef.visibilityState !== "visible" || statusContainer?.isConnected !== true
+        || cancelButton?.isConnected !== true || !statusContainer.contains(cancelButton)
+        || cancelButton.disabled || cancelButton.matches(":disabled") || cancelButton.getAttribute("aria-disabled") === "true") return false;
+      const dialogs = documentRef.querySelectorAll("dialog[open]");
+      if (Array.from(dialogs).some((dialog) => !dialog.contains(statusContainer) || !dialog.contains(cancelButton))) return false;
+      const view = documentRef.defaultView;
+      const rendered = (node) => {
+        if (!node.getClientRects().length) return false;
+        for (let current = node; current; current = current.parentElement) {
+          if (current.hidden || current.inert || current.getAttribute?.("aria-hidden") === "true") return false;
+          const style = view.getComputedStyle(current);
+          if (style.display === "none" || ["hidden", "collapse"].includes(style.visibility)
+            || style.contentVisibility === "hidden" || Number(style.opacity) === 0) return false;
+        }
+        return true;
+      };
+      if (!rendered(statusContainer) || !rendered(cancelButton) || view.getComputedStyle(cancelButton).pointerEvents === "none") return false;
+      const width = documentRef.documentElement.clientWidth || view.innerWidth;
+      const height = documentRef.documentElement.clientHeight || view.innerHeight;
+      const notice = statusContainer.getBoundingClientRect(), button = cancelButton.getBoundingClientRect();
+      if (![width, height, ...[notice, button].flatMap((rect) => [rect.left, rect.top, rect.right, rect.bottom, rect.width, rect.height])]
+        .every(Number.isFinite) || width <= 0 || height <= 0 || notice.width <= 0 || notice.height <= 0 || button.width <= 0 || button.height <= 0
+        || notice.right <= 0 || notice.bottom <= 0 || notice.left >= width || notice.top >= height
+        || button.left < 0 || button.top < 0 || button.right > width || button.bottom > height) return false;
+      const hit = documentRef.elementFromPoint((button.left + button.right) / 2, (button.top + button.bottom) / 2);
+      return hit === cancelButton || Boolean(hit && cancelButton.contains(hit));
+    } catch { return false; }
+  }
+
   function createUpdateCompletionController({ documentRef = global.document, selectionContainer, statusContainer,
     device, requestJson, apiPrefix = "/api/taxonomy/update-completion", showCountdown = async () => {},
     hasUnsavedDrafts = () => undefined, onError = () => {} } = {}) {
@@ -25,12 +60,12 @@
     selectionContainer.append(label, hint);
     statusContainer.setAttribute("aria-live", "polite");
     cancel.type = "button"; cancel.textContent = "Abschlussaktion abbrechen"; cancel.hidden = true;
+    cancel.setAttribute("data-update-completion-cancel", "");
     statusContainer.append(message, cancel);
     let current = null, disposed = false;
     const presenting = new Set(), acknowledged = new Set();
     function visible() {
-      return documentRef.visibilityState === "visible" && statusContainer.isConnected !== false
-        && (typeof statusContainer.getClientRects !== "function" || statusContainer.getClientRects().length > 0);
+      return isCountdownAccessible({ documentRef, statusContainer, cancelButton: cancel });
     }
     async function post(suffix, body) {
       return requestJson(`${apiPrefix}/${suffix}`, { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
@@ -53,6 +88,9 @@
           await showCountdown(snapshot);
           if (disposed || current?.selectionId !== snapshot.selectionId || current?.presentationToken !== token
             || !visible() || await hasUnsavedDrafts() !== false) return;
+          // Draft providers may yield: a dialog, cancellation or different
+          // selection can appear in that interval. Never acknowledge stale UI.
+          if (disposed || current?.selectionId !== snapshot.selectionId || current?.presentationToken !== token || !visible()) return;
           const confirmed = await post("displayed", { selectionId: snapshot.selectionId, updateRunId: snapshot.updateRunId,
             deviceId: device.id, presentationToken: token });
           acknowledged.add(token);
@@ -82,5 +120,5 @@
     };
   }
 
-  global.SpeciesExplorerUpdateCompletion = { ACTIONS, createUpdateCompletionController };
+  global.SpeciesExplorerUpdateCompletion = { ACTIONS, isCountdownAccessible, createUpdateCompletionController };
 })(globalThis);

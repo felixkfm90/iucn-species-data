@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { sanitizeAssetName } from "../species-model.mjs";
 import { buildCatalog, validateCatalogSpecies } from "../shared-project/catalog.mjs";
 import { parseWebsiteEditorialPage, parseWebsiteAltPage, normalizeWebsitePageUrl, canonicalWebsiteImageSource } from "../website-alt-parser.mjs";
+import { reportedMediaOmissions } from "../../scripts/validate-media-assets.mjs";
 
 export const PAGES_ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data/species-assets";
 const ranks = ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"];
@@ -60,10 +61,13 @@ function attribution(meta, keys, labels, issues, context) {
   return text || null;
 }
 
-export async function readSpeciesMedia({ assetsRoot, record }) {
+export async function readSpeciesMedia({ assetsRoot, record, missingMediaReport }) {
   required(path.isAbsolute(assetsRoot), "Ein ausdrücklicher absoluter Assetordner ist erforderlich.");
   const assetName = sanitizeAssetName(record["Deutscher Name"]), directory = path.join(assetsRoot, assetName);
   const issues = [], files = [], media = { sounds: [], gallery: [] }, metadata = {};
+  const omissions = missingMediaReport
+    ? reportedMediaOmissions(missingMediaReport, { germanName: record["Deutscher Name"], safeName: assetName }) : null;
+  if (omissions?.errors.length) issues.push(issue("inconsistent-media-omission-report", { slug: record.URLSlug }));
   try { required(!(await fs.lstat(assetsRoot)).isSymbolicLink(), "Verknüpfter Assetordner."); }
   catch (error) { if (error.code !== "ENOENT") throw error; }
   try { required(!(await fs.lstat(directory)).isSymbolicLink(), "Verknüpfter Artassetordner."); }
@@ -77,11 +81,13 @@ export async function readSpeciesMedia({ assetsRoot, record }) {
   }
   for (const [name, key, mimeType] of [["portrait.webp", "portrait", "image/webp"], ["map.jpg", "map", "image/jpeg"], ["sound.mp3", "sound", "audio/mpeg"]]) {
     const file = await fileRecord(path.join(directory, name), `${assetName}/${name}`);
+    const documentedMissing = omissions?.[key === "portrait" ? "allowMissingPortrait" : key === "map" ? "allowMissingMap" : "allowMissingSound"];
     if (!file) {
-      if (key !== "sound") issues.push(issue("missing-required-media", { slug: record.URLSlug, media: key }));
-      else if (metadata["credits.json"]) issues.push(issue("sound-metadata-without-sound", { slug: record.URLSlug }));
+      if (!documentedMissing && (key !== "sound" || omissions)) issues.push(issue("missing-required-media", { slug: record.URLSlug, media: key }));
+      if (key === "sound" && metadata["credits.json"]) issues.push(issue("sound-metadata-without-sound", { slug: record.URLSlug }));
       continue;
     }
+    if (documentedMissing) issues.push(issue("media-present-despite-reported-omission", { slug: record.URLSlug, media: key }));
     files.push({ path: file.path, bytes: file.bytes, sha256: file.sha256 });
     const item = { id: `${record.URLSlug}:${key}`, url: `${PAGES_ASSET_BASE}/${encodeURIComponent(assetName)}/${name}`,
       bytes: file.bytes, sha256: file.sha256, mimeType };
@@ -97,7 +103,13 @@ export async function readSpeciesMedia({ assetsRoot, record }) {
   // A spectrogram is a derived audio visualization, not an extra recording or a gallery photo.
   const spectrum = await fileRecord(path.join(directory, "spectrogram.webp"), `${assetName}/spectrogram.webp`);
   if (spectrum) files.push({ path: spectrum.path, bytes: spectrum.bytes, sha256: spectrum.sha256, role: "derived-spectrogram-not-in-v1-media-schema" });
-  return { media, files, issues };
+  if (omissions?.allowMissingPortrait && !media.portrait && metadata["portrait.json"]) {
+    issues.push(issue("portrait-metadata-without-portrait", { slug: record.URLSlug }));
+  }
+  if (omissions && Boolean(media.sounds.length) !== Boolean(spectrum)) {
+    issues.push(issue("sound-and-spectrogram-inconsistent", { slug: record.URLSlug }));
+  }
+  return { media, files, issues, ...(omissions?.allowMissingMap && !media.map && { mapOmitted: true }) };
 }
 
 export function buildSpeciesContent({ record, manual, pageUrl, html, localMedia }) {
@@ -124,6 +136,7 @@ export function buildSpeciesContent({ record, manual, pageUrl, html, localMedia 
     }
     if (!text) {
       if (title.trim().toLowerCase() === "verbreitungskarte" && localMedia?.media.map) { intentionallyEmpty = true; emptyReason = "media-backed-map"; }
+      else if (title.trim().toLowerCase() === "verbreitungskarte" && localMedia?.mapOmitted) { intentionallyEmpty = true; emptyReason = "documented-media-omission"; }
       else if (index === 0 && section.level && section.level <= 3) { intentionallyEmpty = true; emptyReason = "introductory-heading"; }
       else issues.push(issue("empty-editorial-section", { slug, title, blockId: section.blockId }));
     }
@@ -155,14 +168,14 @@ export function buildSpeciesContent({ record, manual, pageUrl, html, localMedia 
       soundState: media.sounds.length ? "present" : "no-existing-recording" } };
 }
 
-export async function exportSpeciesCatalog({ speciesData, speciesList, pages, assetsRoot, generatedAt = new Date().toISOString() }) {
+export async function exportSpeciesCatalog({ speciesData, speciesList, pages, assetsRoot, missingMediaReport, generatedAt = new Date().toISOString() }) {
   required(Array.isArray(speciesData) && Array.isArray(speciesList) && pages instanceof Map, "Explizite Quelldaten und Seitenzuordnungen sind erforderlich.");
   required(new Set(speciesData.map((entry) => entry.URLSlug)).size === speciesData.length, "Doppelte Artslugs verhindern den Export.");
   const results = [];
   for (const record of speciesData) {
     const candidates = speciesList.filter((entry) => entry.german === record["Deutscher Name"]);
     const manual = candidates.length === 1 ? candidates[0] : null, page = pages.get(record.URLSlug);
-    const localMedia = await readSpeciesMedia({ assetsRoot, record });
+    const localMedia = await readSpeciesMedia({ assetsRoot, record, missingMediaReport });
     if (candidates.length !== 1) localMedia.issues.push(issue("ambiguous-manual-species-record", { slug: record.URLSlug, matches: candidates.length }));
     const result = buildSpeciesContent({ record, manual, pageUrl: page?.url, html: page?.html, localMedia });
     results.push({ slug: record.URLSlug, ...result });

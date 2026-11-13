@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:arten_explorer/data/project_api.dart';
 import 'package:arten_explorer/data/token_vault.dart';
 import 'package:arten_explorer/data/website_photo.dart';
+import 'package:arten_explorer/domain/project_media.dart';
 
 final pngBytes = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgaHD4DwADBAHAqetaQwAAAABJRU5ErkJggg==',
@@ -118,9 +119,17 @@ class MemoryVault implements TokenVault {
   }
 }
 
-class FakeTransport implements ProjectTransport, WebsitePhotoTransport {
+class FakeTransport
+    implements
+        ProjectTransport,
+        WebsitePhotoTransport,
+        ProtectedProjectMediaTransport {
   final requests = <Map<String, dynamic>>[], mediaRequests = <Uri>[];
-  final photoRequests=<Uri>[];
+  final photoRequests = <Uri>[];
+  final protectedRequests = <(ProjectSession, ProjectMediaFile)>[];
+  Future<Map<String, dynamic>> Function(Uri uri)? onReader;
+  Stream<List<int>> Function(ProjectSession session, ProjectMediaFile file)?
+  onProtected;
   Future<WebsitePhotoResponse> Function(Uri)? onPhoto;
   Future<Map<String, dynamic>> Function(
     Uri uri,
@@ -143,9 +152,29 @@ class FakeTransport implements ProjectTransport, WebsitePhotoTransport {
       'body': body,
       'bearer': bearer,
     });
+    if (uri.path == '/api/v2/catalog/page') {
+      final reader = onReader;
+      if (reader != null) return reader(uri);
+      throw const ProjectApiException(
+        404,
+        'Fixture legacy route',
+        code: 'route_not_found',
+      );
+    }
     return onJson == null
         ? catalogFixture()
         : onJson!(uri, method, body, bearer);
+  }
+
+  @override
+  Stream<List<int>> projectMedia(
+    ProjectSession session,
+    ProjectMediaFile file,
+  ) async* {
+    protectedRequests.add((session, file));
+    final load = onProtected;
+    if (load == null) throw StateError('Unexpected protected file');
+    yield* load(session, file);
   }
 
   @override
@@ -163,18 +192,28 @@ class FakeTransport implements ProjectTransport, WebsitePhotoTransport {
   void close() {}
   @override
   Future<WebsitePhotoResponse> websitePhoto(Uri uri) async {
-    WebsitePhotoPolicy.checkUrl(uri);photoRequests.add(uri);
-    if(onPhoto!=null)return onPhoto!(uri);
-    return WebsitePhotoResponse(sourceUrl:uri,mimeType:'image/png',contentLength:pngBytes.length,
-      body:Stream<List<int>>.value(pngBytes));
+    WebsitePhotoPolicy.checkUrl(uri);
+    photoRequests.add(uri);
+    if (onPhoto != null) return onPhoto!(uri);
+    return WebsitePhotoResponse(
+      sourceUrl: uri,
+      mimeType: 'image/png',
+      contentLength: pngBytes.length,
+      body: Stream<List<int>>.value(pngBytes),
+    );
   }
 }
 
-Map<String,dynamic> observedCatalogFixture({String revision='fixture-gallery-1'}) {
-  final value=catalogFixture(revision:revision);
-  for(final entry in value['species'][0]['media']['gallery']) {
-    entry.remove('sha256');entry.remove('bytes');entry.remove('mimeType');
-    entry['url']='https://${WebsitePhotoPolicy.host}${WebsitePhotoPolicy.pathPrefix}fixture/${entry['id']}.png?format=1500w';
+Map<String, dynamic> observedCatalogFixture({
+  String revision = 'fixture-gallery-1',
+}) {
+  final value = catalogFixture(revision: revision);
+  for (final entry in value['species'][0]['media']['gallery']) {
+    entry.remove('sha256');
+    entry.remove('bytes');
+    entry.remove('mimeType');
+    entry['url'] =
+        'https://${WebsitePhotoPolicy.host}${WebsitePhotoPolicy.pathPrefix}fixture/${entry['id']}.png?format=1500w';
   }
   return value;
 }
@@ -209,4 +248,129 @@ Future<void> removeTestDirectory(Directory directory) async {
     throw StateError('Verknüpfte Fixture bleibt erhalten.');
   }
   if (await directory.exists()) await directory.delete(recursive: true);
+}
+
+Map<String, dynamic> structuredEditorialFixture() {
+  Map<String, dynamic> section(
+    String id,
+    String kind,
+    String title, {
+    List<Map<String, dynamic>> blocks = const [],
+    bool empty = false,
+  }) => {
+    'id': id,
+    'kind': kind,
+    'title': title,
+    'requested': true,
+    'intentionallyEmpty': empty,
+    'blocks': blocks,
+    'sources': [],
+  };
+  return {
+    'kind': 'structured',
+    'title': 'Das Leben am Fluss',
+    'introduction': [
+      {'type': 'paragraph', 'text': 'Eine eigene Einleitung.'},
+    ],
+    'sections': [
+      section('general', 'general-module', 'Allgemein'),
+      section(
+        'appearance',
+        'editorial',
+        'Aussehen',
+        blocks: [
+          {'type': 'heading', 'level': 5, 'text': 'Kennzeichen'},
+          {
+            'type': 'bullet-list',
+            'items': ['Breite Flügel', 'Langer Schwanz'],
+          },
+          {
+            'type': 'numbered-list',
+            'items': ['Erster Punkt', 'Zweiter Punkt'],
+          },
+        ],
+      ),
+      section('food', 'editorial', 'Nahrung', empty: true),
+      section('range', 'map-module', 'Verbreitung'),
+    ],
+    'sources': [
+      {'id': 'field', 'label': 'Eigene Beobachtungen'},
+    ],
+    'galleryRequested': false,
+  };
+}
+
+Map<String, dynamic> protectedReaderFixture(
+  Uri uri,
+  String projectId, {
+  List<int> sound = const [1, 2, 3],
+}) {
+  const image = 'image-11111111-1111-4111-8111-111111111111';
+  Map<String, dynamic> file(
+    String id,
+    String type,
+    List<int> bytes, {
+    String? contentId,
+  }) => {
+    'kind': contentId == null ? 'project-image' : 'project-normal',
+    'id': id,
+    'projectId': projectId,
+    'mimeType': type,
+    'bytes': bytes.length,
+    'sha256': sha256.convert(bytes).toString(),
+    'attribution': '',
+    'contentId': ?contentId,
+  };
+  return {
+    'schemaVersion': 2,
+    'projectId': projectId,
+    'revision': '5',
+    'generatedAt': '2026-11-09T12:00:00.000Z',
+    'snapshot': 'a' * 64,
+    'totalCount': 1,
+    'nextCursor': null,
+    'complete': true,
+    'checked': uri.queryParameters['check'] == '1',
+    'species': [
+      if (uri.queryParameters['check'] != '1')
+        {
+          'id': 'private-art',
+          'commonName': 'Projektart',
+          'scientificName': 'Strix privata',
+          'taxonomy': [],
+          'websiteUrl': null,
+          'general': [],
+          'status': {
+            'category': '',
+            'status': 'LC',
+            'trend': 'Abnehmend',
+            'population': '',
+          },
+          'content': structuredEditorialFixture(),
+          'media': {
+            'portrait': null,
+            'map': null,
+            'spectrogram': null,
+            'sounds': [
+              file(
+                'fixture:sound',
+                'audio/mpeg',
+                sound,
+                contentId: 'normal-${'b' * 64}',
+              ),
+            ],
+            'gallery': [
+              {
+                'id': 'gallery-use',
+                'asset': file(image, 'image/png', pngBytes),
+                'alt': 'Alttext',
+                'caption': 'Bildunterschrift',
+                'decorative': false,
+                'order': 0,
+              },
+            ],
+          },
+        },
+    ],
+  };
 }

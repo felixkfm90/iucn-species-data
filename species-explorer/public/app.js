@@ -79,28 +79,13 @@ const explorerApi = explorerFoundation.createExplorerApiClient({
 });
 const { ensureSessionToken, fetchJson, loadExplorerSnapshot, fetchRevision } = explorerApi;
 const {
-  escapeHtml,
-  safeUrl,
-  formatDate,
-  formatBytes,
-  formatIucnFetchDate,
-  formatIucnStatus,
-  assetStatusText,
-  backupRetentionText,
-  pluralize,
-  dataRows,
-  formatSexSpecificDataValue,
-  iucnStatusIconUrl,
-  iucnTrendIconUrl,
-  iconDataValue,
-  creditValue,
-  creditLink,
-  soundLicenseInfo,
-  soundLicenseBadgeHtml,
-  creditLinkWithLicense,
-  cacheBustedUrl,
-  assetVersionKey,
-  versionedAssetUrl,
+  escapeHtml, safeUrl,
+  formatDate, formatBytes, formatIucnFetchDate, formatIucnStatus,
+  assetStatusText, backupRetentionText, pluralize, dataRows,
+  formatSexSpecificDataValue, iucnStatusIconUrl, iucnTrendIconUrl,
+  iconDataValue, creditValue, creditLink,
+  soundLicenseInfo, soundLicenseBadgeHtml, creditLinkWithLicense,
+  cacheBustedUrl, assetVersionKey, versionedAssetUrl,
 } = explorerPresentation;
 const {
   MANUAL_SIZE_UNITS,
@@ -174,25 +159,7 @@ const {
 } = createPipelinePreviewRenderer({ escapeHtml, formatBytes });
 const requestedSpeciesId = new URLSearchParams(window.location.search).get("species") || "";
 const elements = {
-  speciesCount: document.querySelector("#species-count"),
-  assetIssues: document.querySelector("#asset-issues"),
-  ncCount: document.querySelector("#nc-count"),
-  manualMapCount: document.querySelector("#manual-map-count"),
-  reportDate: document.querySelector("#report-date"),
-  editModeToggle: document.querySelector("#edit-mode-toggle"),
-  pipelineMenuButton: document.querySelector("#pipeline-menu-button"),
-  validationOverall: document.querySelector("#validation-overall"),
-  validationDataCard: document.querySelector("#validation-data-card"),
-  validationData: document.querySelector("#validation-data"),
-  validationDataDetail: document.querySelector("#validation-data-detail"),
-  validationAssetsCard: document.querySelector("#validation-assets-card"),
-  validationAssets: document.querySelector("#validation-assets"),
-  validationAssetsDetail: document.querySelector("#validation-assets-detail"),
-  validationReportCard: document.querySelector("#validation-report-card"),
-  validationReport: document.querySelector("#validation-report"),
-  validationReportDetail: document.querySelector("#validation-report-detail"),
-  validationSpecial: document.querySelector("#validation-special"),
-  validationDetails: document.querySelector("#validation-details"),
+  ...window.SpeciesExplorerHeader.headerElements(document),
   websitePagesSummary: document.querySelector("#website-pages-summary"), websitePagesCheck: document.querySelector("#website-pages-check"),
   search: document.querySelector("#search"),
   statusFilter: document.querySelector("#status-filter"),
@@ -244,7 +211,6 @@ const elements = {
   taxonomyDatabaseMessage: document.querySelector("#taxonomy-database-message"),
   taxonomyDatabaseResults: document.querySelector("#taxonomy-database-results"),
   taxonomyDatabaseDetail: document.querySelector("#taxonomy-database-detail"),
-  pipelineStatus: document.querySelector("#pipeline-status"),
   pipelineRunNotice: document.querySelector("#pipeline-run-notice"),
   pipelineRunNoticeTitle: document.querySelector("#pipeline-run-notice-title"),
   pipelineRunNoticeDetail: document.querySelector("#pipeline-run-notice-detail"),
@@ -319,7 +285,7 @@ const renderDetail = explorerDetailView.createDetailViewRenderer({
   setupPortraitZoom: (...args) => setupPortraitZoom(...args),
   setupSpeciesEditor: (...args) => setupSpeciesEditor(...args),
   setupSpeciesRefresh: (...args) => setupSpeciesRefresh(...args), setupSpeciesDelete: (...args) => setupSpeciesDelete(...args),
-  setupSpeciesApproval: (...args) => setupSpeciesApproval(...args),
+  setupSpeciesApproval: (...args) => setupSpeciesApproval(...args), setupSpeciesPagePreparation: (...args) => setupSpeciesPagePreparation(...args),
   renderWebsiteStatus: explorerWebsitePages.renderWebsiteStatus, renderWebsiteHint: explorerWebsitePages.renderWebsiteHint,
 });
 
@@ -361,12 +327,28 @@ const {
 const websitePagesController = explorerWebsitePages.createWebsitePagesController({ state, elements, fetchJson, escapeHtml, onChange: applyFilters });
 const localAiController = window.SpeciesExplorerLocalAi.createLocalAiController({ fetchJson, createDialogController,
   confirmAction: showQuickConfirm, safeImageUrl: window.SpeciesExplorerWebsiteAltTexts.safeImageUrl });
+const reviewLanguage = (text, { signal, context = "text" } = {}) => fetchJson("/api/language-check/check", {
+  method: "POST", body: JSON.stringify({ text, context }), signal,
+});
+let languageProjectBinding = "";
+const getLanguageBinding = () => JSON.stringify([state.workspace || "local", state.workspaceEpoch || 0,
+  state.editMode === true, languageProjectBinding]);
 const websiteAltTextsController = window.SpeciesExplorerWebsiteAltTexts.setupWebsiteAltTexts({ fetchJson, escapeHtml, createDialogController,
-  canEdit: () => state.editMode, confirmAction: showQuickConfirm, openImageSuggestion: (input) => localAiController.openForImage(input) });
+  canEdit: () => state.editMode, confirmAction: showQuickConfirm, openImageSuggestion: (input) => localAiController.openForImage(input),
+  reviewLanguage, getLanguageBinding });
 const { controller: sharedProjectController, importer: sharedProjectImporter } = window.SpeciesExplorerSharedProject.setupSharedProject({
-  fetchJson, confirmAction: showQuickConfirm, createDialogController, canEdit: () => state.editMode, onProjectState: (project) => workspaceController.projectChanged(project),
+  fetchJson, confirmAction: showQuickConfirm, createDialogController, canEdit: () => state.editMode, onProjectState: (project) => {
+    const status = project.status || {};
+    languageProjectBinding = JSON.stringify([status.baseUrl || "", status.projectId || "", status.user?.id || "",
+      status.user?.role || "", status.user?.version ?? null, status.readOnlySession === true, status.connection || "",
+      project.permissions?.canRead === true, project.permissions?.canEdit === true]);
+    websiteAltTextsController.languageBindingChanged?.();
+    workspaceController.projectChanged(project); renderSpeciesActions();
+  },
 });
 const workspaceController = window.SpeciesExplorerWorkspace.setupSpeciesWorkspace({ state, fetchJson, hasOpenDialog, loadData: (...args) => loadData(...args) });
+const headerController = window.SpeciesExplorerHeader.setupHeader({ state, elements, createDialogController,
+  onDatabaseActions: (options) => options.section === "settings" ? settingsController.openSettings() : state.openPipelineActions?.(options) });
 window.addEventListener("pagehide", () => {
   void localAiController.dispose({ discard: true }).catch(() => {});
 }, { once: true });
@@ -374,7 +356,7 @@ window.SpeciesExplorerCompletion = window.SpeciesExplorerDesktopCompletion.setup
   fetchJson, selectionContainer: document.querySelector("#update-completion-selection"),
   statusContainer: document.querySelector("#update-completion-notice"),
   draftProviders: [() => websiteAltTextsController.hasUnsavedDrafts(), () => sharedProjectController.hasUnsavedChanges(),
-    () => localAiController.hasUnsavedChanges(), () => sharedProjectImporter.busy],
+    () => localAiController.hasUnsavedChanges(), () => sharedProjectImporter.busy, () => hasPageAuthoringChanges()],
 });
 const {
   refreshExplorerModelOnly,
@@ -389,7 +371,8 @@ const {
   ensureSessionToken,
   loadExplorerSnapshot,
   fetchRevision,
-  onWorkspaceState: () => { workspaceController.render(); renderSpeciesActions(); },
+  onWorkspaceState: () => { websiteAltTextsController.languageBindingChanged?.(); sharedProjectController.editingModeChanged?.(); sharedProjectImporter.editingModeChanged?.();
+    settingsController.editingModeChanged(); workspaceController.render(); headerController.render(); renderDatabaseStatus(); renderSpeciesActions(); },
   updateSummary: (summary) => { updateSummary(summary); websitePagesController.renderOverview(); },
   updateValidation,
   updatePendingChanges,
@@ -508,6 +491,7 @@ const { setupNewSpeciesCreator } = explorerNewSpeciesWorkflow.createNewSpeciesWo
   composeManualSexedMeasurement,
   formatManualMeasurement,
   stripManualMeasureInput,
+  parseManualMeasurement,
   MANUAL_SIZE_UNITS,
   MANUAL_WEIGHT_UNITS,
   MANUAL_AGE_UNITS,
@@ -564,6 +548,7 @@ const { setupSpeciesEditor } = explorerSpeciesEditor.createSpeciesEditorControll
   dataRows,
   escapeHtml,
   createMapEditorController: explorerMapEditor.createMapEditorController,
+  iucnDistributionMapUrl,
   createSoundEditorController: explorerSoundEditor.createSoundEditorController,
   createPortraitEditorController: explorerPortraitEditor.createPortraitEditorController,
   createGeneralEditorController: explorerGeneralEditor.createGeneralEditorController,
@@ -571,7 +556,7 @@ const { setupSpeciesEditor } = explorerSpeciesEditor.createSpeciesEditorControll
   backupRetentionText,
 });
 
-const { setupSpeciesRefresh, setupSpeciesDelete, setupSpeciesApproval, renderSpeciesActions } = createSpeciesActionsController({
+const { setupSpeciesRefresh, setupSpeciesDelete, setupSpeciesApproval, setupSpeciesPagePreparation, hasPageAuthoringChanges, renderSpeciesActions } = createSpeciesActionsController({
   state,
   elements,
   fetchJson,
@@ -580,10 +565,12 @@ const { setupSpeciesRefresh, setupSpeciesDelete, setupSpeciesApproval, renderSpe
   escapeHtml,
   backupRetentionText,
   releaseDetailMedia, releaseMediaWithin,
+  openAiSuggestion: (input) => localAiController.openForPage(input),
+  reviewLanguage,
   loadData,
 });
 
-setupBackupSettings({ state, elements, fetchJson, createDialogController });
+const settingsController = setupBackupSettings({ state, elements, fetchJson, createDialogController, canEdit: () => state.editMode === true });
 explorerBackupHistory.createBackupHistoryController({ state, elements, fetchJson, createDialogController, showQuickConfirm, loadData, escapeHtml, formatDate, formatBytes, backupRetentionText });
 setupPipelineControl();
 setupTaxonomyMaintenance();

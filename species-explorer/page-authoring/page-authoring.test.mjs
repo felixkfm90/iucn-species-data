@@ -9,6 +9,7 @@ import { editableDocument } from './model.mjs';
 import { createSqlitePageAuthoringRepository } from './repository.mjs';
 import { listPageTemplates,FN_SPECIES_CODE,FN_MAP_CODE,FN_MODULE_IDS } from './templates.mjs';
 import { normalAssetUrls } from './compose.mjs';
+import { createCmsReadbackTestProof } from './cms-readback-test-fixture.mjs';
 import { encodePageAuthoringDraft,pageAuthoringObjectId,guardPageAuthoringTransition,pageAuthoringServerEvidence,validatePageAuthoringServerEvidence,importPageAuthoringAsDraft,validatePageAuthoringObject } from './shared.mjs';
 
 const fails = (promise,code) => assert.rejects(promise,error=>error.code === code);
@@ -21,15 +22,20 @@ test('two observed FN structures retain real nesting, levels, source hashes and 
   assert.equal(compact.source.htmlSha256,'844a11724f439f2207bee2a671a34da6a0322248c51f130041a5dad48fec9452');
   assert.equal(extended.source.htmlSha256,'93435e74598679de2b45820e5c78fc279af690e2aeb84b534b9141699e7f586e');
 });
-test('new page requires online actual contributor and uses the real German-name asset path',async t=>{
+test('new editorial draft requires online actual contributor, retains legacy asset path and never observes a CMS target',async t=>{
   const f=fixture(t);await fails(f.create('offline'),'online_required');await fails(f.create('reader'),'forbidden');const d=await f.create();
-  assert.equal(d.sequence,1);assert.equal(d.actorId,'bruder');assert.equal(f.targetCalls,1);assert.equal(normalAssetUrls(d.document.species).portrait,'https://felixkfm90.github.io/iucn-species-data/species-assets/Test-Art/portrait.webp');
+  assert.equal(d.sequence,1);assert.equal(d.actorId,'bruder');assert.equal(f.targetCalls,0);assert.equal(normalAssetUrls(d.document.species).portrait,'https://felixkfm90.github.io/iucn-species-data/species-assets/Test-Art/portrait.webp');
 });
 test('renderer actor/role fields are rejected',async t=>{const f=fixture(t);await fails(f.create('contributor',{role:'publisher'}),'invalid_fields');assert.equal(f.repository.counts().drafts,0);});
-test('new target collision and stale checks prevent creation without touching existing data',async t=>{
+test('new target collision and stale observations block CMS preparation without preventing editorial work',async t=>{
   const f=fixture(t);f.authorities.targetAuthority.checkNew=async(_c,p)=>({path:p,online:true,exists:true,checkedAt:CLOCK,observationId:'x'});
-  await fails(f.create(),'target_not_new');assert.equal(f.repository.counts().drafts,0);
-  f.authorities.targetAuthority.checkNew=async(_c,p)=>({path:p,parentPath:p.slice(0,p.lastIndexOf('/')),parentExists:true,online:true,exists:false,checkedAt:'2026-10-30T10:00:00Z',observationId:'x'});await fails(f.create(),'target_observation_stale');
+  const d=await f.ready(),{approved}=await f.approval(d);
+  const input={draftId:d.id,expectedRevision:d.revision,approvalId:approved.artifact.id};
+  await fails(f.service.prepareCmsPlan('publisher',{...input,mutationId:f.mutationId()}),'target_not_new');
+  assert.equal(f.repository.counts().drafts,1);assert.equal((await f.service.getDraft('publisher',d.id)).approval.id,approved.artifact.id);
+  f.authorities.targetAuthority.checkNew=async(_c,p)=>({path:p,parentPath:p.slice(0,p.lastIndexOf('/')),parentExists:true,online:true,exists:false,checkedAt:'2026-10-30T10:00:00Z',observationId:'x'});
+  await fails(f.service.prepareCmsPlan('publisher',{...input,mutationId:f.mutationId()}),'target_observation_stale');
+  assert.equal(f.repository.counts().cms_attempts,0);
 });
 test('existing draft edits work offline, retain exact punctuation, never call target/CMS',async t=>{
   const f=fixture(t);let d=await f.create();const targetCalls=f.targetCalls;d=await f.save(d,doc=>{doc.sections[1].blocks=[{type:'paragraph',text:'Gelieferter Text ohne Punkt'}];},'offline');
@@ -45,7 +51,7 @@ test('persisted CAS rejects another writer and survives a second connection/reop
 });
 test('durable mutation replay neither duplicates a version nor repeats new target observation',async t=>{
   const f=fixture(t),input={draftId:'draft-a',mutationId:f.mutationId(),templateId:'fn-compact-20261031',slug:'test-art',parentPath:'/wildlife/heimische-tierwelt'};
-  const first=await f.service.createDraft('contributor',input),replay=await f.build(f.open()).createDraft('contributor',input);assert.equal(first.draft.revision,replay.draft.revision);assert.equal(replay.idempotentReplay,true);assert.equal(f.targetCalls,1);assert.equal(f.repository.counts().versions,1);
+  const first=await f.service.createDraft('contributor',input),replay=await f.build(f.open()).createDraft('contributor',input);assert.equal(first.draft.revision,replay.draft.revision);assert.equal(replay.idempotentReplay,true);assert.equal(f.targetCalls,0);assert.equal(f.repository.counts().versions,1);
   await fails(f.service.createDraft('contributor',{...input,title:'Anders'}),'mutation_reused');
 });
 test('foreign SQLite file and missing local-storage confirmation are refused before modification',t=>{
@@ -120,14 +126,16 @@ test('actual plan composes real FN modules and ordered gallery but never invents
 });
 async function attemptFixture(f) {const d=await f.ready(),plan=await f.plan(d),a=(await f.service.beginCmsAttempt('publisher',{draftId:d.id,mutationId:f.mutationId(),expectedRevision:d.revision,planId:plan.id})).attempt;return {d,plan,a};}
 async function dispatch(f,a) {return (await f.service.dispatchCmsAttempt('adapter',{mutationId:f.mutationId(),attemptId:a.id,expectedStateRevision:a.stateRevision,dispatchId:'dispatch-a'})).attempt;}
-function receipt(plan,a,extra={}) {return {id:'receipt-a',attemptId:a.id,planHash:plan.payload.planHash,contentHash:plan.payload.contentHash,imagesHash:plan.payload.imagesHash,status:'saved-unpublished',pageId:'cms-page-a',path:plan.payload.target.path,unpublished:true,readbackStructureHash:plan.payload.structureHash,observedAt:CLOCK,...extra};}
+function receipt(plan,a,extra={}) {return {schemaVersion:2,id:'receipt-a',attemptId:a.id,planHash:plan.payload.planHash,contentHash:plan.payload.contentHash,imagesHash:plan.payload.imagesHash,status:'saved-unpublished',pageId:'cms-page-a',path:plan.payload.target.path,unpublished:true,observedAt:CLOCK,
+  ...createCmsReadbackTestProof(plan,{pageId:extra.pageId||'cms-page-a'}),...extra};}
 test('CMS attempt journals once before dispatch, survives reopen, and never automatically retries',async t=>{
   const f=fixture(t),{d,plan,a}=await attemptFixture(f);assert.equal(a.status,'prepared');await fails(f.service.beginCmsAttempt('publisher',{draftId:d.id,mutationId:f.mutationId(),expectedRevision:d.revision,planId:plan.id}),'cms_repeat_blocked');
   await fails(f.service.dispatchCmsAttempt('publisher',{mutationId:f.mutationId(),attemptId:a.id,expectedStateRevision:a.stateRevision,dispatchId:'dispatch-a'}),'trusted_adapter_required');const started=await dispatch(f,a);assert.equal(started.status,'dispatched');assert.equal(f.open().attempt('project-a',a.id).status,'dispatched');await fails(dispatch(f,started),'cms_repeat_blocked');
 });
 test('only trusted adapter receipt with matching readback can record unpublished save; never public success',async t=>{
   const f=fixture(t),{d,plan,a}=await attemptFixture(f);await dispatch(f,a);await fails(f.service.recordCmsOutcome('publisher',{attemptId:a.id,receipt:receipt(plan,a)}),'trusted_adapter_required');
-  await fails(f.service.recordCmsOutcome('adapter',{attemptId:a.id,receipt:receipt(plan,a,{readbackStructureHash:fingerprint('wrong')})}),'cms_readback_mismatch');
+  const wrong=receipt(plan,a);wrong.readback.blocks[0].text='Falscher tatsächlich gelesener Titel';
+  await fails(f.service.recordCmsOutcome('adapter',{attemptId:a.id,receipt:wrong}),'cms_readback_mismatch');
   const done=await f.service.recordCmsOutcome('adapter',{attemptId:a.id,receipt:receipt(plan,a)});assert.equal(done.attempt.status,'saved-unpublished');assert.equal(done.attempt.repeatAllowed,false);const view=await f.service.getDraft('contributor',d.id);assert.equal(view.published,false);assert.equal(view.cms.matchesCurrentRevision,true);
 });
 test('duplicate exact receipts are idempotent; contradictory receipts become uncertain with no retry',async t=>{

@@ -5,8 +5,9 @@ import vm from "node:vm";
 
 const source = await readFile(new URL("./public/app-editor-map.js", import.meta.url), "utf8");
 const context = vm.createContext({});
+new vm.Script(await readFile(new URL("./public/app-editor-files.js", import.meta.url), "utf8")).runInContext(context);
 new vm.Script(source).runInContext(context);
-const url = "https://www.iucnredlist.org/api/v4/assessments/132000123/distribution_map/jpg";
+const url = "https://www.iucnredlist.org/species/22720330/132000123/distribution_map";
 const file = { name: "T22720330A132000123.jpg", size: 579333 };
 
 class Element {
@@ -52,10 +53,11 @@ function harness(overrides = {}) {
   };
   const controller = context.SpeciesExplorerMapEditor.createMapEditorController({
     ...elements,
-    species: { id: "chlorischloris", germanName: "Grünfink", iucn: { assessmentId: 132000123 } },
+    species: { id: "chlorischloris", germanName: "Grünfink", iucn: { taxonId: "22720330", assessmentId: 132000123 } },
     state: {},
     closeButtons: [new Element()],
     fileToBase64: async () => { reads += 1; return "image-bytes"; },
+    iucnDistributionMapUrl: context.SpeciesExplorerEditorFiles.iucnDistributionMapUrl,
     formatBytes: (bytes) => `${bytes} Bytes`,
     closeEditDialog: () => { assert.equal(controller.isBusy(), false); closes += 1; },
     loadData: async () => {},

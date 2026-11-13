@@ -46,6 +46,32 @@ export function coupledWebsiteAltCaption(pageUrl, image) {
   } catch { return false; }
 }
 
+// Public gallery captions are HTML text; unlike the raw alt attribute, their
+// ASCII HTML whitespace is collapsed by the parser. This compares that display
+// only. Callers must still bind the raw alt/CMS text, image and approval exactly.
+export function websiteAltCaptionMatchesText(caption, text) {
+  return typeof caption === "string" && typeof text === "string"
+    && (caption === text || caption === text.replace(/[\t\n\f\r ]+/gu, " ").replace(/^ | $/gu, ""));
+}
+
+// Observed FN/Squarespace travel-detail galleries derive their public alt from
+// the coupled caption with a 250 UTF-16-unit limit. This is not a general HTML
+// alt limit, and this policy never truncates saved captions or human wording.
+export function websiteAltTextConstraint(pageUrl, image) {
+  return coupledWebsiteAltCaption(pageUrl, image)
+    ? { maxLength: 250, reason: "coupled-gallery-public-alt-limit" }
+    : null;
+}
+
+export function websiteAltTextLengthProblem(pageUrl, image, text) {
+  if (typeof text !== "string") throw new TypeError("Ein Alternativtext muss Text sein.");
+  const constraint = websiteAltTextConstraint(pageUrl, image);
+  if (!constraint || text.length <= constraint.maxLength) return null;
+  const length = text.length, excess = length - constraint.maxLength;
+  return { maxLength: constraint.maxLength, length, excess,
+    message: `Für diese gekoppelte Reisegalerie sind höchstens ${constraint.maxLength} Zeichen vorgesehen. Der Text hat ${length} Zeichen (${excess} zu viel). Die sichtbare Bildunterschrift ist zugleich der Alternativtext. Bitte den Text vor der Übernahme entsprechend kürzen.` };
+}
+
 // Apply only while preparing a new automatic proposal. Saved human wording and
 // quoted punctuation are deliberately outside this conservative sentence rule.
 export function normalizeWebsiteAltProposalText(pageUrl, image, text) {

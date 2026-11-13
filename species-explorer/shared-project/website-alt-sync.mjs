@@ -12,6 +12,7 @@ const sha = (value) => createHash("sha256").update(value).digest("hex");
 const hash = websiteAltPageRevision;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 const privileged = (role) => ["admin", "publisher"].includes(role);
+const clientBinding = ({ origin, projectId, userId, role, userVersion }) => ({ baseUrl: origin, projectId, userId, role, userVersion });
 
 export function websiteAltObjectId(pageUrl) { return `website-alt-${sha(normalizeWebsitePageUrl(pageUrl))}`; }
 export function encodeWebsiteAltPage(page, { adoptUnlinkedApprovals = false } = {}) {
@@ -148,37 +149,49 @@ export function createWebsiteAltSync({ localStore, client, filename, localStorag
   let probe = path.parse(filename).root;
   for (const part of path.relative(probe, filename).split(path.sep)) { probe = path.join(probe, part); if (fs.existsSync(probe)) check(!fs.lstatSync(probe).isSymbolicLink(), 400, "unsafe_storage", "Verknüpfte Journalpfade sind nicht zulässig."); }
   fs.mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
-  const db = new DatabaseSync(filename); fs.chmodSync(filename, 0o600);
-  const schema = db.prepare("PRAGMA user_version").get().user_version;
-  const tables = db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(row => row.name);
-  const columns = { links: "key,origin,project_id,user_id,page_url,object_id,base_local_hash,last_remote_revision,remote_json,state",
-    operations: "id,link_key,phase,local_hash,frame_json,local_page_json,remote_revision,error_code,created_at" };
-  const knownTables = tables.join(",") === "links,operations";
-  if (![0, 1].includes(schema) || schema === 1 && !knownTables || tables.length && !knownTables
-    || knownTables && tables.some(name => db.prepare(`PRAGMA table_info(${name})`).all().map(row => row.name).join(",") !== columns[name])) {
-    db.close(); throw new ProjectError(409, "website_alt_journal_schema", "Das persönliche Bildtextjournal hat ein unbekanntes Format; es bleibt unverändert.");
+  const db = new DatabaseSync(filename);
+  try {
+    fs.chmodSync(filename, 0o600);
+    const schema = db.prepare("PRAGMA user_version").get().user_version;
+    const tables = db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(row => row.name);
+    const columns = { links: "key,origin,project_id,user_id,page_url,object_id,base_local_hash,last_remote_revision,remote_json,state",
+      operations: "id,link_key,phase,local_hash,frame_json,local_page_json,remote_revision,error_code,created_at" };
+    const knownTables = tables.join(",") === "links,operations";
+    if (![0, 1].includes(schema) || schema === 1 && !knownTables || tables.length && !knownTables
+      || knownTables && tables.some(name => db.prepare(`PRAGMA table_info(${name})`).all().map(row => row.name).join(",") !== columns[name])) {
+      throw new ProjectError(409, "website_alt_journal_schema", "Das persönliche Bildtextjournal hat ein unbekanntes Format; es bleibt unverändert.");
+    }
+    db.exec(`PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA trusted_schema=OFF;
+      BEGIN IMMEDIATE;
+      CREATE TABLE IF NOT EXISTS links(key TEXT PRIMARY KEY,origin TEXT NOT NULL,project_id TEXT NOT NULL,user_id TEXT NOT NULL,
+        page_url TEXT NOT NULL,object_id TEXT NOT NULL,base_local_hash TEXT,last_remote_revision TEXT,remote_json TEXT,state TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS operations(id TEXT PRIMARY KEY,link_key TEXT NOT NULL,phase TEXT NOT NULL,local_hash TEXT,
+        frame_json TEXT,local_page_json TEXT,remote_revision TEXT,error_code TEXT,created_at TEXT NOT NULL);
+      PRAGMA user_version=1; COMMIT;
+    `);
+  } catch (error) {
+    db.close();
+    throw error;
   }
-  db.exec(`PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA trusted_schema=OFF;
-    BEGIN IMMEDIATE;
-    CREATE TABLE IF NOT EXISTS links(key TEXT PRIMARY KEY,origin TEXT NOT NULL,project_id TEXT NOT NULL,user_id TEXT NOT NULL,
-      page_url TEXT NOT NULL,object_id TEXT NOT NULL,base_local_hash TEXT,last_remote_revision TEXT,remote_json TEXT,state TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS operations(id TEXT PRIMARY KEY,link_key TEXT NOT NULL,phase TEXT NOT NULL,local_hash TEXT,
-      frame_json TEXT,local_page_json TEXT,remote_revision TEXT,error_code TEXT,created_at TEXT NOT NULL);
-    PRAGMA user_version=1; COMMIT;
-  `);
   let chain = Promise.resolve(), active = 0, closing = false, closed = false, currentBinding = null, latest = null;
   const now = () => new Date().toISOString();
   function tx(fn) { db.exec("BEGIN IMMEDIATE"); try { const result = fn(); db.exec("COMMIT"); return result; } catch (error) { db.exec("ROLLBACK"); throw error; } }
   function run(fn) {
     if (closing || closed) return Promise.reject(new ProjectError(409, "website_alt_sync_closed", "Die gemeinsame Bildtextanbindung ist geschlossen."));
-    active++; const result = chain.then(() => { check(!closing, 409, "website_alt_sync_closed", "Die gemeinsame Bildtextanbindung wird geschlossen."); return fn(); }).finally(() => { active--; }); chain = result.catch(() => {}); return result;
+    active++;
+    const result = chain.then(() => { check(!closing, 409, "website_alt_sync_closed", "Die gemeinsame Bildtextanbindung wird geschlossen."); return fn(); })
+      .catch((error) => {
+        if (error.code === "import_project_changed") throw new ProjectError(409, "website_alt_binding_changed", error.message);
+        throw error;
+      }).finally(() => { active--; });
+    chain = result.catch(() => {}); return result;
   }
   async function context({ online = false, write = false, recheck = false } = {}) {
     const status = await client.status();
     check(status.user && status.projectId && status.baseUrl && !["disconnected", "authentication-required", "closed"].includes(status.connection), 401, "authentication_required", "Bitte am gemeinsamen Projekt anmelden.");
-    if (online) check(status.connection === "online", 409, "website_alt_online_required", "Die erste Verknüpfung benötigt eine bestätigte Online-Verbindung.");
+    if (online) check(status.connection === "online", 409, "website_alt_online_required", "Für diesen Bildtextschritt wird eine bestätigte Onlineverbindung benötigt.");
     if (write) check(!status.readOnlySession && (status.connection !== "forbidden" || recheck) && ["admin", "publisher", "contributor"].includes(status.user.role), 403, "forbidden", "Für diesen Bildtextstand fehlt eine volle redaktionelle Anmeldung.");
-    currentBinding = { origin: status.baseUrl, projectId: status.projectId, userId: status.user.id, role: status.user.role }; return currentBinding;
+    currentBinding = { origin: status.baseUrl, projectId: status.projectId, userId: status.user.id, role: status.user.role, userVersion: status.user.version }; return currentBinding;
   }
   function keyFor(binding, pageUrl) { return sha(`${binding.origin}\n${binding.projectId}\n${binding.userId}\n${normalizeWebsitePageUrl(pageUrl)}`); }
   function linked(binding, pageUrl) {
@@ -193,9 +206,16 @@ export function createWebsiteAltSync({ localStore, client, filename, localStorag
     const id = randomUUID(); db.prepare("INSERT INTO operations(id,link_key,phase,local_hash,frame_json,local_page_json,created_at) VALUES (?,?,?,?,?,?,?)")
       .run(id, link.key, phase, exported?.pageRevision ?? null, frame ? JSON.stringify(frame) : null, exported?.page ? JSON.stringify(exported.page) : null, now()); return id;
   }
-  async function remote(pageUrl) {
-    const object = await client.getObject("page", websiteAltObjectId(pageUrl), { serverOnly: true });
+  async function remote(pageUrl, requiredBinding) {
+    const object = await client.getObject("page", websiteAltObjectId(pageUrl), { serverOnly: true, requiredBinding });
     validateWebsiteAltRemoteObject(object, pageUrl); return object;
+  }
+  async function requireSameOnlineEditor(binding) {
+    const current = await context({ write: true, online: true });
+    check(current.origin === binding.origin && current.projectId === binding.projectId && current.userId === binding.userId
+      && current.role === binding.role && current.userVersion === binding.userVersion,
+      409, "website_alt_binding_changed", "Projekt, Person oder Redaktionsrechte haben sich geändert. Bitte neu vergleichen.");
+    check(!closing, 409, "website_alt_sync_closed", "Der gemeinsame Bildtextabgleich wird geschlossen.");
   }
   function readStatus() {
     if (closed) return { ...(latest || { pages: [], pending: null, conflictCount: null }), busy: false, closed: true };
@@ -220,25 +240,46 @@ export function createWebsiteAltSync({ localStore, client, filename, localStorag
     state.pending = state.pages.filter((row) => row.localChanged || ["queued", "creating", "local-changed", "pulled", "unrelated"].includes(row.state)).length;
     state.localStateUnchecked = false; state.busy = active > 1; latest = copy(state); return state;
   }
-  async function queueLocal({ pageUrl, expectedPageRevision, adoptUnlinkedApprovals = false } = {}) {
-    const binding = await context({ write: true }), link = linked(binding, pageUrl), exported = await local(pageUrl, expectedPageRevision);
+  async function queueLocal({ pageUrl, expectedPageRevision, adoptUnlinkedApprovals = false } = {}, owner) {
+    const binding = owner ?? await context({ write: true });
+    const link = linked(binding, pageUrl), exported = await local(pageUrl, expectedPageRevision), requiredBinding = clientBinding(binding);
     check(!["unrelated", "conflict", "pulled"].includes(link.state), 409, "website_alt_review_required", "Gemeinsame und lokale Fassungen müssen vor dem nächsten Versand gezielt entschieden werden.");
-    const cached = await client.getObject("page", link.object_id), baseline = link.remote_json ? JSON.parse(link.remote_json) : null;
+    const cached = await client.getObject("page", link.object_id, { requiredBinding }), baseline = link.remote_json ? JSON.parse(link.remote_json) : null;
     check(baseline && baseline.revision === link.last_remote_revision, 409, "website_alt_untrusted_record", "Die belegte gemeinsame Ausgangsversion fehlt.");
     const page = retainWebsiteAltHistory(exported.page, baseline.data.page), frame = encodeWebsiteAltPage(page, { adoptUnlinkedApprovals });
     guardWebsiteAltTransition({ objectId: link.object_id, before: baseline.data, next: frame, actorRole: binding.role, receipts: baseline.websiteAltEvidence?.receipts || [] });
     const operation = saveOperation(link, "captured", exported, frame);
     if (!(cached.localPending && hash(cached.data) === hash(frame))) await client.editExistingObject("page", link.object_id, frame,
-      { baseRevision: link.last_remote_revision, expectedDataHash: sha(objectJson(cached.data)) });
+      { baseRevision: link.last_remote_revision, expectedDataHash: sha(objectJson(cached.data)), requiredBinding });
     tx(() => { db.prepare("UPDATE operations SET phase='queued' WHERE id=?").run(operation); db.prepare("UPDATE links SET state='queued' WHERE key=?").run(link.key); });
     return { operationId: operation, pageUrl: exported.pageUrl, queued: true, publiclyVerifiedBySync: false };
+  }
+  function lastQueued(link) {
+    return db.prepare("SELECT * FROM operations WHERE link_key=? AND phase='queued' ORDER BY rowid DESC LIMIT 1").get(link.key);
+  }
+  function confirmShared(link, object, operation, currentLocalRevision) {
+    const saved = operation?.local_hash ?? link.base_local_hash;
+    const synced = currentLocalRevision === saved;
+    tx(() => {
+      db.prepare("UPDATE links SET base_local_hash=?,last_remote_revision=?,remote_json=?,state=? WHERE key=?")
+        .run(saved, object.revision, JSON.stringify(object), synced ? "linked" : "local-changed", link.key);
+      if (operation) {
+        // Earlier local captures are retained without assigning them this receipt.
+        db.prepare("UPDATE operations SET phase='shared',remote_revision=?,error_code=NULL WHERE id=?").run(object.revision, operation.id);
+        db.prepare("UPDATE operations SET phase='captured',error_code='newer-frame-confirmed' WHERE link_key=? AND phase='queued'").run(link.key);
+      }
+    });
+    return synced;
   }
   return {
     status: readStatus,
     backupProjectIds: () => run(() => db.prepare("SELECT DISTINCT project_id FROM links ORDER BY project_id").all().map(row => row.project_id)),
     snapshot() { if (active || closing || closed) return Promise.resolve(readStatus()); return run(inspectLocal); },
-    read: (pageUrl) => run(async () => { const binding = await context(), exported = await local(pageUrl); const link = db.prepare("SELECT * FROM links WHERE key=?").get(keyFor(binding, pageUrl));
-      return { ...exported, linked: Boolean(link), remote: link?.remote_json ? JSON.parse(link.remote_json) : null, state: link?.state ?? "unlinked" }; }),
+    read: (pageUrl) => run(async () => {
+      const binding = await context(), exported = await local(pageUrl), link = db.prepare("SELECT * FROM links WHERE key=?").get(keyFor(binding, pageUrl));
+      const state = link?.state === "linked" && exported.pageRevision !== link.base_local_hash ? "local-changed" : link?.state ?? "unlinked";
+      return { ...exported, linked: Boolean(link), remote: link?.remote_json ? JSON.parse(link.remote_json) : null, state };
+    }),
     link: (input = {}) => run(async () => {
       check(input.confirmed === true, 400, "website_alt_link_confirmation", "Die gemeinsame Seitenverknüpfung muss ausdrücklich bestätigt werden.");
       check(typeof input.expectedPageRevision === "string", 400, "website_alt_review_required", "Die angezeigte lokale Seitenfassung fehlt.");
@@ -247,42 +288,76 @@ export function createWebsiteAltSync({ localStore, client, filename, localStorag
       let link = db.prepare("SELECT * FROM links WHERE key=?").get(key);
       if (!link) { db.prepare("INSERT INTO links VALUES (?,?,?,?,?,?,?,NULL,NULL,'creating')").run(key, binding.origin, binding.projectId, binding.userId, exported.pageUrl, id, exported.pageRevision); link = linked(binding, exported.pageUrl); }
       const operation = saveOperation(link, "link-intent", exported, frame);
-      await client.refresh(); await context({ online: true, write: true });
-      check(!closing, 409, "website_alt_sync_closed", "Die Seitenverknüpfung wurde vor dem nächsten Schritt angehalten.");
+      await client.refresh();
+      await requireSameOnlineEditor(binding);
+      const requiredBinding = clientBinding(binding);
       let object;
-      try { object = await remote(exported.pageUrl); }
+      try { object = await remote(exported.pageUrl, requiredBinding); }
       catch (error) {
         if (error.status !== 404) throw error;
+        await requireSameOnlineEditor(binding);
         guardWebsiteAltTransition({ objectId: id, before: null, next: frame, actorRole: binding.role });
-        object = await client.createObject({ kind: "page", id, data: frame }); validateWebsiteAltRemoteObject(object, exported.pageUrl);
+        object = await client.createObject({ kind: "page", id, data: frame, requiredBinding }); validateWebsiteAltRemoteObject(object, exported.pageUrl);
       }
+      await requireSameOnlineEditor(binding);
       const equal = object.data.pageRevision === exported.pageRevision;
       tx(() => { db.prepare("UPDATE links SET last_remote_revision=?,remote_json=?,state=? WHERE key=?").run(object.revision, JSON.stringify(object), equal ? "linked" : "unrelated", key);
         db.prepare("UPDATE operations SET phase=?,remote_revision=? WHERE id=?").run(equal ? "linked" : "initial-conflict", object.revision, operation); });
       return { pageUrl: exported.pageUrl, linked: true, reviewRequired: !equal, remoteRevision: object.revision, externalPublication: "not-performed" };
     }),
     queue: (input) => run(() => queueLocal(input)),
+    reconcileAfterProjectSync: (expected) => run(async () => {
+      const binding = await context({ write: true, online: true });
+      if (!expected || binding.origin !== expected.baseUrl || binding.projectId !== expected.projectId || binding.userId !== expected.user?.id
+        || binding.role !== expected.user?.role || binding.userVersion !== expected.user?.version) return { checked: false };
+      const links = db.prepare("SELECT * FROM links WHERE origin=? AND project_id=? AND user_id=? AND state='queued' ORDER BY page_url")
+        .all(binding.origin, binding.projectId, binding.userId);
+      let confirmed = 0, conflicts = 0;
+      for (const link of links) {
+        const operation = lastQueued(link);
+        if (!operation) continue;
+        const object = await remote(link.page_url, clientBinding(binding));
+        const latest = await local(link.page_url);
+        await requireSameOnlineEditor(binding);
+        if (object.localConflict) {
+          db.prepare("UPDATE links SET state='conflict' WHERE key=?").run(link.key); conflicts++;
+        } else if (!object.localPending) {
+          if (object.data.pageRevision === JSON.parse(operation.frame_json).pageRevision) {
+            confirmShared(link, object, operation, latest.pageRevision); confirmed++;
+          } else if (object.revision !== link.last_remote_revision) {
+            db.prepare("UPDATE links SET last_remote_revision=?,remote_json=?,state='unrelated' WHERE key=?")
+              .run(object.revision, JSON.stringify(object), link.key); conflicts++;
+          }
+        }
+      }
+      return { checked: true, confirmed, conflicts };
+    }),
     sync: (input = {}) => run(async () => {
       const binding = await context({ write: true }), link = linked(binding, input.pageUrl);
-      const exported = await local(input.pageUrl, input.expectedPageRevision), operation = db.prepare("SELECT * FROM operations WHERE link_key=? AND phase='queued' ORDER BY rowid DESC LIMIT 1").get(link.key);
+      const requiredBinding = clientBinding(binding);
+      const exported = await local(input.pageUrl, input.expectedPageRevision), operation = lastQueued(link);
       check(operation || ["linked", "local-changed"].includes(link.state), 409, "website_alt_not_queued", "Die gespeicherte lokale Fassung muss zuerst dauerhaft in die Clientwarteschlange übernommen werden.");
-      if (exported.pageRevision !== (operation?.local_hash ?? link.base_local_hash)) await queueLocal({ ...input, expectedPageRevision: exported.pageRevision });
+      if (exported.pageRevision !== (operation?.local_hash ?? link.base_local_hash)) await queueLocal({ ...input, expectedPageRevision: exported.pageRevision }, binding);
       check(!closing, 409, "website_alt_sync_closed", "Der Abgleich wurde vor dem nächsten Netzschritt angehalten.");
-      try { await client.sync({ kind: "page", id: link.object_id }); }
+      try { await client.sync({ kind: "page", id: link.object_id, requiredBinding }); }
       catch (error) { db.prepare("UPDATE operations SET error_code=? WHERE link_key=? AND phase='queued'").run(error.code || "sync-not-confirmed", link.key); throw error; }
-      const conflicts = (await client.listConflicts()).filter((entry) => entry.kind === "page" && entry.objectId === link.object_id);
+      const conflicts = (await client.listConflicts({ requiredBinding })).filter((entry) => entry.kind === "page" && entry.objectId === link.object_id);
+      await requireSameOnlineEditor(binding);
       if (conflicts.length) { db.prepare("UPDATE links SET state='conflict' WHERE key=?").run(link.key); return { pageUrl: link.page_url, synced: false, conflict: true, externalPublication: "not-performed" }; }
-      const object = await remote(link.page_url), final = await local(link.page_url), last = db.prepare("SELECT * FROM operations WHERE link_key=? AND phase='queued' ORDER BY rowid DESC LIMIT 1").get(link.key);
+      const object = await remote(link.page_url, requiredBinding), final = await local(link.page_url), last = lastQueued(link);
+      await requireSameOnlineEditor(binding);
       check(!last || object.data.pageRevision === JSON.parse(last.frame_json).pageRevision, 409, "website_alt_not_confirmed", "Die gemeinsame Version entspricht nicht der gespeicherten Seitenfassung.");
-      const saved = last?.local_hash ?? link.base_local_hash;
-      tx(() => { db.prepare("UPDATE links SET base_local_hash=?,last_remote_revision=?,remote_json=?,state=? WHERE key=?")
-        .run(saved, object.revision, JSON.stringify(object), final.pageRevision === saved ? "linked" : "local-changed", link.key);
-        db.prepare("UPDATE operations SET phase='shared',remote_revision=?,error_code=NULL WHERE link_key=? AND phase='queued'").run(object.revision, link.key); });
-      return { pageUrl: link.page_url, synced: final.pageRevision === saved, remoteRevision: object.revision, publiclyVerifiedBySync: false, externalPublication: "not-performed" };
+      if (!last && object.revision !== link.last_remote_revision) {
+        db.prepare("UPDATE links SET remote_json=?,state='pulled' WHERE key=?").run(JSON.stringify(object), link.key);
+        return { pageUrl: link.page_url, synced: false, requiresExplicitImport: true, remoteRevision: object.revision, externalPublication: "not-performed" };
+      }
+      const synced = confirmShared(link, object, last, final.pageRevision);
+      return { pageUrl: link.page_url, synced, remoteRevision: object.revision, publiclyVerifiedBySync: false, externalPublication: "not-performed" };
     }),
     pull: (input = {}) => run(async () => {
-      const binding = await context(); const link = linked(binding, input.pageUrl);
-      await client.refresh(); const object = await remote(link.page_url);
+      const binding = await context({ write: true, recheck: true }), link = linked(binding, input.pageUrl);
+      await client.refresh(); const object = await remote(link.page_url, clientBinding(binding));
+      await requireSameOnlineEditor(binding);
       check(link.state !== "queued" && link.state !== "conflict", 409, "website_alt_review_required", "Eigene wartende Fassungen müssen vor einer lokalen Übernahme entschieden werden.");
       db.prepare("UPDATE links SET remote_json=?,state='pulled' WHERE key=?").run(JSON.stringify(object), link.key);
       return { pageUrl: link.page_url, remote: object, requiresExplicitImport: true };
@@ -290,39 +365,50 @@ export function createWebsiteAltSync({ localStore, client, filename, localStorag
     importRemote: (input = {}) => run(async () => {
       check(input.confirmed === true, 400, "website_alt_import_confirmation", "Die lokale Übernahme muss ausdrücklich bestätigt werden.");
       check(typeof input.expectedPageRevision === "string", 400, "website_alt_review_required", "Die angezeigte lokale Seitenfassung fehlt.");
-      const binding = await context({ write: true }), link = linked(binding, input.pageUrl);
+      check(typeof input.expectedRemoteRevision === "string" && input.expectedRemoteRevision.length > 0, 400,
+        "website_alt_review_required", "Die angezeigte gemeinsame Seitenfassung fehlt.");
+      const binding = await context({ write: true, recheck: true }), link = linked(binding, input.pageUrl);
       check(link.remote_json && ["pulled", "linked"].includes(link.state), 409, "website_alt_review_required", "Bitte den gemeinsamen Stand zuerst ausdrücklich laden und vergleichen.");
-      const object = JSON.parse(link.remote_json), page = validateWebsiteAltRemoteObject(object, link.page_url), shown = await local(link.page_url, input.expectedPageRevision);
+      const shown = await local(link.page_url, input.expectedPageRevision);
+      check(JSON.parse(link.remote_json).revision === input.expectedRemoteRevision, 409, "object_changed", "Die angezeigte gemeinsame Version wurde inzwischen geändert.");
+      await client.refresh();
+      await requireSameOnlineEditor(binding);
+      const object = await remote(link.page_url, clientBinding(binding));
+      check(object.revision === input.expectedRemoteRevision, 409, "object_changed", "Die angezeigte gemeinsame Version wurde inzwischen geändert.");
+      const page = validateWebsiteAltRemoteObject(object, link.page_url);
       const operation = saveOperation(link, "local-import-intent", shown, object.data);
       const ticket = await localStore.authorizeSharedPageImport({ page, validateEvidence: () => ({ serverValidated: true, pageUrl: page.url, pageRevision: hash(page) }) });
       let result;
       for (let attempt = 0; attempt < 3; attempt++) {
         const current = await local(link.page_url, shown.pageRevision);
-        check(!closing, 409, "website_alt_sync_closed", "Die lokale Übernahme wurde vor dem nächsten Schreibschritt angehalten.");
+        await requireSameOnlineEditor(binding);
         try { result = await localStore.importSharedPage({ revision: current.localRevision, pageUrl: page.url, expectedPageRevision: shown.pageRevision, page, validatedEvidence: ticket }); break; }
         catch (error) { if (error.statusCode !== 409 || attempt === 2) throw error; }
       }
-      const after = await local(link.page_url);
-      tx(() => { db.prepare("UPDATE links SET base_local_hash=?,last_remote_revision=?,state='linked' WHERE key=?").run(after.pageRevision, object.revision, link.key);
+      tx(() => { db.prepare("UPDATE links SET base_local_hash=?,last_remote_revision=?,state='linked' WHERE key=?").run(result.pageRevision, object.revision, link.key);
         db.prepare("UPDATE operations SET phase='locally-imported',remote_revision=? WHERE id=?").run(object.revision, operation); });
-      return { pageUrl: page.url, localRevision: result.revision, pageRevision: after.pageRevision, imported: true, publicCheckPerformed: false };
+      return { pageUrl: page.url, localRevision: result.revision, pageRevision: result.pageRevision, imported: true, publicCheckPerformed: false };
     }),
     conflicts: (pageUrl) => run(async () => {
       const binding = await context(), link = linked(binding, pageUrl), exported = await local(pageUrl);
       if (link.state === "unrelated") return [{ id: `initial-${link.key}`, type: "initial-link", base: null, current: JSON.parse(link.remote_json).data, proposed: encodeWebsiteAltPage(exported.page), objectId: link.object_id }];
-      return (await client.listConflicts()).filter((entry) => entry.kind === "page" && entry.objectId === link.object_id);
+      return (await client.listConflicts({ requiredBinding: clientBinding(binding) })).filter((entry) => entry.kind === "page" && entry.objectId === link.object_id);
     }),
     resolve: (input = {}) => run(async () => {
       check(typeof input.expectedPageRevision === "string", 400, "website_alt_review_required", "Die angezeigte lokale Seitenfassung fehlt.");
       const binding = await context({ write: true }), link = linked(binding, input.pageUrl), exported = await local(link.page_url, input.expectedPageRevision);
+      const requiredBinding = clientBinding(binding);
       check(["conflict", "unrelated", "pulled"].includes(link.state), 409, "website_alt_review_required", "Für diese Seite liegt keine offene Vergleichsentscheidung vor.");
-      if (link.state === "conflict") check((await client.listConflicts()).some((entry) => entry.id === input.conflictId && entry.kind === "page" && entry.objectId === link.object_id),
+      if (link.state === "conflict") check((await client.listConflicts({ requiredBinding })).some((entry) => entry.id === input.conflictId && entry.kind === "page" && entry.objectId === link.object_id),
         409, "website_alt_foreign_conflict", "Die Konfliktentscheidung gehört zu einer anderen Seite.");
       check(input.confirmed === true && ["current", "local", "merged"].includes(input.strategy), 400, "website_alt_resolution_confirmation", "Die beiden Fassungen müssen gezielt verglichen und entschieden werden.");
-      const object = await remote(link.page_url);
+      await client.refresh();
+      await requireSameOnlineEditor(binding);
+      const object = await remote(link.page_url, requiredBinding);
       check(object.revision === input.expectedRemoteRevision, 409, "object_changed", "Die angezeigte gemeinsame Version wurde inzwischen geändert.");
       if (input.strategy === "current") {
-        if (link.state === "conflict") await client.resolveConflict(input.conflictId, { strategy: "current", expectedRevision: object.revision });
+        if (link.state === "conflict") await client.resolveConflict(input.conflictId, { strategy: "current", expectedRevision: object.revision, requiredBinding });
+        await requireSameOnlineEditor(binding);
         db.prepare("UPDATE links SET remote_json=?,state='pulled' WHERE key=?").run(JSON.stringify(object), link.key);
         return { requiresExplicitImport: true, remoteRevision: object.revision };
       }
@@ -331,9 +417,21 @@ export function createWebsiteAltSync({ localStore, client, filename, localStorag
       guardWebsiteAltTransition({ objectId: link.object_id, before: object.data, next: frame, actorRole: binding.role, receipts: object.websiteAltEvidence.receipts });
       const operation = saveOperation(link, "resolution-intent", exported, frame);
       let resolved;
-      if (link.state === "conflict") resolved = await client.resolveConflict(input.conflictId, { strategy: "merged", data: frame, expectedRevision: object.revision });
-      else { await client.editExistingObject("page", link.object_id, frame, { baseRevision: object.revision, expectedDataHash: sha(objectJson((await client.getObject("page", link.object_id)).data)) }); await client.sync({ kind: "page", id: link.object_id }); resolved = await remote(link.page_url); }
+      if (link.state === "conflict") {
+        resolved = await client.resolveConflict(input.conflictId, { strategy: "merged", data: frame, expectedRevision: object.revision, requiredBinding });
+      } else {
+        const cached = await client.getObject("page", link.object_id, { requiredBinding });
+        await client.editExistingObject("page", link.object_id, frame, { baseRevision: object.revision, expectedDataHash: sha(objectJson(cached.data)), requiredBinding });
+        await client.sync({ kind: "page", id: link.object_id, requiredBinding });
+        resolved = await remote(link.page_url, requiredBinding);
+      }
       validateWebsiteAltRemoteObject(resolved, link.page_url);
+      await requireSameOnlineEditor(binding);
+      if (link.state !== "conflict") {
+        if (resolved.localConflict) db.prepare("UPDATE links SET state='conflict' WHERE key=?").run(link.key);
+        check(!resolved.localConflict && !resolved.localPending && resolved.data.pageRevision === frame.pageRevision, 409,
+          "website_alt_review_required", "Die gewählte Fassung wurde nicht bestätigt. Bitte die aktuellen Fassungen erneut vergleichen.");
+      }
       tx(() => { db.prepare("UPDATE links SET remote_json=?,state='pulled' WHERE key=?").run(JSON.stringify(resolved), link.key);
         db.prepare("UPDATE operations SET phase='resolved',remote_revision=? WHERE id=?").run(resolved.revision, operation); });
       return { requiresExplicitImport: true, remoteRevision: resolved.revision, externalPublication: "not-performed" };

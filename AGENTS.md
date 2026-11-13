@@ -1,6 +1,6 @@
 # AGENTS.md – Arten-Explorer, Lightroom und Wildlife-Website
 
-Stand: 2026-11-01
+Stand: 2026-11-02
 
 ## Aktueller Auftrag
 
@@ -24,7 +24,8 @@ Umsetzung bestätigt. Die bestätigten Rahmenbedingungen führt der bestehende
 stehen in der Roadmap. Grundbaustein-, Paketbau-, native Desktop- und NAS-/Zielgeräteabnahme getrennt
 belegen. Bestehende lokale Bedienung und Felix' eigene Bildtextänderungen während der Entwicklung erhalten.
 Felix hat die Entwicklungspause am 1. November ausdrücklich aufgehoben. Den bestätigten Umfang wieder
-weiterführen; gemeldete Fehler behalten Vorrang. Computer Use weiterhin vorab mit Numis abstimmen.
+weiterführen; gemeldete Fehler behalten Vorrang. Computer Use weiterhin vorab mit Numis und seit
+Felix' Auftrag vom 2. November auch mit Kauf-Suchcockpit abstimmen.
 
 ## Projekt und führende Quellen
 
@@ -54,9 +55,18 @@ Dateizuständigkeiten vor parallelen Änderungen verteilen. Zentrale Dokumente i
 keine konkurrierenden produktiven Aufbauten oder Großscans. Neue Tests und Messungen in den eigenen
 Programm-temp-Sitzungen nach [Testvertrag](docs/test-temp-contract.md); gebundene Belege sind dauerhaft.
 
-Vor jeder Computer-Use-Nutzung mit dem aktuellen Arbeitschat des Projekts Numis-Katalog abstimmen.
-Nur ein Projekt bedient den Desktop; dessen Freigabe abwarten und das Ende der eigenen Nutzung zurückmelden.
-Während einer angekündigten Anmeldung oder QR-Kopplung des anderen Projekts keine Screenshots aufnehmen.
+Vor jeder Computer-Use-Nutzung mit den aktuellen Arbeitschats von Numis-Katalog und Kauf-Suchcockpit
+abstimmen; Freigaben beider Projekte abwarten. Nur ein Projekt bedient den Desktop und koordiniert
+sein ausdrücklich freigegebenes Bedienfenster; das tatsächliche Ende an beide zurückmelden.
+Arten-Explorer führt die gemeinsame Bedien-/Ressourcenübersicht; dies ist keine Dauerfreigabe.
+Während fremder Anmeldung, Sicherheitsbestätigung oder QR-Kopplung weder Eingaben noch Screenshots.
+Größere SDK-/Buildläufe ebenfalls abstimmen; kurze unabhängige Quell-/Nodeprüfungen bleiben möglich.
+Vor einer systemweiten Aktion den Abschluss aller drei Projekte tatsächlich bestätigen.
+Über das Herunterfahren und den Neustart entscheidet ausschließlich Felix. Nur mit seinem
+aktuellen ausdrücklichen Auftrag für die konkrete Aktion und den konkreten Zeitpunkt auslösen
+oder planen. Der Auftrag gilt einmalig. Jeder weitere Versuch, auch nach einem Fehler, braucht
+einen neuen Auftrag. Bereitschaftsmeldungen oder der Projektabschluss sind keine Freigabe. Bei
+bedingten, unklaren oder widersprüchlichen Aussagen vorab eine eindeutige Bestätigung einholen.
 
 ## Code- und Dokumentationspflicht
 

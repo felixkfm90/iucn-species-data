@@ -83,7 +83,7 @@
       const content = asset.exists
         ? `
           <button class="map-zoom-trigger" type="button" aria-label="Verbreitungskarte vergrößern">
-            <img class="map-image" src="${escapeHtml(mapUrl)}" alt="${escapeHtml(alt)}">
+            <img class="map-image"${asset.projectContent ? " data-project-media" : ""} src="${escapeHtml(mapUrl)}" alt="${escapeHtml(alt)}">
             <span class="map-zoom-hint">Vergrößern</span>
           </button>
         `
@@ -124,6 +124,7 @@
             <button class="portrait-zoom-trigger" type="button" aria-label="Artporträt vergrößern">
               <img
                 class="species-portrait-image"
+                ${portrait.projectContent ? "data-project-media" : ""}
                 src="${escapeHtml(portraitUrl)}"
                 alt="${escapeHtml(`Illustriertes Artporträt ${species.germanName}`)}"
               >

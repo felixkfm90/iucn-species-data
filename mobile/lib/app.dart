@@ -1,14 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_controller.dart';
 import 'audio_playback.dart';
+import 'data/project_api.dart';
 import 'domain/catalog.dart';
-import 'ui/media_image.dart';
 import 'ui/offline_page.dart';
+import 'ui/species_list.dart';
 import 'ui/species_page.dart';
+import 'ui/species_regions.dart';
 
 class ExplorerApp extends StatefulWidget {
   final ExplorerController controller;
@@ -18,14 +21,17 @@ class ExplorerApp extends StatefulWidget {
   State<ExplorerApp> createState() => _ExplorerAppState();
 }
 
-class _ExplorerAppState extends State<ExplorerApp> {
+class _ExplorerAppState extends State<ExplorerApp> with WidgetsBindingObserver {
   final _navigator = GlobalKey<NavigatorState>();
   late bool _wasLoggedIn;
+  bool _checkingMobilePause = false;
+  String? _askedForMobile;
   @override
   void initState() {
     super.initState();
     _wasLoggedIn = widget.controller.loggedIn;
     widget.controller.addListener(_authChanged);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   void _authChanged() {
@@ -39,11 +45,85 @@ class _ExplorerAppState extends State<ExplorerApp> {
       });
     }
     _wasLoggedIn = loggedIn;
+    unawaited(_offerMobileContinuation());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_offerMobileContinuation());
+      unawaited(widget.controller.refreshPublicCatalog(automatic: true));
+    }
+  }
+
+  Future<void> _offerMobileContinuation() async {
+    final controller = widget.controller;
+    final task = controller.downloadTask;
+    if (task?.status == 'running' && _askedForMobile == task?.jobId) {
+      _askedForMobile = null;
+    }
+    if (_checkingMobilePause ||
+        controller.busy ||
+        task == null ||
+        task.status != 'paused' ||
+        task.automatic ||
+        task.allowMetered ||
+        _askedForMobile == task.jobId ||
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
+    _checkingMobilePause = true;
+    try {
+      final network = await controller.downloadNetwork();
+      final navigator = _navigator.currentState;
+      final current = controller.downloadTask;
+      if (!mounted ||
+          navigator == null ||
+          !network.connected ||
+          !network.metered ||
+          current?.jobId != task.jobId ||
+          current?.status != 'paused' ||
+          WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        return;
+      }
+      _askedForMobile = task.jobId;
+      final allow = await showDialog<bool>(
+        context: navigator.overlay!.context,
+        builder: (dialog) => AlertDialog(
+          title: const Text('Mit mobilen Daten fortsetzen?'),
+          content: const Text(
+            'Das WLAN ist getrennt. Sobald WLAN wieder verfügbar ist, '
+            'geht der Download automatisch weiter.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Auf WLAN warten'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: const Text('Mobil fortsetzen'),
+            ),
+          ],
+        ),
+      );
+      if (allow == true && mounted) {
+        await controller.resumeDownload(
+          allowMetered: true,
+          expectedJobId: task.jobId,
+        );
+      }
+    } on PlatformException {
+      // The background job retains its original network policy.
+    } finally {
+      _checkingMobilePause = false;
+    }
   }
 
   @override
   void dispose() {
     widget.controller.removeListener(_authChanged);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -101,14 +181,77 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  static const _scanner = MethodChannel(
+    'de.fnwildlifetravel.arten_explorer/pairing',
+  );
   final _form = GlobalKey<FormState>();
   final _server = TextEditingController(),
       _username = TextEditingController(),
       _password = TextEditingController();
   bool _obscure = true;
+  bool _scanning = false;
+  String _scanError = '';
+
+  bool get _busy => _scanning || widget.controller.busy;
+
+  Future<void> _scanPairing() async {
+    if (_busy) return;
+    setState(() {
+      _scanning = true;
+      _scanError = '';
+    });
+    try {
+      final raw = await _scanner.invokeMethod<String>('scan');
+      if (!mounted || raw == null) return;
+      final invitation = ProjectPairingInvitation.parse(raw);
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          title: const Text('Mit Projekt verbinden?'),
+          content: Text(
+            '${invitation.server.origin}\n\nDieses Handy erhält Lesezugriff.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: const Text('Verbinden'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || accepted != true) return;
+      _password.clear();
+      final signedIn = await widget.controller.redeemPairing(invitation);
+      if (signedIn && mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    } on FormatException catch (error) {
+      if (mounted) setState(() => _scanError = error.message);
+    } on PlatformException {
+      if (mounted) {
+        setState(
+          () => _scanError = 'Der QR-Scanner ist gerade nicht verfügbar. Du kannst dich auch mit der Projektadresse anmelden.',
+        );
+      }
+    } on MissingPluginException {
+      if (mounted) {
+        setState(
+          () => _scanError = 'Auf diesem Gerät kannst du dich mit der Projektadresse anmelden.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _scanning = false);
+    }
+  }
+
   Future<void> _submit() async {
-    if (widget.controller.busy) return;
+    if (_busy) return;
     if (!_form.currentState!.validate()) return;
+    setState(() => _scanError = '');
     final password = _password.text;
     _password.clear();
     final signedIn = await widget.controller.login(
@@ -157,9 +300,19 @@ class _LoginPageState extends State<LoginPage> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 28),
+                    FilledButton.icon(
+                      onPressed: _busy ? null : _scanPairing,
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: Text(
+                        _scanning
+                            ? 'QR-Code wird geprüft …'
+                            : 'QR-Code scannen',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: _server,
-                      enabled: !widget.controller.busy,
+                      enabled: !_busy,
                       keyboardType: TextInputType.url,
                       autocorrect: false,
                       decoration: const InputDecoration(
@@ -175,7 +328,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _username,
-                      enabled: !widget.controller.busy,
+                      enabled: !_busy,
                       autocorrect: false,
                       autofillHints: const [AutofillHints.username],
                       decoration: const InputDecoration(
@@ -189,7 +342,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _password,
-                      enabled: !widget.controller.busy,
+                      enabled: !_busy,
                       obscureText: _obscure,
                       autocorrect: false,
                       enableSuggestions: false,
@@ -215,10 +368,16 @@ class _LoginPageState extends State<LoginPage> {
                           : 'Passwort eingeben.',
                     ),
                     const SizedBox(height: 20),
-                    if (widget.controller.error.isNotEmpty)
-                      Notice(widget.controller.error, error: true),
+                    if (_scanError.isNotEmpty ||
+                        widget.controller.error.isNotEmpty)
+                      Notice(
+                        _scanError.isNotEmpty
+                            ? _scanError
+                            : widget.controller.error,
+                        error: true,
+                      ),
                     FilledButton(
-                      onPressed: widget.controller.busy ? null : _submit,
+                      onPressed: _busy ? null : _submit,
                       child: Text(
                         widget.controller.busy ? 'Anmelden …' : 'Anmelden',
                       ),
@@ -271,13 +430,156 @@ class SpeciesHome extends StatefulWidget {
 }
 
 class _SpeciesHomeState extends State<SpeciesHome> {
+  static const _allRegions = '';
+  final _search = TextEditingController();
   String _query = '';
+  String? _region;
+  String? _group;
+  (String, String, String)? _offeredOfflineUpdate;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _chooseRegion(String? region) {
+    FocusScope.of(context).unfocus();
+    _search.clear();
+    setState(() {
+      _region = region;
+      _group = null;
+      _query = '';
+    });
+  }
+
+  void _offerOfflineUpdate(ExplorerController controller) {
+    if (!controller.shouldOfferOfflineUpdate) return;
+    final catalog = controller.catalog!, store = controller.store!;
+    final key = (
+      store.root.path,
+      controller.offline!.catalog.revision,
+      catalog.revision,
+    );
+    if (_offeredOfflineUpdate == key) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted ||
+          _offeredOfflineUpdate == key ||
+          !controller.shouldOfferOfflineUpdate ||
+          !identical(controller.catalog, catalog) ||
+          !identical(controller.store, store) ||
+          ModalRoute.of(context)?.isCurrent != true) {
+        return;
+      }
+      _offeredOfflineUpdate = key;
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          title: const Text('Offlineinhalte aktualisieren?'),
+          content: const Text(
+            'Ein neuer Katalogstand ist verfügbar. Passende Dateien bleiben erhalten.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Später'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: const Text('Aktualisieren'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted ||
+          accepted != true ||
+          !identical(controller.catalog, catalog) ||
+          !identical(controller.store, store)) {
+        return;
+      }
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              OfflinePage(controller: controller, startUpdate: true),
+        ),
+      );
+    });
+  }
+
+  void _information() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheet) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: AnimatedBuilder(
+            animation: widget.controller,
+            builder: (sheet, _) {
+              final controller = widget.controller,
+                  catalog = controller.catalog;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Informationen',
+                    style: Theme.of(sheet).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    controller.viewingPublic
+                        ? 'Öffentliche FN-Artinformationen'
+                        : 'Gemeinsamer FN-Bestand',
+                  ),
+                  if (catalog != null)
+                    Text(
+                      'Datenstand: ${MaterialLocalizations.of(sheet).formatMediumDate(catalog.generatedAt)}',
+                    ),
+                  if (controller.status.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(controller.status),
+                    ),
+                  if (controller.viewingPublic && controller.error.isNotEmpty)
+                    Notice(controller.error, error: true),
+                  const SizedBox(height: 16),
+                  if (!controller.viewingPublic ||
+                      controller.canRefreshPublicCatalog)
+                    OutlinedButton.icon(
+                      onPressed:
+                          controller.busy ||
+                              controller.downloading ||
+                              controller.publicCatalogRefreshing
+                          ? null
+                          : controller.refresh,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Inhalte aktualisieren'),
+                    ),
+                  TextButton(
+                    onPressed: () => showLicensePage(
+                      context: sheet,
+                      applicationName: 'Arten-Explorer',
+                      applicationVersion: androidAppVersion,
+                    ),
+                    child: const Text('Software-Lizenzen'),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   void _account() {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (sheet) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -285,32 +587,59 @@ class _SpeciesHomeState extends State<SpeciesHome> {
             children: [
               Text(
                 widget.controller.viewingPublic
-                    ? 'Öffentlicher Anfangsbestand'
+                    ? 'Öffentlicher Artenbestand'
                     : widget.controller.session!.user.displayName,
                 style: Theme.of(sheet).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
               Text(
                 widget.controller.viewingPublic
-                    ? 'Mit der App gelieferte öffentliche Artinformationen. Dafür ist keine Projektanmeldung erforderlich.'
+                    ? 'Öffentliche Artinformationen von FN Wildlife & Travel. Dafür ist keine Projektanmeldung erforderlich.'
                     : 'Lesender Zugriff auf den gemeinsamen Artenbestand',
               ),
               const SizedBox(height: 8),
               if (widget.controller.session != null)
                 SelectableText(widget.controller.session!.server.origin),
               const SizedBox(height: 20),
-              if (widget.controller.viewingPublic &&
-                  widget.controller.session == null)
-                FilledButton(
-                  onPressed: () {
+              AnimatedBuilder(
+                animation: widget.controller,
+                builder: (_, _) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.offline_pin_outlined),
+                  title: const Text('Offlineinhalte'),
+                  subtitle: Text(
+                    widget.controller.downloading
+                        ? 'Download läuft · Fortschritt ansehen'
+                        : '${formatBytes(widget.controller.occupiedBytes)} auf diesem Gerät',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
                     Navigator.pop(sheet);
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) =>
-                            LoginPage(controller: widget.controller),
+                            OfflinePage(controller: widget.controller),
                       ),
                     );
                   },
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (widget.controller.viewingPublic &&
+                  widget.controller.session == null)
+                FilledButton(
+                  onPressed:
+                      widget.controller.busy || widget.controller.downloading
+                      ? null
+                      : () {
+                          Navigator.pop(sheet);
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  LoginPage(controller: widget.controller),
+                            ),
+                          );
+                        },
                   child: const Text('Mit gemeinsamem Projekt verbinden'),
                 ),
               if (widget.controller.viewingPublic &&
@@ -350,14 +679,6 @@ class _SpeciesHomeState extends State<SpeciesHome> {
                         },
                   child: const Text('Abmelden'),
                 ),
-              TextButton(
-                onPressed: () => showLicensePage(
-                  context: sheet,
-                  applicationName: 'Arten-Explorer',
-                  applicationVersion: '0.1.2',
-                ),
-                child: const Text('Lizenzen'),
-              ),
             ],
           ),
         ),
@@ -368,7 +689,24 @@ class _SpeciesHomeState extends State<SpeciesHome> {
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
-    final species = controller.catalog?.search(_query) ?? <Species>[];
+    _offerOfflineUpdate(controller);
+    final catalog = controller.catalog;
+    final regions = catalog?.regions ?? const <SpeciesGroup>[];
+    final selectedRegion = regions
+        .where((region) => region.id == _region)
+        .firstOrNull;
+    final regionId = selectedRegion?.id;
+    final regionSelected = _region == _allRegions || selectedRegion != null;
+    final searching = _query.trim().isNotEmpty;
+    final showRegions = regions.isNotEmpty && !regionSelected && !searching;
+    final groups = showRegions
+        ? const <SpeciesGroup>[]
+        : catalog?.groupsForRegion(regionId) ?? const <SpeciesGroup>[];
+    final group = groups.any((group) => group.id == _group) ? _group : null;
+    final species = showRegions
+        ? const <Species>[]
+        : catalog?.search(_query, groupId: group, regionId: regionId) ??
+              const <Species>[];
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -386,15 +724,9 @@ class _SpeciesHomeState extends State<SpeciesHome> {
         ),
         actions: [
           IconButton(
-            tooltip: controller.viewingPublic
-                ? 'Hinweis zum öffentlichen Anfangsbestand'
-                : 'Inhalte aktualisieren',
-            onPressed: controller.busy || controller.downloading
-                ? null
-                : controller.refresh,
-            icon: Icon(
-              controller.viewingPublic ? Icons.info_outline : Icons.refresh,
-            ),
+            tooltip: 'Informationen',
+            onPressed: _information,
+            icon: const Icon(Icons.info_outline),
           ),
           IconButton(
             tooltip: controller.viewingPublic
@@ -414,11 +746,6 @@ class _SpeciesHomeState extends State<SpeciesHome> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (controller.status.isNotEmpty)
-                    Text(
-                      controller.status,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
                   if (controller.error.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -426,25 +753,61 @@ class _SpeciesHomeState extends State<SpeciesHome> {
                     ),
                   const SizedBox(height: 12),
                   TextField(
-                    onChanged: (value) => setState(() => _query = value),
+                    controller: _search,
+                    onChanged: (value) => setState(() {
+                      _query = value;
+                      if (!regionSelected && value.trim().isEmpty) {
+                        _group = null;
+                      }
+                    }),
                     decoration: const InputDecoration(
                       hintText: 'Arten suchen',
                       prefixIcon: Icon(Icons.search),
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Text(
-                      '${species.length} ${species.length == 1 ? 'Art' : 'Arten'}',
-                      style: Theme.of(context).textTheme.labelLarge,
+                  if (regions.isNotEmpty && regionSelected)
+                    Tooltip(
+                      message: 'Region wechseln',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.public),
+                        title: Text(selectedRegion?.label ?? 'Alle Regionen'),
+                        trailing: const Icon(Icons.swap_horiz),
+                        onTap: () => _chooseRegion(null),
+                      ),
                     ),
-                  ),
+                  if (groups.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: group ?? '',
+                        onChanged: (value) => setState(() => _group = value),
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('Alle Tiergruppen'),
+                          ),
+                          for (final item in groups)
+                            DropdownMenuItem(
+                              value: item.id,
+                              child: Text('${item.label} · ${item.count}'),
+                            ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
             Expanded(
-              child: species.isEmpty
+              child: showRegions
+                  ? SpeciesRegions(
+                      regions: regions,
+                      speciesCount: catalog!.species.length,
+                      onSelect: (id) => _chooseRegion(id ?? _allRegions),
+                    )
+                  : species.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
@@ -457,109 +820,55 @@ class _SpeciesHomeState extends State<SpeciesHome> {
                         ),
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: species.length,
-                      itemBuilder: (context, index) {
-                        final entry = species[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
+                  : SpeciesList(
+                      key: ValueKey((regionId, group)),
+                      controller: controller,
+                      species: species,
+                      byFamily: group != null,
+                      searching: searching,
+                      onOpen: (entry) => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => SpeciesPage(
+                            species: entry,
+                            controller: controller,
+                            audio: widget.audio,
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => SpeciesPage(
-                                  species: entry,
-                                  controller: controller,
-                                  audio: widget.audio,
-                                ),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  if (entry.portrait != null)
-                                    SizedBox(
-                                      width: 68,
-                                      height: 68,
-                                      child: MediaImage(
-                                        controller: controller,
-                                        species: entry,
-                                        media: entry.portrait!,
-                                        kind: MediaKind.portrait,
-                                        compact: true,
-                                      ),
-                                    )
-                                  else
-                                    const SizedBox(
-                                      width: 68,
-                                      height: 68,
-                                      child: Icon(Icons.eco_outlined, size: 32),
-                                    ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          entry.displayName,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium,
-                                        ),
-                                        if (entry.commonName.isNotEmpty)
-                                          Text(
-                                            entry.scientificName,
-                                            style: const TextStyle(
-                                              fontStyle: FontStyle.italic,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(Icons.chevron_right),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (controller.downloading) const LinearProgressIndicator(),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.offline_pin_outlined),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => OfflinePage(controller: controller),
+      bottomNavigationBar: controller.downloading
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (controller.downloading) const LinearProgressIndicator(),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.offline_pin_outlined),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => OfflinePage(controller: controller),
+                          ),
+                        ),
+                        label: Text(
+                          controller.downloading
+                              ? 'Offlinepaket wird geladen …'
+                              : 'Offlineinhalte · ${formatBytes(controller.occupiedBytes)}',
+                        ),
+                      ),
                     ),
-                  ),
-                  label: Text(
-                    controller.downloading
-                        ? 'Offlinepaket wird geladen …'
-                        : 'Offlineinhalte · ${formatBytes(controller.occupiedBytes)}',
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            )
+          : null,
     );
   }
 }

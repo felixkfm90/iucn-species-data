@@ -55,6 +55,76 @@ async function originals(f) {
   return result;
 }
 
+function publicRelease(catalog) {
+  const release = { ...catalog, generatedAt: "2026-11-12T18:51:24.919Z" };
+  release.revision = hash(`${JSON.stringify(release.species)}\n`);
+  const payload = JSON.stringify(release);
+  const manifest = { schemaVersion: 1, kind: "fn-public-catalog", catalogSha256: hash(payload), catalogBytes: Buffer.byteLength(payload),
+    revision: release.revision, generatedAt: release.generatedAt, speciesCount: release.species.length };
+  return { manifest, payload };
+}
+
+function websiteCatalog(f) {
+  return { ...f.catalog, species: f.catalog.species.map(({ media, ...species }) => ({ ...species,
+    websiteUrl: `https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/${species.id}`, media: { sounds: [], gallery: [] },
+  })) };
+}
+
+test("the verified release adds public editorial sections by local ID and binds the plan for offline continuation", async (t) => {
+  const f = await fixture(t), before = await originals(f), published = websiteCatalog(f), bundled = { ...f.catalog, species: [f.catalog.species[0]] };
+  published.species[1].media.gallery.push({ id: "photo-two", order: 0,
+    url: "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/photo-two.jpg", alt: "An approved photograph" });
+  published.species.push({ ...published.species[0], id: "published-only", websiteUrl: "https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/published-only" });
+  const { manifest, payload } = publicRelease(published), requests = [];
+  let online = true;
+  const adapter = createLocalWorkingImportSource({ repoRoot: f.root, readCatalog: async () => Buffer.from(JSON.stringify(bundled)),
+    fetchPublicCatalog: async (url, options) => {
+      requests.push([url.pathname.split("/").at(-1), options.credentials, options.redirect]);
+      if (!online) throw new TypeError("offline");
+      return new Response(url.pathname.endsWith("/manifest.json") ? JSON.stringify(manifest) : payload);
+    } });
+  const plan = await adapter.read(), local = plan.species[1];
+  assert.deepEqual(plan.species.map(({ id }) => id), [first, second]);
+  assert.equal(plan.evidence.editorialRelease.kind, "public-release");
+  assert.deepEqual(requests, [["manifest.json", "omit", "manual"], [`${manifest.catalogSha256}.json`, "omit", "manual"]]);
+  assert.equal(local.editorial.websiteUrl, published.species[1].websiteUrl);
+  assert.equal(local.editorial.sections.length, 2); assert.equal(local.editorial.gallery[0].alt, "An approved photograph");
+  assert.equal(local.input.size, "41 cm"); assert.equal(local.assets.files["map.jpg"].sha256, hash("fixture-two:map"));
+  assert.ok(Object.values(local.assets.files).every((file) => file.url === undefined));
+  online = false;
+  assert.equal(await adapter.verifySpecies(plan, second), true);
+  assert.equal((await adapter.read({ editorialRelease: plan.evidence.editorialRelease })).sourceSha256, plan.sourceSha256);
+  assert.equal(requests.length, 2);
+  const fallback = await adapter.read();
+  assert.deepEqual(fallback.evidence.editorialRelease, { kind: "bundled-catalog" });
+  assert.equal(fallback.species[1].editorial.websiteUrl, null);
+  assert.deepEqual(await originals(f), before);
+});
+
+test("a legacy prepared working plan retains its bundled source hash without consulting Pages", async (t) => {
+  const f = await fixture(t), old = await f.adapter.read();
+  const current = createLocalWorkingImportSource({ repoRoot: f.root, readCatalog: async () => Buffer.from(JSON.stringify(f.catalog)),
+    fetchPublicCatalog: async () => { assert.fail("the legacy plan must stay bound to its original source"); } });
+  assert.equal((await current.read({ editorialRelease: null })).sourceSha256, old.sourceSha256);
+  assert.equal(await current.verifySpecies(old, first), true);
+});
+
+test("an invalid release or one missing an existing local editorial binding blocks preparation", async (t) => {
+  for (const defect of ["manifest", "digest", "redirect", "gallery", "missing-known-species"]) await t.test(defect, async (t) => {
+    const f = await fixture(t), catalog = websiteCatalog(f);
+    if (defect === "gallery") catalog.species[0].media.gallery.push({ id: "unrelated", url: "https://unrelated.example.org/photo.jpg", order: 0 });
+    if (defect === "missing-known-species") catalog.species.pop();
+    const { manifest, payload } = publicRelease(catalog);
+    const adapter = createLocalWorkingImportSource({ repoRoot: f.root, readCatalog: async () => Buffer.from(JSON.stringify(f.catalog)),
+      fetchPublicCatalog: async (url) => {
+        if (url.pathname.endsWith("/manifest.json")) return new Response(defect === "manifest" ? "{}" : JSON.stringify(manifest));
+        if (defect === "redirect") return Response.redirect("https://unrelated.example.org/catalog.json");
+        return new Response(defect === "digest" ? payload.replace("Fachtext", "Testtext") : payload);
+      } });
+    await assert.rejects(adapter.read(), { code: "working_public_catalog_invalid" });
+  });
+});
+
 test("fixed local sources produce full records with exact generated general binding and unchanged original files", async (t) => {
   const f = await fixture(t), before = await originals(f), snapshot = await f.adapter.read();
   assert.equal(f.adapter.kind, "working-records"); assert.equal(f.adapter.version, 1); assert.equal(snapshot.species.length, 2);
@@ -68,6 +138,20 @@ test("fixed local sources produce full records with exact generated general bind
   assert.equal(snapshot.evidence.sources.assetsRoot.sha256, hash(canonicalJson(f.assetsRoot)));
   assert.equal(await f.adapter.verifySpecies(snapshot, first), true); assert.equal(await f.adapter.verifySpecies(snapshot, second), true);
   assert.deepEqual(await originals(f), before); assert.deepEqual((await fs.readdir(f.root)).sort(), [...Object.values(files), "species-assets"].sort());
+});
+
+test("a locally created species without a bound website entry is included with its actual files and without public URLs", async (t) => {
+  const f = await fixture(t), before = await originals(f);
+  f.catalog.species = f.catalog.species.filter((species) => species.id !== second);
+  const result = await f.adapter.read();
+  assert.deepEqual(result.species.map((record) => record.id), [first, second]);
+  const local = result.species[1];
+  assert.equal(local.generated["Wissenschaftlicher Name"], "Strix two");
+  assert.deepEqual(local.editorial, { websiteUrl: null, sections: [], gallery: [], generalSectionId: null, embeddedGeneralText: null });
+  assert.equal(local.assets.files["map.jpg"].sha256, hash("fixture-two:map"));
+  assert.ok(Object.values(local.assets.files).every((file) => file.url === undefined));
+  assert.equal(await f.adapter.verifySpecies(result, second), true);
+  assert.deepEqual(await originals(f), before);
 });
 
 test("only the five fixed root JSON paths and the fixed asset root are used regardless of extra options", async (t) => {

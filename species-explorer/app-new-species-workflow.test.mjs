@@ -4,6 +4,9 @@ import test from "node:test";
 import vm from "node:vm";
 
 const source = await readFile(new URL("./public/app-new-species-workflow.js", import.meta.url), "utf8");
+const formSource = await readFile(new URL("./public/app-new-species-form.js", import.meta.url), "utf8");
+const feedbackSource = await readFile(new URL("./public/app-form-feedback.js", import.meta.url), "utf8");
+const measurementSource = await readFile(new URL("./public/app-measurements.js", import.meta.url), "utf8");
 const mapUrl = "https://www.iucnredlist.org/api/v4/assessments/154496308/distribution_map/jpg";
 class Element {
   children = new Map(); listeners = new Map(); dataset = {}; value = ""; textContent = "";
@@ -42,7 +45,8 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   confirm = true, failRestart = false, failReset = false, noReviewAssets = false, persistReview = false, initializeReference = () => {},
   ownedCreation = false, pendingAborts = 0, finalPublished = false, restartStatus,
   availability = { available: true }, failAvailability = false, fetchOverride, beforeLoad,
-  focusDocument = null, confirmOverride, referenceSelection = null, scientificName } = {}) {
+  focusDocument = null, confirmOverride, referenceSelection = null, scientificName, workspace = "local", sharedReady = true,
+  sharedStatus = {}, failSharedCreate = false, malformedSharedCreate = false, realFormValues = null, savedSpecies = {} } = {}) {
   const dialog = new Element(), form = new Element(), open = new Element(), close = new Element();
   if (focusDocument) {
     open.ownerDocument = focusDocument;
@@ -61,23 +65,46 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   headerClose.textContent = "×";
   close.textContent = "Abbrechen";
   const steps = [1, 2, 3, 4].map((n) => { const e = new Element(); e.dataset.newSpeciesStep = n; return e; });
-  dialog.groups = { ".new-species-cancel": [close, headerClose], "[data-new-species-step]": steps };
+  const indicators = [1, 2, 3, 4].map(n => { const e = new Element(); e.dataset.newSpeciesStepIndicator = n; return e; });
+  dialog.groups = { ".new-species-cancel": [close, headerClose], "[data-new-species-step]": steps,
+    "[data-new-species-step-indicator]": indicators };
   form.elements = { german: new Element() };
+  if (realFormValues) {
+    form.elements = Object.fromEntries(Object.entries(realFormValues).map(([name, value]) => [name, Object.assign(new Element(), { name, value, type: "text" })]));
+    form.groups = { "input, select, textarea": Object.values(form.elements) };
+    form.reset = () => { for (const [name, control] of Object.entries(form.elements)) { control.value = realFormValues[name]; control.checked = false; } };
+  }
   if (focusDocument) form.elements.german.ownerDocument = focusDocument;
-  const state = { species: [] }, calls = [], confirmations = [], loadStatuses = [];
+  const state = { species: [], workspace, workspaceEpoch: 0, editMode: true,
+    ...(workspace === "shared-project" ? { workspaceStatus: { sourceScope: "a".repeat(64), connection: "online", available: true,
+      permissions: { canRead: true, canEdit: true, canCreate: true }, ...sharedStatus } } : {}) }, calls = [], confirmations = [], loadStatuses = [];
   const filters = { search: new Element(), statusFilter: new Element(), flagFilter: new Element() };
   let dialogOptions, dialogReturnFocus, statusReads = 0, opened = false, rejectedCount = 1, starts = 0;
   let reviewSubmitted = false, restartReviewed = false;
   let created = false, aborted = false, abortReads = 0;
-  const context = vm.createContext({ document: focusDocument || {}, FormData: class {}, clearTimeout, setTimeout });
+  const documentRef = focusDocument || {};
+  if (realFormValues && !documentRef.createElement) documentRef.createElement = () => new Element();
+  const context = vm.createContext({ document: documentRef, FormData: class {
+    constructor(form) { this.form = form; }
+    get(name) { const control = this.form.elements[name]; return control && !control.disabled && (control.type !== "checkbox" || control.checked) ? control.value : null; }
+  }, clearTimeout, setTimeout });
   new vm.Script(source).runInContext(context);
-  const species = { id: "perdixperdix", germanName: "Rebhuhn", iucn: { assessmentId: 154496308 }, assets: { map: { exists: false }, sound: { exists: true } } };
+  context.SpeciesExplorerPresentation = { escapeHtml: value => String(value ?? "") };
+  new vm.Script(measurementSource).runInContext(context);
+  if (realFormValues) new vm.Script(formSource).runInContext(context);
+  if (realFormValues) new vm.Script(feedbackSource).runInContext(context);
+  const species = { id: "perdixperdix", germanName: "Rebhuhn", iucn: { assessmentId: 154496308 }, assets: { map: { exists: false }, sound: { exists: true } }, ...savedSpecies };
   const controller = context.SpeciesExplorerNewSpeciesWorkflow.createNewSpeciesWorkflowController({
     state, elements: { newSpeciesDialog: dialog, newSpeciesForm: form, newSpeciesButton: open,
       ...filters },
     createMessageSetter: (element) => (text = "", type = "") => { element.textContent = text; element.hidden = !text; element.type = type; },
-    createFieldFeedbackController: () => ({ clearFieldErrors() {}, applyFieldErrors() {}, updateMeasurementMode() {} }),
-    createNewSpeciesFormModel: () => ({ speciesValues: () => ({ german: "Rebhuhn", ...(scientificName ? { scientificName } : {}) }), localFieldErrors: () => ({}) }),
+    createFieldFeedbackController: realFormValues ? context.SpeciesExplorerFormFeedback.createFieldFeedbackController
+      : () => ({ clearFieldErrors() {}, applyFieldErrors() {}, updateMeasurementMode() {} }),
+    createNewSpeciesFormModel: realFormValues ? context.SpeciesExplorerNewSpeciesForm.createNewSpeciesFormModel
+      : () => ({ speciesValues: () => ({ german: "Rebhuhn", ...(scientificName ? { scientificName } : {}) }), localFieldErrors: () => ({}) }),
+    composeManualSexedMeasurement: (...parts) => parts.join(" "), formatManualMeasurement: (value, unit) => `${value} ${unit}`.trim(),
+    stripManualMeasureInput: value => String(value ?? "").trim(), MANUAL_SIZE_UNITS: ["cm"], MANUAL_WEIGHT_UNITS: ["g"], MANUAL_AGE_UNITS: ["Jahre"],
+    parseManualMeasurement: context.SpeciesExplorerMeasurements.parseManualMeasurement,
     createTaxonomyReferenceController: () => ({ reset() {}, initialize: initializeReference, getSelection: () => referenceSelection }),
     createDialogController: (options) => {
       dialogOptions = options;
@@ -100,6 +127,17 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
       if (route === "/api/species/new/availability") {
         if (failAvailability) throw new Error("Prüfung nicht erreichbar");
         return availability;
+      }
+      if (route === "/api/shared-project/species/new/availability") return { available: sharedReady, source: "shared-project", sourceScope: "a".repeat(64) };
+      if (route === "/api/shared-project/species/new/preview") return { source: "shared-project", sourceScope: "a".repeat(64), token: "shared-draft",
+        species: { id: "perdixperdix", germanName: "Rebhuhn", scientificName: "Perdix perdix", assetName: "Rebhuhn" } };
+      if (route === "/api/shared-project/refresh") return {};
+      if (["/api/shared-project/species/new/create", "/api/shared-project/species/new/recover"].includes(route)) {
+        const recovery = route.endsWith("/recover");
+        if (failSharedCreate && !recovery) throw new Error("Eigene verlorene Antwort");
+        return { source: "shared-project", sourceScope: "a".repeat(64), serverConfirmed: !malformedSharedCreate,
+          created: !recovery, recovered: recovery, approvalPerformed: false, externalPublication: "not-performed",
+          species: { id: "perdixperdix", germanName: "Rebhuhn", scientificName: "Perdix perdix", assetName: "Rebhuhn", revision: "bound-revision", approval: "draft" } };
       }
       if (route.endsWith("/new/preview")) return { token: "draft", entry: {}, derived: {} };
       if (route.endsWith("/new/discard")) return { discarded: true };
@@ -155,7 +193,7 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
   const action = (key, value) => ({ closest: (selector) => selector === `[${key}]` ? { dataset: {
     [key.replace(/^data-/, "").replace(/-([a-z])/g, (_, c) => c.toUpperCase())]: value,
   } } : null });
-  return { state, calls, confirmations, loadStatuses, filters, form, get, close, headerClose, steps, map, sound, open,
+  return { state, calls, confirmations, loadStatuses, filters, form, get, close, headerClose, steps, indicators, map, sound, open,
     dialogOptions: () => dialogOptions, dialogReturnFocus: () => dialogReturnFocus, opened: () => opened,
     async start() {
       await open.emit("click"); await form.emit("submit");
@@ -175,6 +213,184 @@ function harness({ status = "awaiting-review", finalStatus = "completed", failRe
     },
   };
 }
+
+test("gemeinsamer Artassistent verwendet vorhandene Felder und ausschließlich den geprüften gemeinsamen Anlegeweg", async () => {
+  const h = harness({ workspace: "shared-project", scientificName: "Perdix perdix" });
+  await h.open.emit("click"); assert.equal(h.opened(), true);
+  assert.match(h.get(".new-species-introduction").textContent, /gemeinsamen Projekt/);
+  await h.form.emit("submit");
+  assert.equal(h.get(".new-species-next-button").textContent, "Art im gemeinsamen Projekt anlegen");
+  assert.equal(h.get(".new-species-next-button").disabled, false);
+  assert.equal(h.get(".new-species-json").hidden, true);
+  assert.ok(h.steps.slice(1).every(step => step.hidden));
+  for (const selector of [".new-species-portrait-prompt-button", ".new-species-portrait-preview-button", ".new-species-portrait-skip-button", ".new-species-reset-sounds-button"])
+    await h.get(selector).emit("click");
+  await h.get(".new-species-next-button").emit("click");
+  await settle(() => h.get(".new-species-save-button").hidden === false && !h.close.disabled);
+  assert.equal(h.state.selectedId, "perdixperdix");
+  assert.match(h.get(".new-species-message").textContent, /Entwurf im gemeinsamen Projekt angelegt/);
+  assert.equal(h.get(".new-species-fields").inert, true);
+  assert.deepEqual(h.calls.map(call => call.route), ["/api/shared-project/species/new/availability", "/api/shared-project/species/new/preview", "/api/shared-project/species/new/create"]);
+  assert.equal(h.calls[1].body.sourceScope, "a".repeat(64));
+  assert.deepEqual(h.calls[2].body, { token: "shared-draft" });
+  await h.close.emit("click"); assert.equal(h.opened(), false);
+  assert.ok(!h.calls.some(call => call.route.includes("discard") || call.route.startsWith("/api/species/") || call.route.startsWith("/api/pipeline/")));
+});
+
+test("echter Formularleser erhält Eingaben unter inert und akzeptiert serverseitig normalisierte deutsche Namen", async () => {
+  const gate = deferred(), h = harness({ workspace: "shared-project", realFormValues: { german: " Rebhuhn ", english: "Grey partridge", scientificName: "Perdix perdix",
+    size: "30", sizeUnit: "cm", weight: "400", weightUnit: "g", lifeExpectancy: "5", lifeExpectancyUnit: "Jahre" },
+    fetchOverride: async route => { if (route.endsWith("/preview")) await gate.promise; } });
+  await h.open.emit("click"); const preview = h.form.emit("submit"); await settle(() => h.calls.length === 2);
+  assert.equal(h.get(".new-species-fields").inert, true); assert.equal(h.form.elements.german.disabled, false);
+  gate.resolve(); await preview;
+  const input = h.calls.find(call => call.route.endsWith("/preview")).body.values;
+  assert.equal(input.german, " Rebhuhn "); assert.equal(input.size, "30 cm"); assert.equal(input.weight, "400 g");
+  assert.equal(h.get(".new-species-next-button").disabled, false);
+  await h.get(".new-species-next-button").emit("click");
+  await settle(() => !h.get(".new-species-save-button").hidden && !h.close.disabled);
+  assert.equal(h.calls.filter(call => call.route.endsWith("/create")).length, 1);
+});
+
+test("Wiederöffnen einer unbestätigten Artanlage zeigt restaurierte getrennte Messwerte mit dem echten Feldcontroller", async () => {
+  const h = harness({ workspace: "shared-project", failSharedCreate: true, realFormValues: { german: "Rebhuhn", english: "Grey partridge", scientificName: "Perdix perdix",
+    size: "30", sizeUnit: "cm", sizeSexed: "on", sizeMale: "30", sizeMaleUnit: "cm", sizeFemale: "25", sizeFemaleUnit: "cm",
+    weight: "400", weightUnit: "g", weightSexed: "on", weightMale: "400", weightMaleUnit: "g", weightFemale: "350", weightFemaleUnit: "g",
+    lifeExpectancy: "5", lifeExpectancyUnit: "Jahre" } });
+  await h.open.emit("click");
+  for (const kind of ["size", "weight"]) {
+    const toggle = h.form.elements[`${kind}Sexed`]; toggle.type = "checkbox"; toggle.checked = true; await toggle.emit("change");
+    assert.equal(h.form.querySelector(`[data-sexed-fields="${kind}"]`).hidden, false);
+  }
+  await h.form.emit("submit"); await h.get(".new-species-next-button").emit("click");
+  await settle(() => !h.close.disabled && h.get(".new-species-next-button").textContent === "Serverstand prüfen");
+  await h.close.emit("click"); await h.open.emit("click");
+  for (const kind of ["size", "weight"]) {
+    assert.equal(h.form.elements[`${kind}Sexed`].checked, true);
+    assert.equal(h.form.querySelector(`[data-sexed-fields="${kind}"]`).hidden, false);
+    assert.equal(h.form.querySelector(`[data-field="${kind}"]`).hidden, true);
+  }
+  assert.equal(h.form.elements.sizeFemale.value, "25"); assert.equal(h.form.elements.weightFemale.value, "350");
+});
+
+test("nicht verfügbare gemeinsame Artanlage öffnet kein lokales Ersatzformular", async () => {
+  const h = harness({ workspace: "shared-project", sharedReady: false }); await h.open.emit("click");
+  assert.equal(h.opened(), false); assert.equal(h.calls.length, 1);
+  assert.match(h.confirmations[0].title, /Gemeinsame Artanlage/);
+});
+
+test("gemeinsame Neuanlage bleibt bei Lese-/Offlinemodus und fehlenden Rechten ohne Anfrage gesperrt", async () => {
+  for (const status of [{ connection: "offline" }, { available: false }, { permissions: { canRead: true, canEdit: true, canCreate: false } },
+    { permissions: { canRead: false, canEdit: false, canCreate: true } }]) {
+    const h = harness({ workspace: "shared-project", sharedStatus: status }); await h.open.emit("click");
+    assert.equal(h.opened(), false); assert.equal(h.calls.length, 0);
+  }
+  const reader = harness({ workspace: "shared-project" }); reader.state.editMode = false; await reader.open.emit("click");
+  assert.equal(reader.calls.length, 0);
+});
+
+test("Projektwechsel während der gemeinsamen Verfügbarkeitsprüfung öffnet keinen veralteten Assistenten", async () => {
+  const gate = deferred(), h = harness({ workspace: "shared-project", fetchOverride: async route => {
+    if (route.endsWith("/availability")) await gate.promise;
+  } });
+  const opening = h.open.emit("click"); await settle(() => h.calls.length === 1);
+  h.state.workspaceEpoch++; gate.resolve(); await opening;
+  assert.equal(h.opened(), false); assert.equal(h.calls.length, 1); assert.match(h.confirmations[0].message, /geändert/);
+});
+
+test("geänderte Taxonomieauswahl während gemeinsamer Vorschau verwirft die alte Bestätigung", async () => {
+  const selection = { scientificName: "Perdix perdix", taxonomyReference: "12345" }, gate = deferred();
+  const h = harness({ workspace: "shared-project", scientificName: "Perdix perdix", referenceSelection: selection,
+    fetchOverride: async route => { if (route.endsWith("/preview")) await gate.promise; } });
+  await h.open.emit("click"); const preview = h.form.emit("submit"); await settle(() => h.calls.length === 2);
+  selection.taxonomyReference = "67890"; gate.resolve(); await preview;
+  assert.equal(h.get(".new-species-next-button").disabled, true);
+  assert.match(h.get(".new-species-message").textContent, /erneut prüfen/);
+  assert.ok(!h.calls.some(call => call.route.endsWith("/create")));
+});
+
+test("eine fremde gemeinsame Vorschau wird weder angezeigt noch als Anlegetoken angenommen", async () => {
+  const h = harness({ workspace: "shared-project", fetchOverride: async route => route.endsWith("/preview")
+    ? { source: "shared-project", sourceScope: "b".repeat(64), token: "foreign", species: { id: "foreign", germanName: "Rebhuhn" } } : undefined });
+  await h.open.emit("click"); await h.form.emit("submit");
+  assert.equal(h.get(".new-species-next-button").disabled, true); assert.equal(h.get(".new-species-message").type, "error");
+});
+
+test("unklare gemeinsame Speicherantwort sperrt neue Vorschauen und bietet ausdrücklich nur den Serververgleich", async () => {
+  const h = harness({ workspace: "shared-project", scientificName: "Perdix perdix", failSharedCreate: true });
+  await h.open.emit("click"); await h.form.emit("submit"); await h.get(".new-species-next-button").emit("click");
+  await settle(() => !h.close.disabled && h.get(".new-species-next-button").textContent === "Serverstand prüfen");
+  assert.equal(h.get(".new-species-fields").inert, true); assert.equal(h.get(".new-species-preview-button").hidden, true);
+  const prior = h.calls.length; await h.form.emit("submit"); assert.equal(h.calls.length, prior);
+  await h.get(".new-species-next-button").emit("click");
+  await settle(() => h.get(".new-species-save-button").hidden === false && !h.close.disabled);
+  const repeated = h.calls.filter(call => /\/(create|recover)$/.test(call.route)); assert.equal(repeated.length, 2);
+  assert.deepEqual(repeated.map(call => call.body), [{ token: "shared-draft" }, { token: "shared-draft" }]);
+  assert.equal(repeated[0].route, "/api/shared-project/species/new/create");
+  assert.equal(repeated[1].route, "/api/shared-project/species/new/recover");
+  assert.equal(h.calls.filter(call => call.route === "/api/shared-project/refresh").length, 1);
+  assert.match(h.get(".new-species-message").textContent, /keine zweite Anlage gesendet/);
+});
+
+test("nicht eindeutig bestätigte gemeinsame Speicherantwort bleibt offen und wird nicht als Erfolg angezeigt", async () => {
+  const h = harness({ workspace: "shared-project", scientificName: "Perdix perdix", malformedSharedCreate: true });
+  await h.open.emit("click"); await h.form.emit("submit"); await h.get(".new-species-next-button").emit("click");
+  await settle(() => !h.close.disabled && h.get(".new-species-message").type === "error");
+  assert.equal(h.get(".new-species-save-button").hidden, true); assert.equal(h.state.selectedId, undefined);
+  await h.close.emit("click"); assert.match(h.state.notice, /Serverprüfung wieder geöffnet/);
+  assert.ok(!h.calls.some(call => call.route.includes("/discard")));
+});
+
+test("Schließen einer unbestätigten gemeinsamen Artanlage erhält deren einzigen lesenden Prüfweg", async () => {
+  const h = harness({ workspace: "shared-project", scientificName: "Perdix perdix", failSharedCreate: true });
+  await h.open.emit("click"); await h.form.emit("submit"); await h.get(".new-species-next-button").emit("click");
+  await settle(() => !h.close.disabled && h.get(".new-species-next-button").textContent === "Serverstand prüfen");
+  await h.close.emit("click"); const before = h.calls.length; assert.equal(h.opened(), false);
+  await h.open.emit("click"); assert.equal(h.opened(), true); assert.equal(h.calls.length, before);
+  assert.equal(h.get(".new-species-next-button").textContent, "Serverstand prüfen");
+  assert.equal(h.get(".new-species-fields").inert, true);
+  await h.get(".new-species-next-button").emit("click");
+  await settle(() => !h.get(".new-species-save-button").hidden && !h.close.disabled);
+  assert.equal(h.calls.filter(call => call.route.endsWith("/create")).length, 1);
+  assert.equal(h.calls.filter(call => call.route.endsWith("/preview")).length, 1);
+  assert.equal(h.calls.filter(call => call.route.endsWith("/recover")).length, 1);
+  assert.equal(h.state.notice, "");
+});
+
+test("Doppelklick während gemeinsamer Speicherung sendet nur eine Anfrage und kann den Dialog nicht schließen", async () => {
+  const gate = deferred(), h = harness({ workspace: "shared-project", scientificName: "Perdix perdix", fetchOverride: async route => {
+    if (route.endsWith("/create")) await gate.promise;
+  } });
+  await h.open.emit("click"); await h.form.emit("submit"); await h.get(".new-species-next-button").emit("click");
+  await settle(() => h.calls.some(call => call.route.endsWith("/create")));
+  await h.get(".new-species-next-button").emit("click"); await h.close.emit("click");
+  assert.equal(h.opened(), true); assert.equal(h.calls.filter(call => call.route.endsWith("/create")).length, 1);
+  gate.resolve(); await settle(() => h.get(".new-species-save-button").hidden === false && !h.close.disabled);
+});
+
+test("Personenwechsel während einer gemeinsamen Speicherantwort bestätigt nicht den nun sichtbaren Bestand", async () => {
+  const gate = deferred(), h = harness({ workspace: "shared-project", scientificName: "Perdix perdix", fetchOverride: async route => {
+    if (route.endsWith("/create")) await gate.promise;
+  } });
+  await h.open.emit("click"); await h.form.emit("submit"); await h.get(".new-species-next-button").emit("click");
+  await settle(() => h.calls.some(call => call.route.endsWith("/create")));
+  h.state.workspaceEpoch++; gate.resolve(); await settle(() => !h.close.disabled);
+  assert.equal(h.state.selectedId, undefined); assert.equal(h.get(".new-species-message").type, "error");
+  assert.equal(h.get(".new-species-next-button").disabled, true);
+});
+
+test("Bestandswechsel während lokaler Öffnungsprüfung startet weder lokales Formular noch gespeicherte Folgeaufträge", async () => {
+  const gate = deferred(), h = harness({ fetchOverride: async route => { if (route.endsWith("/availability")) await gate.promise; } });
+  const opening = h.open.emit("click"); await settle(() => h.calls.length === 1);
+  h.state.workspace = "shared-project"; h.state.workspaceEpoch++; gate.resolve(); await opening;
+  assert.equal(h.opened(), false); assert.deepEqual(h.calls.map(call => call.route), ["/api/species/new/availability"]);
+});
+
+test("ein nachträglicher Bestandswechsel kann die geöffnete lokale Vorschau nicht zum lokalen Speichern verleiten", async () => {
+  const h = harness(); await h.open.emit("click"); await h.form.emit("submit"); const before = h.calls.length;
+  h.state.workspace = "shared-project"; await h.form.emit("submit"); await h.get(".new-species-next-button").emit("click");
+  assert.equal(h.calls.length, before); assert.match(h.get(".new-species-message").textContent, /Artbestand wurde gewechselt/);
+});
 
 test("Neue-Art-Vorschau bindet nur die weiterhin ausgewählte Master-ID; manuelle Namensänderung entfernt die Bindung", async () => {
   const id = `mtx_${"1".repeat(32)}`;
@@ -510,6 +726,52 @@ test("Neue Art: ununterbrochene Wiederaufnahme lädt Auftrag und Kartenprüfung 
   assert.equal(h.get(".new-species-abort-button").hidden, false);
   assert.equal(h.loadStatuses.length, 2);
   assert.equal(h.close.disabled, false);
+  await h.close.emit("click");
+});
+
+test("Wiederaufnahme zeigt gespeicherte Artdaten und Portrait trotz zwischenzeitlicher anderer Namenseingabe", async () => {
+  const pending = { ...resumeStatus, creationId: savedCreation.id };
+  const fields = Object.fromEntries(["german", "english", "scientificName", "size", "sizeUnit", "sizeSexed", "sizeMale", "sizeMaleUnit",
+    "sizeFemale", "sizeFemaleUnit", "weight", "weightUnit", "weightSexed", "lifeExpectancy", "lifeExpectancyUnit"].map(key => [key, ""]));
+  const portrait = { exists: true, url: "/assets/Rebhuhn/portrait.webp", bytes: 12345, metadata: { prompt: "Gespeicherter Portraitprompt" } };
+  const h = harness({ realFormValues: fields, savedSpecies: { englishName: "Grey Partridge", scientificName: "Perdix perdix", safeName: "Rebhuhn",
+    manual: { size: "Männchen: ca. 30-33 cm; Weibchen: ca. 28-31 cm", weight: "ca. 350 g", lifeExpectancy: "ca. 1 Jahr" },
+    assets: { map: { exists: false }, sound: { exists: true }, portrait } },
+  fetchOverride: route => route.endsWith("/new/sessions") ? { sessions: [savedCreation] }
+    : route === "/api/pipeline/status" ? pending : undefined });
+  h.form.elements.german.value = "Anderer Name";
+  h.form.elements.scientificName.value = "Anderes Taxon";
+  h.state.pipelineStatusSnapshot = pending;
+  await h.state.resumeNewSpeciesCreation();
+  assert.equal(h.form.elements.german.value, "Rebhuhn");
+  assert.equal(h.form.elements.english.value, "Grey Partridge");
+  assert.equal(h.form.elements.scientificName.value, "Perdix perdix");
+  assert.equal(h.form.elements.sizeSexed.checked, true);
+  assert.equal(h.form.elements.sizeMale.value, "30-33");
+  assert.equal(h.form.elements.sizeFemale.value, "28-31");
+  assert.equal(h.form.elements.weight.value, "350");
+  assert.equal(h.form.elements.weightUnit.value, "g");
+  assert.equal(h.form.elements.lifeExpectancy.value, "1");
+  assert.equal(h.form.elements.lifeExpectancyUnit.value, "Jahre");
+  assert.equal(h.get(".new-species-fields").inert, true);
+  assert.equal(h.get(".new-species-portrait-preview").hidden, false);
+  assert.equal(h.get(".new-species-portrait-preview-image").src, portrait.url);
+  assert.match(h.get(".new-species-portrait-message").textContent, /gespeichert/);
+  await h.indicators[0].emit("click");
+  assert.equal(h.steps[0].hidden, false);
+  assert.equal(h.get(".new-species-preview-button").hidden, true);
+  const before = h.calls.length;
+  await h.form.emit("submit");
+  assert.equal(h.calls.length, before, "Wiederaufnahme darf keine zweite Artprüfung oder Anlage absenden");
+  await h.get(".new-species-next-button").emit("click");
+  assert.equal(h.steps[1].hidden, false);
+  assert.match(h.get(".new-species-final-portrait-state").textContent, /Gespeichertes Artportrait/);
+  await h.get(".new-species-portrait-skip-button").emit("click");
+  assert.equal(h.get(".new-species-portrait-preview").hidden, false);
+  await h.get(".new-species-next-button").emit("click");
+  assert.equal(h.steps[2].hidden, false);
+  assert.equal(h.calls.length, before, "Navigation einer gespeicherten Anlage bleibt rein lokal");
+  assert.equal(h.get(".new-species-portrait-preview-image").src, portrait.url);
   await h.close.emit("click");
 });
 

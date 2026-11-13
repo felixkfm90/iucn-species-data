@@ -1,5 +1,54 @@
 # Image Alt Text Audit
 
+## Deutsche Rechtschreibmarkierung und automatische Sprachprüfung
+
+Felix wünscht begleitende Prüfung normaler Wörter, Groß-/Kleinschreibung, Grammatik und Kommasetzung.
+Änderungen bleiben bearbeitbare Vorschläge; unbekannte Fach- und Artnamen dürfen nicht automatisch
+ersetzt werden. Der neue Desktop-Quellstand setzt die vorhandene Rechtschreibprüfung ausdrücklich
+auf Deutsch und bietet Korrekturvorschläge sowie bewusstes Lernen eines Wortes im Rechtsklick-Menü.
+Das Website-Entwurfsfeld fordert deutsche Rechtschreibung ausdrücklich an. Felix bestätigt am
+**2. November**, dass diese Prüfung in seiner geöffneten Fassung bereits direkt im Textfeld arbeitet.
+Der zusätzliche manuelle Button **Sprache prüfen** wird deshalb aus Bildtext- und Artseitenredaktion
+entfernt. Die normale Eingabe und vorhandene deutsche Rechtschreibung bleiben erhalten.
+Am **11. November** hat Felix die Prüfung direkt im Textfeld als grundsätzlich in Ordnung eingeordnet.
+
+Die zusätzliche Grammatik-/Kommaprüfung wird als automatisch mitlaufende lokale Feldprüfung
+vorbereitet, mit kurzer Tipp-Pause und Hinweisen unmittelbar am Text. Sie verwendet den freien
+LanguageTool-Core und benötigt den Bildtext-KI-Dialog nicht. Eine spätere Eingabe, veränderte Bild-
+oder Personenbindung sowie fehlendes Redaktionsrecht verhindern die Annahme alter Ergebnisse.
+Die tatsächliche Engine- und sichtbare Feldqualifikation läuft noch; die Produktaktivierung ist bis
+dahin zurückgestellt. Die technische Grenze führt der [Sprachprüfvertrag](../species-explorer/language-check/README.md).
+Diese Hinweise ersetzen keine sachliche Quellenprüfung. Weitere Desktop-/Datengrenzen stehen im
+[Desktopvertrag](desktop-shell-plan.md#deutsche-rechtschreibung-bei-der-texteingabe).
+Die gezielten Menü-/Desktop-/Bildtextfälle bestehen **127/127 ohne Fehler oder Skips**; der Testlauf
+liegt im vorhandenen privaten Prüfbereich. Dies belegt keine zusätzliche native Sprach-/Wörterbuchabnahme.
+
+## Zeichengrenze gekoppelter Reisegalerien vom 1. November 2026
+
+Die gemeldeten beiden Kolibribilder auf Cordillera de Talamanca sind frisch öffentlich nachgelesen:
+Freigaben mit 251 beziehungsweise 261 Zeichen stehen vollständigen Beschriftungen, aber auf genau
+250 Zeichen gekürzten Alternativtexten gegenüber. Der öffentliche Parser und der Übernahmeadapter
+kürzen diese Texte nicht. Die Grenze wird deshalb für den bestehenden gekoppelten Reisegalerieweg
+vor Freigabe und Übernahme geprüft; daraus folgt kein allgemeines HTML-Limit für andere Bildtypen.
+
+Der neue Quellstand zeigt am Feld einen laufenden Zeichenzähler und eine konkrete Überlängenwarnung.
+Entwürfe bis zur bestehenden Grenze von 2.000 Zeichen bleiben speicherbar; Eingaben und historische
+Freigaben werden nicht automatisch gekürzt. Eine zu lange offene Freigabe sperrt die Seitenübernahme
+bereits vor dem Verbindungsaufbau. Eine abweichende öffentliche Ausgabe heißt nicht pauschal
+„Freigabe geändert“; die genaue unverändert erhaltene Entscheidung bleibt sichtbar und unbestätigt.
+Bei exakt gebundener öffentlicher Kürzung mit vollständiger Beschriftung bleibt auch beim Einlesen
+der Seite die Freigabe erhalten. Fremde Quellen-, Text- oder Beschriftungsänderungen bleiben prüfpflichtig.
+Der frische öffentliche HTML-Beleg und die gezielten Gegenproben liegen im bestehenden privaten Prüfbereich.
+Die gezielte Gegenprüfung umfasst **238 bestandene Fälle ohne Fehler oder Skips**: Speicher/Policy,
+Oberfläche sowie Übernahme-/Service-/HTTP-/gemeinsamer Abgleich. Syntax, Stil und lokale Verweise
+bestehen ebenfalls. Die eigene Kontrolle des tatsächlichen Seitenbestands war rein lesend; Felix'
+zwischenzeitliche Textkorrekturen bleiben erhalten. Der reguläre Explorer muss für den neuen Code
+neu gestartet werden. Das ist keine zusätzliche native Abnahme des geänderten Scrollverhaltens.
+Am **11. November** bestätigt Felix, dass die Überlängenwarnung auf den Reiseseiten funktioniert hat.
+Felix bestätigt anschließend funktionierende Zuordnung und Übernahme sowohl auf normalen Reiseunterseiten
+als auch auf der Reiseübersicht. Beim Wechsel der ausgewählten Seite beginnt der rechte Bildbereich im
+neuen Quellstand oben; linke Listenposition und rechte Position bei Aktualisierung derselben Seite bleiben erhalten.
+
 ## Vorhandenen Text beibehalten und Listenposition vom 1. November 2026
 
 Felix beauftragt die kurze Bildaktion **Vorhandenen Text beibehalten**. Sie verwendet den zuvor
@@ -72,7 +121,7 @@ Felix hat die Entwicklungspause aufgehoben; gemeldete Fehler behalten Vorrang. D
 vorbereitete seitenweise Bildtextbrücke ist jetzt im normalen Explorer angeschlossen. Unter
 **Website-Bildtexte → Seitenaktionen → Bildtexte gemeinsam abgleichen** öffnet sich der Vergleich
 der gespeicherten lokalen und gemeinsamen Fassung mit Bildvorschauen. Die persönliche Projektanmeldung
-erfolgt weiterhin unter **Datenbank-Aktionen → Weitere Aktionen → Backup und Einstellungen → Gemeinsames Projekt**.
+erfolgt im neuen Quellstand unter **⋮ → Einstellungen → Gemeinsames Projekt**.
 
 Die erste Verknüpfung, das Senden gespeicherter Änderungen und die lokale Übernahme einer geladenen
 Fassung sind ausdrückliche Schritte. Bestehende Freigaben brauchen bei der ersten gemeinsamen
@@ -81,6 +130,14 @@ eine laufende Erfassung/Übernahme und der Lesemodus sperren den Anschluss. Sola
 geöffnet ist, startet der Hauptdialog keine konkurrierenden Speicher-, Freigabe- oder CMS-Aufträge.
 Nachlaufende eigene Texteingaben werden bei einer gemeinsamen Übernahme erhalten. Nur eine quittierte
 lokale Übernahme lädt die Hauptansicht neu; danach bleibt Squarespace ein eigener Schritt.
+Vor einer lokalen Übernahme gleicht der Explorer die verglichene gemeinsame Version online erneut
+mit dem Projektdienst ab. Hat sich die Version geändert, bleiben die lokalen Texte erhalten. Lade
+den gemeinsamen Stand für einen neuen Vergleich. Auch ein Abgleich ohne eigene Änderungen legt
+eine neuere gemeinsame Fassung erst zum Vergleich vor, bevor sie zur Grundlage weiterer Änderungen wird.
+Auch der zentrale Projektabgleich aktualisiert den lokalen Status bereits vorgemerkter Bildtexte.
+Die Bestätigung gehört zur gesendeten Fassung. Neuere lokale Eingaben bleiben als offene Änderungen
+erhalten. Der Seitenvergleich weist einen Konflikt aus. Dieser Statusabgleich liest den Projektcache.
+Die Übernahme nach Squarespace und die Prüfung der öffentlichen Ausgabe bleiben eigene Schritte.
 Im allgemeinen Projektbereich werden diese Datensätze als **Bildtexte** mit Seitentitel bezeichnet.
 Bearbeitung und Konfliktentscheidung verweisen dort auf den eigenen Vergleich mit Bildvorschauen;
 das allgemeine Seitenformular bietet für Bildtextdatensätze keine Speicherung oder interne Freigabe an.

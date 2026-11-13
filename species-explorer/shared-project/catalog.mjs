@@ -24,6 +24,7 @@ function https(value) {
     400, "invalid_catalog", "Private Freigabeparameter gehören nicht in den Katalog.");
   return value;
 }
+export function validatePublicCatalogUrl(value) { return https(value); }
 function unique(values, label) {
   check(new Set(values).size === values.length, 400, "invalid_catalog", `${label} müssen eindeutig sein.`);
 }

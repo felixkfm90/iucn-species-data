@@ -1,6 +1,6 @@
 # Audioformat-Prüfung und Bestandsmigration
 
-Stand: 2026-10-27
+Stand: 2026-11-01
 
 ## Ziel
 
@@ -19,6 +19,30 @@ PCM-Nutzdaten nicht als gültiges MP3 akzeptiert.
 Nicht passende Kandidaten werden verworfen und die Suche läuft mit der nächsten Quelle weiter. Der Explorer nutzt
 denselben Inspektor für manuelle Uploads. Auch eine Asset-Wiederherstellung lehnt eine als `.mp3` benannte WAV- oder
 unbekannte Datei ab, sodass alte lokale Sicherungen den Fehler nicht erneut einführen können.
+
+## Vollständige Prüfung für den gemeinsamen Mediendienst
+
+Für die vorbereitete private Bereitstellung normaler Artdateien ist zusätzlich
+`inspectCompleteMp3Buffer` ergänzt. Die schnelle bisherige Dreiframe-Erkennung bleibt unverändert.
+Die vollständige Prüfung kontrolliert jede MPEG-Framegrenze bis zum belegten Ende; eine gültige
+Anfangssequenz genügt nicht. Variable Bitrate, Padding und Xing-/Info-/LAME-Daten bleiben erhalten.
+ID3-Tags folgen den Grenzen der [ID3v2.4-Spezifikation](https://id3.org/id3v2.4.0-structure) und
+des [ID3v1-Formats](https://id3.org/ID3v1); APE-Endtags werden anhand der
+[TagLib-Implementierung](https://github.com/taglib/taglib/tree/master/taglib/ape) geprüft.
+
+Der neue `scripts/audio-validation.mjs` prüft danach den vollständigen Audioinhalt mit FFmpeg:
+höchstens 50 MiB Eingabe, 15 Sekunden Gesamtzeit, ein Decoderthread und 64 KiB Prozessausgabe.
+Nur nachgewiesene äußere Metadaten werden vom Decoderinput getrennt; kein Audioframe wird
+ausgelassen. Originalbytes und Tags werden weder verändert noch neu gespeichert. Dateigröße und
+SHA-256 beziehen sich immer auf das vollständige Original. Abbruch und Zeitüberschreitung warten
+auf das tatsächliche Ende des eigenen Kindprozesses.
+
+Der erste echte Gegenlauf belegte, dass FFmpeg allein ein abgeschnittenes Schlussframe tolerieren
+kann. Die zusätzliche Frame-/Taggrenzprüfung behebt dies. **27/27 Format-/Decoderfälle** sind
+anschließend bestanden, einschließlich derselben Trunkierungsgegenprobe, tatsächlicher ID3-/APE-
+Dekodierung, unveränderter Originalhashes sowie Abbruch-/Ausgabe-/Prozessabschlussfällen.
+Dies ist eine isolierte Vorbereitung des Normalmediendiensts, keine erneute Bestandsmigration oder
+Hörabnahme. Die bisherige Download-/Upload-/Bestandsdetektion wird dadurch nicht automatisch ersetzt.
 
 ## Prüf- und Migrationsbefehle
 

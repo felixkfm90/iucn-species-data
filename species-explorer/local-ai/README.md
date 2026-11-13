@@ -1,10 +1,111 @@
 # Lokale KI für bearbeitbare Vorschläge
 
-Stand: 31. Oktober 2026. Produktkern als getrennte Module; Geräteprofil, Authentisierung,
+Stand: 2. November 2026. Produktkern als getrennte Module; Geräteprofil, Authentisierung,
 vorhandener Bildtexteditor und lokale API sind im Quellstand verbunden. Die Modultests verwenden
 kleine synthetische Dateien, Fake-HTTP und Fakeprozesse; sie sind von den nachfolgenden tatsächlichen
 nativen Produktproben getrennt. Die separaten CPU-Proben verwenden eigene Prozesse; die persönliche
 Einrichtung und Bedienprüfung des Explorers werden daneben ausdrücklich nachgewiesen.
+
+## Artseitenanschluss und frühere manuelle Sprachprüfung
+
+Felix verlangt am **2. November** automatische Prüfung unmittelbar im Textfeld und bestätigt die
+bereits aktive deutsche Rechtschreibung. Der manuelle Sprachstart wird deshalb aus den normalen
+Bildtext-/Artseitenabläufen entfernt. Der neue unabhängige [Sprachprüfbaustein](../language-check/README.md)
+verwendet LanguageTool lokal; seine native Qualifikation und Produktaktivierung stehen noch aus.
+Bildvorschläge und bewusste sachliche Quellenarbeit bleiben in diesem KI-Modul. Die folgenden
+`review-language`-Beschreibungen und Modellproben dokumentieren den früheren, nicht allgemein
+qualifizierten Weg und dessen gespeicherte Ergebnisse; sie sind keine Freigabe für automatische LLM-Korrekturen.
+
+Der vorhandene Dienst nimmt über denselben Worker und dieselbe begrenzte persönliche Jobqueue auch
+gespeicherte Artseitenentwürfe an. Der interne `pageAuthoring.aiReader` liest über die bestehende
+Clientfassung und das persönliche Seitenjournal. Rohe Arbeitsdatensätze und Bildbytes bleiben im
+Nodeprozess. Quellenwahl, Bildvorschlag und sachliche Prüfung sind an Person, Projekt, Entwurf,
+Version und konkretes Ziel gebunden; geänderte Grundlagen verhindern eine spätere Annahme.
+Der Renderer liefert keine lokalen Dateipfade oder freien Bildadressen. Status und Quellenanzeige
+starten weder Modell noch Download. Der neue Quellenanschluss ist automatisiert geprüft; seine
+native Bedienung und tatsächliche Modellausgabe sind gesonderte Nachweise.
+
+`review-language` war die zusätzliche sprachliche Prüfung, getrennt von der sachlichen Quellenprüfung
+`review-text`. Der inzwischen entfernte Button **Sprache prüfen** nutzte bei eingerichteter lokaler Texthilfe den aktuell bearbeiteten
+Website-Bildtext oder einen gespeicherten bearbeitbaren Artseitenabschnitt einschließlich Einleitung.
+Hierfür werden keine Fachquellen oder Bildbytes nachgeladen. Websiteeingaben bleiben auf 2.000 Zeichen,
+Artseitenabschnitte auf 8.000 Zeichen begrenzt; es gibt kein stilles Abschneiden oder automatisches Wiederholen.
+
+Die Antwort liefert höchstens acht Hinweise zu Rechtschreibung, Groß-/Kleinschreibung, Grammatik oder
+Kommasetzung. Exakter Originalhash, unveränderte Textstellen, UTF-16-Spannen und nicht überlappende
+Ersetzungen sind Pflicht. Der Korrekturtext wird aus diesen Ersetzungen berechnet, nicht als frei
+behauptete Neufassung angenommen. Das Modell darf keine Block-/Listengrenzen ändern. Die bewusste
+Annahme bearbeitet nur den offenen Entwurf; sie speichert, genehmigt oder veröffentlicht nichts.
+Artseiten behalten ihre Absätze, Überschriften, Listen und Quellen. Nach der Annahme bleibt normale
+manuelle Bearbeitung möglich. Acht Hinweise sind eine begrenzte Hilfe, keine Vollständigkeits- oder
+Richtigkeitsgarantie. Der neue Sprachpfad benötigt noch seine abschließende Integrations- und native
+Ergebnisabnahme; frühere Bild-/Quellenproben gelten dafür nicht als Ersatz.
+
+Die tatsächliche CPU-Sprachprobe vom 1. November (`page-language-native-v3-20261101.json` im privaten
+Bereitstellungsbelegordner) trifft drei von fünf vorab festgelegten Ergebnissen. Sie verbessert dabei
+zwei Komma-/Konjunktionsfälle und eine Großschreibung. Ein geschützter Artbezeichnungsfall endet ohne
+auswertbare Workerantwort; die genaue Ursache ist in dieser Probe nicht erfasst. Eine weitere
+Großschreibung bleibt unverbessert, und auch zu richtigen Korrekturtexten liefert das Modell falsche
+sprachliche Erklärungen. Die sprachliche Eignung ist damit weiterhin nicht abgenommen.
+Quellen und Modellpins bleiben unverändert; eigene Modellprozesse
+und deren Ein-/Ausgabehandles sind bestätigt geschlossen. Kein Download und keine Websiteänderung.
+
+Die nachfolgende instrumentierte v4-Probe bestätigt für alle fünf Aufträge vollständige HTTP-200-
+Antworten, reguläres `finish_reason:stop` und erfolgreich geparstes JSON. Im Artbezeichnungsfall
+liefert das Modell einen vermeintlichen Korrekturbefund mit exakt unverändertem Text; die bestehende
+Sprachprüfung weist diesen wirkungslosen Befund korrekt zurück. Der ausgelassene Fuchs-Befund und
+falsche sprachliche Erklärungen bleiben bestehen. Drei passende Korrekturtexte reichen weiterhin
+nicht zur Ergebnisabnahme. Alle eigenen Prozesse, Antwort-Clone-Leser und Handles sind geschlossen;
+Modellpins und Produktquellen bleiben unverändert. Der v3-Beleg wird dadurch nicht umgeschrieben.
+
+Der Promptnachlauf vom **2. November** fordert ausdrücklich echte Änderungen statt unveränderter
+Bestätigungen, die Prüfung gewöhnlicher Substantive trotz Fachnamenschutz und eine zur tatsächlichen
+Änderung passende Befundart/Erklärung. Validator, Schema, Grenzen, Modellparameter und Reise-Punktregel
+bleiben unverändert. Der lokale Gesamtnachlauf besteht mit **170/170 Fällen**.
+
+Die tatsächliche v5-CPU-Probe wiederholt die fünf früheren Fälle und ergänzt zwei erst nach dem
+Promptfreeze festgelegte unabhängige Kontrollen für Rechtschreibung und ein Nebensatzkomma.
+**Sechs von sieben fertigen Korrekturtexten stimmen.** Der gewöhnliche Fuchs-Befund und beide neuen
+Kontrollen werden jetzt korrigiert. Beim bereits richtigen Kolibrinamen liefert das Modell weiterhin
+einen wirkungslosen Befund; der Validator weist ihn ab. Mehrere Erklärungen oder Befundarten sind
+weiterhin falsch, besonders bei Komma-/Konjunktionsfällen. Ein richtiger Ersatztext allein wird deshalb
+nicht als allgemeine Sprachqualitätsabnahme ausgewiesen.
+
+`page-language-native-v5-20261102.json` und der getrennte Bewertungsbeleg liegen im bestehenden
+privaten Bereitstellungsbelegordner. Alle sieben HTTP-Antworten sind vollständig ausgewertet; Quellen
+und Modellpins bleiben während der Probe unverändert. Sämtliche eigenen Modellprozesse und
+Diagnoseleser sind bestätigt geschlossen. Es gab keinen Download und keine Änderung vorhandener
+Texte oder Websiteinhalte. Die früheren v3-/v4-Belege bleiben unverändert erhalten.
+
+Der anschließende Qualitätsversuch **v6 vom 2. November** ergänzt sechs vollständige Promptbeispiele
+und stellt die Ausgabereihenfolge um. Die zehn tatsächlichen CPU-Antworten kommen vollständig mit
+HTTP 200, regulärem `stop` und gültigem JSON an. **Sechs von zehn Fällen** passen einschließlich
+Befundart und Erklärung. Beide richtigen Artbezeichnungen bleiben ohne Befund. Bei einem anderen
+Fall kopiert das Modell jedoch eine fremde Textstelle aus den Beispielen; zwei weitere Antworten
+enthalten wirkungslose Befunde und ein notwendiges Nebensatzkomma wird übersehen. Auf den sieben
+gemeinsamen Fällen passen fünf Korrekturtexte gegenüber sechs in v5. Die Qualität ist nicht abgenommen.
+
+Deshalb ist der gesamte Requestbau einschließlich Schemafeldreihenfolge wieder **bytegleich zu v5**
+hergestellt; keine ungemessene Mischung der Promptvarianten. Die v5-Quelle wurde über ihren exakten
+Hash aus dem gebundenen privaten Installer gelesen, ohne diesen auszuführen. Der v6-Quellstand,
+seine vollständige native Antwort und die getrennte Bewertung bleiben als Fehlerbeleg erhalten.
+
+Unabhängig davon bleiben zwei neue objektive Prüfungen im Produkt: Ein als reine Großschreibung
+bezeichneter Hinweis darf keine Wörter oder Satzzeichen ändern; ein reiner Zeichensetzungshinweis
+darf keine Buchstaben ändern. Widersprüche verwerfen die gesamte Antwort mit verständlicher Meldung,
+auch wenn ein anderer Befund dieselbe Textkorrektur vorschlägt. Es gibt keine stille Umklassifizierung.
+Die nun stärkeren Prüfungen würden auch einzelne falsche v5-Befundarten zurückweisen. Die frühere
+v5-Textquote ist somit keine Erfolgsquote des heutigen Gesamtablaufs.
+
+Der wiederhergestellte Requestbau mit den stärkeren Prüfungen besteht **173/173 lokale KI-Fälle**
+und **35/35 Explorerintegrationsfälle**; seine gesamte Modellausgabe wurde anschließend nicht noch
+einmal nativ geprüft. Für v6 sind eigene Modellprozesse, stdio und Diagnoseleser bestätigt geschlossen;
+Produktquellen und Modellpins waren während der Probe unverändert. Kein Download und keine Änderung
+vorhandener Texte, Freigaben oder Websiteinhalte. Belege liegen im vorhandenen privaten
+Bereitstellungsbelegordner als `page-language-native-v6-20261102.json`,
+`page-language-native-v6-assessment-20261102.json` und `language-prompt-restoration-20261102.json`.
+
+## Frühere native Modell- und Einrichtungsnachweise
 
 Die native CPU-Probe `data/website/checks/local-ai-http-product-20261031-v8.json` bestätigt den tatsächlichen
 Bildlader, FFmpeg, gepinnte Laufzeit-/Modelldateien, HTTP-Worker und die strenge Produktvalidierung:

@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 export const PRODUCT_ID = "FN.ArtenExplorer";
 const STATE_FILE = "installation.json";
 const HASH = /^[a-f0-9]{64}$/;
+const OPEN_TRANSACTION = /^\.installer-transaction-[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
+const installerBusy = () => new Error("Eine weitere Einrichtung läuft oder ihr Abschluss ist ungeklärt.");
 
 export function safeRelative(value) {
   if (typeof value !== "string" || !value || value.includes("\\") || value.includes(":")) throw new Error("Ungültiger Paketpfad.");
@@ -61,6 +63,14 @@ async function assertNotRunning(base) {
   throw new Error("Bitte den Arten-Explorer vor Installation, Reparatur oder Deinstallation schließen.");
 }
 
+async function readInstallDirectory(base) {
+  const names = await fs.readdir(base).catch((error) => { if (error.code !== "ENOENT") throw error; return []; });
+  if (names.some((name) => OPEN_TRANSACTION.test(name))) {
+    throw new Error("Die Rücknahme einer früheren Einrichtung muss zuerst geprüft werden. Die Sicherung bleibt erhalten.");
+  }
+  return names;
+}
+
 export async function readPackage(packageRoot) {
   const root = path.resolve(packageRoot);
   await noLinks(root);
@@ -92,11 +102,12 @@ export async function installPackage({ packageRoot, base, operation = "install",
   base = path.resolve(base);
   if (base === path.parse(base).root) throw new Error("Ein Laufwerksstamm ist kein Installationsziel.");
   await noLinks(base);
+  const names = await readInstallDirectory(base);
+  if (names.some((name) => name.toLowerCase() === ".installer.lock")) throw installerBusy();
   const state = await readState(base);
   const stateHash = await existingHash(path.join(base, STATE_FILE));
   if (!state) {
     if (operation !== "install") throw new Error("Keine gebundene Installation vorhanden.");
-    const names = await fs.readdir(base).catch((error) => { if (error.code !== "ENOENT") throw error; return []; });
     if (names.length) throw new Error("Der Zielordner enthält bereits Dateien. Bitte einen neuen leeren Ordner wählen; vorhandene Bestände werden nicht übernommen.");
   }
   await assertNotRunning(base);
@@ -140,14 +151,16 @@ export async function installPackage({ packageRoot, base, operation = "install",
   }
   await fs.mkdir(base, { recursive: true });
   const lockPath = path.join(base, ".installer.lock");
-  const lock = await fs.open(lockPath, "wx").catch(() => { throw new Error("Eine weitere Einrichtung läuft oder ihr Abschluss ist ungeklärt."); });
+  const lock = await fs.open(lockPath, "wx").catch(() => { throw installerBusy(); });
   const transaction = path.join(base, `.installer-transaction-${crypto.randomUUID()}`);
   const journal = [];
-  let writes = 0, retainTransaction = false;
+  let writes = 0, ownsTransaction = false, retainTransaction = false;
   try {
+    await readInstallDirectory(base);
     if (await existingHash(path.join(base, STATE_FILE)) !== stateHash) throw new Error("Installationsstand wurde zwischenzeitlich verändert; bitte erneut prüfen.");
     await assertNotRunning(base);
     await fs.mkdir(transaction);
+    ownsTransaction = true;
     for (const change of changes) {
       await noLinks(change.target);
       if (await existingHash(change.target) !== change.oldHash) throw new Error(`Datei wurde während der Vorbereitung verändert: ${change.entry.path}`);
@@ -211,10 +224,14 @@ export async function installPackage({ packageRoot, base, operation = "install",
     }
     throw error;
   } finally {
-    await lock.close();
-    await fs.rm(lockPath, { force: true });
-    // Never sweep foreign remnants; this random directory belongs to this run.
-    if (!retainTransaction) await fs.rm(transaction, { recursive: true, force: true });
+    try {
+      // Clear the lock only after this run's backup directory is gone.
+      if (ownsTransaction && !retainTransaction) {
+        await noLinks(transaction);
+        await fs.rm(transaction, { recursive: true, force: true });
+      }
+    } finally { await lock.close(); }
+    if (!retainTransaction) await fs.rm(lockPath, { force: true });
   }
 }
 
