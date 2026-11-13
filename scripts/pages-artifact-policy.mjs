@@ -1,5 +1,7 @@
-import { lstat, readdir } from "node:fs/promises";
+import { lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { decodePublicAppCatalogManifest, decodePublicAppCatalogPayload, PUBLIC_APP_CATALOG_MANIFEST_MAX_BYTES }
+  from "../species-explorer/species-content/public-app-catalog.mjs";
 
 export const PAGE_SOURCE_FILES = Object.freeze([
   "species-core.js",
@@ -40,6 +42,9 @@ const SPECIES_ASSET_FILES = new Set([
   "credits.json",
   "spectrogram.webp",
 ]);
+const publicCatalogPath = "mobile/catalog";
+const publicCatalogManifest = `${publicCatalogPath}/manifest.json`;
+const catalogDigest = /^[a-f0-9]{64}$/u;
 
 export function normalizeArtifactPath(relativePath) {
   return String(relativePath ?? "")
@@ -51,8 +56,12 @@ export function normalizeArtifactPath(relativePath) {
 export function isPublishableSourcePath(relativePath) {
   const normalized = normalizeArtifactPath(relativePath);
   if (PAGE_SOURCE_FILES.includes(normalized)) return true;
+  if (normalized === publicCatalogManifest) return true;
 
   const parts = normalized.split("/");
+  if (parts.length === 3 && parts[0] === "mobile" && parts[1] === "catalog") {
+    return parts[2].endsWith(".json") && catalogDigest.test(parts[2].slice(0, -5));
+  }
   if (parts[0] === "species-assets") {
     return parts.length === 3 && Boolean(parts[1]) && SPECIES_ASSET_FILES.has(parts[2]);
   }
@@ -119,7 +128,34 @@ export async function listPublishableSourceFiles(repoRoot) {
     await collectDirectoryFiles(repoRoot, fullDir, files);
   }
 
+  files.push(...await listPublicCatalogFiles(repoRoot));
   return files.sort((left, right) => left.localeCompare(right, "en"));
+}
+
+export async function listPublicCatalogFiles(root) {
+  const directory = path.join(root, publicCatalogPath);
+  const info = await lstat(directory).catch(error => {
+    if (error.code !== "ENOENT") throw error;
+    return null;
+  });
+  if (!info) return [];
+  if (!info.isDirectory() || !(await lstat(path.dirname(directory))).isDirectory()) {
+    throw new Error("Der öffentliche App-Katalog liegt in einem verknüpften oder ungültigen Ordner.");
+  }
+  const read = async (filename, maximum) => {
+    const source = path.join(directory, filename);
+    const stat = await lstat(source);
+    if (!stat.isFile() || stat.size < 1 || stat.size > maximum) throw new Error(`Ungültige öffentliche Katalogdatei: ${filename}`);
+    return readFile(source);
+  };
+  const manifest = decodePublicAppCatalogManifest(await read("manifest.json", PUBLIC_APP_CATALOG_MANIFEST_MAX_BYTES));
+  const name = `${manifest.catalogSha256}.json`;
+  const entries = await readdir(directory);
+  if (entries.length !== 2 || !entries.includes("manifest.json") || !entries.includes(name)) {
+    throw new Error("Der öffentliche App-Katalog muss genau die Freigabedatei und die zugehörige Katalogdatei enthalten.");
+  }
+  decodePublicAppCatalogPayload(await read(name, manifest.catalogBytes), manifest);
+  return [publicCatalogManifest, `${publicCatalogPath}/${name}`];
 }
 
 async function collectDirectoryFiles(repoRoot, currentDir, files) {

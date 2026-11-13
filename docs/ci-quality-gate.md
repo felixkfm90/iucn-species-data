@@ -122,6 +122,13 @@ Freigabeliste für Builder und Prüfer:
 - zusätzlich ausschließlich `docs/squarespace-custom.css` aus dem Dokumentationsordner;
 - in `species-assets/` nur die sechs bekannten Asset-/Metadatendateien je Art;
 - unter `graphics/` nur PNG-Laufzeitgrafiken;
+- unter `mobile/catalog/` optional die öffentliche App-Freigabedatei und genau die darin per SHA-256
+  benannte Katalogdatei. Dateigröße, Prüfsumme, Revision, Datum und Artzahl müssen in Quelle und
+  gebautem Artefakt stimmen. Die Katalogprüfung verwendet die bekannte Artstruktur und lässt
+  nur öffentliche FN-Artseiten, die vorgesehenen GitHub-Pages-Medien, fest an einen Git-Commit
+  gebundene Medien aus diesem Repository und die öffentliche Squarespace-Fotobibliothek zu.
+  Private Projektdateien, unbekannte Felder und fremde Quellen
+  sperren den Bau auch bei passender Prüfsumme. Der private Prüfbeleg gehört in die lokale Prüfsitzung.
 - zusätzlich die generierten Dateien `index.html` und `.nojekyll`.
 
 `README.md`, alle übrigen Dateien unter `docs/`, lokale Sicherungen, temporäre Dateien, unbekannte Assetdateien

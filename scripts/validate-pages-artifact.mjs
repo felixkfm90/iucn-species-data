@@ -3,6 +3,7 @@ import { lstat, readdir } from "node:fs/promises";
 import path from "node:path";
 import {
   isAllowedArtifactPath,
+  listPublicCatalogFiles,
   listPublishableSourceFiles,
   normalizeArtifactPath,
   PAGE_GENERATED_FILES,
@@ -33,6 +34,8 @@ export async function validatePagesArtifact({
   for (const relativePath of actualSet) {
     if (!expectedFiles.has(relativePath)) errors.push(`Unerwartete Pages-Datei: ${relativePath}`);
   }
+  try { await listPublicCatalogFiles(artifactRoot); }
+  catch (error) { errors.push(`Ungültiger App-Katalog im Pages-Artefakt: ${error.message}`); }
 
   return {
     ok: errors.length === 0,

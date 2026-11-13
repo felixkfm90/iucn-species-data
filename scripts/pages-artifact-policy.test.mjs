@@ -4,12 +4,14 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import {
   isAllowedArtifactPath,
   assertPagesOutputDirectory,
   isIgnoredDesignSource,
   isPublishableSourcePath,
+  listPublicCatalogFiles,
   listPublishableSourceFiles,
   PAGE_GENERATED_FILES,
   PAGE_SOURCE_DIRS,
@@ -122,6 +124,91 @@ test("Pages-Artefakt weist unerwartete Dateien zurück", async (context) => {
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /secret\.env/);
 });
+
+test("Pages kopiert nur die exakt gebundene öffentliche App-Katalogfassung", async context => {
+  const root = await createFixture();
+  context.after(() => rm(root, { recursive: true, force: true }));
+  const directory = path.join(root, "mobile", "catalog"), artifactRoot = path.join(root, "_site");
+  const { filename, content } = await writePublicCatalogFixture(directory, publicSpecies());
+  await copyFixtureArtifact(root, artifactRoot);
+  assert.equal((await validatePagesArtifact({ repoRoot: root, artifactRoot })).ok, true);
+  await writeFile(path.join(artifactRoot, "mobile", "catalog", filename), content.replace("amsel", "dross"));
+  const tampered = await validatePagesArtifact({ repoRoot: root, artifactRoot });
+  assert.equal(tampered.ok, false);
+  assert.match(tampered.errors.join("\n"), /weicht von ihrer Freigabedatei ab/);
+  await writeFile(path.join(directory, "private-check.json"), "{}");
+  await assert.rejects(listPublishableSourceFiles(root), /genau die Freigabedatei/);
+});
+
+test("Pages sperrt private oder fremde Medien auch bei gültiger App-Katalog-Prüfsumme", async context => {
+  const raw = "https://raw.githubusercontent.com/felixkfm90/iucn-species-data/";
+  const cases = [
+    ["Projektdatei in Galeriedaten", species => { species.media.gallery[0].projectFile = { projectId: "private" }; }],
+    ["fremde Galeriequelle", species => { species.media.gallery[0].url = "https://example.com/gallery/image.png"; }],
+    ["fremde Artseite", species => { species.websiteUrl = "https://example.com/wildlife/heimische-tierwelt/amsel"; }],
+    ["fremde Spektrogrammquelle", species => { species.media.spectrogram.url = "https://example.com/spectrogram.webp"; }],
+    ["unbekanntes Spektrogrammfeld", species => { species.media.spectrogram.projectFile = { projectId: "private" }; }],
+    ["veränderlicher Branch", species => { species.media.sounds[0].url = `${raw}main/species-assets/Amsel/sound.mp3`; }],
+    ["fremdes Raw-Repository", species => { species.media.sounds[0].url = `${raw.replace("felixkfm90", "foreign")}${"a".repeat(40)}/species-assets/Amsel/sound.mp3`; }],
+    ["unsicherer Raw-Ordner", species => { species.media.sounds[0].url = `${raw}${"a".repeat(40)}/species-assets/unsafe%2Ffolder/sound.mp3`; }],
+    ["Raw-Ordner mit Steuerzeichen", species => { species.media.sounds[0].url = `${raw}${"a".repeat(40)}/species-assets/Amsel%00/sound.mp3`; }],
+  ];
+  for (const [name, change] of cases) {
+    await context.test(name, async subtest => {
+      const root = await mkdtemp(path.join(tmpdir(), "public-catalog-policy-"));
+      subtest.after(() => rm(root, { recursive: true, force: true }));
+      const species = publicSpecies();
+      change(species);
+      await writePublicCatalogFixture(path.join(root, "mobile", "catalog"), species);
+      await assert.rejects(listPublicCatalogFiles(root), /Ungültiger öffentlicher App-Katalog/);
+    });
+  }
+});
+
+test("Pages akzeptiert passende Medien, deren Git-Kennungen sich unterscheiden", async context => {
+  const root = await mkdtemp(path.join(tmpdir(), "public-catalog-pinned-"));
+  context.after(() => rm(root, { recursive: true, force: true }));
+  const directory = path.join(root, "mobile", "catalog"), species = publicSpecies();
+  const raw = "https://raw.githubusercontent.com/felixkfm90/iucn-species-data/";
+  species.media.sounds[0].url = `${raw}${"a".repeat(40)}/species-assets/Amsel/sound.mp3`;
+  species.media.spectrogram.url = `${raw}${"b".repeat(40)}/species-assets/Amsel/spectrogram.webp`;
+  const { filename } = await writePublicCatalogFixture(directory, species);
+  assert.deepEqual(await listPublicCatalogFiles(root), ["mobile/catalog/manifest.json", `mobile/catalog/${filename}`]);
+});
+
+test("Pages verlangt trotz passender Dateiprüfsumme die gebundenen Katalog-Metadaten", async context => {
+  const root = await mkdtemp(path.join(tmpdir(), "public-catalog-manifest-"));
+  context.after(() => rm(root, { recursive: true, force: true }));
+  const directory = path.join(root, "mobile", "catalog");
+  for (const change of [{ revision: "a".repeat(64) }, { generatedAt: "2026-11-13T12:00:00.000Z" }, { speciesCount: 2 }]) {
+    await writePublicCatalogFixture(directory, publicSpecies(), change);
+    await assert.rejects(listPublicCatalogFiles(root), /passt nicht zur Freigabedatei/);
+  }
+});
+
+function publicSpecies() {
+  const assetBase = "https://felixkfm90.github.io/iucn-species-data/species-assets/Amsel";
+  return { id: "amsel", scientificName: "Turdus merula", commonName: "Amsel", taxonomy: [], sections: [],
+    websiteUrl: "https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/amsel", media: {
+      sounds: [{ id: "amsel:sound", url: `${assetBase}/sound.mp3`, bytes: 25, sha256: "a".repeat(64), mimeType: "audio/mpeg" }],
+      spectrogram: { id: "amsel:spectrogram", url: `${assetBase}/spectrogram.webp`, bytes: 15, sha256: "b".repeat(64),
+        mimeType: "image/webp", alt: "Spektrogramm der Tierstimme" },
+      gallery: [{ id: "amsel:gallery:1", url: "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/example/amsel.jpg",
+        order: 0, alt: "Amsel", caption: "" }],
+    } };
+}
+
+async function writePublicCatalogFixture(directory, speciesEntry, manifestChanges = {}) {
+  const species = [speciesEntry], generatedAt = "2026-11-12T12:00:00.000Z";
+  const revision = createHash("sha256").update(`${JSON.stringify(species)}\n`).digest("hex");
+  const content = JSON.stringify({ schemaVersion: 1, revision, generatedAt, species });
+  const catalogSha256 = createHash("sha256").update(content).digest("hex"), filename = `${catalogSha256}.json`;
+  await mkdir(directory, { recursive: true });
+  await writeFile(path.join(directory, filename), content);
+  await writeFile(path.join(directory, "manifest.json"), JSON.stringify({ schemaVersion: 1, kind: "fn-public-catalog",
+    catalogSha256, catalogBytes: Buffer.byteLength(content), revision, generatedAt, speciesCount: species.length, ...manifestChanges }));
+  return { filename, content };
+}
 
 async function createFixture() {
   const root = await mkdtemp(path.join(tmpdir(), "pages-policy-"));
