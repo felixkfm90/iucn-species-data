@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 const WEBSITE_ORIGIN = "https://www.fnwildlifetravel.de";
 const WEBSITE_HOSTS = new Set(["www.fnwildlifetravel.de", "fnwildlifetravel.de"]);
 const IMAGE_HOSTS = new Set(["images.squarespace-cdn.com", "static1.squarespace.com", "static.squarespace.com", "images.squarespace.com"]);
+const FN_LIBRARY = "67556be0338df718ea064210";
+const FN_MEDIA_ALIAS = new RegExp(`^/content/v2/namespaces/website/libraries/(${FN_LIBRARY}/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}/[^/]+)$`, "u");
+const SQUARESPACE_IMAGE_WIDTH = /^(?:(?:100|200|300|500|750|1000|1500|2500)w|original)$/u;
 const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
 const RAW_TAGS = new Set(["script", "style", "template", "noscript", "textarea"]);
 const CAPTION_CLASS = /(?:^|\s)(?:gallery-caption(?:-content|-wrapper)?|image-caption(?:-wrapper)?|sqs-image-caption(?:-content)?|sqs-gallery-meta(?:-container|-content)?|image-description)(?:\s|$)/;
@@ -51,6 +54,18 @@ export function normalizeWebsiteImageUrl(value) {
 // Unknown parameters can select a different image and remain identity-bound.
 export function canonicalWebsiteImageSource(value) {
   const url = new URL(normalizeWebsiteImageUrl(value));
+  // Both routes serve the same library asset at the known image widths.
+  // Keep the v1 identity understood by already installed app releases.
+  const alias = url.hostname === "images.squarespace-cdn.com" && FN_MEDIA_ALIAS.exec(url.pathname);
+  const transforms = [...url.searchParams];
+  if (alias) {
+    if (!/\.(?:jpe?g|png|webp)$/iu.test(alias[1]) || transforms.length > 1
+        || !transforms.every(([name, format]) => name === "format" && SQUARESPACE_IMAGE_WIDTH.test(format))) {
+      url.searchParams.sort();
+      return url.href;
+    }
+    url.pathname = `/content/v1/${alias[1]}`;
+  }
   if (IMAGE_HOSTS.has(url.hostname)) url.searchParams.delete("format");
   url.searchParams.sort();
   return url.href;
@@ -208,6 +223,77 @@ function imageSource(node, pageUrl) {
   return null;
 }
 
+function fnGalleryImageSource(image, pageUrl) {
+  const sources = ["src", "data-image", "data-src"].map(name => image.attrs.get(name)).filter(Boolean);
+  for (const source of image.attrs.get("srcset").split(/,\s*/u)) {
+    const address = source.trim().split(/\s+/u)[0];
+    if (address) sources.push(address);
+  }
+  const identities = new Set();
+  try {
+    for (const source of sources) identities.add(canonicalWebsiteImageSource(new URL(source, pageUrl).href));
+  } catch { return { issue: "unsupported-gallery-source" }; }
+  if (identities.size === 0) return { issue: "unsupported-gallery-source" };
+  if (identities.size > 1) return { issue: "ambiguous-fn-gallery-source" };
+  return { source: [...identities][0] };
+}
+
+function structureChildren(node) {
+  if (node.children.some(child => typeof child === "string" && child.trim())) return null;
+  return node.children.filter(child => typeof child !== "string");
+}
+
+function exactAttribute(node, name, expected) {
+  const values = node.attrs.values.get(name);
+  return values?.length === 1 && (expected === undefined || values[0] === expected);
+}
+
+function hiddenElement(node) {
+  return node.attrs.has("hidden") || node.attrs.get("aria-hidden").trim().toLowerCase() === "true";
+}
+
+function fnFigureText(node, image) {
+  const children = structureChildren(node);
+  if (!children || children.length > 2 || children[0] !== image) return null;
+  const [_, figcaption] = children;
+  const result = { caption: "", attribution: "" };
+  if (!figcaption) return result;
+  const fields = structureChildren(figcaption);
+  if (figcaption.tag !== "figcaption" || hiddenElement(figcaption) || !fields?.length || fields.length > 2) return null;
+  for (const field of fields) {
+    if (hiddenElement(field) || !field.children.every(child => typeof child === "string")) return null;
+    const text = field.children.join("").replace(/\r\n?/gu, "\n");
+    if (!text.trim()) return null;
+    if (field.tag === "span" && exactAttribute(field, "data-fn-caption", "") && !result.caption && !result.attribution && text.length <= 3000) result.caption = text;
+    else if (field.tag === "small" && exactAttribute(field, "data-fn-credit", "") && !result.attribution && text.length <= 8000) result.attribution = text;
+    else return null;
+  }
+  return result;
+}
+
+/** Recognize only the static figure gallery emitted by the Explorer code block. */
+function fnFigureGallery(node) {
+  if (node.tag !== "div" || !exactAttribute(node, "data-fn-art-gallery", "1")) return null;
+  const figures = structureChildren(node);
+  if (!figures?.length || figures.length > 500) return null;
+  const marked = figures[0].attrs.has("data-fn-item-id"), itemIds = new Set(), images = [];
+  for (const [index, figure] of figures.entries()) {
+    if (figure.tag !== "figure" || hiddenElement(figure) || !exactAttribute(figure, "data-fn-position", String(index + 1))
+        || figure.attrs.has("data-fn-item-id") !== marked) return null;
+    const [image] = structureChildren(figure) ?? [];
+    if (image?.tag !== "img" || hiddenElement(image) || !exactAttribute(image, "alt")
+        || !["src", "srcset", "data-src", "data-image"].every(name => !image.attrs.has(name) || exactAttribute(image, name))
+        || !fnFigureText(figure, image)) return null;
+    if (marked) {
+      const id = figure.attrs.get("data-fn-item-id");
+      if (!exactAttribute(figure, "data-fn-item-id") || !/^fn-figure-[a-f0-9]{24}$/u.test(id) || itemIds.has(id)) return null;
+      itemIds.add(id);
+    }
+    images.push(image);
+  }
+  return images;
+}
+
 // Only actual background declarations count. A semicolon inside a quoted URL
 // or function is not a declaration boundary; CSS variables and quoted example
 // text must not invent image uses. This does not evaluate stylesheets or vars.
@@ -268,7 +354,7 @@ export function parseWebsiteEditorialPage(html, pageUrl) {
     }
     return parts.join("").replace(/\s+/g, " ").trim();
   };
-  const states = new WeakMap(), content = [], groups = [], blocks = [], sections = [], issues = [];
+  const states = new WeakMap(), content = [], groups = [], blocks = [], sections = [], issues = [], figureImages = new Set();
   for (const node of all) {
     const parent = states.get(node.parent) || {};
     const excluded = parent.excluded || ["header", "footer", "nav"].includes(node.tag)
@@ -281,8 +367,16 @@ export function parseWebsiteEditorialPage(html, pageUrl) {
     const textNode = /^h[1-6]$/.test(node.tag) || ["p", "li"].includes(node.tag);
     const insideText = !isBlock && parent.insideText;
     const gallery = inside && (parent.gallery || node.attrs.get("data-sqsp-section") === "gallery");
-    states.set(node, { excluded, inside, group, insideText: insideText || textNode, gallery });
+    const sample = parent.sample || ["pre", "code"].includes(node.tag);
+    const hidden = parent.hidden || hiddenElement(node);
+    const figureGallery = inside && !sample && (parent.figureGallery || node.attrs.has("data-fn-art-gallery"));
+    states.set(node, { excluded, inside, group, insideText: insideText || textNode, gallery, figureGallery, sample, hidden });
     if (!inside) continue;
+    if (figureGallery && node.attrs.has("data-fn-art-gallery")) {
+      const images = !gallery && !parent.figureGallery && !hidden && fnFigureGallery(node);
+      if (!images) issues.push({ code: "unverified-fn-gallery-structure", blockId: node.attrs.get("id") || null });
+      else for (const image of images) figureImages.add(image);
+    }
     content.push(node);
     if (isBlock) groups.push(group);
     if (group && node !== group.node && textNode && !insideText) {
@@ -308,14 +402,18 @@ export function parseWebsiteEditorialPage(html, pageUrl) {
       }
     }
   }
-  const gallerySources = [];
-  for (const node of content.filter((item) => item.tag === "img" && states.get(item).gallery)) {
-    const source = imageSource(node, url);
-    if (!source) { issues.push({ code: "unsupported-gallery-source" }); continue; }
-    const canonical = canonicalWebsiteImageSource(source);
-    if (!gallerySources.includes(canonical)) gallerySources.push(canonical);
+  const gallerySources = new Map();
+  for (const node of content) {
+    if (node.tag !== "img") continue;
+    const managed = figureImages.has(node), state = states.get(node);
+    if (!managed && (!state.gallery || state.figureGallery)) continue;
+    const qualified = managed ? fnGalleryImageSource(node, url) : { source: imageSource(node, url) };
+    if (!qualified.source) { issues.push({ code: qualified.issue ?? "unsupported-gallery-source" }); continue; }
+    const canonical = managed ? qualified.source : canonicalWebsiteImageSource(qualified.source);
+    if (!gallerySources.has(canonical)) gallerySources.set(canonical, managed);
+    else if (managed || gallerySources.get(canonical)) issues.push({ code: "ambiguous-fn-gallery-source" });
   }
-  return { url, sections, blocks, gallerySources, complete: issues.length === 0, issues };
+  return { url, sections, blocks, gallerySources: [...gallerySources.keys()], complete: issues.length === 0, issues };
 }
 
 export function parseWebsiteAltPage(html, pageUrl) {
@@ -331,13 +429,19 @@ export function parseWebsiteAltPage(html, pageUrl) {
       : chain.some((value) => value.tag === "footer" || /^(?:footer|footer-sections)$/.test(value.attrs.get("id"))) ? "footer" : "content";
     const sourceUrl = canonicalWebsiteImageSource(src);
     const key = createHash("sha256").update(`${sourceUrl}\n${context}\n${kind}`).digest("hex");
-    const alt = node.tag === "img" ? node.attrs.get("alt") : "", caption = captionOf(node, captionCache, captionWork);
+    const figure = node.tag === "img" && node.parent?.tag === "figure" && node.parent.parent?.attrs?.get("data-fn-art-gallery") === "1"
+      ? fnFigureText(node.parent, node) : null;
+    const alt = node.tag === "img" ? node.attrs.get("alt") : "", caption = figure?.caption ?? captionOf(node, captionCache, captionWork);
     const existing = images.get(key);
     if (existing) {
       existing.occurrences += 1;
       if (!existing.altVariants.includes(alt)) existing.altVariants.push(alt);
       if (!existing.captionVariants.includes(caption)) existing.captionVariants.push(caption);
       if (!existing.caption && caption) existing.caption = caption;
+      if (figure) {
+        existing.attributionVariants ??= [];
+        if (!existing.attributionVariants.includes(figure.attribution)) existing.attributionVariants.push(figure.attribution);
+      }
       existing.altPresent = existing.altPresent && node.attrs.has("alt");
       existing.duplicateAltValues = [...new Set([...existing.duplicateAltValues, ...(node.attrs.values.get("alt") || []).slice(1)])];
       return;
@@ -347,6 +451,7 @@ export function parseWebsiteAltPage(html, pageUrl) {
     if (IMAGE_HOSTS.has(preview.hostname)) preview.searchParams.set("format", "750w");
     images.set(key, { key, src, previewSrc: preview.href, sourceUrl, alt, caption, context, kind,
       altPresent: node.attrs.has("alt"), altVariants: [alt], captionVariants: [caption], occurrences: 1,
+      ...(figure && { attributionVariants: [figure.attribution] }),
       duplicateAltValues: (node.attrs.values.get("alt") || []).slice(1) });
   }
   for (const node of all) {

@@ -5,11 +5,10 @@ import { sanitizeAssetName } from "../species-model.mjs";
 import { buildCatalog, validateCatalogSpecies } from "../shared-project/catalog.mjs";
 import { parseWebsiteEditorialPage, parseWebsiteAltPage, normalizeWebsitePageUrl, canonicalWebsiteImageSource } from "../website-alt-parser.mjs";
 import { reportedMediaOmissions } from "../../scripts/validate-media-assets.mjs";
+import { speciesGeneralSourceText } from "./general.mjs";
 
 export const PAGES_ASSET_BASE = "https://felixkfm90.github.io/iucn-species-data/species-assets";
 const ranks = ["Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"];
-const generalFields = ["Wissenschaftlicher Name", "Deutscher Name", "Englischer Name", "Größe", "Gewicht", "Lebenserwartung",
-  "Kategorie", "Status", "Trend", "Populationgröße", "Generationsdauer", "Assessment ID", "Letztes IUCN Update", "Daten abgerufen"];
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const present = (value) => value !== undefined && value !== null && String(value).trim() !== "";
 
@@ -118,7 +117,7 @@ export function buildSpeciesContent({ record, manual, pageUrl, html, localMedia 
   const name = scientificName(record, manual), commonName = String(record["Deutscher Name"] || manual?.german || "");
   if (!name || !/\S+\s+\S+/.test(name)) issues.push(issue("incomplete-scientific-name", { slug }));
   const taxonomy = ranks.filter((rank) => present(record[rank])).map((rank) => ({ rank: rank.toLowerCase(), name: rank === "Species" ? name : String(record[rank]) }));
-  const general = generalFields.filter((field) => present(record[field])).map((field) => `${field}: ${record[field]}`).join("\n");
+  const general = speciesGeneralSourceText(record);
   let editorial = null, inventory = null;
   if (html && pageUrl) {
     try { editorial = parseWebsiteEditorialPage(html, pageUrl); inventory = parseWebsiteAltPage(html, pageUrl); }
@@ -150,11 +149,15 @@ export function buildSpeciesContent({ record, manual, pageUrl, html, localMedia 
   for (const [order, source] of (editorial?.gallerySources ?? []).entries()) {
     const images = inventory.images.filter((image) => image.context === "content" && image.kind === "image" && image.sourceUrl === source);
     const altValues = [...new Set(images.flatMap((image) => image.altVariants))], captionValues = [...new Set(images.flatMap((image) => image.captionVariants).filter(Boolean))];
-    if (!images.length || altValues.length > 1 || captionValues.length > 1) issues.push(issue("ambiguous-gallery-text", { slug, source }));
+    const attributions = [...new Set(images.flatMap((image) => image.attributionVariants ?? []).filter(Boolean))];
+    if (!images.length || altValues.length > 1 || captionValues.length > 1 || attributions.length > 1) {
+      issues.push(issue("ambiguous-gallery-text", { slug, source }));
+    }
     const canonical = canonicalWebsiteImageSource(source), representation = new URL(canonical);
     if (/squarespace/.test(representation.hostname)) representation.searchParams.set("format", "1500w");
     media.gallery.push({ id: `${slug}:gallery:${hash(canonical).slice(0, 24)}`, url: representation.href,
-      alt: images[0]?.alt ?? "", caption: captionValues[0] ?? "", order });
+      alt: images[0]?.alt ?? "", caption: captionValues[0] ?? "", order,
+      ...(attributions.length === 1 && { attribution: attributions[0] }) });
   }
   const data = { id: slug, scientificName: name, commonName, taxonomy, sections, media };
   if (pageUrl) data.websiteUrl = normalizeWebsitePageUrl(pageUrl);

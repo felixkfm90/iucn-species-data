@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { mobileSpeciesGeneralText, speciesGeneralSourceText } from '../../species-explorer/species-content/general.mjs';
 
 // Reviewed corrections of the exact captured website headings. A changed
 // source heading for one of these articles requires a fresh editorial review.
@@ -54,4 +55,28 @@ export function reviewedMobileCatalog(source) {
     corrected.revision = createHash('sha256').update(JSON.stringify([source.revision, changes])).digest('hex');
   }
   return { catalog: corrected, changes };
+}
+
+export function normalizeMobileCatalogGeneral(catalog, speciesData) {
+  const records = new Map(speciesData.map((record) => [record.URLSlug, record]));
+  const changed = [];
+  for (const entry of catalog.species) {
+    const record = records.get(entry.id);
+    if (!record) throw new Error(`Die Artgrunddaten für ${entry.id} fehlen im Katalogexport.`);
+    const source = speciesGeneralSourceText(record).trim();
+    const normalized = mobileSpeciesGeneralText(record);
+    if (source === normalized) continue;
+    if (source.length === 0) throw new Error(`Die Artgrunddaten für ${entry.id} fehlen im Katalogexport.`);
+    const general = entry.sections.filter((section) => section.title.trim().toLowerCase() === 'allgemein');
+    let found = false;
+    for (const section of general) {
+      const text = section.text.trimEnd();
+      if (text !== source && !text.endsWith(`\n\n${source}`)) continue;
+      section.text = text.slice(0, -source.length) + normalized;
+      found = true;
+    }
+    if (!found) throw new Error(`Die Artgrunddaten für ${entry.id} sind im Katalogexport nicht eindeutig gebunden.`);
+    changed.push(entry.id);
+  }
+  return changed;
 }

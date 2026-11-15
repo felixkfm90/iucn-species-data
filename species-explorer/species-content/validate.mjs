@@ -53,8 +53,10 @@ export async function validateSpeciesSnapshot({ snapshot, speciesData, pages, re
     for (const [order, gallery] of data.media.gallery.entries()) {
       const canonical = canonicalWebsiteImageSource(gallery.url), matching = images.filter((entry) => entry.context === "content" && entry.kind === "image" && entry.sourceUrl === canonical);
       const captions = [...new Set(matching.flatMap((entry) => entry.captionVariants).filter(Boolean))];
+      const attributions = [...new Set(matching.flatMap((entry) => entry.attributionVariants ?? []).filter(Boolean))];
       verify(gallery.order === order && gallery.id === `${slug}:gallery:${sha(canonical).slice(0, 24)}`, "gallery-identity-mismatch", { slug, order });
       verify(gallery.alt === matching[0]?.alt && gallery.caption === (captions[0] ?? ""), "public-gallery-text-mismatch", { slug, order });
+      verify(attributions.length <= 1 && gallery.attribution === attributions[0], "public-gallery-attribution-mismatch", { slug, order });
       verify(!("bytes" in gallery) && !("sha256" in gallery), "unmeasured-gallery-integrity-claim", { slug, order });
     }
     let mediaChecked = 0;

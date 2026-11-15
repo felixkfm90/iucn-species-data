@@ -384,7 +384,10 @@ class _SpeciesPageState extends State<SpeciesPage> {
     if (section.text.trim().isEmpty) {
       return [Text(_sectionText(section))];
     }
-    final lines = section.text.split('\n').map((line) => line.trim());
+    final lines = section.text
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty);
     const statusLabels = {
       'NE': 'Nicht bewertet',
       'DD': 'Ungenügende Datengrundlage',
@@ -402,38 +405,74 @@ class _SpeciesPageState extends State<SpeciesPage> {
       'assessment id',
       'letztes iucn update',
       'daten abgerufen',
+      'status',
+      'kategorie',
+      'trend',
     };
-    String field(String line) => line.split(':').first.trim().toLowerCase();
+    const optionalFields = {
+      'englischer name',
+      'größe',
+      'gewicht',
+      'lebenserwartung',
+    };
+    const unknownValues = {'', 'n/a', 'na', 'n.a.', 'u', 'unknown'};
+    bool isUnknown(String value) => unknownValues.contains(value.toLowerCase());
+    String displayValue(String value) =>
+        isUnknown(value) || value.toLowerCase() == 'unbekannt'
+        ? 'Unbekannt'
+        : value;
+    String field(String line, int colon) =>
+        colon < 0 ? '' : line.substring(0, colon).trim().toLowerCase();
     String? fieldValue(String name) {
+      String? empty;
       for (final line in lines) {
         final colon = line.indexOf(':');
-        if (colon < 0 || field(line) != name) continue;
+        if (field(line, colon) != name) continue;
         final value = line.substring(colon + 1).trim();
         if (value.isNotEmpty) return value;
+        empty = value;
       }
-      return null;
+      return empty;
     }
 
-    final rawStatus = fieldValue('status');
-    final code = rawStatus?.toUpperCase();
+    final rawStatus = fieldValue('status'), category = fieldValue('kategorie');
+    final code = [rawStatus, category]
+        .map((value) => value?.toUpperCase())
+        .where(statusLabels.containsKey)
+        .firstOrNull;
     final knownStatus = statusLabels[code];
-    final status = knownStatus ?? fieldValue('kategorie') ?? rawStatus;
+    final statusValue = category ?? rawStatus;
+    final status =
+        knownStatus ?? (statusValue == null ? null : displayValue(statusValue));
     final rawTrend = fieldValue('trend');
-    final trend = rawTrend?.toLowerCase() == 'n/a' ? 'Unbekannt' : rawTrend;
+    final trend = rawTrend == null
+        ? null
+        : switch (rawTrend.toLowerCase()) {
+            'zunehmend' || 'increasing' => 'Zunehmend',
+            'stabil' || 'stable' => 'Stabil',
+            'abnehmend' || 'decreasing' => 'Abnehmend',
+            _ => displayValue(rawTrend),
+          };
     final trendGraphic = switch (trend?.toLowerCase()) {
       'zunehmend' => 'zunehmend',
       'stabil' => 'stabil',
       'abnehmend' => 'abnehmend',
       _ => 'nodata',
     };
-    final details = lines
-        .where(
-          (line) =>
-              line.isNotEmpty &&
-              !hiddenFields.contains(field(line)) &&
-              !const {'status', 'kategorie', 'trend'}.contains(field(line)),
-        )
-        .join('\n');
+    final details = <String>[];
+    for (final line in lines) {
+      final colon = line.indexOf(':');
+      final name = field(line, colon);
+      if (hiddenFields.contains(name)) continue;
+      final value = line.substring(colon + 1).trim();
+      if (optionalFields.contains(name) && isUnknown(value)) continue;
+      details.add(switch (name) {
+        'populationgröße' ||
+        'populationsgröße' => 'Populationsgröße: ${displayValue(value)}',
+        'generationsdauer' => 'Generationsdauer: ${displayValue(value)}',
+        _ => line,
+      });
+    }
 
     Widget indicator(String title, String label, String? graphic) => Expanded(
       child: Column(
@@ -469,7 +508,7 @@ class _SpeciesPageState extends State<SpeciesPage> {
           ),
         ),
       if (details.isNotEmpty)
-        SelectableText(details, textAlign: TextAlign.left),
+        SelectableText(details.join('\n'), textAlign: TextAlign.left),
     ];
   }
 

@@ -10,6 +10,7 @@ import 'package:arten_explorer/audio_playback.dart';
 import 'package:arten_explorer/data/offline_jobs.dart';
 import 'package:arten_explorer/data/offline_store.dart';
 import 'package:arten_explorer/data/project_api.dart';
+import 'package:arten_explorer/data/reader_catalog.dart';
 import 'package:arten_explorer/domain/catalog.dart';
 import 'package:arten_explorer/ui/offline_page.dart';
 import 'package:arten_explorer/ui/species_page.dart';
@@ -1028,6 +1029,79 @@ void main() {
       expect(find.text('Region wählen'), findsOneWidget);
       await chooseAllRegions(tester);
       expect(find.text('4 Arten'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'IUCN-Platzhalter werden in öffentlichen und gemeinsamen Artseiten lesbar',
+    (tester) async {
+      Future<void> showGeneral(Species species) async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SpeciesPage(
+              species: species,
+              controller: controller,
+              audio: audio,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Allgemein'));
+        await tester.tap(find.text('Allgemein'));
+        await tester.pumpAndSettle();
+      }
+
+      final publicCatalog = catalogFixture(media: false);
+      final publicSpecies = publicCatalog['species'][0];
+      publicSpecies['commonName'] = 'Jagdfasan';
+      publicSpecies['sections'] = [
+        {
+          'id': 'general',
+          'title': 'Allgemein',
+          'intentionallyEmpty': false,
+          'text':
+              'Größe: N.a.\nGewicht: ca. 1–1,5 kg\nLebenserwartung: NA\n'
+              'Englischer Name: unknown\nStatus: LC\nKategorie: Nicht gefährdet\n'
+              'Trend: n/a\nPopulationgröße: U\nGenerationsdauer: ',
+        },
+      ];
+      await showGeneral(Catalog.fromJson(publicCatalog).species.first);
+      expect(find.text('Nicht gefährdet'), findsOneWidget);
+      expect(find.text('Unbekannt'), findsOneWidget);
+      expect(
+        find.text(
+          'Gewicht: ca. 1–1,5 kg\nPopulationsgröße: Unbekannt\n'
+          'Generationsdauer: Unbekannt',
+        ),
+        findsOneWidget,
+      );
+
+      final snapshot = await ReaderCatalogSnapshot.read(
+        projectId: 'project-fixture',
+        get: (query) async {
+          final payload = protectedReaderFixture(
+            Uri.https('project.example.invalid', '/reader', query),
+            'project-fixture',
+          );
+          if (query['check'] != '1') {
+            final entry = payload['species'][0];
+            entry['status'] = {
+              'category': 'LC',
+              'status': 'Least Concern',
+              'trend': 'decreasing',
+              'population': '1.000–2.000',
+            };
+            entry['media']['gallery'] = <Map<String, dynamic>>[];
+          }
+          return payload;
+        },
+      );
+      await showGeneral(snapshot.toCatalog().species.single);
+      expect(find.text('Nicht gefährdet'), findsOneWidget);
+      expect(find.text('Abnehmend'), findsOneWidget);
+      expect(find.text('Populationsgröße: 1.000–2.000'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

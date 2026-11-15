@@ -92,9 +92,35 @@ in Git gespeicherte App-Katalog muss mit der öffentlich abrufbaren Ausgangsfass
 Eine fachlich identische veröffentlichte Fassung erzeugt keine neuen Katalogdateien. Die
 erste öffentliche Bereitstellung kann auch dem mitgelieferten Bestand entsprechen.
 
-Der [GitHub-Prüflauf](../.github/workflows/prepare-mobile-catalog.yml) bereitet den Katalog nach
-einem erfolgreichen Pages-Lauf auf `main`, täglich um 17:43 UTC und bei Bedarf manuell in **Actions**
-vor. Der tägliche Lauf erfasst auch Artseiten, die erst später in Squarespace veröffentlicht werden.
+Der [GitHub-Prüflauf](../.github/workflows/prepare-mobile-catalog.yml) prüft den Katalog nach
+einem erfolgreichen Pages-Lauf auf `main`, planmäßig alle zwei Stunden zur Minute 43 UTC
+und bei Bedarf manuell in **Actions**. Damit werden auch reine Squarespace-Änderungen an
+einer vorhandenen Galerie erkannt. Neu in den öffentlichen Katalog kommen Arten, deren
+Grunddaten bereitgestellt sind und deren passende Artseite öffentlich erreichbar und
+in der Sitemap enthalten ist. Entwürfe werden erst nach der öffentlichen Freigabe berücksichtigt.
+Geänderte Bildreihenfolgen, Alternativtexte und Bildunterschriften fließen in die nächste
+Katalogfassung ein. Bereits gespeicherte Fotos mit derselben Bildquelle können beim
+Abgleich des Fotopakets weiterverwendet werden.
+Der Export erkennt sowohl Galerien aus dem Squarespace-Editor als auch die Galerien,
+die der Arten-Explorer beim Artseitenaufbau erzeugt. Bildnachweise werden getrennt von
+Bildunterschriften übertragen.
+
+Vorübergehende HTTP- und Netzwerkfehler beim Lesen öffentlicher Quellen werden mit Abstand
+erneut versucht. Bei einem unveränderten Katalog prüft der geplante Lauf weiterhin die aktuellen
+Seiten und den gebundenen Ausgangsstand. Die erneute Übertragung unveränderter Medienbytes
+entfällt in diesem Fall. Eine neue Fassung durchläuft die vollständige Medienprüfung.
+
+Für die öffentliche App-Fassung werden die gekennzeichneten Artgrunddaten im Abschnitt
+„Allgemein“ wie auf der Website aufbereitet. Platzhalter wie `U`, `n/a` und
+`unknown` erscheinen bei Populationsgröße, Generationsdauer und Trend als „Unbekannt“.
+Unbekannte optionale Angaben zu Größe, Gewicht, Lebenserwartung und englischem Namen
+werden entsprechend der Website ausgeblendet. Redaktionelle Texte und bekannte Werte
+bleiben dabei erhalten. Die Katalogkorrektur greift auch in bereits installierten
+Versionen mit öffentlichem Katalogabgleich.
+
+Die angemeldete Ansicht bezieht ihre Inhalte aus der intern freigegebenen Lesefassung auf
+dem Projektdienst. Die Übernahme aus Squarespace dient dem öffentlichen Bestand.
+
 Bei `candidate` stehen im Artefakt **public-mobile-catalog-candidate** für sieben Tage ausschließlich
 `manifest.json` und die über SHA-256 gebundene Katalogdatei zur Prüfung bereit. Bei `unchanged`
 entsteht kein Artefakt. Der private Prüfbeleg bleibt im Arbeitsverzeichnis des jeweiligen Laufs.

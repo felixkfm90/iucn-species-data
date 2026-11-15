@@ -9,7 +9,7 @@ import { buildSpeciesContent, readSpeciesMedia, exportSpeciesCatalog, createSpec
 import { captureSpeciesPages } from "./capture.mjs";
 import { validateSpeciesSnapshot } from "./validate.mjs";
 import { buildCatalog } from "../shared-project/catalog.mjs";
-import { buildPublicCatalogRelease, readPublicCatalogBaseline, selectPublicCatalogSpecies,
+import { buildPublicCatalogRelease, fetchPublicCatalogSource, readPublicCatalogBaseline, selectPublicCatalogSpecies,
   verifyPublicCatalogCandidate } from "../../mobile/tool/stage-public-catalog.mjs";
 import { BUNDLED_SPECIES_SOURCE } from "./bundled.mjs";
 
@@ -85,6 +85,12 @@ test("App-Freigabe bindet jedes Spektrogramm an die veröffentlichte Tonaufnahme
   assert.deepEqual(unchanged.decision, expectedDecision);
   assert.equal(unchanged.bytes, null);
   assert.equal(unchanged.manifest, null);
+  verified.length = 0;
+  const scheduled = await buildPublicCatalogRelease({ ...options, baseline, verifyUnchangedMedia: false });
+  assert.deepEqual(scheduled.decision, expectedDecision);
+  assert.equal(scheduled.parity.sourcePagesChecked, 1);
+  assert.equal(scheduled.publishedMediaChecked, 0);
+  assert.deepEqual(verified, []);
   const bundled = await buildPublicCatalogRelease({ ...options, baseline: baselineFor(previous, "bundled") });
   assert.deepEqual(bundled.decision, { ...expectedDecision, status: "candidate",
     baseline: { ...expectedDecision.baseline, source: "bundled" } });
@@ -120,11 +126,17 @@ test("App-Freigabe bindet jedes Spektrogramm an die veröffentlichte Tonaufnahme
     /Abweichende Mediendatei/);
 });
 
-test("App-Freigabe unterscheidet neue Arten von geänderten Arten und schützt die veröffentlichte Basis", async () => {
+test("App-Freigabe erkennt neue Galeriefotos, neue Arten und schützt die veröffentlichte Basis", async () => {
   const speciesData = [record("z-neu"), record("bleibt"), record(), record("a-neu")];
-  const pages = new Map(speciesData.map(source => [source.URLSlug, { url: pageUrl.replace("fixtureowl", source.URLSlug), html }]));
+  const imageBase = "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/a";
+  const withGallery = html.replace("</main>", `<section data-sqsp-section="gallery"><img src="${imageBase}/first.JPG" alt="Erstes Motiv"><img src="${imageBase}/second.JPG" alt="Zweites Motiv"></section></main>`);
+  const pages = new Map(speciesData.map(({ URLSlug: slug }) => [slug, { url: pageUrl.replace("fixtureowl", slug),
+    html: ["fixtureowl", "a-neu"].includes(slug) ? withGallery : html }]));
   const media = { media: { sounds: [], gallery: [] }, files: [], issues: [], mapOmitted: true };
-  const results = speciesData.map(source => buildSpeciesContent({ record: source, pageUrl: pages.get(source.URLSlug).url, html, localMedia: media }));
+  const results = speciesData.map(source => {
+    const page = pages.get(source.URLSlug);
+    return buildSpeciesContent({ record: source, pageUrl: page.url, html: page.html, localMedia: media });
+  });
   const catalog = buildCatalog({ revision: "a".repeat(64), generatedAt: "2026-11-12T12:00:00.000Z", species: results.map(row => row.data) });
   const options = { snapshot: { complete: true, catalog, results: results.map(row => ({ slug: row.data.id, evidence: row.evidence })) },
     speciesData, pages, mediaRegistry: {}, missingMediaReport: { missing: { maps: ["Testkauz"], soundMp3: ["Testkauz"],
@@ -132,7 +144,7 @@ test("App-Freigabe unterscheidet neue Arten von geänderten Arten und schützt d
     verifyMedia: () => assert.fail("Bewusst ausgelassene Medien dürfen nicht angefordert werden.") };
   const emitted = JSON.parse((await buildPublicCatalogRelease(options)).bytes);
   const changed = structuredClone(emitted.species.find(entry => entry.id === "fixtureowl"));
-  changed.sections.find(section => section.title === "Lebensraum").text = "Vorheriger Absatz.";
+  changed.media.gallery = [];
   const priorSpecies = [changed, emitted.species.find(entry => entry.id === "bleibt")];
   const prior = { ...emitted, generatedAt: "2026-11-11T12:00:00.000Z", species: priorSpecies, revision: digest(`${JSON.stringify(priorSpecies)}\n`) };
   const baseline = baselineFor(prior);
@@ -140,6 +152,11 @@ test("App-Freigabe unterscheidet neue Arten von geänderten Arten und schützt d
   assert.deepEqual(candidate.decision, { status: "candidate", addedSpecies: ["a-neu", "z-neu"], changedSpecies: ["fixtureowl"],
     baseline: { source: "published", sha256: baseline.sha256, revision: prior.revision, generatedAt: prior.generatedAt, speciesCount: 2 } });
   assert.equal(candidate.manifest.catalogSha256, digest(candidate.bytes));
+  assert.deepEqual(JSON.parse(candidate.bytes).species.filter(entry => ["fixtureowl", "a-neu"].includes(entry.id))
+    .map(entry => entry.media.gallery.map(photo => [photo.order, photo.url])), [
+    [[0, `${imageBase}/first.JPG?format=1500w`], [1, `${imageBase}/second.JPG?format=1500w`]],
+    [[0, `${imageBase}/first.JPG?format=1500w`], [1, `${imageBase}/second.JPG?format=1500w`]],
+  ]);
   const reordered = { ...emitted, species: [...emitted.species].reverse() };
   reordered.revision = digest(`${JSON.stringify(reordered.species)}\n`);
   assert.equal((await buildPublicCatalogRelease({ ...options, baseline: baselineFor(reordered) })).decision.status, "unchanged");
@@ -147,6 +164,31 @@ test("App-Freigabe unterscheidet neue Arten von geänderten Arten und schützt d
     /geänderte App-Katalog muss neuer/);
   await assert.rejects(buildPublicCatalogRelease({ ...options, baseline: baselineFor({ ...prior,
     species: [...prior.species, { ...prior.species[0], id: "fehlt" }] }) }), /Bereits erfasste Arten fehlen/);
+});
+
+test("Der Katalogabruf wiederholt HTTP 503 einer öffentlichen Tondatei, behält die Abrufregeln bei und behandelt 404 regulär", async () => {
+  const mediaUrl = "https://felixkfm90.github.io/iucn-species-data/species-assets/Buntspecht/sound.mp3";
+  const options = { redirect: "error", credentials: "omit", signal: new AbortController().signal,
+    headers: { Accept: "audio/mpeg, audio/mp3", "Cache-Control": "no-cache" } };
+  let attempts = 0;
+  const failureBody = new Response("kurz nicht verfügbar", { status: 503 });
+  const recovered = await fetchPublicCatalogSource(mediaUrl, options, async (requestUrl, requestOptions) => {
+    assert.equal(requestUrl, mediaUrl);
+    assert.equal(requestOptions, options);
+    attempts++;
+    return attempts === 1 ? failureBody : new Response("Buntspecht-Audiodaten", { headers: { "Content-Type": "audio/mpeg" } });
+  });
+  assert.equal(attempts, 2);
+  assert.equal(failureBody.bodyUsed, true);
+  assert.equal(recovered.headers.get("content-type"), "audio/mpeg");
+  assert.equal(await recovered.text(), "Buntspecht-Audiodaten");
+  attempts = 0;
+  const missing = await fetchPublicCatalogSource(pageUrl, options, async () => {
+    attempts++;
+    return new Response(null, { status: 404 });
+  });
+  assert.equal(missing.status, 404);
+  assert.equal(attempts, 1);
 });
 
 test("Katalogübernahme prüft genau den vorbereiteten Stand erneut gegen die aktuelle öffentliche Fassung", () => {
@@ -253,6 +295,27 @@ test("different public texts for one gallery source stay an explicit ambiguity",
   const gallery = '<section data-sqsp-section="gallery"><img src="https://images.squarespace-cdn.com/content/a.jpg" alt="A"><img src="https://images.squarespace-cdn.com/content/a.jpg" alt="B"></section>';
   const result = buildSpeciesContent({ record: record(), pageUrl, html: html.replace("</main>", `${gallery}</main>`), localMedia: localMedia() });
   assert.equal(result.complete, false); assert.ok(result.issues.some((entry) => entry.code === "ambiguous-gallery-text"));
+});
+
+test("Explorer-Galerie erhält Bildtitel, Alttext und langen Bildnachweis in getrennten Katalogfeldern", async () => {
+  const galleryUrl = "https://images.squarespace-cdn.com/content/v2/namespaces/website/libraries/67556be0338df718ea064210/29b825bb-1b9f-44b3-964c-3caeb8f788a2/foto.JPG";
+  const credit = "Freigegebener Bildnachweis. ".repeat(130).trim();
+  const gallery = `<div data-fn-art-gallery="1"><figure data-fn-position="1"><img src="${galleryUrl}" alt="Ein ruhiges Tier"><figcaption><span data-fn-caption="">In der Abendsonne</span><small data-fn-credit="">${credit}</small></figcaption></figure></div>`;
+  const sourceHtml = html.replace("</main>", `<div class="sqs-block-code">${gallery}</div></main>`);
+  const source = record();
+  const result = buildSpeciesContent({ record: source, pageUrl, html: sourceHtml, localMedia: localMedia() });
+  assert.equal(result.complete, true, JSON.stringify(result.issues));
+  const [photo] = result.data.media.gallery;
+  assert.equal(photo.caption, "In der Abendsonne");
+  assert.equal(photo.alt, "Ein ruhiges Tier");
+  assert.equal(photo.attribution, credit);
+  assert.match(photo.url, /\/content\/v1\/67556be0338df718ea064210\/.*\/foto\.JPG\?format=1500w$/);
+  const snapshot = { complete: true, catalog: buildCatalog({ revision: "fixture", species: [result.data] }),
+    results: [{ slug: source.URLSlug, evidence: result.evidence }] };
+  const inputs = { snapshot, speciesData: [source], pages: new Map([[source.URLSlug, { url: pageUrl, html: sourceHtml }]]) };
+  assert.equal((await validateSpeciesSnapshot(inputs)).passed, true);
+  snapshot.catalog.species[0].media.gallery[0].attribution = "Anderer Bildnachweis";
+  assert.ok((await validateSpeciesSnapshot(inputs)).issues.some(entry => entry.code === "public-gallery-attribution-mismatch"));
 });
 
 test("asset bytes/hashes, sanitizeAssetName URLs and selected attribution retain provenance without notes/prompts", async () => {

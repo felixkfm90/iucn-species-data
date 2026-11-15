@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout as wait } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual, promisify } from "node:util";
 import { tmpdir } from "../../scripts/test-temp.mjs";
@@ -15,7 +16,7 @@ import { decodePublicAppCatalogManifest, decodePublicAppCatalogPayload, PUBLIC_A
 import { validateSpeciesSnapshot } from "../../species-explorer/species-content/validate.mjs";
 import { createWebsiteSpeciesPagesService } from "../../species-explorer/website-species-pages.mjs";
 import { sanitizeAssetName } from "../../species-explorer/species-model.mjs";
-import { reviewedMobileCatalog } from "./catalog-editorial.mjs";
+import { normalizeMobileCatalogGeneral, reviewedMobileCatalog } from "./catalog-editorial.mjs";
 
 const pagesRoot = new URL("../", `${PAGES_ASSET_BASE}/`);
 const manifestUrl = new URL("mobile/catalog/manifest.json", pagesRoot);
@@ -94,11 +95,13 @@ function pinCatalogMedia(catalog, commit, baseline) {
   return pinned;
 }
 
-export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, verifyMedia, baseline, commit }) {
+export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, verifyMedia, baseline, commit,
+  verifyUnchangedMedia = true }) {
   const parity = await validateSpeciesSnapshot({ snapshot, speciesData, pages, missingMediaReport });
   assert.ok(parity.passed && parity.sourcePagesChecked === speciesData.length,
     `Der öffentliche Katalog weicht von seinen Quellen ab: ${JSON.stringify(parity.issues)}`);
   const { catalog, changes } = reviewedMobileCatalog(snapshot.catalog);
+  normalizeMobileCatalogGeneral(catalog, speciesData);
   const evidence = new Map(snapshot.results.map(row => [row.slug, row.evidence]));
   const assetFolders = new Map(speciesData.map(row => [row.URLSlug, sanitizeAssetName(row["Deutscher Name"])]));
   const mediaToVerify = [];
@@ -133,9 +136,14 @@ export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, 
   const pinned = commit === undefined ? [] : pinCatalogMedia(catalog, commit, baseline);
   catalog.revision = digest(jsonBytes(catalog.species));
   validatePublicAppCatalog(catalog);
+  const decision = baseline ? decidePublicCatalogRelease(catalog, baseline) : null;
   const mediaChecks = [...mediaToVerify, ...pinned];
   assert.ok(mediaChecks.every(media => catalogDigest.test(media.sha256 ?? "") && Number.isSafeInteger(media.bytes)
     && media.bytes > 0 && media.bytes <= 32 * 1024 * 1024), "Ungültiger Größen- oder Hashbeleg für eine öffentliche Mediendatei.");
+  if (decision?.status === "unchanged" && !verifyUnchangedMedia) {
+    return { bytes: null, manifest: null, decision, parity, editorialCorrections: changes,
+      publishedMediaChecked: 0, publishedMetadataChecked: 0, pinnedMediaChecked: 0, spectrograms };
+  }
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(4, mediaChecks.length) }, async () => {
     while (next < mediaChecks.length) await verifyMedia(mediaChecks[next++]);
@@ -143,7 +151,6 @@ export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, 
   const bytes = jsonBytes(catalog);
   assert.ok(bytes.length <= PUBLIC_APP_CATALOG_MAX_BYTES && catalog.species.length > 0 && catalog.species.length <= 20_000,
     "Der öffentliche Katalog überschreitet das App-Format.");
-  const decision = baseline ? decidePublicCatalogRelease(catalog, baseline) : null;
   const checks = { parity, editorialCorrections: changes, publishedMediaChecked: mediaToVerify.length - metadataFiles,
     publishedMetadataChecked: metadataFiles, pinnedMediaChecked: pinned.length, spectrograms };
   if (decision?.status === "unchanged") return { bytes: null, manifest: null, decision, ...checks };
@@ -152,11 +159,28 @@ export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, 
   return { bytes, manifest, decision, ...checks };
 }
 
+export async function fetchPublicCatalogSource(url, options, fetchImpl = globalThis.fetch) {
+  const retryDelays = [0, 750, 2_000];
+  for (const [index, delay] of retryDelays.entries()) {
+    if (delay) await wait(delay, undefined, { signal: options.signal });
+    const lastAttempt = index === retryDelays.length - 1;
+    try {
+      const response = await fetchImpl(url, options);
+      if (lastAttempt || ![408, 429, 500, 502, 503, 504].includes(response.status)) return response;
+      await response.body?.cancel().catch(() => {});
+    } catch (error) {
+      const networkFailure = error instanceof TypeError && ["ECONNRESET", "EAI_AGAIN", "ETIMEDOUT", "UND_ERR_SOCKET",
+        "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT"].includes(error.cause?.code);
+      if (lastAttempt || !networkFailure || options.signal?.aborted) throw error;
+    }
+  }
+}
+
 async function readPublic(url, maxBytes, type, { fetchImpl = globalThis.fetch, allowMissing = false, pinned = false } = {}) {
   const accepted = type === "audio/mpeg" ? ["audio/mpeg", "audio/mp3"] : [type];
   if (pinned) accepted.push("application/octet-stream");
-  const response = await fetchImpl(url, { redirect: "error", credentials: "omit", signal: AbortSignal.timeout(20_000),
-    headers: { Accept: accepted.join(", "), "Cache-Control": "no-cache" } });
+  const response = await fetchPublicCatalogSource(url, { redirect: "error", credentials: "omit", signal: AbortSignal.timeout(20_000),
+    headers: { Accept: accepted.join(", "), "Cache-Control": "no-cache" } }, fetchImpl);
   const reader = response.body?.getReader(), chunks = [];
   let length = 0;
   try {
@@ -240,7 +264,7 @@ async function readGitCatalogSha256(commit) {
   return manifest.catalogSha256;
 }
 
-async function prepareFromPublicSources() {
+async function prepareFromPublicSources({ verifyUnchangedMedia = true } = {}) {
   const assetsRoot = fileURLToPath(new URL("../../species-assets/", import.meta.url));
   const filenames = ["speciesData.json", "species_list.json", "species-assets-overrides.json", "fehlende_elemente_report.json"];
   const inputLimit = 4 * 1024 * 1024;
@@ -254,7 +278,7 @@ async function prepareFromPublicSources() {
       assert.ok(published.equals(tracked), `Pages und der geprüfte Git-Stand enthalten unterschiedliche Daten: ${name}.`);
       return published;
     })),
-    createWebsiteSpeciesPagesService({ timeoutMs: 20_000 }).snapshot(),
+    createWebsiteSpeciesPagesService({ timeoutMs: 20_000, fetchImpl: fetchPublicCatalogSource }).snapshot(),
     readPublicCatalogBaseline(),
     readGitCatalogSha256(commit),
   ]);
@@ -263,11 +287,11 @@ async function prepareFromPublicSources() {
   assert.equal(sitemap.status, "ready", sitemap.error);
   const [sourceSpeciesData, speciesList, mediaRegistry, missingMediaReport] = inputs.map(bytes => JSON.parse(bytes));
   const { selected, speciesData, pending } = selectPublicCatalogSpecies(sourceSpeciesData, sitemap.pages, baseline.catalog);
-  const captured = await captureSpeciesPages(selected);
+  const captured = await captureSpeciesPages(selected, { fetchImpl: fetchPublicCatalogSource });
   assert.deepEqual(captured.issues, [], "Einige veröffentlichte Artseiten konnten nicht gelesen werden.");
   const { pages } = captured;
   const snapshot = await exportSpeciesCatalog({ speciesData, speciesList, pages, assetsRoot, missingMediaReport });
-  const release = await buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, baseline, commit,
+  const release = await buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, baseline, commit, verifyUnchangedMedia,
     async verifyMedia(media) {
       const bytes = await readPublic(media.url, media.bytes, media.mimeType, { pinned: media.pinned === true });
       assert.ok(bytes.length === media.bytes && digest(bytes) === media.sha256,
@@ -278,8 +302,8 @@ async function prepareFromPublicSources() {
   return { release, pending, filenames, inputs, pages, commit, checkoutCatalogSha256 };
 }
 
-async function stageFromPublicSources() {
-  const { release, pending, filenames, inputs, pages, commit } = await prepareFromPublicSources();
+async function stageFromPublicSources({ verifyUnchangedMedia }) {
+  const { release, pending, filenames, inputs, pages, commit } = await prepareFromPublicSources({ verifyUnchangedMedia });
   const directory = tmpdir();
   const { bytes, manifest, decision, parity, ...checks } = release;
   if (decision.status === "candidate") {
@@ -301,7 +325,9 @@ async function stageFromPublicSources() {
 
 if (import.meta.main) {
   const args = process.argv.slice(2);
-  if (args.length === 0) await stageFromPublicSources();
+  if (args.length === 0 || args.length === 1 && args[0] === "--scheduled") {
+    await stageFromPublicSources({ verifyUnchangedMedia: args.length === 0 });
+  }
   else {
     const [mode, directory, expectedBaselineSha256] = args;
     assert.ok(args.length === 3 && mode === "--verify-candidate" && catalogDigest.test(expectedBaselineSha256),

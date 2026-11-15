@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseWebsiteEditorialPage } from "./website-alt-parser.mjs";
+import { canonicalWebsiteImageSource, parseWebsiteAltPage, parseWebsiteEditorialPage } from "./website-alt-parser.mjs";
 
 const url = "https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/alcedoatthis";
 const page = (body) => `<main><section data-section-id="article">${body}</section></main>`;
@@ -49,6 +49,95 @@ test("Galeriefolge bleibt an kanonische Quellen gebunden und doppelte Vorschau w
   const prefix = "https://images.squarespace-cdn.com/content/v1/site/photo/";
   const result = parseWebsiteEditorialPage(page(`<div data-sqsp-section="gallery"><img data-src="${prefix}b.jpg?format=750w"><img src="${prefix}a.jpg"><img src="${prefix}b.jpg?format=1000w"></div>`), url);
   assert.deepEqual(result.gallerySources, [`${prefix}b.jpg`, `${prefix}a.jpg`]);
+});
+
+const nativeSource = "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/29b825bb-1b9f-44b3-964c-3caeb8f788a2/";
+const aliasSource = nativeSource.replace("/content/v1/", "/content/v2/namespaces/website/libraries/");
+
+function figure(position, body) {
+  return `<figure data-fn-position="${position}">${body}</figure>`;
+}
+
+function fnGallery(body) {
+  return `<div class="sqs-block-code"><div class="sqs-code-container"><div data-fn-art-gallery="1">${body}</div></div></div>`;
+}
+
+test("Explorer-Galerien behalten sichtbare Reihenfolge, Alternativtext, Bildunterschrift und Bildnachweis", () => {
+  const first = figure(1, `<img src="${aliasSource}Fisch.JPG?format=750w" alt="Eisvogel" data-src="${nativeSource}Fisch.JPG">`
+    + '<figcaption><span data-fn-caption="">Am Wasser &amp; im Flug</span><small data-fn-credit="">Felix &amp; Niko\nKamera</small></figcaption>');
+  const second = figure(2, `<img src="${nativeSource}Wasser.webp" alt="">`);
+  const native = `<section data-sqsp-section="gallery"><img src="${nativeSource}Küste.png"></section>`;
+  const pageHtml = page(block("<h2>Lebensraum</h2><p>Am Bach.</p>") + fnGallery(first + second) + native);
+  const result = parseWebsiteEditorialPage(pageHtml, url);
+  assert.equal(result.complete, true);
+  assert.deepEqual(result.issues, []);
+  assert.deepEqual(result.gallerySources, [`${nativeSource}Fisch.JPG`, `${nativeSource}Wasser.webp`, `${nativeSource}K%C3%BCste.png`]);
+  assert.equal(result.sections[0].paragraphs[0].text, "Am Bach.");
+  const [bird, water, coast] = parseWebsiteAltPage(pageHtml, url).images;
+  assert.equal(bird.sourceUrl, `${nativeSource}Fisch.JPG`);
+  assert.equal(bird.alt, "Eisvogel");
+  assert.deepEqual(bird.captionVariants, ["Am Wasser & im Flug"]);
+  assert.deepEqual(bird.attributionVariants, ["Felix & Niko\nKamera"]);
+  assert.equal(water.alt, "");
+  assert.deepEqual(water.attributionVariants, [""]);
+  assert.equal(coast.attributionVariants, undefined);
+});
+
+test("Nur die geprüfte Squarespace-v2-Bibliotheksroute wird zum stabilen v1-Bild aufgelöst", () => {
+  for (const transform of ["", "?format=750w", "?format=1500w", "?format=original"]) {
+    assert.equal(canonicalWebsiteImageSource(`${aliasSource}Probe.JPG${transform}`), `${nativeSource}Probe.JPG`);
+  }
+  const examples = [
+    `${aliasSource}Probe.JPG?format=750w&format=1500w`,
+    `${aliasSource}Probe.JPG?format=99w`,
+    `${aliasSource}Probe.JPG?format=750w&crop=other`,
+    `${aliasSource}Probe.svg?format=750w`,
+    `${aliasSource.replace("67556be0338df718ea064210", "57556be0338df718ea064210")}Probe.JPG`,
+    `${aliasSource.replace("29b825bb-1b9f-44b3-964c-3caeb8f788a2", "other")}Probe.JPG`,
+  ];
+  for (const candidate of examples) {
+    const result = canonicalWebsiteImageSource(candidate);
+    assert.ok(result.includes("/content/v2/"));
+    assert.equal(canonicalWebsiteImageSource(result), result);
+  }
+});
+
+test("Kaputte oder mehrdeutige Explorer-Galerien bleiben als blockierende Quellenfehler sichtbar", () => {
+  const photo = (name = "Vogel", extra = "") => `<img src="${nativeSource}${name}.jpg" alt="Eisvogel" ${extra}>`;
+  for (const [body, code] of [
+    [fnGallery(figure(2, photo())), "unverified-fn-gallery-structure"],
+    [fnGallery(figure(1, photo()) + figure(1, photo("Bach"))), "unverified-fn-gallery-structure"],
+    [fnGallery(figure(1, photo() + photo("Bach"))), "unverified-fn-gallery-structure"],
+    [fnGallery(figure(1, photo("Vogel", 'alt="Zweiter Wert"'))), "unverified-fn-gallery-structure"],
+    [fnGallery(figure(1, photo() + "<figcaption><span>Unbekanntes Feld</span></figcaption>")), "unverified-fn-gallery-structure"],
+    [fnGallery(figure(1, photo("Vogel", `data-src="${nativeSource}Bach.jpg"`))), "ambiguous-fn-gallery-source"],
+    [fnGallery(figure(1, photo()) + figure(2, photo())), "ambiguous-fn-gallery-source"],
+    [fnGallery(figure(1, photo())) + `<section data-sqsp-section="gallery">${photo()}</section>`, "ambiguous-fn-gallery-source"],
+    [`<div hidden>${fnGallery(figure(1, photo()))}</div>`, "unverified-fn-gallery-structure"],
+  ]) {
+    const result = parseWebsiteEditorialPage(page(body), url);
+    assert.equal(result.complete, false);
+    assert.ok(result.issues.some(issue => issue.code === code), body);
+  }
+});
+
+test("Explorer-Bildverwendungen mit den neuen Squarespace-Merkmalen müssen eindeutig bleiben", () => {
+  const use = (position, id) => `<figure data-fn-position="${position}" data-fn-item-id="${id}"><img src="${nativeSource}Foto-${position}.jpg" alt=""></figure>`;
+  const a = `fn-figure-${"a".repeat(24)}`, b = `fn-figure-${"b".repeat(24)}`;
+  const result = parseWebsiteEditorialPage(page(fnGallery(use(1, a) + use(2, b))), url);
+  assert.equal(result.complete, true);
+  assert.deepEqual(result.gallerySources, [`${nativeSource}Foto-1.jpg`, `${nativeSource}Foto-2.jpg`]);
+  const duplicate = parseWebsiteEditorialPage(page(fnGallery(use(1, a) + use(2, a))), url);
+  assert.equal(duplicate.complete, false);
+  assert.deepEqual(duplicate.gallerySources, []);
+});
+
+test("Codebeispiele, Kopfbereich und auskommentierte Galeriefragmente liefern keine Fotos", () => {
+  const markup = fnGallery(figure(1, `<img src="${nativeSource}Beispiel.jpg" alt="Beispiel">`));
+  const pageHtml = `<header>${markup}</header>${page(`<script>const text = '${markup}';</script><template>${markup}</template><pre>${markup}</pre><!--${markup}-->`)}`;
+  const result = parseWebsiteEditorialPage(pageHtml, url);
+  assert.equal(result.complete, true);
+  assert.deepEqual(result.gallerySources, []);
 });
 
 test("Nicht zugeordneter Fachtext wird sichtbar gemeldet und nicht still verworfen", () => {

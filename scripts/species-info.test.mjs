@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import vm from "node:vm";
 import { readFile } from "node:fs/promises";
+import { normalizeMobileCatalogGeneral } from "../mobile/tool/catalog-editorial.mjs";
+import { speciesGeneralSourceText } from "../species-explorer/species-content/general.mjs";
 
 const source = await readFile(new URL("../species-info.js", import.meta.url), "utf8");
 
@@ -59,4 +61,41 @@ test("Größe und Gewicht können gleichzeitig getrennte Werte enthalten", async
   });
   assert.equal((html.match(/species-info-row--split/g) || []).length, 2);
   assert.match(html, /Großtrappe/);
+});
+
+test("App-Katalog übernimmt die Website-Regeln für fehlende Allgemein- und IUCN-Werte", async () => {
+  for (const marker of [" U ", "n/a", "Na", "N.A.", "unknown", ""]) {
+    const record = { ...commonData, URLSlug: "pantheraleo", "Englischer Name": marker, Größe: marker,
+      Lebenserwartung: marker, "Populationgröße": marker, Generationsdauer: marker, Trend: marker };
+    const html = await renderInfo(record);
+    const article = "Redaktioneller Absatz\nPopulationsgröße: U im Beispiel";
+    const sections = [{ title: "Allgemein", text: `${article}\n\n${speciesGeneralSourceText(record)}` },
+      { title: "Lebensraum", text: "U ist Teil eines unabhängigen Textabsatzes." }];
+    const catalog = { species: [{ id: record.URLSlug, sections }] };
+    assert.deepEqual(normalizeMobileCatalogGeneral(catalog, [record]), [record.URLSlug]);
+    const text = sections[0].text;
+    assert.ok(text.startsWith(`${article}\n\n`));
+    assert.match(text, /^Populationsgröße: Unbekannt$/m);
+    assert.match(text, /^Generationsdauer: Unbekannt$/m);
+    assert.match(text, /^Trend: Unbekannt$/m);
+    assert.ok(text.includes(`Gewicht: ${record.Gewicht}`));
+    assert.doesNotMatch(text, /^(?:Englischer Name|Größe|Lebenserwartung):/m);
+    assert.doesNotMatch(html, />(?:Englischer Name|Größe|Lebenserwartung):/);
+    assert.match(html, /Generationsdauer:<\/span>\s*<span class="species-info-values">Unbekannt<\/span>/);
+    assert.match(html, /Populationsgröße:<\/span>\s*<span class="species-info-values">Unbekannt<\/span>/);
+    assert.equal(sections[1].text, "U ist Teil eines unabhängigen Textabsatzes.");
+  }
+});
+
+test("Die App-Projektion erhält bekannte Werte und verwirft eine fremde Allgemein-Fassung", () => {
+  const record = { ...commonData, URLSlug: "pantheraleo", "Populationgröße": "23.000–39.000", Trend: "Abnehmend" };
+  const section = { title: "Allgemein", text: speciesGeneralSourceText(record) };
+  const catalog = { species: [{ id: record.URLSlug, sections: [section] }] };
+  normalizeMobileCatalogGeneral(catalog, [record]);
+  assert.match(section.text, /^Populationsgröße: 23\.000–39\.000$/m);
+  assert.match(section.text, /^Generationsdauer: 6,98 Jahre$/m);
+  assert.match(section.text, /^Trend: Abnehmend$/m);
+  section.text = "Unabhängiger redaktioneller Eintrag";
+  assert.throws(() => normalizeMobileCatalogGeneral(catalog, [record]), /nicht eindeutig gebunden/);
+  assert.equal(section.text, "Unabhängiger redaktioneller Eintrag");
 });
