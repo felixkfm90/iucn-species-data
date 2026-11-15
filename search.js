@@ -165,6 +165,7 @@
     }
 
     buildIndex();
+    document.addEventListener("fn:region-cards-changed", rebuildAndApply);
     setTimeout(rebuildAndApply, 800);
     setTimeout(rebuildAndApply, 1800);
     setTimeout(rebuildAndApply, 3200);

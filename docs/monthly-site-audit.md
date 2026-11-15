@@ -60,6 +60,15 @@ es mit Titel und Rückknopf in den bisherigen Farben; mobil stehen diese darunte
 Die Wildlife-Kategorien folgen in allen Ansichten derselben Reihenfolge: Heimische Tierwelt zuerst,
 danach alphabetisch; Kategorien mit „In Arbeit“ zuletzt. Gekoppelte JS-/CSS-Regeln gemeinsam prüfen.
 
+Für neue, im Explorer vorbereitete Artseiten ergänzt `species-region-cards.js` die Regionsübersicht.
+Das Skript berücksichtigt nur veröffentlichte Seiten, die in der Squarespace-Sitemap unter dem
+passenden Regionspfad stehen, unter ihrer kanonischen Adresse öffentlich erreichbar sind und eine
+eindeutige Kachelangabe mit Bild aus der jeweiligen Artgalerie besitzen. Bestehende Kacheln mit
+derselben Artseiten-Adresse haben Vorrang. Die Website-Suche nimmt neu ergänzte Kacheln nach dem
+Laden auf. Öffentliche Abnahme umfasst die deaktivierte und die aktivierte Artseite, das gewählte
+Übersichtsbild samt Fokuspunkt und Kurztext sowie die Suche und den direkten Link. Die lokale
+[Footer-Referenz](squarespace-footer.html) führt die Einbindung dieses Quellstands.
+
 Squarespace Custom CSS enthält nur den kanonischen Import:
 
 ```css
