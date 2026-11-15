@@ -1062,19 +1062,27 @@ test("waiting stops on a different selected path, ambiguous preview or replaced 
     assert.deepEqual(f.reads.map(value => value[1]), ["top", "top"]);
   }
 });
-test("unready content remains unconfirmed at the deadline and cancellation prevents a later DOM read", async () => {
-  const f = fixture(), controller = new AbortController(); f.frame.url = "about:blank";
+test("unready content remains unconfirmed at the deadline and cancellation prevents a later DOM read", async (t) => {
+  let now = 0;
+  t.mock.method(performance, "now", () => now);
   const binding = { expectedPageId: PAGE_ID, expectedPath: new URL(PAGE).pathname };
-  const expired = await readSquarespacePageObservation(f.contents, { ...binding, waitForContentMs: 60 });
-  assert.equal(expired.status, "unknown"); assert.ok(expired.reasonCodes.includes("preview-content-wait-expired"));
+  const deadline = fixture();
+  deadline.frame.url = "about:blank";
+  deadline.hooks.top = () => { now = 60; };
+  const expired = await readSquarespacePageObservation(deadline.contents, { ...binding, waitForContentMs: 60 });
+  assert.equal(expired.status, "unknown");
+  assert.deepEqual(expired.reasonCodes, ["preview-frame-loading", "preview-content-wait-expired"]);
   assert.deepEqual(expired.textBlocks, []);
-  const nextRead = deferred(); f.hooks.top = () => { nextRead.resolve(); };
-  const attempt = readSquarespacePageObservation(f.contents, { ...binding, waitForContentMs: 2000, signal: controller.signal });
-  await nextRead.promise;
-  await new Promise(resolve => setImmediate(resolve));
-  controller.abort();
-  await assert.rejects(attempt, { code: "SQUARESPACE_OBSERVATION_ABORTED" });
-  assert.deepEqual(f.reads.map(value => value[1]), ["top", "top"]);
+  assert.deepEqual(deadline.reads.map(value => value[1]), ["top"]);
+
+  const controller = new AbortController(), cancelled = fixture();
+  // The observer checks the frame after its first DOM read and before waiting for readiness again.
+  Object.defineProperty(cancelled.frame, "url", { get() { controller.abort(); return "about:blank"; } });
+  await assert.rejects(
+    readSquarespacePageObservation(cancelled.contents, { ...binding, waitForContentMs: 2000, signal: controller.signal }),
+    { code: "SQUARESPACE_OBSERVATION_ABORTED" },
+  );
+  assert.deepEqual(cancelled.reads.map(value => value[1]), ["top"]);
 });
 test("a timed-out DOM call blocks another observation on the same browser until it actually settles", async () => {
   const f = fixture(), gate = deferred(); f.hooks.top = () => gate.promise;
