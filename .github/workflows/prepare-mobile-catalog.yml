@@ -51,13 +51,10 @@ jobs:
         shell: bash
         env:
           EXPECTED_SOURCE_COMMIT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
-          SCHEDULED_RUN: ${{ github.event_name == 'schedule' }}
         run: |
           set -euo pipefail
           result="$RUNNER_TEMP/mobile-catalog-result.json"
-          args=()
-          if [[ "$SCHEDULED_RUN" == 'true' ]]; then args+=(--scheduled); fi
-          node mobile/tool/stage-public-catalog.mjs "${args[@]}" > "$result"
+          node mobile/tool/stage-public-catalog.mjs > "$result"
           node --input-type=module - "$result" <<'NODE'
           import assert from 'node:assert/strict';
           import { appendFileSync, readFileSync } from 'node:fs';
@@ -86,7 +83,9 @@ jobs:
             `**Katalogprüfung** · \`${result.status}\`\n\n` +
             `Ausgangsfassung (SHA-256) \`${result.baseline.sha256}\`\n\n` +
             `Geprüfter Git-Stand \`${result.sourceCommit}\`\n\n` +
-            `${result.addedSpecies.length} neue Arten · ${result.changedSpecies.length} geänderte Arten · ${result.galleryImages} Galeriefotos\n`);
+            `${result.addedSpecies.length} neue Arten · ${result.changedSpecies.length} geänderte Arten · ${result.galleryImages} Galeriefotos\n\n` +
+            `${result.reusedMedia} unveränderte Mediendateien übernommen · ${result.mediaChecked} Pages-Dateien, ` +
+            `${result.pinnedMediaChecked} fest gebundene Fassungen und ${result.gallerySourcesChecked} neue Galeriequellen abgerufen\n`);
           NODE
 
       - name: Upload verified candidate for review

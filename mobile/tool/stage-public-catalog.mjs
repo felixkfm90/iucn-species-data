@@ -87,16 +87,17 @@ function pinCatalogMedia(catalog, commit, baseline) {
       const old = oldFiles.get(file.id);
       const oldLocation = old && publicCatalogAssetLocation(old.url);
       const reuse = oldLocation?.commit && oldLocation.folder === current.folder && oldLocation.filename === current.filename
-        && old.sha256 === file.sha256 && old.bytes === file.bytes;
+        && old.sha256 === file.sha256 && old.bytes === file.bytes && old.mimeType === file.mimeType;
       file.url = reuse ? old.url : `${PUBLIC_CATALOG_RAW_BASE}${commit}/species-assets/${current.folder}/${current.filename}`;
-      pinned.push({ ...file, pinned: true });
+      pinned.push({ media: { ...file, pinned: true }, reused: Boolean(reuse),
+        sameAttribution: reuse && old.attribution === file.attribution });
     }
   }
   return pinned;
 }
 
 export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, verifyMedia, baseline, commit,
-  verifyUnchangedMedia = true }) {
+  verifyGalleryPhoto, verifyUnchangedMedia = true }) {
   const parity = await validateSpeciesSnapshot({ snapshot, speciesData, pages, missingMediaReport });
   assert.ok(parity.passed && parity.sourcePagesChecked === speciesData.length,
     `Der öffentliche Katalog weicht von seinen Quellen ab: ${JSON.stringify(parity.issues)}`);
@@ -104,19 +105,20 @@ export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, 
   normalizeMobileCatalogGeneral(catalog, speciesData);
   const evidence = new Map(snapshot.results.map(row => [row.slug, row.evidence]));
   const assetFolders = new Map(speciesData.map(row => [row.URLSlug, sanitizeAssetName(row["Deutscher Name"])]));
-  const mediaToVerify = [];
-  let spectrograms = 0, metadataFiles = 0;
+  const publicMedia = [], metadataFiles = [];
+  let spectrograms = 0;
   for (const entry of catalog.species) {
     const { media } = entry;
-    mediaToVerify.push(...coreMedia(media).map(file => ({ ...file })));
+    const core = coreMedia(media);
+    publicMedia.push(...core.map(file => ({ ...file })));
     const files = evidence.get(entry.id).assetFiles;
     const folder = assetFolders.get(entry.id);
     for (const filename of ["portrait.json", "credits.json"]) {
       const metadata = files.find(file => file.path === `${folder}/${filename}`);
       if (metadata) {
-        mediaToVerify.push({ id: `${entry.id}:${filename}`, url: `${PAGES_ASSET_BASE}/${encodeURIComponent(folder)}/${filename}`,
-          bytes: metadata.bytes, sha256: metadata.sha256, mimeType: "application/json" });
-        metadataFiles++;
+        const associated = filename === "portrait.json" ? media.portrait : media.sounds[0];
+        metadataFiles.push({ file: { id: `${entry.id}:${filename}`, url: `${PAGES_ASSET_BASE}/${encodeURIComponent(folder)}/${filename}`,
+          bytes: metadata.bytes, sha256: metadata.sha256, mimeType: "application/json" }, assetUrl: associated?.url });
       }
     }
     const [sound] = media.sounds;
@@ -130,33 +132,61 @@ export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, 
     `Spektrogramm und Aufnahme stimmen nicht mit dem öffentlichen Register überein: ${entry.id}`);
     media.spectrogram = { id: `${entry.id}:spectrogram`, url: new URL("spectrogram.webp", soundUrl).href,
       bytes: spectrum.bytes, sha256: spectrum.sha256, mimeType: "image/webp", alt: "Spektrogramm der Tierstimme" };
-    mediaToVerify.push({ ...media.spectrogram });
+    publicMedia.push({ ...media.spectrogram });
     spectrograms++;
   }
   const pinned = commit === undefined ? [] : pinCatalogMedia(catalog, commit, baseline);
   catalog.revision = digest(jsonBytes(catalog.species));
   validatePublicAppCatalog(catalog);
   const decision = baseline ? decidePublicCatalogRelease(catalog, baseline) : null;
-  const mediaChecks = [...mediaToVerify, ...pinned];
-  assert.ok(mediaChecks.every(media => catalogDigest.test(media.sha256 ?? "") && Number.isSafeInteger(media.bytes)
+  const incremental = !verifyUnchangedMedia && baseline?.source === "published" && commit !== undefined;
+  const checkedPins = pinned.filter(({ reused }) => !incremental || !reused).map(({ media }) => media);
+  const reusedUrls = new Map(pinned.filter(({ reused }) => incremental && reused)
+    .map(({ media, sameAttribution }) => {
+      const { folder, filename } = publicCatalogAssetLocation(media.url);
+      return [`${folder}/${filename}`, { sameAttribution }];
+    }));
+  const reusedFile = url => {
+    if (!url) return undefined;
+    const { folder, filename } = publicCatalogAssetLocation(url);
+    return reusedUrls.get(`${folder}/${filename}`);
+  };
+  const checkedPublic = publicMedia.filter(file => !reusedFile(file.url));
+  const checkedMetadata = metadataFiles.filter(({ assetUrl }) => !reusedFile(assetUrl)?.sameAttribution).map(({ file }) => file);
+  assert.ok([...publicMedia, ...metadataFiles.map(({ file }) => file)].every(media =>
+    catalogDigest.test(media.sha256 ?? "") && Number.isSafeInteger(media.bytes)
     && media.bytes > 0 && media.bytes <= 32 * 1024 * 1024), "Ungültiger Größen- oder Hashbeleg für eine öffentliche Mediendatei.");
-  if (decision?.status === "unchanged" && !verifyUnchangedMedia) {
-    return { bytes: null, manifest: null, decision, parity, editorialCorrections: changes,
-      publishedMediaChecked: 0, publishedMetadataChecked: 0, pinnedMediaChecked: 0, spectrograms };
-  }
-  let next = 0;
-  await Promise.all(Array.from({ length: Math.min(4, mediaChecks.length) }, async () => {
-    while (next < mediaChecks.length) await verifyMedia(mediaChecks[next++]);
-  }));
+  const mediaChecks = [...checkedPublic, ...checkedMetadata, ...checkedPins];
+  await verifyInParallel(mediaChecks, verifyMedia);
+  const galleryChecks = verifyGalleryPhoto ? changedGalleryUrls(catalog, incremental ? baseline.catalog : null) : [];
+  await verifyInParallel(galleryChecks, verifyGalleryPhoto);
   const bytes = jsonBytes(catalog);
   assert.ok(bytes.length <= PUBLIC_APP_CATALOG_MAX_BYTES && catalog.species.length > 0 && catalog.species.length <= 20_000,
     "Der öffentliche Katalog überschreitet das App-Format.");
-  const checks = { parity, editorialCorrections: changes, publishedMediaChecked: mediaToVerify.length - metadataFiles,
-    publishedMetadataChecked: metadataFiles, pinnedMediaChecked: pinned.length, spectrograms };
+  const checks = { parity, editorialCorrections: changes, publishedMediaChecked: checkedPublic.length,
+    publishedMetadataChecked: checkedMetadata.length, pinnedMediaChecked: checkedPins.length,
+    reusedMedia: publicMedia.length - checkedPublic.length, gallerySourcesChecked: galleryChecks.length, spectrograms };
   if (decision?.status === "unchanged") return { bytes: null, manifest: null, decision, ...checks };
   const manifest = { schemaVersion: 1, kind: "fn-public-catalog", catalogSha256: digest(bytes),
     catalogBytes: bytes.length, revision: catalog.revision, generatedAt: catalog.generatedAt, speciesCount: catalog.species.length };
   return { bytes, manifest, decision, ...checks };
+}
+
+async function verifyInParallel(files, check) {
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(4, files.length) }, async () => {
+    while (next < files.length) await check(files[next++]);
+  }));
+}
+
+function changedGalleryUrls(catalog, previous) {
+  const phoneUrls = value => new Set(value.species.flatMap(({ media }) => media.gallery.map(photo => {
+    const url = new URL(photo.url);
+    url.searchParams.set("format", "750w");
+    return url.href;
+  })));
+  const known = previous ? phoneUrls(previous) : new Set();
+  return [...phoneUrls(catalog)].filter(url => !known.has(url));
 }
 
 export async function fetchPublicCatalogSource(url, options, fetchImpl = globalThis.fetch) {
@@ -177,7 +207,7 @@ export async function fetchPublicCatalogSource(url, options, fetchImpl = globalT
 }
 
 async function readPublic(url, maxBytes, type, { fetchImpl = globalThis.fetch, allowMissing = false, pinned = false } = {}) {
-  const accepted = type === "audio/mpeg" ? ["audio/mpeg", "audio/mp3"] : [type];
+  const accepted = Array.isArray(type) ? [...type] : type === "audio/mpeg" ? ["audio/mpeg", "audio/mp3"] : [type];
   if (pinned) accepted.push("application/octet-stream");
   const response = await fetchPublicCatalogSource(url, { redirect: "error", credentials: "omit", signal: AbortSignal.timeout(20_000),
     headers: { Accept: accepted.join(", "), "Cache-Control": "no-cache" } }, fetchImpl);
@@ -264,7 +294,7 @@ async function readGitCatalogSha256(commit) {
   return manifest.catalogSha256;
 }
 
-async function prepareFromPublicSources({ verifyUnchangedMedia = true } = {}) {
+async function prepareFromPublicSources({ verifyUnchangedMedia = false } = {}) {
   const assetsRoot = fileURLToPath(new URL("../../species-assets/", import.meta.url));
   const filenames = ["speciesData.json", "species_list.json", "species-assets-overrides.json", "fehlende_elemente_report.json"];
   const inputLimit = 4 * 1024 * 1024;
@@ -296,6 +326,10 @@ async function prepareFromPublicSources({ verifyUnchangedMedia = true } = {}) {
       const bytes = await readPublic(media.url, media.bytes, media.mimeType, { pinned: media.pinned === true });
       assert.ok(bytes.length === media.bytes && digest(bytes) === media.sha256,
         `Veröffentlichte Medienbytes weichen vom Export ab: ${media.id}`);
+    },
+    async verifyGalleryPhoto(url) {
+      const bytes = await readPublic(url, 32 * 1024 * 1024, ["image/jpeg", "image/png", "image/webp"]);
+      assert.ok(bytes.length > 0, `Öffentliches Galeriefoto ist leer: ${url}`);
     } });
   assert.equal((await readGit(["rev-parse", "--verify", "HEAD^{commit}"])).toString("utf8").trim(), commit,
     "Der Git-Zielstand hat sich während der Prüfung geändert.");
@@ -319,14 +353,15 @@ async function stageFromPublicSources({ verifyUnchangedMedia }) {
     pages: [...pages].map(([slug, { url, sha256, checkedAt }]) => ({ slug, url, sha256, checkedAt })) }), { flag: "wx" });
   process.stdout.write(JSON.stringify({ directory, ...decision, ...manifest, sourceCommit: commit, mediaChecked: checks.publishedMediaChecked,
     pinnedMediaChecked: checks.pinnedMediaChecked, metadataChecked: checks.publishedMetadataChecked,
+    reusedMedia: checks.reusedMedia, gallerySourcesChecked: checks.gallerySourcesChecked,
     spectrograms: checks.spectrograms, galleryImages: parity.galleryImagesChecked,
     pendingWebsiteSpecies: pending.length }) + "\n");
 }
 
 if (import.meta.main) {
   const args = process.argv.slice(2);
-  if (args.length === 0 || args.length === 1 && args[0] === "--scheduled") {
-    await stageFromPublicSources({ verifyUnchangedMedia: args.length === 0 });
+  if (args.length === 0 || args.length === 1 && ["--scheduled", "--full-media-check"].includes(args[0])) {
+    await stageFromPublicSources({ verifyUnchangedMedia: args[0] === "--full-media-check" });
   }
   else {
     const [mode, directory, expectedBaselineSha256] = args;

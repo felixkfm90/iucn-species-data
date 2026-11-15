@@ -106,9 +106,14 @@ die der Arten-Explorer beim Artseitenaufbau erzeugt. Bildnachweise werden getren
 Bildunterschriften übertragen.
 
 Vorübergehende HTTP- und Netzwerkfehler beim Lesen öffentlicher Quellen werden mit Abstand
-erneut versucht. Bei einem unveränderten Katalog prüft der geplante Lauf weiterhin die aktuellen
-Seiten und den gebundenen Ausgangsstand. Die erneute Übertragung unveränderter Medienbytes
-entfällt in diesem Fall. Eine neue Fassung durchläuft die vollständige Medienprüfung.
+erneut versucht. Jeder Lauf prüft die aktuellen Seiten, die lokalen Medienbytes und den gebundenen
+öffentlichen Ausgangsstand. Karten, Porträts, Aufnahmen und Spektrogramme mit identischem Pfad,
+Hash, Größe und Medientyp übernehmen die bereits geprüfte, feste Git-Fassung aus diesem Ausgangsstand.
+Neue oder geänderte Dateien werden von Pages und von ihrer festen Git-Adresse abgerufen.
+Neue Galeriequellen werden in der Smartphone-Größe abgerufen. Die Quelldaten für die Bild- und
+Tonnachweise werden lokal geprüft und bei neuer Zuordnung oder geänderten Nachweisen zusätzlich von
+Pages gelesen. Ohne gebundene Ausgangsfassung werden sämtliche Medien abgerufen. Eine gezielte
+Gesamtprobe ist lokal mit `node mobile/tool/stage-public-catalog.mjs --full-media-check` möglich.
 
 Für die öffentliche App-Fassung werden die gekennzeichneten Artgrunddaten im Abschnitt
 „Allgemein“ wie auf der Website aufbereitet. Platzhalter wie `U`, `n/a` und
@@ -128,8 +133,8 @@ Vor der Übernahme der beiden Dateien nach
 `mobile/catalog/` prüft `node mobile/tool/stage-public-catalog.mjs --verify-candidate <Katalogordner> <SHA-256-der-Ausgangsfassung>`
 die vorhandenen Dateien erneut gegen die öffentlichen Quellen. Die Ausgangsprüfsumme steht im
 Prüflauf. Die Gegenprobe verlangt dieselbe Ausgangsfassung auf Pages und im Git-Zielstand,
-die vollständigen aktuellen Artinhalte
-und die exakten veröffentlichten Medienbytes. Sie gibt die geprüfte Katalogprüfsumme aus.
+die vollständigen aktuellen Artinhalte und dieselben Prüfungen für neue und geänderte Medien.
+Sie gibt die geprüfte Katalogprüfsumme aus.
 
 Die automatische Übernahme ist über die GitHub-Repositoryvariable `PUBLIC_MOBILE_CATALOG_AUTO_PUBLISH`
 ausdrücklich einschaltbar. Ohne den Wert `true` endet der Lauf mit der Kandidatenprüfung. Bei

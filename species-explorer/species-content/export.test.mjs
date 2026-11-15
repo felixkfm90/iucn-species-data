@@ -89,8 +89,8 @@ test("App-Freigabe bindet jedes Spektrogramm an die veröffentlichte Tonaufnahme
   const scheduled = await buildPublicCatalogRelease({ ...options, baseline, verifyUnchangedMedia: false });
   assert.deepEqual(scheduled.decision, expectedDecision);
   assert.equal(scheduled.parity.sourcePagesChecked, 1);
-  assert.equal(scheduled.publishedMediaChecked, 0);
-  assert.deepEqual(verified, []);
+  assert.equal(scheduled.publishedMediaChecked, 4);
+  assert.deepEqual(verified.sort(), expectedMedia);
   const bundled = await buildPublicCatalogRelease({ ...options, baseline: baselineFor(previous, "bundled") });
   assert.deepEqual(bundled.decision, { ...expectedDecision, status: "candidate",
     baseline: { ...expectedDecision.baseline, source: "bundled" } });
@@ -110,6 +110,24 @@ test("App-Freigabe bindet jedes Spektrogramm an die veröffentlichte Tonaufnahme
   assert.equal((await buildPublicCatalogRelease({ ...freshOptions, commit: laterCommit, baseline: pinnedBaseline })).decision.status, "unchanged");
   assert.deepEqual(pinnedRequests.sort(), expectedPins);
 
+  const photoUrl = "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/a/new.JPG";
+  const editedHtml = html.replace("</main>", `<section data-sqsp-section="gallery"><img src="${photoUrl}" alt="Neues Motiv"></section></main>`);
+  const edited = buildSpeciesContent({ record: source, pageUrl, html: editedHtml, localMedia: media });
+  const checkedPhotos = [];
+  const deltaOptions = { ...freshOptions, commit: laterCommit, baseline: pinnedBaseline, verifyUnchangedMedia: false,
+    snapshot: { ...freshOptions.snapshot, catalog: { ...freshCatalog, species: [edited.data] },
+      results: [{ slug: source.URLSlug, evidence: edited.evidence }] },
+    pages: new Map([[source.URLSlug, { url: pageUrl, html: editedHtml }]]),
+    verifyMedia: () => assert.fail("Eine unveränderte Aufnahme darf die neue Galerie nicht blockieren."),
+    verifyGalleryPhoto: url => { checkedPhotos.push(url); } };
+  const galleryOnly = await buildPublicCatalogRelease(deltaOptions);
+  assert.equal(galleryOnly.decision.status, "candidate");
+  assert.equal(galleryOnly.reusedMedia, 4);
+  assert.equal(galleryOnly.publishedMetadataChecked, 0);
+  assert.deepEqual(checkedPhotos, [`${photoUrl}?format=750w`]);
+  await assert.rejects(buildPublicCatalogRelease({ ...deltaOptions, verifyGalleryPhoto: () => { throw new Error("Neues Foto nicht erreichbar"); } }),
+    /Neues Foto nicht erreichbar/);
+
   const priorPortrait = pinned.species[0].media.portrait;
   priorPortrait.sha256 = digest("old portrait");
   pinned.revision = digest(`${JSON.stringify(pinned.species)}\n`);
@@ -118,6 +136,10 @@ test("App-Freigabe bindet jedes Spektrogramm an die veröffentlichte Tonaufnahme
   assert.equal(updated.portrait.url, `${base.replace(firstCommit, laterCommit)}portrait.webp`);
   assert.equal(updated.sounds[0].url, `${base}sound.mp3`);
   assert.equal(updated.spectrogram.url, `${base}spectrogram.webp`);
+  const changedRequests = [];
+  await buildPublicCatalogRelease({ ...deltaOptions,
+    verifyMedia: item => { changedRequests.push([item.id, item.pinned === true]); } });
+  assert.deepEqual(changedRequests, [["fixture:portrait", false], ["fixture:portrait", true]]);
 
   binding.soundSha256 = digest("different sound");
   await assert.rejects(buildPublicCatalogRelease(options), /Spektrogramm und Aufnahme/);
