@@ -572,14 +572,17 @@ test("Arten-Suche benennt Eingabe und Trefferstatus und behält Suche und Escape
   input.value = "";
   host.querySelector = (selector) => ({ "#ss-input": input, "#ss-meta": meta, "#ss-results": wrap, "#ss-list": list })[selector];
   const main = element();
-  main.querySelectorAll = () => ["Amsel", "Rebhuhn"].map((name) => ({
+  const species = ["Amsel", "Rebhuhn"];
+  main.querySelectorAll = () => species.map((name) => ({
     textContent: name, getAttribute: () => `/wildlife/heimische-tierwelt/${name.toLowerCase()}`,
     closest: () => ({ querySelector: () => ({ textContent: name }) }),
   }));
   const timers = [];
+  const documentEvents = new Map();
   const location = { pathname: "/wildlife/heimische-tierwelt", href: "https://example.test/wildlife/heimische-tierwelt", origin: "https://example.test" };
   const context = vm.createContext({ location, URL,
-    document: { getElementById: () => host, querySelector: () => main, createElement: element },
+    document: { getElementById: () => host, querySelector: () => main, createElement: element,
+      addEventListener: (name, listener) => documentEvents.set(name, listener) },
     MutationObserver: class { observe() {} }, clearTimeout() {}, setTimeout: (callback, delay) => { timers.push({ callback, delay }); return timers.length; } });
   new vm.Script(searchSource, { filename: "search.js" }).runInContext(context);
   assert.match(host.innerHTML, /id="ss-input"[^>]*aria-label="Arten durchsuchen"/);
@@ -589,6 +592,14 @@ test("Arten-Suche benennt Eingabe und Trefferstatus und behält Suche und Escape
   timers.find((entry) => entry.delay === 120).callback();
   assert.equal(meta.textContent, "1 Treffer");
   assert.equal(list.children[0].children[0].textContent, "Amsel");
+  input.value = "fuchs";
+  input.listeners.get("input").listener();
+  timers.at(-1).callback();
+  assert.equal(meta.textContent, "0 Treffer");
+  species.push("Fuchs");
+  documentEvents.get("fn:region-cards-changed")();
+  assert.equal(meta.textContent, "1 Treffer");
+  assert.equal(list.children.at(-1).children[0].textContent, "Fuchs");
   input.listeners.get("keydown").listener({ key: "Escape" });
   assert.equal(input.value, "");
   assert.equal(meta.textContent, "");
