@@ -1641,5 +1641,39 @@
     },
     "Letztes IUCN Update": "2017",
     "Daten abgerufen": "2026-11-11"
+  },
+  {
+    "URLSlug": "pantheraleo",
+    "Wissenschaftlicher Name": "Panthera leo",
+    "Deutscher Name": "Löwe",
+    "Englischer Name": "Lion",
+    "Gewicht": "Männchen: ca. 150-200 kg; Weibchen: ca. 110-180 kg",
+    "Größe": "ca. 100-120 cm",
+    "Lebenserwartung": "ca. 10-15 Jahre",
+    "Assessment ID": 280792135,
+    "Status": "VU",
+    "Trend": "Abnehmend",
+    "Kategorie": "Gefährdet",
+    "Populationgröße": "n/a",
+    "Generationsdauer": "6,98 Jahre",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Subphylum": "Vertebrata",
+    "Class": "Mammalia",
+    "Order": "Carnivora",
+    "Family": "Felidae",
+    "Genus": "Panthera",
+    "Species": "leo",
+    "Taxon ID": "15951",
+    "IUCN-Zuordnung": {
+      "scientificName": "Panthera leo",
+      "queriedName": "Panthera leo",
+      "matchedBy": "scientific-name",
+      "taxonId": "15951",
+      "masterTaxonId": "mtx_279f310656005774ea75e77a756a9c58",
+      "masterVersion": "master-20261024014609415"
+    },
+    "Letztes IUCN Update": "2025",
+    "Daten abgerufen": "2026-11-20"
   }
 ]

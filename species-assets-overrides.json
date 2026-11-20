@@ -1823,6 +1823,47 @@
         "updatedAt": "2026-11-11T16:38:32.757Z",
         "sha256": "790d2f21a09be96728595e71250a1a4eaa6cf5abf98e5ce68603a04fc7e52df7"
       }
+    },
+    "Loewe": {
+      "portrait": {
+        "managedBy": "species-explorer",
+        "source": "ChatGPT",
+        "generationMethod": "Manuell in ChatGPT erzeugt und im Arten-Explorer importiert",
+        "promptVersion": "2.0.0",
+        "importedAt": "2026-11-20T18:16:26.604Z",
+        "approvedAt": "2026-11-20T18:16:30.912Z",
+        "sha256": "7b8af6ec42dcb7f13d7e15abf4be5b59a745803690aeaf7721cd576a434a475e",
+        "metadataSha256": "c32998e8c5bc3f9cbb7912453e8aa566e47ae813aa483cbcf8b9ac62451ce0a8"
+      },
+      "spectrogram": {
+        "stale": false,
+        "soundSha256": "cd1ebd8d41cc184a69694a911acf152aec30d7bf541950e9f6d0a709a6bdc83c",
+        "spectrogramSha256": "a95fd1899b2f68831eb836fd8849d63fc5fc6b8fb89cacc428325f1cf7d1bd15",
+        "generatedAt": "2026-11-20T18:16:43.643Z",
+        "verifiedAt": "2026-11-20T18:16:43.649Z"
+      },
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "careMode": "manual",
+        "provenance": {
+          "provider": "unspecified",
+          "acquisition": "file",
+          "assurance": "unverified"
+        },
+        "reason": "Als Datei übernommen, weil der automatische Abruf nicht verfügbar war.",
+        "source": "https://www.iucnredlist.org/species/15951/280792135/distribution_map",
+        "germanName": "Löwe",
+        "originalFileName": "distribution-map-T15951A280792135.jpg",
+        "importedAt": "2026-11-20T18:17:07.601Z",
+        "updatedAt": "2026-11-20T18:17:07.601Z",
+        "sha256": "b404acfd80638bc43d6de01b21384ea532a9d3f2595cfcaa01c1dce46cb2751b"
+      },
+      "sound": {
+        "manual": false,
+        "reason": "Automatisch durch die Pipeline gepflegt.",
+        "updatedAt": "2026-11-20T18:17:33.820Z"
+      }
     }
   },
   "spectrogramGenerator": {
