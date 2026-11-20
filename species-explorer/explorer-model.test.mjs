@@ -30,10 +30,10 @@ test("Explorer-Modell bildet den aktuellen Projektstand ab", async () => {
   const expectedMissingPortraitCount = expectedSpeciesCount - expectedPortraitCount;
   const expectedNcSoundCount = model.species.filter((entry) => entry.isNcSound).length;
   const expectedManualMapCount = model.species.filter((entry) => entry.isManualMap).length;
-  const modelSpeciesNames = new Set(model.species.map((entry) => entry.germanName));
+  const modelAssetNames = new Set(model.species.map((entry) => entry.safeName));
   const expectedManualSoundCount = Object.entries(assetOverrides.assets ?? {})
-    .filter(([speciesName, assets]) => (
-      modelSpeciesNames.has(speciesName) && assets?.sound?.manual === true
+    .filter(([assetName, assets]) => (
+      modelAssetNames.has(assetName) && assets?.sound?.manual === true
     ))
     .length;
 
