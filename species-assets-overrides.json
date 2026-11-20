@@ -1837,10 +1837,10 @@
       },
       "spectrogram": {
         "stale": false,
-        "soundSha256": "cd1ebd8d41cc184a69694a911acf152aec30d7bf541950e9f6d0a709a6bdc83c",
-        "spectrogramSha256": "a95fd1899b2f68831eb836fd8849d63fc5fc6b8fb89cacc428325f1cf7d1bd15",
-        "generatedAt": "2026-11-20T18:16:43.643Z",
-        "verifiedAt": "2026-11-20T18:16:43.649Z"
+        "soundSha256": "35ea485fcce4bba466ff9ff0072abf2bb796a00e6f102c90b84cb378f179a79b",
+        "spectrogramSha256": "28c936e7c3ca09230ccc1cf461fe996c05e819d4cb959c67d5e0be851ba0c699",
+        "generatedAt": "2026-11-20T18:22:21.006Z",
+        "verifiedAt": "2026-11-20T18:22:21.006Z"
       },
       "map": {
         "manual": true,
@@ -1860,9 +1860,30 @@
         "sha256": "b404acfd80638bc43d6de01b21384ea532a9d3f2595cfcaa01c1dce46cb2751b"
       },
       "sound": {
-        "manual": false,
-        "reason": "Automatisch durch die Pipeline gepflegt.",
-        "updatedAt": "2026-11-20T18:17:33.820Z"
+        "manual": true,
+        "protectFromPipeline": true,
+        "reason": "Sound in der App zugeschnitten; Quellen- und Lizenzdaten unverändert übernommen.",
+        "source": "xeno-canto.org",
+        "originalUrl": "https://xeno-canto.org/1086154",
+        "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+        "germanName": "Löwe",
+        "originalFileName": "sound.mp3",
+        "importedAt": "2026-11-20T18:22:21.006Z",
+        "updatedAt": "2026-11-20T18:22:21.006Z",
+        "sha256": "35ea485fcce4bba466ff9ff0072abf2bb796a00e6f102c90b84cb378f179a79b",
+        "creditsSha256": "2d18b92ba9583b4ce3fdd57527633ee835b21b5f615402dd9e0a4b0c86b1a05b",
+        "isNc": true,
+        "edit": {
+          "originalDuration": 28.88525,
+          "outputDuration": 21.1,
+          "segments": [
+            {
+              "start": 2.33,
+              "end": 23.43,
+              "duration": 21.1
+            }
+          ]
+        }
       }
     }
   },
@@ -1873,6 +1894,8 @@
     "innerHeight": 200,
     "topPadding": 20,
     "format": "webp",
+    "color": "channel",
+    "scale": "log",
     "gain": 3,
     "stop": 18000,
     "drange": 80,
