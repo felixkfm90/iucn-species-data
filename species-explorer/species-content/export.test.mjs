@@ -9,8 +9,8 @@ import { buildSpeciesContent, readSpeciesMedia, exportSpeciesCatalog, createSpec
 import { captureSpeciesPages } from "./capture.mjs";
 import { validateSpeciesSnapshot } from "./validate.mjs";
 import { buildCatalog } from "../shared-project/catalog.mjs";
-import { buildPublicCatalogRelease, fetchPublicCatalogSource, readPublicCatalogBaseline, selectPublicCatalogSpecies,
-  verifyPublicCatalogCandidate } from "../../mobile/tool/stage-public-catalog.mjs";
+import { buildPublicCatalogRelease, discoverPublicCatalogSources, fetchPublicCatalogSource, readPublicCatalogBaseline, selectPublicCatalogSpecies,
+  verifyPublicCatalogCandidate, verifyRegionalCatalogAdditions } from "../../mobile/tool/stage-public-catalog.mjs";
 import { BUNDLED_SPECIES_SOURCE } from "./bundled.mjs";
 
 const fixtures = new URL("./fixtures/", import.meta.url);
@@ -23,6 +23,106 @@ const localMedia = () => ({ media: { portrait: { id: "fixture:portrait", url: "h
 const html = '<main><div class="sqs-block-html" id="heading"><h3>Testkauz</h3><h4>Allgemein</h4></div><div class="sqs-block-html" id="body"><h4>Lebensraum</h4><p>Erster Absatz.</p><p>Zweiter Absatz mit <strong>Hervorhebung</strong>.</p><ul><li>Ein Listenpunkt</li></ul><h4>Verbreitungskarte</h4></div></main>';
 const pageUrl = "https://www.fnwildlifetravel.de/wildlife/heimische-tierwelt/fixtureowl";
 const baselineFor = (catalog, source = "published") => ({ source, sha256: digest(`${JSON.stringify(catalog)}\n`), catalog });
+
+const publicWebsite = "https://www.fnwildlifetravel.de";
+const africa = `${publicWebsite}/wildlife/afrika`;
+const lion = `${africa}/pantheraleo`;
+const regionalSitemap = [{ url: pageUrl }, { url: `${africa}/hippotragusniger` }];
+const pageHtml = (canonical, body, head = "") => `<!doctype html><html><head><title>Öffentliche Seite</title>
+  <link rel="canonical" href="${canonical}">${head}</head><body>${body}</body></html>`;
+const regionalCard = (target, cardAttributes = "") => `<li class="list-item" ${cardAttributes}>
+  <img class="list-image" src="https://images.squarespace-cdn.com/content/v1/fixture/photo.jpg" data-image-focal-point="0.5,0.5">
+  <div class="list-item-content__description"><p>Die Art vorgestellt.</p></div>
+  <a class="list-item-content__button" href="${target}">Steckbrief</a></li>`;
+const regionHtml = (canonical, cards) => pageHtml(canonical, `<main><ul>${cards}</ul></main>`);
+const htmlResponse = (body, headers = {}) => new Response(body, { headers: { "content-type": "text/html", ...headers } });
+
+function regionalWebsite(overrides = {}) {
+  const local = new URL(".", pageUrl).href.slice(0, -1);
+  const routes = {
+    [`${publicWebsite}/robots.txt`]: () => new Response("User-agent: *\nDisallow: /*?format=json\n"),
+    [local]: () => htmlResponse(regionHtml(local, "")),
+    [africa]: () => htmlResponse(regionHtml(africa, regionalCard("/wildlife/afrika/pantheraleo"))),
+    [lion]: () => htmlResponse(pageHtml(lion, html)),
+    ...overrides,
+  };
+  const requests = [];
+  return { requests, fetchImpl: async (url, options) => {
+    requests.push(String(url));
+    assert.equal(options.credentials, "omit");
+    return routes[url]?.() ?? new Response(null, { status: 404 });
+  } };
+}
+
+test("öffentliche Artkachel bestätigt einen neuen Steckbrief und erhält seinen bisherigen Link im nächsten Kataloglauf", async () => {
+  const speciesData = [record(), record("hippotragusniger"), record("pantheraleo"), record("entwurf")];
+  const previous = { species: [{ id: "fixtureowl", websiteUrl: pageUrl }] };
+  const site = regionalWebsite();
+  const primary = selectPublicCatalogSpecies(speciesData, regionalSitemap, previous);
+  assert.deepEqual(primary.pending, ["entwurf", "pantheraleo"]);
+  const result = await discoverPublicCatalogSources(speciesData, regionalSitemap, previous, site);
+  assert.deepEqual([...result.selected], [["fixtureowl", pageUrl], ["hippotragusniger", `${africa}/hippotragusniger`], ["pantheraleo", lion]]);
+  assert.deepEqual(result.pending, ["entwurf"]);
+  assert.equal(result.regional.get("pantheraleo").overviewUrl, africa);
+  assert.equal(result.regional.get("pantheraleo").sha256, digest(pageHtml(lion, html)));
+  assert.deepEqual(new Set(site.requests), new Set([`${publicWebsite}/robots.txt`, new URL(".", pageUrl).href.slice(0, -1), africa, lion]));
+
+  const nowKnown = { species: [...previous.species, { id: "pantheraleo", websiteUrl: lion }] };
+  const followup = await discoverPublicCatalogSources(speciesData, regionalSitemap, nowKnown, site);
+  assert.equal(followup.selected.get("pantheraleo"), lion);
+  const differentAddress = { species: [...previous.species, { id: "pantheraleo", websiteUrl: lion.replace("afrika", "europa") }] };
+  await assert.rejects(discoverPublicCatalogSources(speciesData, regionalSitemap, differentAddress, site), /missing-species-page/);
+  const removed = regionalWebsite({ [africa]: () => htmlResponse(regionHtml(africa, "")) });
+  await assert.rejects(discoverPublicCatalogSources(speciesData, regionalSitemap, nowKnown, removed), /missing-species-page/);
+  const removedFromData = speciesData.filter(row => row.URLSlug !== "pantheraleo");
+  await assert.rejects(discoverPublicCatalogSources(removedFromData, regionalSitemap, nowKnown, site), /previous-public-species-missing-from-data/);
+});
+
+test("bloße Links, versteckte Kacheln und widersprüchliche regionale Artzuordnungen zählen nicht", async () => {
+  const cases = [
+    pageHtml(africa, `<script>const external = "${lion}";</script><main><a href="${lion}">Gewöhnlicher Link</a></main>
+      <footer>${regionalCard(lion)}</footer>`),
+    regionHtml(africa, regionalCard(lion, "hidden") + regionalCard(lion, 'aria-hidden="true"') + regionalCard(lion, 'style="display: none"')),
+    regionHtml(africa, regionalCard("https://example.invalid/wildlife/afrika/pantheraleo")),
+    regionHtml(africa, regionalCard(lion) + regionalCard(lion)),
+    regionHtml(`${publicWebsite}/wildlife/europa`, regionalCard(lion)),
+  ];
+  const local = new URL(".", pageUrl).href.slice(0, -1);
+  for (const [index, body] of cases.entries()) {
+    const site = regionalWebsite({ [africa]: () => htmlResponse(body) });
+    assert.equal((await verifyRegionalCatalogAdditions(regionalSitemap, ["pantheraleo"], site)).size, 0, `Gegenprobe ${index}`);
+    assert.ok(!site.requests.includes(lion), `Gegenprobe ${index}`);
+  }
+  const secondLion = `${local}/pantheraleo`;
+  const duplicate = regionalWebsite({ [local]: () => htmlResponse(regionHtml(local, regionalCard(secondLion))) });
+  assert.equal((await verifyRegionalCatalogAdditions(regionalSitemap, ["pantheraleo"], duplicate)).size, 0);
+  assert.ok(!duplicate.requests.includes(lion) && !duplicate.requests.includes(secondLion));
+});
+
+test("nicht indexierbare Seiten, Weiterleitungen und leere Platzhalter bestätigen keine Artkachel", async () => {
+  const responses = [
+    () => new Response(null, { status: 302, headers: { location: lion } }),
+    () => htmlResponse(pageHtml(`${africa}/namensvetter`, html)),
+    () => htmlResponse(pageHtml(lion, html, '<meta name="robots" content="noindex,follow">')),
+    () => htmlResponse(pageHtml(lion, html, '<meta name="Googlebot-News" content="NONE">')),
+    () => htmlResponse(pageHtml(lion, html), { "x-robots-tag": "googlebot: noindex" }),
+    () => htmlResponse(pageHtml(lion, '<main><form><input type="password"></form></main>')),
+    () => htmlResponse(pageHtml(lion, '<main><h1>Leere Seite</h1></main>')),
+  ];
+  for (const [index, response] of responses.entries()) {
+    const site = regionalWebsite({ [lion]: response });
+    assert.equal((await verifyRegionalCatalogAdditions(regionalSitemap, ["pantheraleo"], site)).size, 0, `Gegenprobe ${index}`);
+    assert.ok(site.requests.includes(lion));
+  }
+  const blocked = regionalWebsite({ [`${publicWebsite}/robots.txt`]: () => new Response("User-agent: *\nDisallow: /wildlife/*/pantheraleo$\n") });
+  assert.equal((await verifyRegionalCatalogAdditions(regionalSitemap, ["pantheraleo"], blocked)).size, 0);
+  assert.ok(!blocked.requests.includes(lion));
+  const hiddenOverview = regionalWebsite({
+    [africa]: () => htmlResponse(pageHtml(africa, `<main><ul>${regionalCard(lion)}</ul></main>`, '<meta name="robots" content="noindex">')),
+  });
+  assert.equal((await verifyRegionalCatalogAdditions(regionalSitemap, ["pantheraleo"], hiddenOverview)).size, 0);
+  assert.ok(!hiddenOverview.requests.includes(lion));
+});
 
 test("structured general values, full species rank and every editorial heading/paragraph/list are preserved", () => {
   const result = buildSpeciesContent({ record: record(), pageUrl, html, localMedia: localMedia() });

@@ -177,7 +177,13 @@ export function observeWebsitePublicHtmlIdentity(html) {
   }
   const bodyIds = values(body, "id"), collectionId = /^collection-([a-f0-9]{24})$/.exec(bodyIds[0] || "")?.[1] || null;
   if (bodyIds.length > 1 || !collectionId && /^collection-/i.test(bodyIds[0] || "")) throw new Error("Ungültige HTML-Collection");
-  return { canonicalUrl: canonical?.attrs.get("href") ?? null, collectionId, title: title.children.join("") };
+  const robotsExcluded = all.some(node => node.tag === "meta" && values(node, "name").some(name => /^(?:robots|[a-z0-9-]*bot(?:-[a-z0-9-]+)?)$/iu.test(name.trim()))
+    && values(node, "content").some(websiteCrawlerExcluded));
+  return { canonicalUrl: canonical?.attrs.get("href") ?? null, collectionId, title: title.children.join(""), ...(robotsExcluded && { robotsExcluded }) };
+}
+
+export function websiteCrawlerExcluded(value) {
+  return /(?:^|[\s,;:])(?:noindex|nofollow|none)(?:$|[\s,;:])/iu.test(value ?? "");
 }
 
 function textOf(node, work = null) {
@@ -414,6 +420,40 @@ export function parseWebsiteEditorialPage(html, pageUrl) {
     else if (managed || gallerySources.get(canonical)) issues.push({ code: "ambiguous-fn-gallery-source" });
   }
   return { url, sections, blocks, gallerySources: [...gallerySources.keys()], complete: issues.length === 0, issues };
+}
+
+/** Read the existing Squarespace list card using its exact art link. */
+export function parseWebsiteSpeciesOverviewCard(html, overviewUrl, pageUrl, { requireUnambiguous = false } = {}) {
+  const region = normalizeWebsitePageUrl(overviewUrl), page = normalizeWebsitePageUrl(pageUrl);
+  const identity = observeWebsitePublicHtmlIdentity(html);
+  if (!identity.canonicalUrl || normalizeWebsitePageUrl(identity.canonicalUrl) !== region
+    || page.slice(0, page.lastIndexOf("/")) !== region) return null;
+  const { all } = documentTree(html);
+  const classHas = (node, value) => node.attrs.get("class").split(/\s+/u).includes(value);
+  const excluded = node => ["pre", "code"].includes(node.tag) || hiddenElement(node) || node.attrs.has("inert")
+    || /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\s*(?:!important\s*)?(?:;|$)/iu.test(node.attrs.get("style"));
+  const live = node => ancestors(node).some(parent => parent.tag === "main") && ![node, ...ancestors(node)].some(excluded);
+  const cards = new Set();
+  for (const link of all.filter(node => node.tag === "a" && classHas(node, "list-item-content__button") && live(node))) {
+    if (link.attrs.values.get("href")?.length !== 1) continue;
+    let href;
+    try { href = new URL(link.attrs.get("href"), region); } catch { continue; }
+    if (href.href !== page) continue;
+    const card = ancestors(link).find(parent => parent.tag === "li" && classHas(parent, "list-item"));
+    if (card) cards.add(card);
+  }
+  if (requireUnambiguous && cards.size > 1) throw new Error("Uneindeutige regionale Artkacheln");
+  if (cards.size !== 1) return null;
+  const [card] = cards;
+  const owned = all.filter(node => ancestors(node).includes(card));
+  const images = owned.filter(node => node.tag === "img" && classHas(node, "list-image"));
+  const descriptions = owned.filter(node => classHas(node, "list-item-content__description"));
+  if (images.length !== 1 || descriptions.length !== 1) return null;
+  const source = imageSource(images[0], region);
+  const point = /^(?:0(?:\.\d+)?|1(?:\.0+)?)$/;
+  const values = images[0].attrs.get("data-image-focal-point").split(",");
+  if (!source || values.length !== 2 || !values.every(value => point.test(value))) return null;
+  return { source: canonicalWebsiteImageSource(source), x: Number(values[0]), y: Number(values[1]), text: textOf(descriptions[0]) };
 }
 
 export function parseWebsiteAltPage(html, pageUrl) {

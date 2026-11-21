@@ -95,9 +95,15 @@ erste öffentliche Bereitstellung kann auch dem mitgelieferten Bestand entsprech
 Der [GitHub-Prüflauf](../.github/workflows/prepare-mobile-catalog.yml) prüft den Katalog nach
 einem erfolgreichen Pages-Lauf auf `main`, planmäßig alle zwei Stunden zur Minute 43 UTC
 und bei Bedarf manuell in **Actions**. Damit werden auch reine Squarespace-Änderungen an
-einer vorhandenen Galerie erkannt. Neu in den öffentlichen Katalog kommen Arten, deren
-Grunddaten bereitgestellt sind und deren passende Artseite öffentlich erreichbar und
-in der Sitemap enthalten ist. Entwürfe werden erst nach der öffentlichen Freigabe berücksichtigt.
+Fachtexten oder der Galerie einer vorhandenen Art erkannt und mit der nächsten geprüften
+öffentlichen Katalogfassung ohne App-Update übernommen. Neu in den öffentlichen Katalog kommen Arten,
+deren Grunddaten bereitgestellt sind und deren passende Artseite öffentlich erreichbar ist.
+Der Lauf nutzt die Sitemap. Wenn dort eine Artseite noch fehlt, prüft er zusätzlich eine sichtbare
+Squarespace-Artkachel auf der offiziellen Regionsseite und die kanonische Adresse des direkt
+verlinkten Steckbriefs. Die Region muss bereits in der Sitemap vertreten sein. Mehrdeutige
+Kacheln, Weiterleitungen, Anmeldeseiten und von der Indexierung ausgeschlossene Seiten werden bei
+dieser Gegenprobe verworfen. Bisher veröffentlichte Arten müssen weiterhin bestätigt sein.
+Über die Regionsseite bleibt ihre bisherige Adresse bindend. Entwürfe warten auf die öffentliche Freigabe.
 Geänderte Bildreihenfolgen, Alternativtexte und Bildunterschriften fließen in die nächste
 Katalogfassung ein. Bereits gespeicherte Fotos mit derselben Bildquelle können beim
 Abgleich des Fotopakets weiterverwendet werden.

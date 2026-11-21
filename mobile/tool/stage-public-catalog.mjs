@@ -15,6 +15,8 @@ import { decodePublicAppCatalogManifest, decodePublicAppCatalogPayload, PUBLIC_A
   from "../../species-explorer/species-content/public-app-catalog.mjs";
 import { validateSpeciesSnapshot } from "../../species-explorer/species-content/validate.mjs";
 import { createWebsiteSpeciesPagesService } from "../../species-explorer/website-species-pages.mjs";
+import { observeWebsitePublicHtmlIdentity, parseWebsiteEditorialPage, parseWebsiteSpeciesOverviewCard,
+  websiteCrawlerExcluded } from "../../species-explorer/website-alt-parser.mjs";
 import { sanitizeAssetName } from "../../species-explorer/species-model.mjs";
 import { normalizeMobileCatalogGeneral, reviewedMobileCatalog } from "./catalog-editorial.mjs";
 
@@ -27,6 +29,9 @@ const gitCommit = /^[a-f0-9]{40}$/u;
 const jsonBytes = value => Buffer.from(`${JSON.stringify(value)}\n`);
 const coreMedia = media => [media.portrait, media.map, ...media.sounds, media.spectrogram].filter(Boolean);
 const execGit = promisify(execFile);
+const websiteOrigin = "https://www.fnwildlifetravel.de";
+const regionPath = /^\/wildlife\/[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+const candidateSlug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 async function readGit(args, maxBuffer = 16 * 1024) {
   const { stdout } = await execGit("git", args, { cwd: repo, windowsHide: true, timeout: 10_000, encoding: "buffer", maxBuffer });
@@ -231,6 +236,91 @@ async function readPublic(url, maxBytes, type, { fetchImpl = globalThis.fetch, a
   return Buffer.concat(chunks, length);
 }
 
+// A native, public regional card is an independent proof of publication while the sitemap lags.
+// A robots exclusion always wins over this optional secondary source.
+export async function verifyRegionalCatalogAdditions(sitemapPages, pending, { fetchImpl = globalThis.fetch } = {}) {
+  const found = new Map();
+  if (!pending.length || pending.length > 24 || !pending.every(slug => typeof slug === "string" && slug.length <= 120 && candidateSlug.test(slug))) return found;
+  const overviewUrls = [...new Set(sitemapPages.flatMap(({ url }) => {
+    const candidate = new URL(url), parent = candidate.pathname.slice(0, candidate.pathname.lastIndexOf("/"));
+    return candidate.origin === websiteOrigin && regionPath.test(parent) ? [`${websiteOrigin}${parent}`] : [];
+  }))];
+  if (!overviewUrls.length || overviewUrls.length > 12) return found;
+  let disallowed;
+  try {
+    const robots = (await readPublic(`${websiteOrigin}/robots.txt`, 64 * 1024, "text/plain", { fetchImpl })).toString("utf8");
+    disallowed = robots.split(/\r?\n/u).flatMap(line => {
+      const path = /^\s*disallow\s*:\s*(\/[^\s#]*)/iu.exec(line)?.[1];
+      return path ? [path] : [];
+    });
+  } catch { return found; }
+  const mayRead = url => !disallowed.some(pattern => {
+    const pathname = new URL(url).pathname, anchored = pattern.endsWith("$");
+    const [prefix, ...middle] = (anchored ? pattern.slice(0, -1) : pattern).split("*");
+    if (!pathname.startsWith(prefix)) return false;
+    if (anchored && !middle.length) return pathname === prefix;
+    const suffix = anchored ? middle.pop() : "";
+    if (!pathname.endsWith(suffix)) return false;
+    const limit = pathname.length - suffix.length;
+    let offset = prefix.length;
+    for (const part of middle) {
+      const position = pathname.indexOf(part, offset);
+      if (position === -1) return false;
+      offset = position + part.length;
+    }
+    return offset <= limit;
+  });
+  const eligible = overviewUrls.filter(mayRead);
+  const regionalFetch = async (url, options) => {
+    const response = await fetchPublicCatalogSource(url, { ...options, credentials: "omit" }, fetchImpl);
+    if (response.redirected || response.url && response.url !== String(url) || websiteCrawlerExcluded(response.headers.get("x-robots-tag"))) {
+      await response.body?.cancel().catch(() => {});
+      throw new Error("Die Adresse besitzt keine eindeutige frei erreichbare Seite.");
+    }
+    return response;
+  };
+  const overviews = await captureSpeciesPages(new Map(eligible.map(url => [url, url])), { fetchImpl: regionalFetch });
+  if (overviews.issues.length) return found;
+  const candidates = new Map(pending.map(slug => [slug, []]));
+  for (const { url: overviewUrl, html } of overviews.pages.values()) {
+    let observed;
+    try { observed = observeWebsitePublicHtmlIdentity(html); } catch { return found; }
+    if (observed.canonicalUrl !== overviewUrl || observed.robotsExcluded) continue;
+    for (const [slug, matches] of candidates) {
+      const url = `${overviewUrl}/${slug}`;
+      if (!html.includes(`${new URL(overviewUrl).pathname}/${slug}`) || !mayRead(url)) continue;
+      try {
+        if (parseWebsiteSpeciesOverviewCard(html, overviewUrl, url, { requireUnambiguous: true })) matches.push({ url, overviewUrl });
+      } catch { return found; }
+    }
+  }
+  const uniqueCandidates = new Map([...candidates].filter(([, matches]) => matches.length === 1).map(([slug, matches]) => [slug, matches[0]]));
+  const captured = await captureSpeciesPages(new Map([...uniqueCandidates].map(([slug, match]) => [slug, match.url])), { fetchImpl: regionalFetch });
+  for (const [slug, page] of captured.pages) {
+    try {
+      const identity = observeWebsitePublicHtmlIdentity(page.html);
+      if (identity.canonicalUrl !== page.url || identity.robotsExcluded) continue;
+      const editorial = parseWebsiteEditorialPage(page.html, page.url);
+      if (editorial.sections.some(section => section.heading && section.paragraphs.length > 0)) {
+        found.set(slug, { ...page, overviewUrl: uniqueCandidates.get(slug).overviewUrl });
+      }
+    } catch { /* Keep an unverifiable page pending. */ }
+  }
+  return found;
+}
+
+export async function discoverPublicCatalogSources(speciesData, sitemapPages, baseline, options) {
+  const previous = new Map(baseline.species.map(entry => [entry.id, entry.websiteUrl]));
+  const { selected: sitemapSelected, issues } = selectSpeciesPageUrls(speciesData, [], sitemapPages);
+  const missing = issues.filter(issue => issue.code === "missing-species-page");
+  const regional = await verifyRegionalCatalogAdditions(sitemapPages, missing.map(issue => issue.slug), options);
+  for (const [slug, { url }] of regional) {
+    if (previous.has(slug) && previous.get(slug) !== url) regional.delete(slug);
+  }
+  const selection = selectPublicCatalogSpecies(speciesData, [...sitemapPages, ...regional.values()], baseline);
+  return { ...selection, sitemapSelected, regional };
+}
+
 export async function readPublicCatalogBaseline({ fetchImpl = globalThis.fetch } = {}) {
   const manifestBytes = await readPublic(manifestUrl, PUBLIC_APP_CATALOG_MANIFEST_MAX_BYTES, "application/json", { fetchImpl, allowMissing: true });
   if (manifestBytes === null) {
@@ -316,10 +406,10 @@ async function prepareFromPublicSources({ verifyUnchangedMedia = false } = {}) {
     "Die öffentliche Katalogfassung und der geprüfte Git-Stand stimmen nicht überein.");
   assert.equal(sitemap.status, "ready", sitemap.error);
   const [sourceSpeciesData, speciesList, mediaRegistry, missingMediaReport] = inputs.map(bytes => JSON.parse(bytes));
-  const { selected, speciesData, pending } = selectPublicCatalogSpecies(sourceSpeciesData, sitemap.pages, baseline.catalog);
-  const captured = await captureSpeciesPages(selected, { fetchImpl: fetchPublicCatalogSource });
+  const { speciesData, pending, regional, sitemapSelected } = await discoverPublicCatalogSources(sourceSpeciesData, sitemap.pages, baseline.catalog);
+  const captured = await captureSpeciesPages(sitemapSelected, { fetchImpl: fetchPublicCatalogSource });
   assert.deepEqual(captured.issues, [], "Einige veröffentlichte Artseiten konnten nicht gelesen werden.");
-  const { pages } = captured;
+  const pages = new Map([...captured.pages, ...regional]);
   const snapshot = await exportSpeciesCatalog({ speciesData, speciesList, pages, assetsRoot, missingMediaReport });
   const release = await buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, baseline, commit, verifyUnchangedMedia,
     async verifyMedia(media) {
@@ -350,7 +440,7 @@ async function stageFromPublicSources({ verifyUnchangedMedia }) {
     sourceCommit: commit,
     pendingWebsiteSpecies: pending,
     publicSources: Object.fromEntries(filenames.map((name, index) => [name, digest(inputs[index])])),
-    pages: [...pages].map(([slug, { url, sha256, checkedAt }]) => ({ slug, url, sha256, checkedAt })) }), { flag: "wx" });
+    pages: [...pages].map(([slug, { url, sha256, checkedAt, overviewUrl }]) => ({ slug, url, sha256, checkedAt, ...(overviewUrl && { overviewUrl }) })) }), { flag: "wx" });
   process.stdout.write(JSON.stringify({ directory, ...decision, ...manifest, sourceCommit: commit, mediaChecked: checks.publishedMediaChecked,
     pinnedMediaChecked: checks.pinnedMediaChecked, metadataChecked: checks.publishedMetadataChecked,
     reusedMedia: checks.reusedMedia, gallerySourcesChecked: checks.gallerySourcesChecked,
