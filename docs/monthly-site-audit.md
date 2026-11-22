@@ -72,13 +72,15 @@ Laden auf. Öffentliche Abnahme umfasst die deaktivierte und die aktivierte Arts
 Squarespace Custom CSS enthält nur den kanonischen Import:
 
 ```css
-@import url("https://felixkfm90.github.io/iucn-species-data/docs/squarespace-custom.css?v=1.0.19");
+@import url("https://felixkfm90.github.io/iucn-species-data/docs/squarespace-custom.css?v=1.0.20");
 ```
 
 Die externe Datei bleibt Standard-CSS und wird vom Browser verarbeitet. Der CMS-Compiler LESS 1.3.3
 kann die verwendeten Media-Range-Abfragen nicht kompilieren; deshalb keine CSS-Kopie oder eigene
 LESS-Fassung im CMS pflegen. Taxonomie-Skript und CSS-Import verwenden dieselbe `?v=`-Kennung,
-hier **1.0.19**; bei einem Wechsel Import und [Footer-Referenz](squarespace-footer.html) gemeinsam anpassen.
+hier **1.0.20**. Beim Wechsel Import und [Footer-Referenz](squarespace-footer.html) gemeinsam anpassen.
+Die Regionsübersichten übernehmen die kompakte Polsterung unter dem Suchabschnitt und richten
+die Buttons der Artenkarten jeweils am unteren Rand ihrer eigenen Rasterzeile aus.
 Nach dem Speichern die tatsächlich geladenen Quellen, Cacheversionen und berechnete Darstellung
 prüfen. Die Kontakt-/Footer-/Ausrüstungsregeln bleiben auf vorhandene Blöcke begrenzt; Änderungen
 in Desktop-, Tablet- und Mobilansicht nachprüfen. Der Einbauvertrag ersetzt keinen öffentlichen Abschlussbeleg.

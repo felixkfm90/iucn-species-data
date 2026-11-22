@@ -1646,3 +1646,23 @@ header .header-display-desktop .header-nav-item--folder[data-fn-header-dismissed
     display: none;
   }
 }
+
+/* Wildlife-Regionsübersichten: Suchabstand und bündige Kartenbuttons. */
+main#page section:has(#species-search) + section[data-sqsp-section="auto-layout"] .user-items-list:has(> ul.user-items-list-simple) {
+  padding-top: clamp(10px, 1.5vw, 20px) !important;
+}
+
+main#page section:has(#species-search) + section[data-sqsp-section="auto-layout"] ul.user-items-list-simple > .list-item {
+  align-self: stretch;
+}
+
+main#page section:has(#species-search) + section[data-sqsp-section="auto-layout"] ul.user-items-list-simple > .list-item > .list-item-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+main#page section:has(#species-search) + section[data-sqsp-section="auto-layout"] ul.user-items-list-simple .list-item-content__button-container {
+  margin-top: auto !important;
+  padding-top: clamp(14px, 1.6vw, 24px);
+}
