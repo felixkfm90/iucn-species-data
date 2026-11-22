@@ -1662,7 +1662,11 @@ main#page section:has(#species-search) + section[data-sqsp-section="auto-layout"
   flex-grow: 1;
 }
 
+main#page section:has(#species-search) + section[data-sqsp-section="auto-layout"] ul.user-items-list-simple .list-item-content__button-wrapper {
+  margin-top: auto;
+}
+
 main#page section:has(#species-search) + section[data-sqsp-section="auto-layout"] ul.user-items-list-simple .list-item-content__button-container {
-  margin-top: auto !important;
+  margin-top: 0 !important;
   padding-top: clamp(14px, 1.6vw, 24px);
 }
