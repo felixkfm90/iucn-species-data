@@ -1,9 +1,13 @@
-import { normalizeWebsitePageUrl } from "../website-alt-parser.mjs";
+import { normalizeWebsitePageUrl, PUBLIC_HTML_IDENTITY_BYTE_LIMIT } from "../website-alt-parser.mjs";
 import { createHash } from "node:crypto";
 
 /** Exactly the supplied species pages; no sitemap/link traversal, cookies or images. */
-export async function captureSpeciesPages(selected, { fetchImpl = globalThis.fetch, concurrency = 4, timeoutMs = 20000 } = {}) {
-  if (!(selected instanceof Map) || !Number.isInteger(concurrency) || concurrency < 1 || concurrency > 4) throw new Error("Begrenzte ausdrückliche Seitenliste erforderlich.");
+export async function captureSpeciesPages(selected, { fetchImpl = globalThis.fetch, concurrency = 4, timeoutMs = 20000,
+  maximumHtmlBytes = 4 * 1024 * 1024 } = {}) {
+  if (!(selected instanceof Map) || !Number.isInteger(concurrency) || concurrency < 1 || concurrency > 4
+      || !Number.isSafeInteger(maximumHtmlBytes) || maximumHtmlBytes < 1 || maximumHtmlBytes > PUBLIC_HTML_IDENTITY_BYTE_LIMIT) {
+    throw new Error("Begrenzte ausdrückliche Seitenliste erforderlich.");
+  }
   const entries = [...selected], pages = new Map(), issues = [];
   let offset = 0;
   await Promise.all(Array.from({ length: Math.min(concurrency, entries.length) }, async () => {
@@ -19,7 +23,7 @@ export async function captureSpeciesPages(selected, { fetchImpl = globalThis.fet
         try {
           while (true) {
             const { done, value } = await reader.read(); if (done) break;
-            bytes += value.length; if (bytes > 4 * 1024 * 1024) throw new Error("Seite überschreitet die Parsergrenze.");
+            bytes += value.length; if (bytes > maximumHtmlBytes) throw new Error("Seite überschreitet die Parsergrenze.");
             chunks.push(value);
           }
         } finally { await reader.cancel().catch(() => {}); }

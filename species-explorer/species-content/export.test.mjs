@@ -10,7 +10,7 @@ import { captureSpeciesPages } from "./capture.mjs";
 import { validateSpeciesSnapshot } from "./validate.mjs";
 import { buildCatalog } from "../shared-project/catalog.mjs";
 import { buildPublicCatalogRelease, discoverPublicCatalogSources, fetchPublicCatalogSource, readPublicCatalogBaseline, selectPublicCatalogSpecies,
-  verifyPublicCatalogCandidate, verifyRegionalCatalogAdditions } from "../../mobile/tool/stage-public-catalog.mjs";
+  readPublicCatalogOverviewTexts, verifyPublicCatalogCandidate, verifyRegionalCatalogAdditions } from "../../mobile/tool/stage-public-catalog.mjs";
 import { BUNDLED_SPECIES_SOURCE } from "./bundled.mjs";
 
 const fixtures = new URL("./fixtures/", import.meta.url);
@@ -26,6 +26,7 @@ const baselineFor = (catalog, source = "published") => ({ source, sha256: digest
 
 const publicWebsite = "https://www.fnwildlifetravel.de";
 const africa = `${publicWebsite}/wildlife/afrika`;
+const rappe = "https://www.fnwildlifetravel.de/wildlife/afrika/hippotragusniger";
 const lion = `${africa}/pantheraleo`;
 const regionalSitemap = [{ url: pageUrl }, { url: `${africa}/hippotragusniger` }];
 const pageHtml = (canonical, body, head = "") => `<!doctype html><html><head><title>Öffentliche Seite</title>
@@ -53,6 +54,30 @@ function regionalWebsite(overrides = {}) {
     return routes[url]?.() ?? new Response(null, { status: 404 });
   } };
 }
+
+test("Öffentliche Katalogübersicht bindet sichtbare Absätze und erzeugte Kacheln an die richtige Art", async () => {
+  const newSlug = "erzeugteart", generated = `${africa}/${newSlug}`;
+  const invalid = `${africa}/falscheart`;
+  const photo = "https://images.squarespace-cdn.com/content/v1/67556be0338df718ea064210/abcdef01-abcd-abcd-abcd-abcdef012345/fixture.jpg";
+  const generatedHtml = url => pageHtml(url, `<main id="page"><div data-fn-art-gallery="1">
+    <figure data-fn-position="1"><img src="${photo}" alt="Porträt"></figure></div>
+    <div hidden data-fn-region-card="1" data-region="/wildlife/afrika" data-species-path="/wildlife/afrika/${newSlug}"
+      data-title="Erzeugte Art" data-image-index="0" data-focus-x="0.5" data-focus-y="0.3">Neue Art &amp; Ort.\n\nZweiter Absatz.</div></main>`);
+  const summary = "<p>Sichtbarer <strong>Satz</strong>.</p><p hidden>Entwurf</p><p>Weitere <span aria-hidden=\"true\">geheime </span>Angaben &amp; Text.</p>";
+  const native = regionalCard(lion).replace("<p>Die Art vorgestellt.</p>", summary);
+  const wrong = regionalCard(rappe).replace("<p>Die Art vorgestellt.</p>", "");
+  const site = regionalWebsite({ [africa]: () => htmlResponse(regionHtml(africa, native + wrong)) });
+  const pages = new Map([["pantheraleo", { url: lion }], ["hippotragusniger", { url: rappe }],
+    [newSlug, { url: generated, html: generatedHtml(generated) }], ["falscheart", { url: invalid, html: generatedHtml(invalid) }]]);
+  assert.deepEqual(await readPublicCatalogOverviewTexts(pages, site), new Map([
+    ["pantheraleo", "Sichtbarer Satz.\n\nWeitere Angaben & Text."], ["hippotragusniger", ""], [newSlug, "Neue Art & Ort.\n\nZweiter Absatz."],
+  ]));
+  assert.deepEqual(site.requests, [africa]);
+  const ambiguous = regionalWebsite({ [africa]: () => htmlResponse(regionHtml(africa, native + native)) });
+  assert.equal((await readPublicCatalogOverviewTexts(pages, ambiguous)).has("pantheraleo"), false);
+  const restricted = regionalWebsite({ [africa]: () => htmlResponse(regionHtml(africa, native), { "x-robots-tag": "noindex" }) });
+  assert.equal((await readPublicCatalogOverviewTexts(pages, restricted)).size, 0);
+});
 
 test("öffentliche Artkachel bestätigt einen neuen Steckbrief und erhält seinen bisherigen Link im nächsten Kataloglauf", async () => {
   const speciesData = [record(), record("hippotragusniger"), record("pantheraleo"), record("entwurf")];

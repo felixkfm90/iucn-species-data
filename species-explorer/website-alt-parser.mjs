@@ -144,8 +144,9 @@ function documentTree(html) {
 }
 
 /** Read document identity without executing scripts or following links. */
+export const PUBLIC_HTML_IDENTITY_BYTE_LIMIT = 16 * 1024 * 1024;
 export function observeWebsitePublicHtmlIdentity(html) {
-  if (typeof html !== "string" || Buffer.byteLength(html) > MAX_HTML_BYTES) throw new Error("Ungültiger HTML-Umfang");
+  if (typeof html !== "string" || Buffer.byteLength(html) > PUBLIC_HTML_IDENTITY_BYTE_LIMIT) throw new Error("Ungültiger HTML-Umfang");
   const { root, all } = documentTree(html);
   const unique = tag => {
     const matches = all.filter(node => node.tag === tag);
@@ -422,6 +423,106 @@ export function parseWebsiteEditorialPage(html, pageUrl) {
   return { url, sections, blocks, gallerySources: [...gallerySources.keys()], complete: issues.length === 0, issues };
 }
 
+const hasElementClass = (node, name) => node.attrs.get("class").split(/\s+/u).includes(name);
+const meaningfulChildren = node => node.children.filter(child => typeof child !== "string" || /[^\t\n\r ]/u.test(child));
+const hiddenPublicText = node => hiddenElement(node) || node.attrs.has("inert")
+  || /(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\s*(?:!important\s*)?(?:;|$)/iu.test(node.attrs.get("style"));
+const SAMPLE_TAGS = new Set(["pre", "code"]);
+const excludedOverviewText = node => SAMPLE_TAGS.has(node.tag) || hiddenPublicText(node);
+
+function nativeOverviewCards(all, region, pages) {
+  const cards = new Map();
+  for (const link of all.filter(node => node.tag === "a" && hasElementClass(node, "list-item-content__button"))) {
+    if (link.attrs.values.get("href")?.length !== 1) continue;
+    let href;
+    try { href = new URL(link.attrs.get("href"), region); } catch { continue; }
+    if (!pages.has(href.href) || href.href.slice(0, href.href.lastIndexOf("/")) !== region) continue;
+    const chain = ancestors(link);
+    if (!chain.some(parent => parent.tag === "main") || chain.some(excludedOverviewText)) continue;
+    const card = chain.find(parent => parent.tag === "li" && hasElementClass(parent, "list-item"));
+    if (!card) continue;
+    if (!cards.has(href.href)) cards.set(href.href, new Set());
+    cards.get(href.href).add(card);
+  }
+  return cards;
+}
+
+function overviewParagraphText(node, preserveWhitespace = false) {
+  const preserve = preserveWhitespace || /(?:^|;)\s*white-space\s*:\s*pre-wrap\s*(?:;|$)/iu.test(node.attrs.get("style"));
+  const parts = [];
+  for (const child of node.children) {
+    if (typeof child === "string") parts.push(preserve ? child.replace(/\r\n?/gu, "\n") : child.replace(/[\t\n\r ]+/gu, " "));
+    else if (!excludedOverviewText(child)) parts.push(child.tag === "br" ? "\n" : overviewParagraphText(child, preserve));
+  }
+  return parts.join("");
+}
+
+function overviewDescriptionText(description) {
+  const paragraphs = meaningfulChildren(description);
+  return paragraphs.every(node => node.tag === "p")
+    ? paragraphs.filter(node => !excludedOverviewText(node)).map(node => overviewParagraphText(node))
+      .map(value => value.trim()).filter(Boolean).join("\n\n")
+    : overviewParagraphText(description).trim();
+}
+
+/** Read only visible descriptions from native cards, bound to exact public art links. */
+export function parseWebsiteSpeciesOverviewTexts(html, overviewUrl, pageUrls) {
+  const region = normalizeWebsitePageUrl(overviewUrl);
+  const identity = observeWebsitePublicHtmlIdentity(html);
+  if (identity.canonicalUrl !== region || identity.robotsExcluded) return null;
+  const { all } = documentTree(html);
+  const cards = nativeOverviewCards(all, region, new Set(pageUrls));
+  const descriptions = new Map();
+  for (const node of all.filter(node => hasElementClass(node, "list-item-content__description"))) {
+    const chain = ancestors(node);
+    if (chain.some(excludedOverviewText)) continue;
+    const card = chain.find(parent => parent.tag === "li" && hasElementClass(parent, "list-item"));
+    if (!card) continue;
+    if (!descriptions.has(card)) descriptions.set(card, []);
+    descriptions.get(card).push(node);
+  }
+  const results = new Map();
+  for (const [pageUrl, matches] of cards) {
+    const [card] = matches, nodes = descriptions.get(card) ?? [];
+    if (matches.size !== 1 || nodes.length !== 1) {
+      results.set(pageUrl, undefined);
+      continue;
+    }
+    results.set(pageUrl, overviewDescriptionText(nodes[0]));
+  }
+  return results;
+}
+
+/** Read the explicitly bound marker behind a generated regional art card. */
+export function parseWebsiteGeneratedSpeciesOverviewText(html, pageUrl) {
+  const url = new URL(normalizeWebsitePageUrl(pageUrl));
+  const identity = observeWebsitePublicHtmlIdentity(html);
+  if (identity.canonicalUrl !== url.href || identity.robotsExcluded) return;
+  const { all } = documentTree(html);
+  const main = all.filter(node => node.tag === "main" && exactAttribute(node, "id", "page"));
+  if (main.length !== 1) return;
+  const withinMain = node => ancestors(node).includes(main[0]);
+  const markers = all.filter(node => withinMain(node) && node.attrs.has("data-fn-region-card"));
+  const galleries = all.filter(node => withinMain(node) && node.attrs.has("data-fn-art-gallery"));
+  const [marker] = markers, [gallery] = galleries;
+  if (markers.length !== 1 || galleries.length !== 1 || marker.tag !== "div" || !exactAttribute(marker, "hidden")
+      || !exactAttribute(marker, "data-fn-region-card", "1") || marker.parent !== gallery.parent
+      || marker.children.some(child => typeof child !== "string") || ancestors(gallery).some(excludedOverviewText)) return;
+  const siblings = meaningfulChildren(gallery.parent);
+  const region = url.pathname.slice(0, url.pathname.lastIndexOf("/"));
+  if (siblings[siblings.indexOf(gallery) + 1] !== marker || !exactAttribute(marker, "data-region", region)
+      || !exactAttribute(marker, "data-species-path", url.pathname)) return;
+  const title = marker.attrs.get("data-title").trim(), index = marker.attrs.get("data-image-index");
+  const focus = ["data-focus-x", "data-focus-y"];
+  if (!exactAttribute(marker, "data-title") || !title || title.length > 300 || !exactAttribute(marker, "data-image-index")
+      || !/^\d{1,3}$/u.test(index) || !focus.every(name => exactAttribute(marker, name)
+        && /^\d(?:\.\d{1,17})?(?:e-\d{1,3})?$/iu.test(marker.attrs.get(name)) && Number(marker.attrs.get(name)) <= 1)) return;
+  const photo = fnFigureGallery(gallery)?.[Number(index)];
+  if (!photo || !exactAttribute(photo, "src") || !/^https:\/\/images\.squarespace-cdn\.com\/content\/v1\/67556be0338df718ea064210\/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\/[^/?#]+\.(?:jpe?g|png|webp)$/iu.test(photo.attrs.get("src"))) return;
+  const text = marker.children.join("").replace(/\r\n?/gu, "\n").trim();
+  return text || undefined;
+}
+
 /** Read the existing Squarespace list card using its exact art link. */
 export function parseWebsiteSpeciesOverviewCard(html, overviewUrl, pageUrl, { requireUnambiguous = false } = {}) {
   const region = normalizeWebsitePageUrl(overviewUrl), page = normalizeWebsitePageUrl(pageUrl);
@@ -453,7 +554,7 @@ export function parseWebsiteSpeciesOverviewCard(html, overviewUrl, pageUrl, { re
   const point = /^(?:0(?:\.\d+)?|1(?:\.0+)?)$/;
   const values = images[0].attrs.get("data-image-focal-point").split(",");
   if (!source || values.length !== 2 || !values.every(value => point.test(value))) return null;
-  return { source: canonicalWebsiteImageSource(source), x: Number(values[0]), y: Number(values[1]), text: textOf(descriptions[0]) };
+  return { source: canonicalWebsiteImageSource(source), x: Number(values[0]), y: Number(values[1]), text: overviewDescriptionText(descriptions[0]) };
 }
 
 export function parseWebsiteAltPage(html, pageUrl) {

@@ -16,7 +16,9 @@ import { decodePublicAppCatalogManifest, decodePublicAppCatalogPayload, PUBLIC_A
 import { validateSpeciesSnapshot } from "../../species-explorer/species-content/validate.mjs";
 import { createWebsiteSpeciesPagesService } from "../../species-explorer/website-species-pages.mjs";
 import { observeWebsitePublicHtmlIdentity, parseWebsiteEditorialPage, parseWebsiteSpeciesOverviewCard,
-  websiteCrawlerExcluded } from "../../species-explorer/website-alt-parser.mjs";
+  parseWebsiteSpeciesOverviewTexts, parseWebsiteGeneratedSpeciesOverviewText,
+  PUBLIC_HTML_IDENTITY_BYTE_LIMIT, websiteCrawlerExcluded } from "../../species-explorer/website-alt-parser.mjs";
+import { validPublicOverviewText } from "../../species-explorer/species-content/public-app-catalog.mjs";
 import { sanitizeAssetName } from "../../species-explorer/species-model.mjs";
 import { normalizeMobileCatalogGeneral, reviewedMobileCatalog } from "./catalog-editorial.mjs";
 
@@ -102,7 +104,7 @@ function pinCatalogMedia(catalog, commit, baseline) {
 }
 
 export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, verifyMedia, baseline, commit,
-  verifyGalleryPhoto, verifyUnchangedMedia = true }) {
+  verifyGalleryPhoto, verifyUnchangedMedia = true, overviewTexts = new Map() }) {
   const parity = await validateSpeciesSnapshot({ snapshot, speciesData, pages, missingMediaReport });
   assert.ok(parity.passed && parity.sourcePagesChecked === speciesData.length,
     `Der öffentliche Katalog weicht von seinen Quellen ab: ${JSON.stringify(parity.issues)}`);
@@ -139,6 +141,12 @@ export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, 
       bytes: spectrum.bytes, sha256: spectrum.sha256, mimeType: "image/webp", alt: "Spektrogramm der Tierstimme" };
     publicMedia.push({ ...media.spectrogram });
     spectrograms++;
+  }
+  const previous = new Map(baseline?.catalog.species.map(entry => [entry.id, entry.overviewText]));
+  for (const entry of catalog.species) {
+    const checkedOverview = overviewTexts.get(entry.id);
+    const overviewText = checkedOverview ?? previous.get(entry.id);
+    if (overviewText !== undefined && overviewText !== "") entry.overviewText = overviewText;
   }
   const pinned = commit === undefined ? [] : pinCatalogMedia(catalog, commit, baseline);
   catalog.revision = digest(jsonBytes(catalog.species));
@@ -309,6 +317,53 @@ export async function verifyRegionalCatalogAdditions(sitemapPages, pending, { fe
   return found;
 }
 
+function publicWebsitePageFetcher(fetchImpl) {
+  return async (url, init) => {
+    const response = await fetchPublicCatalogSource(url, { ...init, headers: { ...init.headers, "Cache-Control": "no-cache" } }, fetchImpl);
+    if (response.status !== 200 || response.redirected || (response.url && response.url !== url)
+        || ["location", "www-authenticate", "proxy-authenticate"].some(name => response.headers.has(name))
+        || websiteCrawlerExcluded(response.headers.get("x-robots-tag"))) {
+      await response.body?.cancel().catch(() => {});
+      throw new Error("Die Website-Seite ist nicht direkt öffentlich abrufbar.");
+    }
+    return response;
+  };
+}
+
+/** Capture each region once. Incomplete or ambiguous reads leave the previous text available. */
+export async function readPublicCatalogOverviewTexts(pages, { fetchImpl, timeoutMs = 20_000 } = {}) {
+  const regions = new Map();
+  for (const [slug, page] of pages) {
+    const url = new URL(page.url);
+    if (url.origin !== "https://www.fnwildlifetravel.de" || url.search || url.hash
+        || !/^\/wildlife\/[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(url.pathname)) continue;
+    const region = url.href.slice(0, url.href.lastIndexOf("/"));
+    if (!regions.has(region)) regions.set(region, []);
+    regions.get(region).push([slug, page]);
+  }
+  const observed = await captureSpeciesPages(new Map([...regions.keys()].map(url => [url, url])), {
+    timeoutMs, maximumHtmlBytes: PUBLIC_HTML_IDENTITY_BYTE_LIMIT, fetchImpl: publicWebsitePageFetcher(fetchImpl),
+  });
+  const texts = new Map();
+  for (const { url: region, html } of observed.pages.values()) {
+    const members = regions.get(region);
+    let native;
+    try { native = parseWebsiteSpeciesOverviewTexts(html, region, members.map(([, page]) => page.url)); }
+    catch { continue; }
+    if (!native) continue;
+    for (const [slug, page] of members) {
+      let text = native.get(page.url);
+      // An existing native card takes precedence, including its intentionally empty description.
+      if (!native.has(page.url) && page.html?.includes("data-fn-region-card")) {
+        try { text = parseWebsiteGeneratedSpeciesOverviewText(page.html, page.url); }
+        catch { continue; }
+      }
+      if (text === "" || validPublicOverviewText(text)) texts.set(slug, text);
+    }
+  }
+  return texts;
+}
+
 export async function discoverPublicCatalogSources(speciesData, sitemapPages, baseline, options) {
   const previous = new Map(baseline.species.map(entry => [entry.id, entry.websiteUrl]));
   const { selected: sitemapSelected, issues } = selectSpeciesPageUrls(speciesData, [], sitemapPages);
@@ -410,8 +465,9 @@ async function prepareFromPublicSources({ verifyUnchangedMedia = false } = {}) {
   const captured = await captureSpeciesPages(sitemapSelected, { fetchImpl: fetchPublicCatalogSource });
   assert.deepEqual(captured.issues, [], "Einige veröffentlichte Artseiten konnten nicht gelesen werden.");
   const pages = new Map([...captured.pages, ...regional]);
+  const overviewTexts = await readPublicCatalogOverviewTexts(pages);
   const snapshot = await exportSpeciesCatalog({ speciesData, speciesList, pages, assetsRoot, missingMediaReport });
-  const release = await buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, baseline, commit, verifyUnchangedMedia,
+  const release = await buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, baseline, commit, verifyUnchangedMedia, overviewTexts,
     async verifyMedia(media) {
       const bytes = await readPublic(media.url, media.bytes, media.mimeType, { pinned: media.pinned === true });
       assert.ok(bytes.length === media.bytes && digest(bytes) === media.sha256,

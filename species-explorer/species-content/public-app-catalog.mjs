@@ -13,6 +13,11 @@ const catalogDigest = /^[a-f0-9]{64}$/u;
 export const PUBLIC_APP_CATALOG_MANIFEST_MAX_BYTES = 4096;
 export const PUBLIC_APP_CATALOG_MAX_BYTES = 16 * 1024 * 1024;
 
+export function validPublicOverviewText(value) {
+  return typeof value === "string" && value.length > 0 && value.length <= 1500 && value.trim() === value
+    && !/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/u.test(value);
+}
+
 function requirePublic(condition, reason) {
   if (!condition) throw new Error(`Ungültiger öffentlicher App-Katalog: ${reason}.`);
 }
@@ -111,7 +116,9 @@ export function validatePublicAppCatalog(catalog) {
   for (const entry of catalog.species) {
     requirePublic(entry?.media && Array.isArray(entry.media.sounds) && Array.isArray(entry.media.gallery),
       "fehlende oder ungültige Mediengruppen");
-    const { spectrogram, ...media } = entry.media;
+    const { overviewText, ...species } = entry;
+    requirePublic(overviewText === undefined || validPublicOverviewText(overviewText), "ungültiger Übersichtstext");
+    const { spectrogram, ...media } = species.media;
     let validationMedia = media;
     if (spectrogram !== undefined) {
       requirePublic(spectrogram && typeof spectrogram === "object" && media.sounds.length > 0,
@@ -121,7 +128,7 @@ export function validatePublicAppCatalog(catalog) {
         && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(alt), "ungültiger Spektrogramm-Alternativtext");
       validationMedia = { ...media, sounds: [...media.sounds, asset] };
     }
-    try { validateCatalogSpecies({ ...entry, media: validationMedia }); }
+    try { validateCatalogSpecies({ ...species, media: validationMedia }); }
     catch { requirePublic(false, "ungültige Artfelder oder private Medienreferenzen"); }
 
     requirePublic(typeof entry.websiteUrl === "string", "öffentliche Artseite fehlt");
