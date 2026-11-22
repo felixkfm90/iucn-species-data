@@ -78,19 +78,20 @@ function existingCard(title, path) {
     ...(path ? [element("a", { class: "list-item-content__button", href: path }, "Weitere Informationen")] : []));
 }
 
-function contentPage({ mark = {}, path = expectedPath, sourceUrl = photo, extraMarker = false, misplaced = false } = {}) {
+function contentPage({ mark = {}, path = expectedPath, sourceUrl = photo, extraMarker = false, misplaced = false,
+  photoProps = { alt: "Ausgewähltes Motiv" }, photoFigure = {}, head = [], extraContent = [] } = {}) {
   const marker = element("div", { hidden: "", "data-fn-region-card": "1", "data-region": region, "data-species-path": path,
     "data-title": "Art B", "data-image-index": "1", "data-focus-x": "0.26", "data-focus-y": "0.82", ...mark }, "Text mit < und >.");
   const images = element("div", { "data-fn-art-gallery": "1" },
     element("figure", { "data-fn-position": "1" }, element("img", { src: photo.replace("01.jpg", "02.jpg"), alt: "Anderes" })),
-    element("figure", { "data-fn-position": "2" }, element("img", { src: sourceUrl, alt: "Ausgewähltes Motiv" })));
-  return element("root", {}, element("link", { rel: "canonical", href: origin + path }),
+    element("figure", { "data-fn-position": "2", ...photoFigure }, element("img", { src: sourceUrl, ...photoProps })));
+  return element("root", {}, element("link", { rel: "canonical", href: origin + path }), ...head,
     element("main", { id: "page" }, ...(misplaced ? [marker] : []), ...(extraMarker ? [element("div", { "data-fn-region-card": "1" })] : []),
-      element("div", { class: "sqs-code-container" }, images, ...(misplaced ? [] : [marker]))));
+      element("div", { class: "sqs-code-container" }, images, ...(misplaced ? [] : [marker])), ...extraContent));
 }
 
 function fixture({ pages = [contentPage()], paths = [`${region}/art-a`, expectedPath, "/wildlife/afrika/art-z"],
-  includeTarget = false, status = 200 } = {}) {
+  pagePaths = [expectedPath], includeTarget = false, status = 200, headers = {}, responseStatuses = {}, timeoutPath } = {}) {
   const items = [existingCard("Art A", `${region}/art-a`), ...(includeTarget ? [existingCard("Native Art B", expectedPath)] : []),
     existingCard("Weitere Tiere", "/wildlife")];
   const { list, main } = rootList(items);
@@ -105,15 +106,26 @@ function fixture({ pages = [contentPage()], paths = [`${region}/art-a`, expected
     dispatchEvent(event) { events.push(event.type); },
   };
   const queue = paths.map(path => xml("url", xml("loc", new URL(path, origin).href)));
+  const controllers = new WeakMap();
+  const simulatedClock = { timeout() {
+    const controller = new AbortController();
+    controllers.set(controller.signal, controller);
+    return controller.signal;
+  } };
   const environment = {
-    document, location: { href: origin + region }, URL, AbortSignal, TextDecoder, Event,
+    document, location: { href: origin + region }, URL, AbortSignal: simulatedClock, TextDecoder, Event,
+    setTimeout(callback) { queueMicrotask(callback); },
     DOMParser: class { parseFromString() { return { documentElement: xml("urlset", ...queue) }; } },
     fetch: async (request, options) => {
       const url = new URL(request);
       requests.push({ path: url.pathname, credentials: options.credentials });
+      if (url.pathname === timeoutPath) controllers.get(options.signal).abort();
+      options.signal.throwIfAborted();
       const sitemap = url.pathname === "/sitemap.xml";
-      const response = new Response(sitemap ? "fixture" : "0", { status: sitemap ? 200 : status,
-        headers: { "content-type": sitemap ? "text/xml; charset=utf-8" : "text/html; charset=utf-8" } });
+      const nextStatus = responseStatuses[url.pathname]?.shift() ?? (sitemap ? 200 : status);
+      const response = new Response(sitemap ? "fixture" : String(pagePaths.indexOf(url.pathname)), { status: nextStatus,
+        headers: sitemap ? { "content-type": "text/xml; charset=utf-8" }
+          : { "content-type": "text/html; charset=utf-8", ...headers } });
       return Object.defineProperty(response, "url", { value: url.href });
     },
   };
@@ -162,6 +174,16 @@ test("does not retrieve a species already represented by a native entry", async 
   assert.deepEqual(page.events, []);
 });
 
+test("a generated gallery can provide a region card even when the selected photo has a confirmed missing alt", async () => {
+  const unbound = fixture({ pages: [contentPage({ photoProps: {} })] });
+  await unbound.run();
+  assert.deepEqual(unbound.list.children, unbound.items);
+  const bound = fixture({ pages: [contentPage({ photoProps: {}, photoFigure: { "data-fn-item-id": `fn-figure-${"1".repeat(24)}` } })] });
+  await bound.run();
+  assert.equal(bound.list.children[1].querySelector("h2").textContent, "Art B");
+  assert.equal(bound.list.children[1].querySelector("img").alt, "");
+});
+
 test("stops before inserting an unpublished, ambiguous or mismatched species", async () => {
   for (const page of [fixture({ status: 404 }), fixture({ paths: [`${region}/art-a`] }),
     fixture({ pages: [contentPage({ extraMarker: true })] }),
@@ -175,4 +197,75 @@ test("stops before inserting an unpublished, ambiguous or mismatched species", a
     assert.deepEqual(page.list.children, page.items);
     assert.deepEqual(page.events, []);
   }
+});
+
+test("Eine vorübergehende Störung in der Sitemap und beim Artabruf wird im selben Seitenaufruf überbrückt", async () => {
+  const page = fixture({ responseStatuses: { "/sitemap.xml": [503, 200], [expectedPath]: [502, 200] } });
+  await page.run();
+  assert.deepEqual(page.requests.map(request => request.path), ["/sitemap.xml", "/sitemap.xml", expectedPath, expectedPath]);
+  assert.equal(page.list.children[1].querySelector("h2").textContent, "Art B");
+  assert.deepEqual(page.events, ["fn:region-cards-changed"]);
+});
+
+test("Ein anhaltender Fehler blendet nur die betroffene Art aus und Freigabesperren werden nicht wiederholt", async () => {
+  const other = `${region}/art-c`;
+  const page = fixture({ paths: [expectedPath, other], pages: [contentPage(), contentPage({ path: other, mark: { "data-title": "Art C" } })],
+    pagePaths: [expectedPath, other], responseStatuses: { [expectedPath]: [504, 503], [other]: [200] } });
+  await page.run();
+  assert.equal(page.requests.filter(request => request.path === expectedPath).length, 2);
+  assert.deepEqual(page.list.children.map(item => item.querySelector("h2").textContent), ["Art A", "Art C", "Weitere Tiere"]);
+  for (const code of [401, 403, 404, 429]) {
+    const blocked = fixture({ responseStatuses: { [expectedPath]: [code, 200] } });
+    await blocked.run();
+    assert.equal(blocked.requests.filter(request => request.path === expectedPath).length, 1);
+    assert.deepEqual(blocked.list.children, blocked.items);
+  }
+  for (const headers of [{ "retry-after": "120" }, { "www-authenticate": 'Basic realm="preview"' }, { "x-robots-tag": "noindex" }]) {
+    const blocked = fixture({ responseStatuses: { [expectedPath]: [503, 200] }, headers });
+    await blocked.run();
+    assert.equal(blocked.requests.filter(request => request.path === expectedPath).length, 1);
+    assert.deepEqual(blocked.list.children, blocked.items);
+  }
+});
+
+test("Eine zu langsame Artseite lässt den Abruf der übrigen Arten derselben Gruppe weiterlaufen", async () => {
+  const candidates = Array.from({ length: 5 }, (_, index) => `${region}/tier-${index}`);
+  const pages = candidates.map((path, index) => contentPage({ path, mark: { "data-title": `Tier ${index}` } }));
+  const page = fixture({ paths: candidates, pagePaths: candidates, pages, timeoutPath: candidates[0] });
+  await page.run();
+  assert.deepEqual(page.requests.map(request => request.path), ["/sitemap.xml", ...candidates]);
+  assert.deepEqual(page.list.children.map(item => item.querySelector("h2").textContent),
+    ["Art A", "Tier 1", "Tier 2", "Tier 3", "Tier 4", "Weitere Tiere"]);
+});
+
+test("veraltete Sitemap-Einträge umgehen keine ausdrückliche Veröffentlichungs- oder Anmeldesperre", async () => {
+  for (const page of [
+    fixture({ headers: { "x-robots-tag": "Googlebot-News: noindex, follow" } }),
+    fixture({ headers: { "www-authenticate": 'Basic realm="preview"' } }),
+    fixture({ pages: [contentPage({ head: [element("meta", { name: "Robots", content: "noindex, follow" })] })] }),
+    fixture({ pages: [contentPage({ head: [element("meta", { name: "Googlebot-News", content: "none" })] })] }),
+    fixture({ pages: [contentPage({ head: [element("meta", { "http-equiv": "refresh", content: "0; url=/login" })] })] }),
+    fixture({ pages: [contentPage({ extraContent: [element("input", { type: "Password" })] })] }),
+  ]) {
+    await page.run();
+    assert.ok(page.requests.some(request => request.path === expectedPath));
+    assert.deepEqual(page.list.children, page.items);
+    assert.deepEqual(page.events, []);
+  }
+});
+
+test("mehr als 24 automatisch ergänzte Arten bleiben neben den nativen Kacheln verfügbar", async () => {
+  const paths = Array.from({ length: 30 }, (_, index) => `${region}/tier-${30 - index}`);
+  const pages = paths.map((path, index) => contentPage({ path, mark: { "data-title": `Tier ${30 - index}` } }));
+  const page = fixture({ paths: [`${region}/art-a`, ...paths], pages, pagePaths: paths });
+  await page.run();
+  assert.deepEqual(page.requests.map(request => request.path), ["/sitemap.xml", ...paths]);
+  assert.deepEqual(page.list.children.map(item => item.querySelector("h2").textContent),
+    ["Art A", ...Array.from({ length: 30 }, (_, index) => `Tier ${index + 1}`), "Weitere Tiere"]);
+  assert.equal(page.list.children[0], page.items[0]);
+  assert.equal(page.list.children.at(-1), page.items[1]);
+  assert.deepEqual(page.events, ["fn:region-cards-changed", "fn:region-cards-changed"]);
+  await page.run();
+  assert.equal(page.list.children.length, 32);
+  assert.equal(page.requests.at(-1).path, "/sitemap.xml");
 });
