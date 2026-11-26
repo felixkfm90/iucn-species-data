@@ -5,25 +5,26 @@ Diese Datei ist die einzige dokumentarische Quelle für aktuelle Zähler und akt
 Sie wird aus den produktiven JSON-Dateien, dem Explorer-Modell und den vorhandenen Assets erzeugt. Historische
 Zahlen in datierten Audit- und Verlaufsdokumenten sind Zeitaufnahmen und kein aktueller Projektstatus.
 
-Report-Datenstand: `2026-11-20T18:22:21.087Z`
+Report-Datenstand: `2026-11-26T19:28:38.176Z`
 
 | Bereich | Anzahl |
 |---|---:|
-| Eingaben in `species_list.json` | 66 |
-| Aktive Arten | 66 |
-| Arten in `speciesData.json` | 66 |
-| Vollständige Art-Assetordner | 66 |
-| Karten | 66 |
-| Sounds | 62 |
-| Credits | 62 |
-| Spektrogramme | 62 |
-| Artporträts | 66 |
+| Eingaben in `species_list.json` | 67 |
+| Aktive Arten | 67 |
+| Arten in `speciesData.json` | 67 |
+| Vollständige Art-Assetordner | 67 |
+| Karten | 67 |
+| Sounds | 63 |
+| Credits | 63 |
+| Spektrogramme | 63 |
+| Artporträts | 67 |
 | Assetprobleme | 0 |
 | Validierungsprobleme | 0 |
 
-## Geschützte Karten (12)
+## Geschützte Karten (13)
 
 - Blaukehlchen
+- Brautente
 - Erdbeerfröschchen
 - Goldbaumsteiger
 - Grünfink
@@ -47,9 +48,10 @@ Report-Datenstand: `2026-11-20T18:22:21.087Z`
 
 Die Herkunft und Unverändertheit dieser Importe sind Nutzerangaben, kein technischer Bildnachweis.
 
-## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (6)
+## Eigene Kartenpflege einschließlich bestehender Altmarkierungen (7)
 
 - Blaukehlchen
+- Brautente
 - Löwe
 - Mittelspecht
 - Rappenantilope
