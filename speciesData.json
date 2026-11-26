@@ -1675,5 +1675,31 @@
     },
     "Letztes IUCN Update": "2025",
     "Daten abgerufen": "2026-11-20"
+  },
+  {
+    "URLSlug": "aixsponsa",
+    "Wissenschaftlicher Name": "Aix sponsa",
+    "Deutscher Name": "Brautente",
+    "Englischer Name": "acorn duck",
+    "Gewicht": "ca. 450-860 g",
+    "Größe": "ca. 47-55 cm",
+    "Lebenserwartung": "ca. 4 Jahre",
+    "Genus": "Aix",
+    "Species": "sponsa",
+    "Kingdom": "Animalia",
+    "Phylum": "Chordata",
+    "Subphylum": "Vertebrata",
+    "Class": "Aves",
+    "Order": "Anseriformes",
+    "Family": "Anatidae",
+    "Assessment ID": 136999461,
+    "Taxon ID": "22680104",
+    "Kategorie": "Nicht gefährdet",
+    "Status": "LC",
+    "Trend": "Zunehmend",
+    "Populationgröße": "4.600.000",
+    "Generationsdauer": "5,5 Jahre",
+    "Letztes IUCN Update": "2021",
+    "Daten abgerufen": "2026-11-26"
   }
 ]

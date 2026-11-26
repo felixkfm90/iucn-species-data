@@ -592,5 +592,14 @@
     "size": "ca. 100-120 cm",
     "weight": "Männchen: ca. 150-200 kg; Weibchen: ca. 110-180 kg",
     "life_expectancy": "ca. 10-15 Jahre"
+  },
+  {
+    "german": "Brautente",
+    "english": "acorn duck",
+    "genus": "Aix",
+    "species": "sponsa",
+    "size": "ca. 47-55 cm",
+    "weight": "ca. 450-860 g",
+    "life_expectancy": "ca. 4 Jahre"
   }
 ]

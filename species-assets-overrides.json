@@ -1885,6 +1885,26 @@
           ]
         }
       }
+    },
+    "Brautente": {
+      "map": {
+        "manual": true,
+        "protectFromPipeline": true,
+        "careMode": "manual",
+        "sha256": "0e03e5682f7d78934af455fab4fe655bb37c45028151afbfc6b95adffa3c0c16"
+      },
+      "portrait": {
+        "sha256": "a2a457c0f173206f116946acfe1967f0acc9a5a8363f338c7928b6968aa6144b",
+        "metadataSha256": "cacc90c072f8868674c907a7a3f86fb9be554f9d4347715399e1900c85705609"
+      },
+      "sound": {
+        "manual": true,
+        "protectFromPipeline": true
+      },
+      "spectrogram": {
+        "soundSha256": "83bcf5eeea5222c6c9db70a0ffc7cae3e82a3f67cf32866e8395625729bf5d71",
+        "spectrogramSha256": "a8f3c5236e0cfc965300dd1a85da6c6cfa239468f301d3825253c0f76681c034"
+      }
     }
   },
   "spectrogramGenerator": {
