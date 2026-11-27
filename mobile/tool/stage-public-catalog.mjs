@@ -105,7 +105,7 @@ function pinCatalogMedia(catalog, commit, baseline) {
 }
 
 export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, verifyMedia, baseline, commit,
-  verifyGalleryPhoto, verifyUnchangedMedia = true, overviewTexts = new Map() }) {
+  verifyGalleryPhoto, verifyUnchangedMedia = true, overviewTexts = new Map(), newSpeciesPublishedAt = snapshot.catalog.generatedAt }) {
   const parity = await validateSpeciesSnapshot({ snapshot, speciesData, pages, missingMediaReport });
   assert.ok(parity.passed && parity.sourcePagesChecked === speciesData.length,
     `Der öffentliche Katalog weicht von seinen Quellen ab: ${JSON.stringify(parity.issues)}`);
@@ -148,6 +148,14 @@ export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, 
     const checkedOverview = overviewTexts.get(entry.id);
     const overviewText = checkedOverview ?? previous.get(entry.id);
     if (overviewText !== undefined && overviewText !== "") entry.overviewText = overviewText;
+  }
+  if (baseline) {
+    const previousSpecies = new Map(baseline.catalog.species.map(entry => [entry.id, entry]));
+    for (const entry of catalog.species) {
+      const previous = previousSpecies.get(entry.id);
+      const firstPublishedAt = previous ? previous.firstPublishedAt : newSpeciesPublishedAt;
+      if (firstPublishedAt !== undefined) entry.firstPublishedAt = firstPublishedAt;
+    }
   }
   const pinned = commit === undefined ? [] : pinCatalogMedia(catalog, commit, baseline);
   catalog.revision = digest(jsonBytes(catalog.species));
@@ -440,7 +448,7 @@ async function readGitCatalogSha256(commit) {
   return manifest.catalogSha256;
 }
 
-async function prepareFromPublicSources({ verifyUnchangedMedia = false } = {}) {
+async function prepareFromPublicSources({ verifyUnchangedMedia = false, newSpeciesPublishedAt } = {}) {
   const assetsRoot = fileURLToPath(new URL("../../species-assets/", import.meta.url));
   const filenames = ["speciesData.json", "species_list.json", "species-assets-overrides.json", "fehlende_elemente_report.json"];
   const inputLimit = 4 * 1024 * 1024;
@@ -468,7 +476,7 @@ async function prepareFromPublicSources({ verifyUnchangedMedia = false } = {}) {
   const pages = new Map([...captured.pages, ...regional]);
   const overviewTexts = await readPublicCatalogOverviewTexts(pages);
   const snapshot = await exportSpeciesCatalog({ speciesData, speciesList, pages, assetsRoot, missingMediaReport });
-  const release = await buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, baseline, commit, verifyUnchangedMedia, overviewTexts,
+  const release = await buildPublicCatalogRelease({ snapshot, speciesData, pages, mediaRegistry, missingMediaReport, baseline, commit, verifyUnchangedMedia, overviewTexts, newSpeciesPublishedAt,
     async verifyMedia(media) {
       const bytes = await readPublic(media.url, media.bytes, media.mimeType, { pinned: media.pinned === true });
       assert.ok(bytes.length === media.bytes && digest(bytes) === media.sha256,
@@ -515,7 +523,8 @@ if (import.meta.main) {
     assert.ok(args.length === 3 && mode === "--verify-candidate" && catalogDigest.test(expectedBaselineSha256),
       "Aufruf: node mobile/tool/stage-public-catalog.mjs --verify-candidate <Katalogordner> <SHA-256 der Ausgangsfassung>");
     const candidate = await readPublicCatalogCandidate(directory);
-    const { release: currentRelease, checkoutCatalogSha256 } = await prepareFromPublicSources();
+    const { generatedAt } = decodePublicAppCatalogManifest(candidate.manifestBytes);
+    const { release: currentRelease, checkoutCatalogSha256 } = await prepareFromPublicSources({ newSpeciesPublishedAt: generatedAt });
     process.stdout.write(`${JSON.stringify(verifyPublicCatalogCandidate({ ...candidate, expectedBaselineSha256, checkoutCatalogSha256, currentRelease }))}\n`);
   }
 }

@@ -116,7 +116,10 @@ export function validatePublicAppCatalog(catalog) {
   for (const entry of catalog.species) {
     requirePublic(entry?.media && Array.isArray(entry.media.sounds) && Array.isArray(entry.media.gallery),
       "fehlende oder ungültige Mediengruppen");
-    const { overviewText, ...species } = entry;
+    const { overviewText, firstPublishedAt, ...species } = entry;
+    requirePublic(firstPublishedAt === undefined || typeof firstPublishedAt === "string"
+      && Number.isFinite(Date.parse(firstPublishedAt)) && Date.parse(firstPublishedAt) <= Date.parse(catalog.generatedAt)
+      && new Date(firstPublishedAt).toISOString() === firstPublishedAt, "ungültige Erstveröffentlichung");
     requirePublic(overviewText === undefined || validPublicOverviewText(overviewText), "ungültiger Übersichtstext");
     const { spectrogram, ...media } = species.media;
     let validationMedia = media;

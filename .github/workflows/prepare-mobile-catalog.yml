@@ -29,6 +29,9 @@ jobs:
         (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
     outputs:
       status: ${{ steps.catalog.outputs.status }}
       source_commit: ${{ steps.catalog.outputs.source_commit }}
@@ -46,8 +49,16 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
+      - name: Check for an active Pages run for this source
+        id: source-pages
+        if: github.event_name == 'schedule'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node mobile/tool/wait-for-source-pages.mjs
+
       - name: Prepare and verify candidate files
         id: catalog
+        if: steps.source-pages.outputs.defer != 'true'
         shell: bash
         env:
           EXPECTED_SOURCE_COMMIT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
