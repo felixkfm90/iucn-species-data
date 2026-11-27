@@ -20,6 +20,7 @@ import { observeWebsitePublicHtmlIdentity, parseWebsiteEditorialPage, parseWebsi
   PUBLIC_HTML_IDENTITY_BYTE_LIMIT, websiteCrawlerExcluded } from "../../species-explorer/website-alt-parser.mjs";
 import { validPublicOverviewText } from "../../species-explorer/species-content/public-app-catalog.mjs";
 import { sanitizeAssetName } from "../../species-explorer/species-model.mjs";
+import { matchesPublicSoundBinding } from "../../scripts/public-sound-binding.mjs";
 import { normalizeMobileCatalogGeneral, reviewedMobileCatalog } from "./catalog-editorial.mjs";
 
 const pagesRoot = new URL("../", `${PAGES_ASSET_BASE}/`);
@@ -135,7 +136,7 @@ export async function buildPublicCatalogRelease({ snapshot, speciesData, pages, 
     const soundUrl = new URL(sound.url);
     const binding = mediaRegistry.assets?.[folder]?.spectrogram;
     assert.ok(spectrum.path === `${folder}/spectrogram.webp` && spectrum.bytes > 0 && spectrum.bytes <= 512 * 1024
-      && binding?.stale === false && binding.soundSha256 === sound.sha256 && binding.spectrogramSha256 === spectrum.sha256,
+      && matchesPublicSoundBinding(binding, sound.sha256, spectrum.sha256),
     `Spektrogramm und Aufnahme stimmen nicht mit dem öffentlichen Register überein: ${entry.id}`);
     media.spectrogram = { id: `${entry.id}:spectrogram`, url: new URL("spectrogram.webp", soundUrl).href,
       bytes: spectrum.bytes, sha256: spectrum.sha256, mimeType: "image/webp", alt: "Spektrogramm der Tierstimme" };

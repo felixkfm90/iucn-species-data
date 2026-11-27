@@ -1902,6 +1902,7 @@
         "protectFromPipeline": true
       },
       "spectrogram": {
+        "stale": false,
         "soundSha256": "83bcf5eeea5222c6c9db70a0ffc7cae3e82a3f67cf32866e8395625729bf5d71",
         "spectrogramSha256": "a8f3c5236e0cfc965300dd1a85da6c6cfa239468f301d3825253c0f76681c034"
       }
